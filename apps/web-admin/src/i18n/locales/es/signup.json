@@ -35,7 +35,7 @@
     "familyTitle": "Mi familia",
     "familyDesc": "Vigila el tiempo de pantalla y la actividad de tus hijos.",
     "familyTag": "Cuenta gratuita",
-    "caption": "ⓘ «Solo yo» descarga la aplicación y funciona sin conexión: no se sube nada."
+    "caption": "El seguimiento personal se realiza en la app de escritorio: sin cuenta de administrador."
   },
   "personal": {
     "back": "← Atrás",
@@ -56,7 +56,8 @@
     "passwordPlaceholder": "mínimo 8 caracteres",
     "strength": { "weak": "Débil", "medium": "Media", "strong": "Fuerte" },
     "creating": "Creando…",
-    "continue": "Continuar"
+    "continue": "Continuar",
+    "available": "Disponible"
   },
   "setup": {
     "title": "Ponle nombre a tu {{noun}}",

@@ -35,16 +35,16 @@ type PwLevel = "weak" | "medium" | "strong";
 /** Password strength → one of three levels (weak/medium/strong) with meter
  *  fill width (%) + color token. Scores on length + character variety. */
 function pwStrength(pw: string): { level: PwLevel | null; pct: number; color: string } {
-  if (!pw) return { level: null, pct: 0, color: "var(--danger)" };
+  if (!pw) return { level: null, pct: 0, color: "#f43f5e" };
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
   if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-  if (pw.length < 8 || score <= 1) return { level: "weak", pct: 33, color: "var(--danger)" };
-  if (score <= 3) return { level: "medium", pct: 66, color: "var(--warn)" };
-  return { level: "strong", pct: 100, color: "var(--success)" };
+  if (pw.length < 8 || score <= 1) return { level: "weak", pct: 33, color: "#f43f5e" };
+  if (score <= 3) return { level: "medium", pct: 66, color: "#f59e0c" };
+  return { level: "strong", pct: 100, color: "#30b981" };
 }
 
 type Step = "persona" | "personal" | "account" | "setup" | "members" | "done";
@@ -217,6 +217,15 @@ export function SignupWizard() {
             </button>
           </div>
 
+          <div className="ad-notice ad-notice--info">
+            <Ic>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </Ic>
+            <span>{t("persona.caption")}</span>
+          </div>
+
           <div className="ad-wiz-foot">
             <button type="button" className="bibo-btn bibo-btn--ghost" onClick={() => nav("/login")}>
               <Ic>
@@ -297,25 +306,36 @@ export function SignupWizard() {
               </span>
             </label>
 
-            <label className="bibo-field">
-              <span className="bibo-field__lbl">{t("account.identifier")}</span>
-              <span className="bibo-input">
-                <span className="bibo-input__icon">
-                  <Ic>
-                    <circle cx="12" cy="12" r="4" />
-                    <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
-                  </Ic>
+            <div>
+              <label className="bibo-field">
+                <span className="bibo-field__lbl">{t("account.identifier")}</span>
+                <span className="bibo-input">
+                  <span className="bibo-input__icon">
+                    <Ic>
+                      <circle cx="12" cy="12" r="4" />
+                      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+                    </Ic>
+                  </span>
+                  <input
+                    type="text"
+                    value={login}
+                    onChange={(e) => setLogin(e.target.value)}
+                    required
+                    autoComplete="username"
+                    placeholder={t("account.identifierPlaceholder")}
+                  />
                 </span>
-                <input
-                  type="text"
-                  value={login}
-                  onChange={(e) => setLogin(e.target.value)}
-                  required
-                  autoComplete="username"
-                  placeholder={t("account.identifierPlaceholder")}
-                />
-              </span>
-            </label>
+              </label>
+              {login.trim() && (
+                <div className="ad-field-ok">
+                  <Ic>
+                    <path d="M21.801 10A10 10 0 1 1 17 3.335" />
+                    <path d="m9 11 3 3L22 4" />
+                  </Ic>
+                  <span>{t("account.available")}</span>
+                </div>
+              )}
+            </div>
 
             <div>
               <label className="bibo-field">

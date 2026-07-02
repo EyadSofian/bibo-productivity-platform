@@ -35,7 +35,7 @@
     "familyTitle": "Keluarga saya",
     "familyDesc": "Pantau waktu layar & aktivitas anak-anak saya.",
     "familyTag": "Akun gratis",
-    "caption": "ⓘ \"Hanya saya\" mengunduh aplikasi dan berjalan secara offline — tidak ada yang diunggah."
+    "caption": "Pelacakan pribadi berjalan di aplikasi desktop — tanpa akun admin."
   },
   "personal": {
     "back": "← Kembali",
@@ -56,7 +56,8 @@
     "passwordPlaceholder": "minimal 8 karakter",
     "strength": { "weak": "Lemah", "medium": "Sedang", "strong": "Kuat" },
     "creating": "Membuat…",
-    "continue": "Lanjutkan"
+    "continue": "Lanjutkan",
+    "available": "Tersedia"
   },
   "setup": {
     "title": "Beri nama {{noun}} Anda",

@@ -35,7 +35,7 @@
     "familyTitle": "My family",
     "familyDesc": "Keep an eye on my kids' screen time & activity.",
     "familyTag": "Free account",
-    "caption": "ⓘ \"Just me\" downloads the app and runs offline — nothing is uploaded."
+    "caption": "Personal tracking lives in the desktop app — no admin account needed."
   },
   "personal": {
     "back": "← Back",
@@ -56,7 +56,8 @@
     "passwordPlaceholder": "min 8 characters",
     "strength": { "weak": "Weak", "medium": "Medium", "strong": "Strong" },
     "creating": "Creating…",
-    "continue": "Continue"
+    "continue": "Continue",
+    "available": "Available"
   },
   "setup": {
     "title": "Name your {{noun}}",

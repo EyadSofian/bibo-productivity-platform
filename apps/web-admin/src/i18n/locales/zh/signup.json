@@ -35,7 +35,7 @@
     "familyTitle": "我的家庭",
     "familyDesc": "关注孩子的屏幕使用时间与活动。",
     "familyTag": "免费账户",
-    "caption": "ⓘ “仅我自己”会下载应用并离线运行——不会上传任何数据。"
+    "caption": "个人追踪在桌面应用中进行——无需管理员账户。"
   },
   "personal": {
     "back": "← 返回",
@@ -56,7 +56,8 @@
     "passwordPlaceholder": "至少 8 个字符",
     "strength": { "weak": "弱", "medium": "中等", "strong": "强" },
     "creating": "创建中…",
-    "continue": "继续"
+    "continue": "继续",
+    "available": "可用"
   },
   "setup": {
     "title": "为你的{{noun}}命名",

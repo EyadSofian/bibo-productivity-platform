@@ -35,7 +35,7 @@
     "familyTitle": "Ma famille",
     "familyDesc": "Gardez un œil sur le temps d'écran et l'activité de vos enfants.",
     "familyTag": "Compte gratuit",
-    "caption": "ⓘ « Juste moi » télécharge l'application et fonctionne hors ligne — rien n'est envoyé."
+    "caption": "Le suivi personnel se fait dans l'application de bureau — aucun compte administrateur requis."
   },
   "personal": {
     "back": "← Retour",
@@ -56,7 +56,8 @@
     "passwordPlaceholder": "8 caractères minimum",
     "strength": { "weak": "Faible", "medium": "Moyen", "strong": "Fort" },
     "creating": "Création…",
-    "continue": "Continuer"
+    "continue": "Continuer",
+    "available": "Disponible"
   },
   "setup": {
     "title": "Nommez votre {{noun}}",
