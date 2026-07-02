@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "BiBoTracking をどのようにご利用になりますか？",
+    "sub": "後で変更できます。",
+    "back": "戻る",
     "justMeTitle": "自分だけ",
     "justMeDesc": "自分の活動とパフォーマンスを記録します。データは 100% お使いのコンピュータに保存されます。",
     "justMeTag": "アカウント不要",
@@ -52,8 +54,9 @@
     "identifierPlaceholder": "you@example.com またはユーザー名",
     "password": "パスワード",
     "passwordPlaceholder": "8文字以上",
+    "strength": { "weak": "弱い", "medium": "普通", "strong": "強い" },
     "creating": "作成中…",
-    "continue": "次へ →"
+    "continue": "次へ"
   },
   "setup": {
     "title": "{{noun}}の名前を設定",
@@ -62,7 +65,7 @@
     "placeholderFamily": "クーパー家",
     "placeholderTeam": "クーパー社",
     "saving": "保存中…",
-    "continue": "次へ →"
+    "continue": "次へ"
   },
   "done": {
     "title": "準備が整いました！",
@@ -70,27 +73,28 @@
     "orgReady": "{{noun}}の準備ができました",
     "membersAdded": "{{count}}名の{{members}}を追加しました",
     "membersLater": "{{members}}は後で追加",
-    "goToDashboard": "ダッシュボードへ →"
+    "goToDashboard": "ダッシュボードへ"
   },
   "clipboard": {
     "text": "BiBoTracking ログイン情報\nユーザー名またはメール：{{login}}\nパスワード：{{password}}"
   },
   "members": {
     "title": "{{members}}を追加",
-    "sub": "{{member}}ごとにログイン情報が発行されます。ユーザー名（メール不要）またはメールアドレスのいずれかです。ユーザー名と仮パスワードはあらかじめ入力されています。それらを共有すれば、{{member}}はログイン後にパスワードを変更できます。この操作は後でダッシュボードから行うこともできます。",
+    "sub": "今すぐ追加するか、スキップできます。後で招待することもできます。",
     "name": "名前",
     "namePlaceholder": "山田 太郎",
     "loginLabel": "ユーザー名またはメール（ログイン情報）",
     "tempPassword": "仮パスワード",
     "generateTitle": "新しいパスワードを生成",
-    "newPassword": "↻ 新規",
+    "newPassword": "新規",
+    "suggestion": "候補",
     "adding": "追加中…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "{{count}}名の{{members}}を追加しました — 各ログイン情報をコピーして共有してください。",
     "copied": "コピーしました ✓",
     "copyLogin": "ログイン情報をコピー",
     "remove": "削除",
-    "finish": "完了 →",
+    "finish": "完了",
     "doneAdding": "追加を完了",
     "skip": "後で設定する"
   }

@@ -30,7 +30,7 @@
     "daysAgo": "{{count}} ngày trước"
   },
   "terms": {
-    "team": { "one": "Nhân viên", "many": "Nhân viên", "lowerOne": "nhân viên", "lowerMany": "nhân viên", "addCta": "Thêm nhân viên" },
-    "family": { "one": "Con", "many": "Các con", "lowerOne": "con", "lowerMany": "các con", "addCta": "Thêm con" }
+    "team": { "one": "Nhân viên", "many": "Nhân viên", "lowerOne": "nhân viên", "lowerMany": "nhân viên", "addCta": "Thêm nhân viên", "org": "nhóm" },
+    "family": { "one": "Con", "many": "Các con", "lowerOne": "con", "lowerMany": "các con", "addCta": "Thêm con", "org": "gia đình" }
   }
 }

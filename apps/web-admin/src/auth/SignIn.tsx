@@ -4,10 +4,67 @@ import { useTranslation } from "react-i18next";
 import { login } from "../api/endpoints";
 import { ApiError } from "../api/types";
 import { useAuth } from "./AuthContext";
-import { Field, Notice } from "../components/ui";
+import { Notice } from "../components/ui";
 import { AuthLayout } from "./AuthLayout";
 
 const DOWNLOAD_URL = import.meta.env.VITE_DOWNLOAD_URL || "/";
+
+/** Brand mark shown inside the card — pulse/activity glyph on a violet tile. */
+function LogoMark() {
+  return (
+    <span className="ad-login__logo" aria-hidden>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    </span>
+  );
+}
+
+function AtSignIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-4 8" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  );
+}
 
 export function SignIn() {
   const nav = useNavigate();
@@ -35,52 +92,70 @@ export function SignIn() {
   }
 
   return (
-    <AuthLayout
-      footer={
-        <>
-          {t("signIn.localFooter")} <a href={DOWNLOAD_URL}>{t("signIn.download")}</a>
-        </>
-      }
-    >
-      <form onSubmit={submit}>
-        <h1>{t("signIn.title")}</h1>
-        <div className="auth-sub">{t("signIn.subtitle")}</div>
+    <AuthLayout bare hideLockup>
+      <div className="ad-loginbox">
+        <LogoMark />
+        <h1 className="ad-login__title">{t("signIn.title")}</h1>
+        <p className="ad-login__sub">{t("signIn.subtitle")}</p>
 
         {error && (
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginBottom: 16 }}>
             <Notice kind="danger">{error}</Notice>
           </div>
         )}
 
-        <Field label={t("signIn.identifier")}>
-          <input
-            className="input"
-            type="text"
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            required
-            autoComplete="username"
-          />
-        </Field>
-        <Field label={t("signIn.password")}>
-          <input
-            className="input"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </Field>
+        <form className="ad-form" onSubmit={submit}>
+          <label className="bibo-field">
+            <span className="bibo-field__lbl">{t("signIn.identifier")}</span>
+            <span className="bibo-input">
+              <span className="bibo-input__icon">
+                <AtSignIcon />
+              </span>
+              <input
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                required
+                autoComplete="username"
+                placeholder="mai@acmestudio.co"
+              />
+            </span>
+          </label>
 
-        <button className="btn btn-primary btn-block" style={{ marginTop: 8 }} disabled={busy}>
-          {busy ? t("signIn.submitting") : t("signIn.submit")}
-        </button>
+          <label className="bibo-field">
+            <span className="bibo-field__lbl">{t("signIn.password")}</span>
+            <span className="bibo-input">
+              <span className="bibo-input__icon">
+                <LockIcon />
+              </span>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+                placeholder="••••••••"
+              />
+            </span>
+          </label>
 
-        <div className="caption" style={{ marginTop: 16, textAlign: "center" }}>
-          {t("signIn.newHere")} <Link to="/signup">{t("signIn.createAccount")}</Link>
+          <button className="bibo-btn bibo-btn--primary bibo-btn--block" type="submit" disabled={busy}>
+            <span>{busy ? t("signIn.submitting") : t("signIn.submit")}</span>
+          </button>
+        </form>
+
+        <div className="ad-login__links">
+          <span className="ad-muted">
+            {t("signIn.newHere")}{" "}
+            <Link className="ad-link" to="/signup">
+              {t("signIn.createAccount")}
+            </Link>
+          </span>
+          <a className="ad-link" href={DOWNLOAD_URL}>
+            {t("signIn.download")}
+          </a>
         </div>
-      </form>
+      </div>
     </AuthLayout>
   );
 }

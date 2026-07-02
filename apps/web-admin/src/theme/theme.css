@@ -635,7 +635,12 @@ select.input:focus,
   gap: var(--sp-4);
 }
 .auth-wrap.welcome {
-  /* background comes from the app-wide gradient on <body>; keep this transparent */
+  /* light: soft lavender auth gradient (per request); dark keeps the app-wide body gradient */
+  background: radial-gradient(1200px 800px at 12% -8%, #ECE9FA, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #E7ECF8, transparent 50%),
+    linear-gradient(160deg, #EEF0F8, #E4E8F3);
+}
+:root[data-theme="dark"] .auth-wrap.welcome {
   background: transparent;
 }
 .auth-logo {
@@ -680,6 +685,491 @@ select.input:focus,
   font-size: var(--fz-sm);
   color: var(--text-muted);
   text-align: center;
+}
+
+/* ---------- admin sign-in card (offline design language, violet accent) ----------
+   Self-contained bibo- and ad- prefixed classes ported from the desktop offline
+   design so the admin login matches it. Scoped to the sign-in card; the rest of
+   web-admin keeps the blue --accent tokens until each screen is migrated. */
+.ad-loginbox {
+  width: 400px;
+  max-width: 100%;
+  background: var(--surface-strong);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
+}
+.ad-login__logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background-image: linear-gradient(135deg, #8b7bf0, #6c5ce7);
+  box-shadow: 0 10px 22px -8px rgba(108, 92, 231, 0.7);
+  margin-bottom: 22px;
+}
+.ad-login__title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.ad-login__sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.ad-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.bibo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bibo-field__lbl {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.bibo-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.bibo-input:focus-within {
+  border-color: #6c5ce7;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
+}
+.bibo-input__icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.bibo-input__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.bibo-input input::placeholder {
+  color: var(--text-muted);
+}
+.bibo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bibo-btn--primary {
+  background: #6c5ce7;
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(108, 92, 231, 0.9);
+}
+.bibo-btn--primary:hover:not(:disabled) {
+  background: #5f4dd0;
+}
+.bibo-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.bibo-btn--block {
+  width: 100%;
+  margin-top: 4px;
+}
+.bibo-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0 8px;
+}
+.bibo-btn--ghost:hover:not(:disabled) {
+  color: var(--text);
+}
+.bibo-btn--ghost svg {
+  width: 22px;
+  height: 22px;
+}
+.ad-login__links {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+.ad-muted {
+  color: var(--text-muted);
+}
+.ad-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c5ce7;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ad-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- signup wizard — persona step (offline design, single centered card) ---------- */
+.ad-wizard {
+  width: 560px;
+  max-width: 100%;
+  background: #fcfcfe;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
+}
+:root[data-theme="dark"] .ad-wizard {
+  background: var(--surface-strong);
+}
+.ad-wiz-rail {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ad-wiz-pip {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+}
+.ad-wiz-pip.on {
+  background: #6c5ce7;
+}
+.ad-wiz-pip.done {
+  background: color-mix(in srgb, #6c5ce7 50%, var(--border));
+}
+.ad-wiz-step {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9aa1b4;
+  margin-bottom: 18px;
+}
+.ad-wiz-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.ad-wiz-sub {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+.ad-persona-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ad-persona {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #f2f4fb;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+:root[data-theme="dark"] .ad-persona {
+  background: var(--bg-subtle);
+}
+.ad-persona:hover {
+  border-color: #6c5ce7;
+  background: var(--bg-inset);
+  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
+}
+.ad-persona__ic {
+  flex: none;
+  display: inline-flex;
+  color: #6c5ce7;
+}
+.ad-persona__ic svg {
+  width: 24px;
+  height: 24px;
+}
+.ad-persona__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ad-persona__t {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ad-persona__d {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ad-persona__go {
+  flex: none;
+  display: inline-flex;
+  color: #9aa1b4;
+}
+.ad-persona__go svg {
+  width: 20px;
+  height: 20px;
+}
+.ad-wiz-foot {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ad-wiz-foot .sp {
+  flex: 1;
+}
+.ad-pw-meter {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #f2f4fb;
+  overflow: hidden;
+}
+:root[data-theme="dark"] .ad-pw-meter {
+  background: var(--border);
+}
+.ad-pw-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+.ad-pw-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.ad-pw-label {
+  font-weight: 700;
+}
+
+/* ---------- signup wizard — members step (add employees / kids) ---------- */
+.ad-addmember {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.ad-addmember__full {
+  grid-column: 1 / -1;
+}
+.ad-addmember .bibo-field__lbl {
+  font-size: 11px;
+}
+.ad-addmember .bibo-btn {
+  height: 42px;
+}
+.ad-memberlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ad-memberitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #f2f4fb;
+  border: 1px solid var(--border);
+}
+:root[data-theme="dark"] .ad-memberitem {
+  background: var(--bg-subtle);
+}
+.ad-memberitem__ok {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: var(--success);
+  background: #d9f7ec;
+}
+:root[data-theme="dark"] .ad-memberitem__ok {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.ad-memberitem__ok svg {
+  width: 16px;
+  height: 16px;
+}
+.ad-memberitem__id {
+  flex: 1;
+  min-width: 0;
+}
+.ad-memberitem__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-memberitem__login {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-memberitem__pw {
+  letter-spacing: 0.5px;
+}
+.ad-iconbtn-sm {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ad-iconbtn-sm:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+.ad-iconbtn-sm svg {
+  width: 18px;
+  height: 18px;
+}
+.ad-burst {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: #2a2438;
+  color: #fff;
+}
+.ad-burst svg {
+  width: 30px;
+  height: 30px;
+}
+.ad-success-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ad-success-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f2f4fb;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+:root[data-theme="dark"] .ad-success-item {
+  background: var(--bg-subtle);
+}
+.ad-success-item__ck {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: #fff;
+  background: #10b981;
+}
+.ad-success-item__ck svg {
+  width: 15px;
+  height: 15px;
+}
+.ad-success-item__ck--todo {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 15%, transparent);
+}
+.bibo-btn--secondary {
+  background: var(--bg-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.bibo-btn--secondary:hover:not(:disabled) {
+  border-color: #6c5ce7;
+  color: #6c5ce7;
+}
+.bibo-btn--secondary svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* ---------- step dots (wizard / onboarding progress) ---------- */
@@ -869,18 +1359,24 @@ select.input:focus,
 .lang-trigger {
   font: inherit;
   font-size: var(--fz-sm);
+  font-weight: 600;
   color: var(--text);
   background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 5px var(--sp-2);
+  border-radius: 999px;
+  padding: 7px 14px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.35);
 }
 .lang-trigger:hover {
   border-color: var(--text-muted);
+}
+.lang-globe {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 .lang-switcher .lang-flag {
   font-size: 15px;

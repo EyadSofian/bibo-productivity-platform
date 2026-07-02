@@ -30,7 +30,7 @@
     "daysAgo": "hace {{count}} d"
   },
   "terms": {
-    "team": { "one": "Empleado", "many": "Empleados", "lowerOne": "empleado", "lowerMany": "empleados", "addCta": "Añadir empleado" },
-    "family": { "one": "Niño", "many": "Niños", "lowerOne": "niño", "lowerMany": "niños", "addCta": "Añadir niño" }
+    "team": { "one": "Empleado", "many": "Empleados", "lowerOne": "empleado", "lowerMany": "empleados", "addCta": "Añadir empleado", "org": "equipo" },
+    "family": { "one": "Niño", "many": "Niños", "lowerOne": "niño", "lowerMany": "niños", "addCta": "Añadir niño", "org": "familia" }
   }
 }

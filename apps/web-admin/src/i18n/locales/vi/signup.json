@@ -23,7 +23,9 @@
     "addMember": "Không thể thêm {{member}}."
   },
   "persona": {
-    "heading": "Bạn sẽ sử dụng BiBoTracking như thế nào?",
+    "heading": "Bạn đang thiết lập cho ai?",
+    "sub": "Bạn có thể thay đổi điều này sau.",
+    "back": "Mặt sau",
     "justMeTitle": "Chỉ mình tôi",
     "justMeDesc": "Theo dõi hoạt động và hiệu suất của riêng tôi. Dữ liệu nằm 100% trên máy tính của tôi.",
     "justMeTag": "Không cần tài khoản",
@@ -45,15 +47,16 @@
   },
   "account": {
     "back": "← Quay lại",
-    "title": "Tạo tài khoản",
-    "sub": "Tận dụng tối đa BiBoTracking.",
+    "title": "Tạo tài khoản của bạn",
+    "sub": "Đây là tài khoản chủ sở hữu.",
     "name": "Tên của bạn",
     "identifier": "Email hoặc tên đăng nhập",
     "identifierPlaceholder": "you@example.com hoặc một tên đăng nhập",
     "password": "Mật khẩu",
     "passwordPlaceholder": "tối thiểu 8 ký tự",
+    "strength": { "weak": "Yếu", "medium": "Trung bình", "strong": "Mạnh" },
     "creating": "Đang tạo…",
-    "continue": "Tiếp tục →"
+    "continue": "Tiếp tục"
   },
   "setup": {
     "title": "Đặt tên cho {{noun}} của bạn",
@@ -62,7 +65,7 @@
     "placeholderFamily": "Gia đình Cooper",
     "placeholderTeam": "Công ty Cooper",
     "saving": "Đang lưu…",
-    "continue": "Tiếp tục →"
+    "continue": "Tiếp tục"
   },
   "done": {
     "title": "Bạn đã sẵn sàng!",
@@ -70,27 +73,28 @@
     "orgReady": "{{noun}} đã sẵn sàng",
     "membersAdded": "Đã thêm {{count}} {{members}}",
     "membersLater": "Thêm {{members}} sau",
-    "goToDashboard": "Đến bảng điều khiển →"
+    "goToDashboard": "Đến bảng điều khiển"
   },
   "clipboard": {
     "text": "Thông tin đăng nhập BiBoTracking\nTên đăng nhập hoặc email: {{login}}\nMật khẩu: {{password}}"
   },
   "members": {
     "title": "Thêm {{members}} của bạn",
-    "sub": "Mỗi {{member}} sẽ có một thông tin đăng nhập — một tên đăng nhập (không cần email) hoặc email của họ. Chúng tôi điền sẵn tên đăng nhập và mật khẩu tạm thời; hãy chia sẻ chúng, và {{member}} có thể đổi mật khẩu sau khi đăng nhập. Bạn cũng có thể làm điều này sau từ bảng điều khiển.",
-    "name": "Tên",
+    "sub": "Thêm ngay hoặc bỏ qua — bạn có thể mời sau.",
+    "name": "Tên hiển thị",
     "namePlaceholder": "Jordan Lee",
-    "loginLabel": "Tên đăng nhập hoặc email (thông tin đăng nhập của họ)",
-    "tempPassword": "Mật khẩu tạm thời",
+    "loginLabel": "Đăng nhập (email hoặc tên người dùng)",
+    "tempPassword": "Mật khẩu",
     "generateTitle": "Tạo mật khẩu mới",
-    "newPassword": "↻ Mới",
+    "newPassword": "Tạo",
+    "suggestion": "Gợi ý",
     "adding": "Đang thêm…",
-    "addCta": "+ {{cta}}",
+    "addCta": "Thêm",
     "countAdded": "Đã thêm {{count}} {{members}} — sao chép từng thông tin đăng nhập và chia sẻ.",
     "copied": "Đã sao chép ✓",
     "copyLogin": "Sao chép đăng nhập",
     "remove": "xóa",
-    "finish": "Hoàn tất →",
+    "finish": "Hoàn tất",
     "doneAdding": "Đã thêm xong",
     "skip": "Bỏ qua bây giờ"
   }

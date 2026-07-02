@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "Bagaimana Anda akan menggunakan BiBoTracking?",
+    "sub": "Anda dapat mengubahnya nanti.",
+    "back": "Kembali",
     "justMeTitle": "Hanya saya",
     "justMeDesc": "Lacak aktivitas & kinerja saya sendiri. Tetap 100% di komputer saya.",
     "justMeTag": "Tidak perlu akun",
@@ -52,8 +54,9 @@
     "identifierPlaceholder": "you@example.com atau nama pengguna",
     "password": "Kata sandi",
     "passwordPlaceholder": "minimal 8 karakter",
+    "strength": { "weak": "Lemah", "medium": "Sedang", "strong": "Kuat" },
     "creating": "Membuat…",
-    "continue": "Lanjutkan →"
+    "continue": "Lanjutkan"
   },
   "setup": {
     "title": "Beri nama {{noun}} Anda",
@@ -62,7 +65,7 @@
     "placeholderFamily": "Keluarga Cooper",
     "placeholderTeam": "Cooper Co.",
     "saving": "Menyimpan…",
-    "continue": "Lanjutkan →"
+    "continue": "Lanjutkan"
   },
   "done": {
     "title": "Semua sudah siap!",
@@ -70,27 +73,28 @@
     "orgReady": "{{noun}} siap",
     "membersAdded": "{{count}} {{members}} ditambahkan",
     "membersLater": "Tambahkan {{members}} nanti",
-    "goToDashboard": "Ke dasbor →"
+    "goToDashboard": "Ke dasbor"
   },
   "clipboard": {
     "text": "Info login BiBoTracking\nNama pengguna atau email: {{login}}\nKata sandi: {{password}}"
   },
   "members": {
     "title": "Tambahkan {{members}} Anda",
-    "sub": "Setiap {{member}} mendapatkan login — sebuah nama pengguna (tanpa perlu email) atau email mereka. Kami mengisi otomatis nama pengguna dan kata sandi sementara; bagikan kepada mereka, dan {{member}} dapat mengganti kata sandi setelah masuk. Anda juga dapat melakukannya nanti dari dasbor.",
+    "sub": "Tambahkan sekarang atau lewati — Anda bisa mengundang nanti.",
     "name": "Nama",
     "namePlaceholder": "Jordan Lee",
     "loginLabel": "Nama pengguna atau email (login mereka)",
     "tempPassword": "Kata sandi sementara",
     "generateTitle": "Buat kata sandi baru",
-    "newPassword": "↻ Baru",
+    "newPassword": "Baru",
+    "suggestion": "Saran",
     "adding": "Menambahkan…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "{{count}} {{members}} ditambahkan — salin setiap login dan bagikan.",
     "copied": "Disalin ✓",
     "copyLogin": "Salin login",
     "remove": "hapus",
-    "finish": "Selesai →",
+    "finish": "Selesai",
     "doneAdding": "Selesai menambahkan",
     "skip": "Lewati dulu"
   }

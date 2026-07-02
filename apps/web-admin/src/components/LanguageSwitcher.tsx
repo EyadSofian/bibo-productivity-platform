@@ -24,7 +24,6 @@ export function LanguageSwitcher({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const code = LOCALES.find((l) => l.code === i18n.resolvedLanguage)?.code ?? "en";
-  const current = LOCALES.find((l) => l.code === code) ?? LOCALES[0];
 
   useEffect(() => {
     if (!open) return;
@@ -58,21 +57,36 @@ export function LanguageSwitcher({
         title={t("language")}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="lang-flag" aria-hidden>
-          {current.flag}
-        </span>
-        <span className="lang-label">{current.label}</span>
         <svg
-          className="lang-caret"
+          className="lang-globe"
           viewBox="0 0 24 24"
-          width="13"
-          height="13"
+          width="16"
+          height="16"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           aria-hidden
         >
-          <path d="M6 9l6 6 6-6" />
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+          <path d="M2 12h20" />
+        </svg>
+        <span className="lang-label">{code.toUpperCase()}</span>
+        <svg
+          className="lang-caret"
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
       {open && (
