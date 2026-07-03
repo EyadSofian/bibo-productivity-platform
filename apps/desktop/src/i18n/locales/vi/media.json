@@ -1,6 +1,7 @@
 {
   "screenshots": {
-    "intro": "Chụp định kỳ (mỗi 5 phút) — và theo yêu cầu. Cần quyền Ghi màn hình.",
+    "title": "Ảnh chụp màn hình hôm nay",
+    "intro": "Tự động chụp mỗi 5 phút.",
     "captureNow": "Chụp ngay",
     "capturing": "Đang chụp…",
     "captured": "Đã chụp {{count}} màn hình.",
@@ -12,6 +13,13 @@
     "shotAlt": "ảnh chụp màn hình {{time}}"
   },
   "browser": {
+    "visitedTitle": "Các trang đã ghé thăm hôm nay",
+    "visitedSub": "Nhóm theo tên miền, truy cập nhiều nhất lên đầu.",
+    "live": "Trực tiếp · cập nhật mỗi 3 giây",
+    "colDomain": "Tên miền",
+    "colStart": "Thời gian",
+    "colDuration": "Thời lượng",
+    "colBrowser": "Trình duyệt",
     "title": "Theo dõi trang web",
     "subtitle": "Cài đặt tiện ích mở rộng BiBoTracking để xem các trang bạn truy cập tại đây.",
     "gifPlaceholder": "[ GIF: cài đặt tiện ích mở rộng Chrome ]",

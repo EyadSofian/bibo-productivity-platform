@@ -1,4 +1,5 @@
 {
+  "title": "Permissions",
   "intro": "BiBoTracking uses the capabilities below. Status updates automatically.",
   "granted": "Granted",
   "quitReopen": "Quit & Reopen",
@@ -6,7 +7,7 @@
   "openSettings": "Open Settings →",
   "off": "Off",
   "summary": "{{granted}} of {{total}} enabled · Re-checks automatically",
-  "recheck": "Re-check",
+  "recheck": "Refresh",
   "restartNote": "Some permissions require quitting & reopening the app to take effect.",
   "caps": {
     "accessibility": {
@@ -14,11 +15,11 @@
       "description": "Lets the app read the active window/app for activity tracking."
     },
     "input_monitoring": {
-      "label": "Input Monitoring",
-      "description": "Lets the app count keystrokes (counts only — never which keys)."
+      "label": "Input monitoring",
+      "description": "Required to count keystrokes."
     },
     "screen_recording": {
-      "label": "Screen Recording",
+      "label": "Screen recording",
       "description": "Lets the app capture periodic screenshots."
     },
     "keystrokes": {
