@@ -1,18 +1,17 @@
 {
   "meta": {
     "title": "BiBoTracking — Alternative gratuite et open source à Hubstaff",
-    "description": "Une alternative gratuite et open source à Hubstaff pour macOS &amp; Windows — suivez le temps par application, les frappes au clavier, les captures d&apos;écran &amp; l&apos;activité du navigateur. Local d&apos;abord, auto-hébergeable, gratuit pendant 2 ans.",
+    "description": "Une alternative gratuite et open source à Hubstaff pour macOS &amp; Windows — suivez le temps par application, les frappes au clavier, les captures d&apos;écran &amp; l&apos;activité du navigateur. Local d&apos;abord, auto-hébergeable, 100% gratuit.",
     "ogTitle": "BiBoTracking — Alternative gratuite et open source à Hubstaff pour macOS &amp; Windows",
-    "ogDescription": "Une alternative gratuite et open source à Hubstaff pour macOS & Windows. Temps par application et fenêtre, frappes au clavier, captures d'écran et activité du navigateur — local d'abord et auto-hébergeable. Gratuit pendant 2 ans, puis $1/mois.",
+    "ogDescription": "Une alternative gratuite et open source à Hubstaff pour macOS & Windows. Temps par application et fenêtre, frappes au clavier, captures d'écran et activité du navigateur — local d'abord et auto-hébergeable. 100% gratuit.",
     "ogImageAlt": "BiBoTracking — suivi du temps et de l'activité pour macOS & Windows",
     "twitterTitle": "BiBoTracking — Alternative gratuite et open source à Hubstaff",
-    "twitterDescription": "Suivi du temps &amp; de l'activité des employés, gratuit, open source et auto-hébergeable pour macOS &amp; Windows. Gratuit pendant 2 ans, puis $1/mois.",
+    "twitterDescription": "Suivi du temps &amp; de l'activité des employés, gratuit, open source et auto-hébergeable pour macOS &amp; Windows. 100% gratuit.",
     "twitterImageAlt": "Tableau de bord BiBoTracking"
   },
   "jsonld": {
     "appDescription": "Une alternative gratuite et open source à Hubstaff pour macOS & Windows. Suit le temps par application et fenêtre, le nombre de frappes au clavier, des captures d'écran périodiques et l'activité du navigateur — local d'abord et auto-hébergeable.",
-    "offerFree": "Gratuit pendant les 2 premières années",
-    "offerPaid": "$1/mois après 2 ans, ou auto-hébergement gratuit",
+    "offerFree": "100% gratuit — toutes les fonctionnalités incluses, sans facturation par utilisateur",
     "feature1": "Suivi du temps par application et fenêtre",
     "feature2": "Comptage de l'activité au clavier (sans le contenu des touches)",
     "feature3": "Captures d'écran automatiques de moins de 50 Ko",
@@ -24,11 +23,11 @@
   "faq": {
     "q1": {
       "name": "Existe-t-il une alternative gratuite et open source à Hubstaff ?",
-      "answer": "Oui. BiBoTracking est une alternative gratuite et open source à Hubstaff pour macOS & Windows. Il suit le temps par application et fenêtre, le nombre de frappes au clavier, les captures d'écran et l'activité du navigateur, et il est gratuit pendant vos deux premières années (puis $1/mois) — ou auto-hébergez-le gratuitement, pour toujours."
+      "answer": "Oui. BiBoTracking est une alternative gratuite et open source à Hubstaff pour macOS & Windows. Il suit le temps par application et fenêtre, le nombre de frappes au clavier, les captures d'écran et l'activité du navigateur, et il est 100% gratuit — ou auto-hébergez-le gratuitement, pour toujours."
     },
     "q2": {
       "name": "Combien coûte BiBoTracking ?",
-      "answer": "Il est gratuit pendant les deux premières années, avec toutes les fonctionnalités incluses. Ensuite, c'est un tarif fixe de $1 par mois pour le service hébergé, sans facturation par utilisateur. Vous pouvez aussi auto-héberger la version open source gratuitement."
+      "answer": "Il est 100% gratuit, avec toutes les fonctionnalités incluses et sans facturation par utilisateur. Les captures d'écran sont conservées 30 jours ; toutes les autres données sont conservées pour toujours. Les équipes qui ont besoin d'une rétention plus longue des captures d'écran, d'un support dédié ou de fonctionnalités sur mesure peuvent réserver un appel pour un plan personnalisé. Vous pouvez aussi auto-héberger la version open source gratuitement."
     },
     "q3": {
       "name": "BiBoTracking enregistre-t-il ce que les employés tapent ?",
@@ -60,7 +59,7 @@
     "downloadMac": "Télécharger pour macOS",
     "addChrome": "Ajouter à Chrome",
     "signUp": "S'inscrire",
-    "note": "Gratuit pendant 2 ans, puis $1/mois · open source &amp; auto-hébergeable · macOS&nbsp;universel (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
+    "note": "100% gratuit · open source &amp; auto-hébergeable · macOS&nbsp;universel (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
     "dashboardAlt": "Tableau de bord du bureau BiBoTracking affichant le temps actif, l'application principale, les frappes et les captures d'écran",
     "activeToday": "Actifs aujourd'hui",
     "downloadWin": "Télécharger pour Windows"
@@ -177,7 +176,7 @@
   "compare": {
     "kicker": "BiBoTracking vs Hubstaff",
     "title": "Le même suivi essentiel, sans la facture par utilisateur.",
-    "intro": "Si vous utilisez Hubstaff pour le suivi des applications, des captures d'écran et de l'activité, vous connaissez déjà le fonctionnement. Voici la version open source, local d'abord — pour un tarif fixe, ou gratuite si vous l'hébergez vous-même.",
+    "intro": "Si vous utilisez Hubstaff pour le suivi des applications, des captures d'écran et de l'activité, vous connaissez déjà le fonctionnement. Voici la version open source, local d'abord — 100% gratuite, et à vous d'auto-héberger.",
     "thFeature": "Fonctionnalité",
     "thUs": "Employee&nbsp;Tracker",
     "thThem": "Hubstaff",
@@ -185,7 +184,7 @@
     "no": "Non",
     "row": {
       "price": "Tarif",
-      "priceUs": "Gratuit 2 ans, puis $1/mois fixe",
+      "priceUs": "100% gratuit",
       "priceThem": "Payant, par&nbsp;utilisateur / mois",
       "oss": "Open source",
       "selfhost": "Auto-hébergeable",
@@ -224,26 +223,27 @@
   },
   "pricing": {
     "kicker": "Tarifs",
-    "title": "Gratuit pendant deux ans. Puis un dollar.",
-    "intro": "Pas d'essai, aucun siège à compter, pas de carte bancaire pour commencer. Installez et c'est parti.",
-    "perMonth": "/mois",
+    "title": "100% gratuit. Pour toujours.",
+    "intro": "Pas d'essai, aucun siège à compter, pas de carte bancaire. Chaque fonctionnalité, gratuite — captures d'écran conservées 30 jours, toutes les autres données conservées pour toujours.",
     "free": {
-      "tag": "Années 1 &amp; 2",
-      "badge": "Gratuit maintenant",
-      "sub": "Toutes les fonctionnalités, tous les signaux, le tableau de bord web complet — gratuit pendant vos deux premières années.",
-      "li1": "Employés illimités",
+      "tag": "Plan gratuit",
+      "badge": "100% gratuit",
+      "per": "pour toujours",
+      "sub": "Toutes les fonctionnalités, tous les signaux, le tableau de bord web complet — entièrement gratuit.",
+      "li1": "Employés illimités — sans facturation par utilisateur",
       "li2": "Application de bureau, extension Chrome &amp; tableau de bord web",
-      "li3": "Captures d'écran, activité, frappes &amp; rapports de navigation",
+      "li3": "Captures d'écran conservées 30 jours ; toutes les autres données conservées pour toujours",
       "btn": "Télécharger pour macOS",
       "btnWin": "Télécharger pour Windows"
     },
-    "paid": {
-      "tag": "Après 2 ans",
-      "sub": "Un simple dollar fixe par mois fait tourner le service hébergé. C'est tout.",
-      "li1": "Tout ce qui est inclus dans la période gratuite",
-      "li2": "Synchronisation &amp; stockage hébergés en continu",
-      "li3": "Ou auto-hébergez-le gratuitement, pour toujours",
-      "btn": "Voir l'auto-hébergement"
+    "custom": {
+      "tag": "Sur mesure",
+      "amt": "Parlons-en",
+      "sub": "Besoin d'une rétention plus longue des captures d'écran, d'un support dédié ou de fonctionnalités sur mesure ? Construisons un plan adapté à votre équipe.",
+      "li1": "Fenêtres de rétention des captures d'écran plus longues",
+      "li2": "Support prioritaire &amp; accompagnement",
+      "li3": "Fonctionnalités &amp; intégrations sur mesure",
+      "btn": "Réserver un appel"
     }
   },
   "oss": {
@@ -266,8 +266,8 @@
     "github": "Voir le code sur GitHub"
   },
   "cta": {
-    "title": "Gratuit pendant vos deux premières années.",
-    "intro": "Téléchargez l'application de bureau et inscrivez-vous — pas de carte, pas de compte à rebours d'essai. Après deux ans, ce n'est que $1/mois, ou auto-hébergez-le gratuitement.",
+    "title": "100% gratuit. Pour toujours.",
+    "intro": "Téléchargez l'application de bureau et inscrivez-vous — pas de carte, pas de compte à rebours d'essai. Chaque fonctionnalité, entièrement gratuite, ou auto-hébergez-le gratuitement.",
     "downloadMac": "Télécharger pour macOS",
     "addChrome": "Ajouter à Chrome",
     "signUp": "S'inscrire",
@@ -305,5 +305,21 @@
       "p": "Gardez un œil sur le temps d'écran de vos enfants avec les mêmes signaux discrets et transparents — pour en parler ensemble.",
       "tag": "Compte gratuit"
     }
+  },
+  "win": {
+    "title": "Ouvrir l’application sur Windows",
+    "body": "BiBoTracking est une application indépendante, gratuite et open source. Nous n’avons pas acheté de certificat de signature de code Windows coûteux, donc au premier lancement du programme d’installation, Windows peut afficher l’écran « Windows a protégé votre ordinateur ». C’est normal pour une application indépendante — l’application est sûre et chaque ligne de code est publique sur GitHub.",
+    "dlgTitle": "Windows a protégé votre ordinateur",
+    "dlgBody": "Microsoft Defender SmartScreen a empêché le démarrage d’une application non reconnue. L’exécution de cette application peut mettre votre PC en danger.",
+    "dlgApp": "Application : EmployeeTracker-Windows-x64.msi",
+    "dlgPublisher": "Éditeur : Éditeur inconnu",
+    "dlgMoreInfo": "Informations complémentaires",
+    "dlgRun": "Exécuter quand même",
+    "dlgDont": "Ne pas exécuter",
+    "step1": "Sur cet écran, cliquez sur <strong>Informations complémentaires</strong>.",
+    "step2": "Puis cliquez sur <strong>Exécuter quand même</strong> pour lancer l’installation.",
+    "cont": "J’ai compris — télécharger maintenant",
+    "close": "Annuler",
+    "foot": "Vous préférez vérifier d’abord ? Parcourez tout le code source sur <a href=\"https://github.com/ngnclht1102/bibo-emplooyee-tracking\" target=\"_blank\" rel=\"noopener\">GitHub</a>."
   }
 }

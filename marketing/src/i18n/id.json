@@ -1,18 +1,17 @@
 {
   "meta": {
     "title": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source",
-    "description": "Alternatif Hubstaff gratis dan open-source untuk macOS &amp; Windows — lacak waktu aplikasi, ketukan tombol, screenshot &amp; aktivitas browser. Local-first, bisa di-self-host, gratis 2 tahun.",
+    "description": "Alternatif Hubstaff gratis dan open-source untuk macOS &amp; Windows — lacak waktu aplikasi, ketukan tombol, screenshot &amp; aktivitas browser. Local-first, bisa di-self-host, 100% gratis.",
     "ogTitle": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source untuk macOS &amp; Windows",
-    "ogDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Waktu aplikasi & jendela, ketukan tombol, screenshot, dan aktivitas browser — local-first dan bisa di-self-host. Gratis 2 tahun, lalu $1/bulan.",
+    "ogDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Waktu aplikasi & jendela, ketukan tombol, screenshot, dan aktivitas browser — local-first dan bisa di-self-host. 100% gratis.",
     "ogImageAlt": "BiBoTracking — pelacakan waktu & aktivitas untuk macOS & Windows",
     "twitterTitle": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source",
-    "twitterDescription": "Pelacakan waktu &amp; aktivitas karyawan yang gratis, open-source, dan bisa di-self-host untuk macOS &amp; Windows. Gratis 2 tahun, lalu $1/bulan.",
+    "twitterDescription": "Pelacakan waktu &amp; aktivitas karyawan yang gratis, open-source, dan bisa di-self-host untuk macOS &amp; Windows. 100% gratis.",
     "twitterImageAlt": "Dashboard BiBoTracking"
   },
   "jsonld": {
     "appDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Melacak waktu aplikasi & jendela, jumlah ketukan tombol, screenshot berkala, dan aktivitas browser — local-first dan bisa di-self-host.",
-    "offerFree": "Gratis untuk 2 tahun pertama",
-    "offerPaid": "$1/bulan setelah 2 tahun, atau self-host secara gratis",
+    "offerFree": "100% gratis — semua fitur termasuk, tanpa harga per pengguna",
     "feature1": "Pelacakan waktu aplikasi dan jendela",
     "feature2": "Hitungan aktivitas ketukan tombol (tanpa isi tombol)",
     "feature3": "Screenshot otomatis di bawah 50KB",
@@ -24,11 +23,11 @@
   "faq": {
     "q1": {
       "name": "Adakah alternatif Hubstaff yang gratis dan open-source?",
-      "answer": "Ya. BiBoTracking adalah alternatif Hubstaff yang gratis dan open-source untuk macOS & Windows. Aplikasi ini melacak waktu aplikasi dan jendela, jumlah ketukan tombol, screenshot, dan aktivitas browser, serta gratis selama dua tahun pertama Anda (lalu $1/bulan) — atau self-host secara gratis, selamanya."
+      "answer": "Ya. BiBoTracking adalah alternatif Hubstaff yang gratis dan open-source untuk macOS & Windows. Aplikasi ini melacak waktu aplikasi dan jendela, jumlah ketukan tombol, screenshot, dan aktivitas browser, serta 100% gratis — atau self-host secara gratis, selamanya."
     },
     "q2": {
       "name": "Berapa biaya BiBoTracking?",
-      "answer": "Gratis untuk dua tahun pertama dengan semua fitur termasuk di dalamnya. Setelah itu, biayanya flat $1 per bulan untuk layanan hosted, tanpa harga per pengguna. Anda juga bisa self-host versi open-source-nya secara gratis."
+      "answer": "100% gratis dengan semua fitur termasuk di dalamnya dan tanpa harga per pengguna. Screenshot disimpan selama 30 hari; semua data lainnya disimpan selamanya. Tim yang membutuhkan retensi screenshot lebih lama, dukungan khusus, atau fitur kustom bisa memesan panggilan untuk paket khusus. Anda juga bisa self-host versi open-source-nya secara gratis."
     },
     "q3": {
       "name": "Apakah BiBoTracking merekam apa yang diketik karyawan?",
@@ -60,7 +59,7 @@
     "downloadMac": "Unduh untuk macOS",
     "addChrome": "Tambahkan ke Chrome",
     "signUp": "Daftar",
-    "note": "Gratis 2 tahun, lalu $1/bulan · open source &amp; bisa di-self-host · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
+    "note": "100% gratis · open source &amp; bisa di-self-host · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
     "dashboardAlt": "Dashboard desktop BiBoTracking yang menampilkan waktu aktif, aplikasi teratas, ketukan tombol, dan screenshot",
     "activeToday": "Aktif hari ini",
     "downloadWin": "Unduh untuk Windows"
@@ -177,7 +176,7 @@
   "compare": {
     "kicker": "BiBoTracking vs Hubstaff",
     "title": "Pelacakan inti yang sama, tanpa tagihan per pengguna.",
-    "intro": "Jika Anda menggunakan Hubstaff untuk pemantauan aplikasi, screenshot, dan aktivitas, Anda sudah paham alurnya. Ini versi open-source dan local-first — dengan harga flat, atau gratis jika Anda hosting sendiri.",
+    "intro": "Jika Anda menggunakan Hubstaff untuk pemantauan aplikasi, screenshot, dan aktivitas, Anda sudah paham alurnya. Ini versi open-source dan local-first — 100% gratis, dan milik Anda untuk di-self-host.",
     "thFeature": "Fitur",
     "thUs": "Employee&nbsp;Tracker",
     "thThem": "Hubstaff",
@@ -185,7 +184,7 @@
     "no": "Tidak",
     "row": {
       "price": "Harga",
-      "priceUs": "Gratis 2 thn, lalu $1/bln flat",
+      "priceUs": "100% gratis",
       "priceThem": "Berbayar, per&nbsp;pengguna / bulan",
       "oss": "Open source",
       "selfhost": "Bisa di-self-host",
@@ -224,26 +223,27 @@
   },
   "pricing": {
     "kicker": "Harga",
-    "title": "Gratis selama dua tahun. Lalu satu dolar.",
-    "intro": "Tanpa uji coba, tanpa kursi yang dihitung, tanpa kartu kredit untuk mulai. Cukup instal dan jalan.",
-    "perMonth": "/bulan",
+    "title": "100% gratis. Selamanya.",
+    "intro": "Tanpa uji coba, tanpa kursi yang dihitung, tanpa kartu kredit. Setiap fitur, gratis — screenshot disimpan 30 hari, semua data lainnya disimpan selamanya.",
     "free": {
-      "tag": "Tahun 1 &amp; 2",
-      "badge": "Gratis sekarang",
-      "sub": "Setiap fitur, setiap sinyal, dashboard web lengkap — gratis untuk dua tahun pertama Anda.",
-      "li1": "Karyawan tanpa batas",
+      "tag": "Paket gratis",
+      "badge": "100% gratis",
+      "per": "selamanya",
+      "sub": "Setiap fitur, setiap sinyal, dashboard web lengkap — sepenuhnya gratis.",
+      "li1": "Karyawan tanpa batas — tanpa harga per pengguna",
       "li2": "Aplikasi desktop, ekstensi Chrome &amp; dashboard web",
-      "li3": "Laporan screenshot, aktivitas, ketukan tombol &amp; browser",
+      "li3": "Screenshot disimpan 30 hari; semua data lainnya disimpan selamanya",
       "btn": "Unduh untuk macOS",
       "btnWin": "Unduh untuk Windows"
     },
-    "paid": {
-      "tag": "Setelah 2 tahun",
-      "sub": "Cukup satu dolar flat per bulan untuk menjaga layanan hosted tetap berjalan. Itu saja.",
-      "li1": "Semua yang ada di periode gratis",
-      "li2": "Sinkronisasi &amp; penyimpanan hosted berkelanjutan",
-      "li3": "Atau self-host secara gratis, selamanya",
-      "btn": "Lihat self-hosting"
+    "custom": {
+      "tag": "Kustom",
+      "amt": "Mari bicara",
+      "sub": "Butuh retensi screenshot lebih lama, dukungan khusus, atau fitur kustom? Mari kita susun paket yang sesuai untuk tim Anda.",
+      "li1": "Jendela retensi screenshot lebih lama",
+      "li2": "Dukungan prioritas &amp; onboarding",
+      "li3": "Fitur kustom &amp; integrasi",
+      "btn": "Pesan panggilan"
     }
   },
   "oss": {
@@ -266,8 +266,8 @@
     "github": "Lihat kode di GitHub"
   },
   "cta": {
-    "title": "Gratis untuk dua tahun pertama Anda.",
-    "intro": "Unduh aplikasi desktop dan daftar — tanpa kartu, tanpa hitungan waktu uji coba. Setelah dua tahun, hanya $1/bulan, atau self-host secara gratis.",
+    "title": "100% gratis. Selamanya.",
+    "intro": "Unduh aplikasi desktop dan daftar — tanpa kartu, tanpa hitungan waktu uji coba. Setiap fitur, sepenuhnya gratis, atau self-host secara gratis.",
     "downloadMac": "Unduh untuk macOS",
     "addChrome": "Tambahkan ke Chrome",
     "signUp": "Daftar",
@@ -305,5 +305,21 @@
       "p": "Pantau waktu layar anak dengan sinyal yang lembut dan transparan — agar bisa dibicarakan bersama.",
       "tag": "Akun gratis"
     }
+  },
+  "win": {
+    "title": "Membuka aplikasi di Windows",
+    "body": "BiBoTracking adalah aplikasi indie sumber terbuka yang gratis. Kami belum membeli sertifikat penandatanganan kode Windows yang mahal, jadi saat pertama kali menjalankan penginstal, Windows mungkin menampilkan layar “Windows melindungi PC Anda”. Ini normal untuk aplikasi indie — aplikasinya aman dan setiap baris kodenya publik di GitHub.",
+    "dlgTitle": "Windows melindungi PC Anda",
+    "dlgBody": "Microsoft Defender SmartScreen mencegah aplikasi yang tidak dikenal untuk dijalankan. Menjalankan aplikasi ini mungkin berisiko bagi PC Anda.",
+    "dlgApp": "Aplikasi: EmployeeTracker-Windows-x64.msi",
+    "dlgPublisher": "Penerbit: Penerbit tidak dikenal",
+    "dlgMoreInfo": "Info selengkapnya",
+    "dlgRun": "Tetap jalankan",
+    "dlgDont": "Jangan jalankan",
+    "step1": "Di layar itu, klik <strong>Info selengkapnya</strong>.",
+    "step2": "Lalu klik <strong>Tetap jalankan</strong> untuk memulai penginstal.",
+    "cont": "Mengerti — unduh sekarang",
+    "close": "Batal",
+    "foot": "Ingin memverifikasi dulu? Jelajahi seluruh kode sumber di <a href=\"https://github.com/ngnclht1102/bibo-emplooyee-tracking\" target=\"_blank\" rel=\"noopener\">GitHub</a>."
   }
 }

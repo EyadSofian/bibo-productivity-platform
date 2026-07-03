@@ -96,7 +96,7 @@ function langSwitcher(code) {
   const items = Object.keys(LOCALES)
     .map((c) => {
       const cur = c === code ? ' aria-current="true"' : "";
-      return `<a class="lang-opt" href="${relUrlFor(c)}"${cur}><span class="lang-flag">${LOCALES[c].flag}</span>${LOCALES[c].label}</a>`;
+      return `<a class="lang-opt" href="${relUrlFor(c)}" data-loc="${c}"${cur}><span class="lang-flag">${LOCALES[c].flag}</span>${LOCALES[c].label}</a>`;
     })
     .join("");
   const cur = LOCALES[code];
@@ -107,6 +107,45 @@ function langSwitcher(code) {
     `<div class="lang-menu">${items}</div></div>`
   );
 }
+
+// Auto language detection. Emitted into <head> of the ENGLISH ROOT page only: on first
+// visit (no stored choice) it matches the browser's preferred languages against the
+// localized pages and redirects there; an explicit "en" preference (or any earlier "en"
+// in the language list) stays on English. Localized pages get NO redirect — landing on
+// /zh/ etc. is already an explicit choice and crawlers must not be bounced.
+function autoDetect(code) {
+  if (code !== "en") return "";
+  const seg = Object.keys(LOCALES).filter((c) => c !== "en"); // redirect targets
+  const set = JSON.stringify(Object.fromEntries(seg.map((c) => [c, 1])));
+  return (
+    `<script>(function(){try{` +
+    `var S=${set},saved=localStorage.getItem('locale'),t=null;` +
+    `if(saved){if(saved!=='en'&&S[saved])t=saved;}` +
+    `else{var L=navigator.languages||[navigator.language||''];` +
+    `for(var i=0;i<L.length;i++){var b=(L[i]||'').toLowerCase().split('-')[0];` +
+    `if(b==='en')break;if(b==='in')b='id';if(S[b]){t=b;break;}}}` +
+    `if(t)location.replace('/'+t+'/');}catch(e){}})();</script>`
+  );
+}
+
+// Language switcher behaviour + locale hand-off (emitted on every page, baked with the
+// page's own locale code):
+//  - click/tap the trigger to toggle the menu open (CSS-only :hover broke on touch and
+//    left a hover-gap on desktop where the menu closed before you could reach an option);
+//  - clicking outside closes it;
+//  - clicking a language option stores the pick so the root-page auto-detect honours it;
+//  - clicking through to the admin app (sign in / sign up) writes the current page's
+//    language to localStorage so web-admin (same origin, same 'locale' key) opens in it.
+const localeJs = (code) =>
+  `<script>(function(){try{var P=${JSON.stringify(code)};` +
+  `document.addEventListener('click',function(e){var a=e.target.closest('a[href^="/admin"]');` +
+  `if(a){try{localStorage.setItem('locale',P);}catch(_){}}});` +
+  `var sw=document.querySelector('.lang-switcher');if(!sw)return;` +
+  `sw.addEventListener('click',function(e){var o=e.target.closest('.lang-opt');` +
+  `if(o){try{localStorage.setItem('locale',o.getAttribute('data-loc'));}catch(_){}return;}` +
+  `e.preventDefault();sw.classList.toggle('open');});` +
+  `document.addEventListener('click',function(e){if(!sw.contains(e.target))sw.classList.remove('open');});` +
+  `}catch(e){}})();</script>`;
 
 // Analytics block injected into <head> (empty when no GA id is configured, e.g. staging).
 function analytics() {
@@ -140,6 +179,8 @@ for (const code of Object.keys(LOCALES)) {
     .split("{{__base}}").join(BASE)
     .split("{{__host}}").join(HOST)
     .split("{{__analytics}}").join(analytics())
+    .split("{{__autodetect}}").join(autoDetect(code))
+    .split("{{__locale_js}}").join(localeJs(code))
     .split("{{__head_alts}}").join(headAlts())
     .split("{{__lang_switcher}}").join(langSwitcher(code));
 
