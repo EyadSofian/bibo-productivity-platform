@@ -119,6 +119,16 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 func staticSite(dir string) gin.HandlerFunc {
 	marketingIndex := filepath.Join(dir, "index.html")
 	adminIndex := filepath.Join(dir, "admin", "index.html")
+	// serve sends a file, forcing HTML to revalidate every load so a deploy takes
+	// effect immediately (browsers otherwise heuristically cache HTML that carries
+	// no Cache-Control and keep serving the stale page even on refresh). Cache-busted
+	// assets (styles.css?v=, hashed JS/CSS) and latest.json keep their default behaviour.
+	serve := func(c *gin.Context, file string) {
+		if strings.HasSuffix(file, ".html") {
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.File(file)
+	}
 	return func(c *gin.Context) {
 		p := c.Request.URL.Path
 		if p == "/healthz" || p == "/v1" || strings.HasPrefix(p, "/v1/") {
@@ -128,22 +138,22 @@ func staticSite(dir string) gin.HandlerFunc {
 		file := filepath.Join(dir, filepath.Clean("/"+p))
 		if fi, err := os.Stat(file); err == nil {
 			if !fi.IsDir() {
-				c.File(file)
+				serve(c, file)
 				return
 			}
 			// Directory request (e.g. a locale page like /zh/): serve its index.html
 			// if present, so localized pages aren't swallowed by the root fallback.
 			if idx := filepath.Join(file, "index.html"); idx != marketingIndex {
 				if fi2, err2 := os.Stat(idx); err2 == nil && !fi2.IsDir() {
-					c.File(idx)
+					serve(c, idx)
 					return
 				}
 			}
 		}
 		if p == "/admin" || strings.HasPrefix(p, "/admin/") {
-			c.File(adminIndex)
+			serve(c, adminIndex)
 			return
 		}
-		c.File(marketingIndex)
+		serve(c, marketingIndex)
 	}
 }
