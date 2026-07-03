@@ -34,3 +34,4 @@ deploy/
 
 # Marketing: production-rendered output (generated at deploy time by marketing/build.mjs production)
 marketing/site-prod/
+marketing/site-staging/
