@@ -9,22 +9,26 @@ import { AuthLayout } from "./AuthLayout";
 
 const DOWNLOAD_URL = import.meta.env.VITE_DOWNLOAD_URL || "/";
 
-/** Brand mark shown inside the card — pulse/activity glyph on a violet tile. */
+/** Brand mark shown inside the card — pulse/activity glyph on a violet gradient tile. */
 function LogoMark() {
   return (
     <span className="ad-login__logo" aria-hidden>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="BiBoTracking">
+        <defs>
+          <linearGradient id="biboLogoGrad" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#9a90f7" />
+            <stop offset="1" stopColor="#6157e6" />
+          </linearGradient>
+        </defs>
+        <rect x="0" y="0" width="48" height="48" rx="15" fill="url(#biboLogoGrad)" />
+        <path
+          d="M12 24h6l3 8 6-16 3 8h6"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </span>
   );

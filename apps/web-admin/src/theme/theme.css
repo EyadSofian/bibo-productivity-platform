@@ -703,16 +703,17 @@ select.input:focus,
   box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
 }
 .ad-login__logo {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  background-image: linear-gradient(135deg, #8b7bf0, #6c5ce7);
-  box-shadow: 0 10px 22px -8px rgba(108, 92, 231, 0.7);
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 12px 26px -10px rgba(108, 92, 231, 0.75);
   margin-bottom: 22px;
+}
+.ad-login__logo svg {
+  display: block;
+  width: 52px;
+  height: 52px;
 }
 .ad-login__title {
   font-size: 26px;
@@ -755,8 +756,8 @@ select.input:focus,
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .bibo-input:focus-within {
-  border-color: #6c5ce7;
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.18);
+  border-color: #8b7df6;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.45);
 }
 .bibo-input__icon {
   flex: none;
@@ -804,8 +805,10 @@ select.input:focus,
   background: #5f4dd0;
 }
 .bibo-btn--primary:disabled {
-  opacity: 0.6;
-  cursor: default;
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
 }
 .bibo-btn--block {
   width: 100%;
@@ -1014,7 +1017,7 @@ select.input:focus,
   margin-top: 6px;
   font-size: 12.5px;
   font-weight: 600;
-  color: var(--success);
+  color: #10b981;
 }
 .ad-field-ok svg {
   width: 15px;
@@ -1038,12 +1041,23 @@ select.input:focus,
   margin-top: 1px;
 }
 .ad-notice--info {
-  background: #e9eefc;
-  color: #3b5bc0;
+  background: #deeafe;
+  color: #3b82f6;
 }
 :root[data-theme="dark"] .ad-notice--info {
   background: color-mix(in srgb, #6c8cff 16%, transparent);
   color: #9db4ff;
+}
+/* Inline persona notice ("Chỉ có tôi") sits inside the cards column — rely on the
+   list's gap for spacing instead of the notice's default top margin. */
+.ad-persona-cards .ad-notice {
+  margin-top: 0;
+}
+/* Selected/open persona card — mirrors the hover affordance. */
+.ad-persona--open {
+  border-color: #6c5ce7;
+  background: var(--bg-inset);
+  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
 }
 
 /* ---------- signup wizard — members step (add employees / kids) ---------- */
@@ -1161,9 +1175,12 @@ select.input:focus,
   display: flex;
   flex-direction: column;
   gap: 10px;
+  align-items: center;
 }
 .ad-success-item {
   display: flex;
+  width: 340px;
+  max-width: 100%;
   align-items: center;
   gap: 12px;
   padding: 14px 16px;

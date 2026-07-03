@@ -10,7 +10,7 @@
     "membersDescParent": "Thiết lập đăng nhập cho các con của bạn",
     "membersDescManager": "Mời những người bạn quản lý",
     "doneTitle": "Hoàn tất",
-    "doneDesc": "Bắt đầu theo dõi"
+    "doneDesc": "Không gian làm việc của bạn đã sẵn sàng."
   },
   "footer": {
     "haveAccount": "Đã có tài khoản?",
@@ -69,7 +69,7 @@
     "continue": "Tiếp tục"
   },
   "done": {
-    "title": "Bạn đã sẵn sàng!",
+    "title": "Đã sẵn sàng",
     "accountCreated": "Đã tạo tài khoản",
     "orgReady": "{{noun}} đã sẵn sàng",
     "membersAdded": "Đã thêm {{count}} {{members}}",

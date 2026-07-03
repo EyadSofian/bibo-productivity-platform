@@ -84,6 +84,8 @@ export function SignupWizard() {
 
   const [step, setStep] = useState<Step>("persona");
   const [persona, setPersona] = useState<AccountType>("manager");
+  // "Chỉ có tôi" reveals an info notice inline instead of navigating (visual only).
+  const [soloOpen, setSoloOpen] = useState(false);
 
   const [displayName, setDisplayName] = useState("");
   const [login, setLogin] = useState(""); // owner's email or username
@@ -143,7 +145,12 @@ export function SignupWizard() {
           <p className="ad-wiz-sub">{t("persona.sub")}</p>
 
           <div className="ad-persona-cards">
-            <button type="button" className="ad-persona" onClick={() => setStep("personal")}>
+            <button
+              type="button"
+              className={`ad-persona${soloOpen ? " ad-persona--open" : ""}`}
+              aria-expanded={soloOpen}
+              onClick={() => setSoloOpen((v) => !v)}
+            >
               <span className="ad-persona__ic">
                 <Ic>
                   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -162,6 +169,17 @@ export function SignupWizard() {
                 </Ic>
               </span>
             </button>
+
+            {soloOpen && (
+              <div className="ad-notice ad-notice--info">
+                <Ic>
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" />
+                  <path d="M12 8h.01" />
+                </Ic>
+                <span>{t("persona.caption")}</span>
+              </div>
+            )}
 
             <button
               type="button"
@@ -217,15 +235,6 @@ export function SignupWizard() {
             </button>
           </div>
 
-          <div className="ad-notice ad-notice--info">
-            <Ic>
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 16v-4" />
-              <path d="M12 8h.01" />
-            </Ic>
-            <span>{t("persona.caption")}</span>
-          </div>
-
           <div className="ad-wiz-foot">
             <button type="button" className="bibo-btn bibo-btn--ghost" onClick={() => nav("/login")}>
               <Ic>
@@ -267,6 +276,9 @@ export function SignupWizard() {
   // ---- Step "account" (single wizard card) ----
   if (step === "account") {
     const pw = pwStrength(password);
+    // Enable "Continue" only once every field is filled — mirrors the inputs'
+    // required + minLength=8 rules (button gating only; submit validation unchanged).
+    const accountReady = displayName.trim() !== "" && login.trim() !== "" && password.length >= 8;
     return (
       <AuthLayout bare hideLockup>
         <form className="ad-wizard" onSubmit={createAccount}>
@@ -380,8 +392,8 @@ export function SignupWizard() {
               </Ic>
               <span>{t("persona.back")}</span>
             </button>
-            <button type="submit" className="bibo-btn bibo-btn--primary" disabled={busy}>
-              <span>{busy ? t("account.creating") : t("account.continue")}</span>
+            <button type="submit" className="bibo-btn bibo-btn--primary" disabled={busy || !accountReady}>
+              <span>{t("account.continue")}</span>
               <Ic>
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
@@ -395,6 +407,8 @@ export function SignupWizard() {
 
   // ---- Step "setup" (single wizard card) ----
   if (step === "setup") {
+    // Enable "Continue" only once the org name is filled (mirrors the input's required rule).
+    const setupReady = orgName.trim() !== "";
     return (
       <AuthLayout bare hideLockup>
         <form className="ad-wizard" onSubmit={finishSetup}>
@@ -443,8 +457,8 @@ export function SignupWizard() {
               </Ic>
               <span>{t("persona.back")}</span>
             </button>
-            <button type="submit" className="bibo-btn bibo-btn--primary" disabled={busy}>
-              <span>{busy ? t("setup.saving") : t("setup.continue")}</span>
+            <button type="submit" className="bibo-btn bibo-btn--primary" disabled={busy || !setupReady}>
+              <span>{t("setup.continue")}</span>
               <Ic>
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
@@ -517,7 +531,7 @@ export function SignupWizard() {
         <p className="ad-wiz-sub">{t("rail.doneDesc")}</p>
 
         <div className="ad-success-list">
-          {doneItems.map((it) => (
+          {doneItems.filter((it) => it.done).map((it) => (
             <div className="ad-success-item" key={it.label}>
               <span className={`ad-success-item__ck${it.done ? "" : " ad-success-item__ck--todo"}`}>
                 {it.done ? (
