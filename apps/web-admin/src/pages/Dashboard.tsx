@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import { reportEmployees } from "../api/endpoints";
 import type { ReportEmployee } from "../api/types";
-import { BusinessPicker } from "../components/BusinessPicker";
 import { Empty, Notice, Spinner } from "../components/ui";
 import { fmtDuration, fmtRelative } from "../format";
 import { useBusinesses } from "../useBusinesses";
@@ -13,7 +12,7 @@ import { useAuth } from "../auth/AuthContext";
 export function Dashboard() {
   const { t } = useTranslation("dashboard");
   const { user } = useAuth();
-  const { businesses, selected, selectedId, setSelectedId, loading: bizLoading } = useBusinesses();
+  const { businesses, selected, selectedId, loading: bizLoading } = useBusinesses();
   const terms = memberTerms(selected?.kind);
   const [rows, setRows] = useState<ReportEmployee[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,7 +39,6 @@ export function Dashboard() {
     <div>
       <div className="toolbar spread" style={{ justifyContent: "space-between" }}>
         <h1 style={{ fontSize: "var(--fz-lg)", margin: 0 }}>{t("dashboard.title")}</h1>
-        <BusinessPicker businesses={businesses} selectedId={selectedId} onChange={setSelectedId} />
       </div>
 
       {bizLoading && <Spinner label={t("dashboard.loadingBusinesses")} />}

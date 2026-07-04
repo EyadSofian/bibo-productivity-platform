@@ -3,7 +3,6 @@ import { Trans, useTranslation } from "react-i18next";
 import { cleanupScreenshots, updateBusinessSettings } from "../api/endpoints";
 import { ApiError, type BusinessSettingsPatch } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import { BusinessPicker } from "../components/BusinessPicker";
 import { Empty, Modal, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
@@ -41,7 +40,7 @@ const PRESETS: { days: number | null; value: number | null }[] = [
 export function Settings() {
   const { t } = useTranslation("settings");
   const { user } = useAuth();
-  const { businesses, selected, selectedId, setSelectedId, loading, reload } = useBusinesses();
+  const { businesses, selected, selectedId, loading, reload } = useBusinesses();
   const terms = memberTerms(selected?.kind);
 
   const [retention, setRetention] = useState<number | null>(null);
@@ -108,7 +107,6 @@ export function Settings() {
     <div>
       <div className="toolbar spread" style={{ justifyContent: "space-between" }}>
         <h1 style={{ fontSize: "var(--fz-lg)", margin: 0 }}>{t("title")}</h1>
-        <BusinessPicker businesses={businesses} selectedId={selectedId} onChange={setSelectedId} />
       </div>
 
       {selected && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import {
   createBusiness,
@@ -7,7 +7,6 @@ import {
   listBusinessEmployees,
 } from "../api/endpoints";
 import { ApiError, type Employee } from "../api/types";
-import { BusinessPicker } from "../components/BusinessPicker";
 import { Empty, Field, Modal, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms, type MemberTerms } from "../terms";
@@ -47,6 +46,15 @@ export function Employees() {
     else setEmployees([]);
   }, [selectedId]);
 
+  // Open the "new business" modal when arrived here via the topbar picker (?new=1).
+  const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => {
+    if (searchParams.get("new") === null) return;
+    setShowBiz(true);
+    searchParams.delete("new");
+    setSearchParams(searchParams, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const hasBusiness = businesses.length > 0;
 
   return (
@@ -54,7 +62,6 @@ export function Employees() {
       <div className="toolbar spread" style={{ justifyContent: "space-between" }}>
         <h1 style={{ fontSize: "var(--fz-lg)", margin: 0 }}>{terms.many}</h1>
         <div className="row" style={{ gap: 8 }}>
-          <BusinessPicker businesses={businesses} selectedId={selectedId} onChange={setSelectedId} />
           <button className="btn" onClick={() => setShowBiz(true)}>
             {t("employees.newBusiness")}
           </button>
