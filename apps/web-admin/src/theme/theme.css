@@ -317,6 +317,10 @@ body {
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  /* lift the whole topbar (incl. dropdown menus) above the content cards,
+     which create their own stacking contexts via backdrop-filter */
+  position: relative;
+  z-index: 30;
 }
 :root[data-theme="dark"] .ad-topbar {
   background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
@@ -671,6 +675,12 @@ body {
 .content {
   padding: var(--sp-5);
   overflow-y: auto;
+  /* hide the scrollbar chrome (still scrollable via wheel/trackpad) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.content::-webkit-scrollbar {
+  display: none;
 }
 /* Dashboard: flat light backdrop (light theme only; dark keeps the gradient). */
 .content--flat {
@@ -2380,13 +2390,19 @@ select.input:focus,
 
 /* ---- roster table ---- */
 .ad-tablecard {
-  padding: 6px 8px;
+  padding: 6px 12px;
   overflow-x: auto;
   /* solid so the pinned "View" column can mask content scrolling under it */
   background: #f8f9fc;
+  /* hide the horizontal scrollbar chrome (still scrollable via wheel/trackpad) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ad-tablecard::-webkit-scrollbar {
+  display: none;
 }
 :root[data-theme="dark"] .ad-tablecard {
-  background: #181a22;
+  background: #171a25;
 }
 .ad-table {
   width: 100%;
@@ -2417,7 +2433,7 @@ select.input:focus,
 }
 :root[data-theme="dark"] .ad-table th:last-child,
 :root[data-theme="dark"] .ad-table td:last-child {
-  background: #181a22;
+  background: #171a25;
 }
 /* row hover — recolor every cell (incl. the pinned View cell) */
 .ad-table tbody td {
@@ -2434,6 +2450,10 @@ select.input:focus,
   border-top: 1px solid var(--border);
   vertical-align: middle;
 }
+/* last row: no divider line at the bottom */
+.ad-table tbody tr:last-child td {
+  border-bottom: none;
+}
 .ad-name {
   display: flex;
   align-items: center;
@@ -2442,6 +2462,14 @@ select.input:focus,
 .ad-name__txt {
   font-size: 15px;
   font-weight: 600;
+  min-width: 0;
+  /* clamp long names to at most 2 lines (ellipsis beyond) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
 }
 .ad-self {
   margin-left: 8px;

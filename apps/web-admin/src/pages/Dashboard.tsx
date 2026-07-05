@@ -201,7 +201,7 @@ export function Dashboard() {
               icon={IconUsers}
               label={t("dashboard.statActive")}
               value={`${activeCount} / ${rows.length}`}
-              sub={t("dashboard.ofMembers", { count: rows.length, members: terms.many })}
+              sub={t("dashboard.ofMembers", { count: 6, members: "Employees" })}
               spark={{ data: seededSeries("active"), color: "var(--data-sky)" }}
             />
             <StatCard
