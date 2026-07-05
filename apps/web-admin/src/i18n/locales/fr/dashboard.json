@@ -11,8 +11,17 @@
     "table": {
       "login": "Identifiant",
       "lastSeen": "Vu pour la dernière fois",
-      "activeToday": "Actif aujourd'hui"
-    }
+      "activeToday": "Actif aujourd'hui",
+      "focus": "Concentration",
+      "name": "Nom"
+    },
+    "statRecorded": "Enregistré aujourd'hui",
+    "statActive": "Actifs aujourd'hui",
+    "statFocus": "Concentration moy.",
+    "statScreenshots": "Captures d'écran",
+    "vsYesterday": "vs hier",
+    "ofMembers": "sur {{count}} {{members}}",
+    "todayLabel": "aujourd'hui"
   },
   "employees": {
     "newBusiness": "Nouvelle entreprise",

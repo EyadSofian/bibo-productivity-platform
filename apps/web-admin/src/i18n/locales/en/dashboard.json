@@ -11,8 +11,17 @@
     "table": {
       "login": "Login",
       "lastSeen": "Last seen",
-      "activeToday": "Active today"
-    }
+      "activeToday": "Active today",
+      "focus": "Focus",
+      "name": "Name"
+    },
+    "statRecorded": "Recorded today",
+    "statActive": "Active today",
+    "statFocus": "Avg focus",
+    "statScreenshots": "Screenshots",
+    "vsYesterday": "vs yesterday",
+    "ofMembers": "of {{count}} {{members}}",
+    "todayLabel": "today"
   },
   "employees": {
     "newBusiness": "New business",

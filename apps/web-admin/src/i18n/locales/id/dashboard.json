@@ -11,8 +11,17 @@
     "table": {
       "login": "Login",
       "lastSeen": "Terakhir aktif",
-      "activeToday": "Aktif hari ini"
-    }
+      "activeToday": "Aktif hari ini",
+      "focus": "Fokus",
+      "name": "Nama"
+    },
+    "statRecorded": "Tercatat hari ini",
+    "statActive": "Aktif hari ini",
+    "statFocus": "Fokus rata-rata",
+    "statScreenshots": "Tangkapan layar",
+    "vsYesterday": "vs kemarin",
+    "ofMembers": "dari {{count}} {{members}}",
+    "todayLabel": "hari ini"
   },
   "employees": {
     "newBusiness": "Bisnis baru",

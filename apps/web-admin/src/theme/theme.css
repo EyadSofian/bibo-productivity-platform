@@ -44,6 +44,17 @@
   --surface: color-mix(in srgb, var(--bg) 68%, transparent);
   --surface-strong: color-mix(in srgb, var(--bg) 85%, transparent);
   --surface-glass-2: rgba(255, 255, 255, 0.07);
+  /* semantic + data-viz palette (dashboard cards, sparklines, status) */
+  --positive: #16a34a;
+  --positive-soft: #dcfce7;
+  --negative: #dc2626;
+  --negative-soft: #fee2e2;
+  --info: #3b82f6;
+  --info-soft: #deeafe;
+  --data-sky: #38bdf8;
+  --data-mint: #10b981;
+  --data-amber: #f59e0b;
+  --data-rose: #f43f5e;
 }
 
 :root[data-theme="dark"] {
@@ -59,6 +70,16 @@
   --success: #5fb58a;
   --warn: #d6a93b;
   --app-base: #141420;
+  --positive: #4ade80;
+  --positive-soft: color-mix(in srgb, #4ade80 16%, transparent);
+  --negative: #f87171;
+  --negative-soft: color-mix(in srgb, #f87171 16%, transparent);
+  --info: #93b4ff;
+  --info-soft: color-mix(in srgb, #6c8cff 16%, transparent);
+  --data-sky: #56ccf2;
+  --data-mint: #34d399;
+  --data-amber: #fbbf24;
+  --data-rose: #fb7185;
 }
 
 * {
@@ -73,8 +94,9 @@ body,
 }
 
 body {
-  background-color: var(--app-base);
-  background-image: var(--app-gradient);
+  /* light theme (default): flat backdrop; dark keeps the signature gradient */
+  background-color: #eaedf6;
+  background-image: none;
   background-attachment: fixed;
   background-repeat: no-repeat;
   color: var(--text);
@@ -82,6 +104,10 @@ body {
     sans-serif;
   font-size: var(--fz-sm);
   -webkit-font-smoothing: antialiased;
+}
+:root[data-theme="dark"] body {
+  background-color: var(--app-base);
+  background-image: var(--app-gradient);
 }
 
 .num {
@@ -210,6 +236,7 @@ body {
   --_s: 40px;
   position: relative;
   display: inline-flex;
+  flex: 0 0 auto; /* never squish into an oval inside a flex row */
   width: var(--_s);
   height: var(--_s);
 }
@@ -249,6 +276,12 @@ body {
 }
 .bibo-avatar__dot--active {
   background: #10b981;
+}
+.bibo-avatar__dot--idle {
+  background: var(--data-amber);
+}
+.bibo-avatar__dot--offline {
+  background: var(--text-muted);
 }
 
 /* ---------- topbar (ad-topbar) ---------- */
@@ -596,6 +629,13 @@ body {
 .content {
   padding: var(--sp-5);
   overflow-y: auto;
+}
+/* Dashboard: flat light backdrop (light theme only; dark keeps the gradient). */
+.content--flat {
+  background: #eaedf6;
+}
+:root[data-theme="dark"] .content--flat {
+  background: transparent;
 }
 
 /* ---------- primitives ---------- */
@@ -2145,5 +2185,268 @@ select.input:focus,
 @media (max-width: 760px) {
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ============================================================
+   Dashboard (Overview) — page head, stat cards, roster table
+   ============================================================ */
+.ad-wrap {
+  max-width: 1180px;
+}
+.ad-pagehead {
+  margin-bottom: 18px;
+}
+.ad-h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.ad-sub {
+  margin: 12px 0 0;
+  color: #9aa1b4;
+  font-size: 13px;
+}
+
+/* ---- stat cards grid ---- */
+.ad-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ad-cardpad {
+  padding: 19px 23px;
+}
+.ad-stats .bibo-card {
+  box-shadow: 0 6px 18px -8px rgba(20, 22, 40, 0.22);
+}
+.ad-stats .bibo-card--focal {
+  box-shadow: 0 16px 34px -10px rgba(20, 22, 40, 0.45);
+}
+.ad-stats .bibo-card--default {
+  background: #ffffff;
+}
+:root[data-theme="dark"] .ad-stats .bibo-card--default {
+  background: var(--surface);
+}
+.bibo-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.bibo-card--focal {
+  background: #1a1c25;
+  border-color: color-mix(in srgb, var(--violet) 40%, #1a1c25);
+}
+/* focal card sits on a dark surface in both themes → force light text */
+.bibo-stat--focal .bibo-stat__value {
+  color: #f4f5fa;
+}
+.bibo-stat--focal .bibo-stat__label,
+.bibo-stat--focal .bibo-stat__unit,
+.bibo-stat--focal .bibo-stat__sub {
+  color: #a6abbd;
+}
+
+.bibo-stat__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bibo-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--accent);
+}
+.bibo-stat__icon svg {
+  width: 20px;
+  height: 20px;
+}
+:root[data-theme="dark"] .bibo-stat__icon {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: transparent;
+  color: #20202e;
+}
+.bibo-stat--focal .bibo-stat__icon {
+  background: #343840;
+  border-color: transparent;
+  color: #e7e9f0;
+}
+.bibo-stat__label {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.bibo-stat__value {
+  margin-top: 13px;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.bibo-stat__unit {
+  margin-left: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.bibo-stat__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+.bibo-stat__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.bibo-stat__delta svg {
+  width: 13px;
+  height: 13px;
+}
+.bibo-stat__delta--up {
+  color: var(--positive);
+}
+.bibo-stat__delta--down {
+  color: var(--negative);
+}
+.bibo-stat__sub {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ---- roster table ---- */
+.ad-tablecard {
+  padding: 6px 8px;
+  overflow-x: auto;
+  /* solid so the pinned "View" column can mask content scrolling under it */
+  background: #f8f9fc;
+}
+:root[data-theme="dark"] .ad-tablecard {
+  background: #181a22;
+}
+.ad-table {
+  width: 100%;
+  min-width: 720px; /* keep columns readable; scroll instead of squishing names */
+  border-collapse: collapse;
+}
+.ad-table th {
+  text-align: left;
+  padding: 18px 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #9aa1b4;
+}
+.ad-table th.r,
+.ad-table td.r {
+  text-align: right;
+}
+/* pin the actions column so "View" is always visible, however wide the table */
+.ad-table th:last-child,
+.ad-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: #f8f9fc;
+  box-shadow: -10px 0 12px -10px rgba(20, 22, 40, 0.28);
+}
+:root[data-theme="dark"] .ad-table th:last-child,
+:root[data-theme="dark"] .ad-table td:last-child {
+  background: #181a22;
+}
+/* row hover — recolor every cell (incl. the pinned View cell) */
+.ad-table tbody td {
+  transition: background 0.12s ease;
+}
+.ad-table tbody tr:hover td {
+  background: #f3f4fc;
+}
+:root[data-theme="dark"] .ad-table tbody tr:hover td {
+  background: #222634;
+}
+.ad-table td {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  vertical-align: middle;
+}
+.ad-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ad-name__txt {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ad-self {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--info);
+  background: var(--info-soft);
+  vertical-align: middle;
+}
+.ad-login,
+.ad-relt {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.ad-dur {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ad-rowprod {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.ad-rowprod__pct {
+  min-width: 40px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ad-viewlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+}
+.ad-viewlink svg {
+  width: 15px;
+  height: 15px;
+}
+.ad-viewlink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 560px) {
+  .ad-stats {
+    grid-template-columns: 1fr;
   }
 }

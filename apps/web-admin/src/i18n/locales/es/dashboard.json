@@ -11,8 +11,17 @@
     "table": {
       "login": "Acceso",
       "lastSeen": "Última vez",
-      "activeToday": "Activo hoy"
-    }
+      "activeToday": "Activo hoy",
+      "focus": "Enfoque",
+      "name": "Nombre"
+    },
+    "statRecorded": "Registrado hoy",
+    "statActive": "Activos hoy",
+    "statFocus": "Enfoque medio",
+    "statScreenshots": "Capturas",
+    "vsYesterday": "vs ayer",
+    "ofMembers": "de {{count}} {{members}}",
+    "todayLabel": "hoy"
   },
   "employees": {
     "newBusiness": "Nueva empresa",

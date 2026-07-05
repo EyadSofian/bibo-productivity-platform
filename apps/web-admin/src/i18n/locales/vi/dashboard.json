@@ -11,8 +11,17 @@
     "table": {
       "login": "Đăng nhập",
       "lastSeen": "Lần cuối",
-      "activeToday": "Hoạt động hôm nay"
-    }
+      "activeToday": "Hoạt động hôm nay",
+      "focus": "Tập trung",
+      "name": "Tên"
+    },
+    "statRecorded": "Đã ghi hôm nay",
+    "statActive": "Hoạt động hôm nay",
+    "statFocus": "Tập trung TB",
+    "statScreenshots": "Ảnh chụp",
+    "vsYesterday": "so với hôm qua",
+    "ofMembers": "trên {{count}} {{members}}",
+    "todayLabel": "hôm nay"
   },
   "employees": {
     "newBusiness": "Doanh nghiệp mới",

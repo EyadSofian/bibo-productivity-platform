@@ -301,7 +301,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <div className="content">
+        <div className={`content${location.pathname === "/" ? " content--flat" : ""}`}>
           <Outlet />
         </div>
       </main>

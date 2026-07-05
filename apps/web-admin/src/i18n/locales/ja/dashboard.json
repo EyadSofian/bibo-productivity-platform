@@ -11,8 +11,17 @@
     "table": {
       "login": "ログイン",
       "lastSeen": "最終アクティブ",
-      "activeToday": "本日のアクティブ時間"
-    }
+      "activeToday": "本日のアクティブ時間",
+      "focus": "集中度",
+      "name": "名前"
+    },
+    "statRecorded": "本日の記録",
+    "statActive": "本日のアクティブ",
+    "statFocus": "平均集中度",
+    "statScreenshots": "スクリーンショット",
+    "vsYesterday": "前日比",
+    "ofMembers": "{{count}} 名の{{members}}中",
+    "todayLabel": "本日"
   },
   "employees": {
     "newBusiness": "新規ビジネス",

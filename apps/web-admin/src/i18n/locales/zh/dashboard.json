@@ -11,8 +11,17 @@
     "table": {
       "login": "登录账号",
       "lastSeen": "最后在线",
-      "activeToday": "今日活跃"
-    }
+      "activeToday": "今日活跃",
+      "focus": "专注度",
+      "name": "姓名"
+    },
+    "statRecorded": "今日已记录",
+    "statActive": "今日活跃",
+    "statFocus": "平均专注度",
+    "statScreenshots": "截图",
+    "vsYesterday": "较昨日",
+    "ofMembers": "共 {{count}} 名{{members}}",
+    "todayLabel": "今日"
   },
   "employees": {
     "newBusiness": "新建企业",
