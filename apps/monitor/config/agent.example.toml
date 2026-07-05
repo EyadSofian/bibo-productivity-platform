@@ -1,0 +1,18 @@
+# bibomon agent config (Oracle A1). Real file lives at /opt/bibomon/agent.toml
+host = "oracle-a1"
+# SSH reverse tunnel endpoint (mac forwards 127.0.0.1:9091 -> its :3200)
+ingest_url = "http://127.0.0.1:9091/ingest"
+token = "CHANGE-ME"
+interval_secs = 15
+state_dir = "/opt/bibomon"
+units = [
+  "bibotracking",
+  "biboreward",
+  "biboreward-web",
+  "biboreward-marketing",
+  "thebibolab",
+  "cloudflared",
+  "cloudflared-biboreward",
+  "cloudflared-namnguyen",
+  "cloudflared-thebibolab",
+]

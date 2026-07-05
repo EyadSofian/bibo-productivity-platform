@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>BiBo Monitor</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="uplot.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>BiBo Monitor</h1>
+  <nav>
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="api">API</button>
+    <button class="tab" data-tab="logs">Logs</button>
+  </nav>
+  <div class="range" id="range">
+    <button data-h="3">3h</button>
+    <button data-h="24" class="active">24h</button>
+    <button data-h="168">7d</button>
+    <button data-h="720">30d</button>
+  </div>
+</header>
+
+<main>
+  <section id="tab-overview">
+    <div id="alerts"></div>
+    <h2>Public endpoints</h2>
+    <div class="cards" id="probes"></div>
+    <h2>Services</h2>
+    <div class="cards" id="units"></div>
+    <h2>Hosts</h2>
+    <div id="hosts"></div>
+  </section>
+
+  <section id="tab-api" hidden>
+    <div id="apiCharts"></div>
+  </section>
+
+  <section id="tab-logs" hidden>
+    <div class="filters">
+      <select id="logService"><option value="">all services</option></select>
+      <select id="logLevel">
+        <option value="">all levels</option>
+        <option>ERROR</option><option>WARN</option><option>INFO</option>
+      </select>
+      <input id="logQ" type="search" placeholder="search text…">
+      <button id="logGo">Filter</button>
+    </div>
+    <div id="logList"></div>
+    <button id="logMore" hidden>Load older</button>
+  </section>
+</main>
+
+<script src="uplot.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
