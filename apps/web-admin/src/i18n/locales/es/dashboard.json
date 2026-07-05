@@ -12,7 +12,8 @@
       "login": "Acceso",
       "lastSeen": "Última vez",
       "activeToday": "Activo hoy"
-    }
+    },
+    "newTeam": "Nuevo equipo"
   },
   "employees": {
     "newBusiness": "Nueva empresa",

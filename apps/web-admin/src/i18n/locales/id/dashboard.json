@@ -12,7 +12,8 @@
       "login": "Login",
       "lastSeen": "Terakhir aktif",
       "activeToday": "Aktif hari ini"
-    }
+    },
+    "newTeam": "Tim baru"
   },
   "employees": {
     "newBusiness": "Bisnis baru",

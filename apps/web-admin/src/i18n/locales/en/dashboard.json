@@ -12,7 +12,8 @@
       "login": "Login",
       "lastSeen": "Last seen",
       "activeToday": "Active today"
-    }
+    },
+    "newTeam": "New team"
   },
   "employees": {
     "newBusiness": "New business",

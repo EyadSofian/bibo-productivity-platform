@@ -12,7 +12,8 @@
       "login": "ログイン",
       "lastSeen": "最終アクティブ",
       "activeToday": "本日のアクティブ時間"
-    }
+    },
+    "newTeam": "新しいチーム"
   },
   "employees": {
     "newBusiness": "新規ビジネス",

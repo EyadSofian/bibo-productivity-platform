@@ -12,7 +12,8 @@
       "login": "登录账号",
       "lastSeen": "最后在线",
       "activeToday": "今日活跃"
-    }
+    },
+    "newTeam": "新建团队"
   },
   "employees": {
     "newBusiness": "新建企业",
