@@ -69,7 +69,11 @@
   --danger: #e06a5c;
   --success: #5fb58a;
   --warn: #d6a93b;
-  --app-base: #141420;
+  /* dark background per offline design: near-black navy base + lavender/teal mesh */
+  --app-base: #0c0f16;
+  --app-gradient: radial-gradient(1200px 800px at 12% -8%, #1b1640, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #122033, transparent 50%),
+    linear-gradient(160deg, #11151e, #0b0e15);
   --positive: #4ade80;
   --positive-soft: color-mix(in srgb, #4ade80 16%, transparent);
   --negative: #f87171;
@@ -106,8 +110,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 :root[data-theme="dark"] body {
-  background-color: var(--app-base);
-  background-image: var(--app-gradient);
+  background: var(--app-gradient), var(--app-base);
 }
 
 .num {
@@ -2264,8 +2267,8 @@ select.input:focus,
   width: 43px;
   height: 43px;
   border-radius: 12px;
-  background: #fff;
-  border: 1px solid var(--border);
+  background: #F4F2FE;
+  border: none;
   color: var(--accent);
 }
 .bibo-stat__icon svg {
