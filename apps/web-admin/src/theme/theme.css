@@ -104,7 +104,7 @@ body {
 
 /* ---------- sidebar: icon rail (ad-rail) ---------- */
 .ad-rail {
-  background: var(--surface-strong); /* match the topbar in light theme */
+  background: rgba(255, 255, 255, 0.72);
   border-right: 1px solid var(--border);
   padding: 18px 0 20px;
   display: flex;
@@ -208,7 +208,7 @@ body {
   align-items: center;
 }
 .ad-rail__foot .bibo-avatar {
-  --_s: 44px;
+  --_s: 39px;
 }
 /* Avatar monogram + presence dot (rail foot + topbar account). */
 .bibo-avatar {
@@ -267,7 +267,7 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 24px;
-  background: var(--surface-strong);
+  background: rgba(255, 255, 255, 0.72);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
