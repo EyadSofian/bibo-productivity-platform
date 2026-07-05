@@ -60,7 +60,11 @@
   --negative: #f87171;
   --success: #5fb58a;
   --warn: #d6a93b;
-  --app-base: #141420;
+  /* dark background per offline design: near-black navy base + lavender/teal mesh */
+  --app-base: #0c0f16;
+  --app-gradient: radial-gradient(1200px 800px at 12% -8%, #1b1640, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #122033, transparent 50%),
+    linear-gradient(160deg, #11151e, #0b0e15);
 }
 
 * {
@@ -115,7 +119,8 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 :root[data-theme="dark"] .ad-rail {
-  background: linear-gradient(180deg, #2d2b49, #2c2b45); /* match the dark topbar */
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-right-color: rgba(255, 255, 255, 0.06);
 }
 
 .ad-rail__logo {
@@ -273,8 +278,8 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 :root[data-theme="dark"] .ad-topbar {
-  background: linear-gradient(180deg, #2d2b49, #2c2b45);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 :root[data-theme="dark"] .ad-bizpick__btn,
 :root[data-theme="dark"] .ad-newbiz {
