@@ -2393,7 +2393,7 @@ select.input:focus,
   padding: 6px 12px;
   overflow-x: auto;
   /* solid so the pinned "View" column can mask content scrolling under it */
-  background: #f8f9fc;
+  background: #ffffff;
   /* hide the horizontal scrollbar chrome (still scrollable via wheel/trackpad) */
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -2428,7 +2428,7 @@ select.input:focus,
 .ad-table td:last-child {
   position: sticky;
   right: 0;
-  background: #f8f9fc;
+  background: #ffffff;
   box-shadow: -10px 0 12px -10px rgba(20, 22, 40, 0.28);
 }
 :root[data-theme="dark"] .ad-table th:last-child,
