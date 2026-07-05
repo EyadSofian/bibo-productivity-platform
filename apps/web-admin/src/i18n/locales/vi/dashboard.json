@@ -21,7 +21,8 @@
     "statScreenshots": "Ảnh chụp",
     "vsYesterday": "so với hôm qua",
     "ofMembers": "trên {{count}} {{members}}",
-    "todayLabel": "hôm nay"
+    "todayLabel": "hôm nay",
+    "newTeam": "Nhóm mới"
   },
   "employees": {
     "newBusiness": "Doanh nghiệp mới",

@@ -21,7 +21,8 @@
     "statScreenshots": "Capturas",
     "vsYesterday": "vs ayer",
     "ofMembers": "de {{count}} {{members}}",
-    "todayLabel": "hoy"
+    "todayLabel": "hoy",
+    "newTeam": "Nuevo equipo"
   },
   "employees": {
     "newBusiness": "Nueva empresa",

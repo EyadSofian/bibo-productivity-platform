@@ -11,6 +11,7 @@
   --accent: #2d6cdf;
   --accent-weak: #eaf1fe;
   --danger: #c0392b;
+  --negative: #dc2626;
   --success: #2e7d55;
   --warn: #b8860b;
 
@@ -73,6 +74,7 @@
   --accent: #5b8def;
   --accent-weak: #1e2a40;
   --danger: #e06a5c;
+  --negative: #f87171;
   --success: #5fb58a;
   --warn: #d6a93b;
   /* dark background per offline design: near-black navy base + lavender/teal mesh */
@@ -82,7 +84,6 @@
     linear-gradient(160deg, #11151e, #0b0e15);
   --positive: #4ade80;
   --positive-soft: color-mix(in srgb, #4ade80 16%, transparent);
-  --negative: #f87171;
   --negative-soft: color-mix(in srgb, #f87171 16%, transparent);
   --info: #93b4ff;
   --info-soft: color-mix(in srgb, #6c8cff 16%, transparent);
@@ -141,7 +142,7 @@ body {
 
 /* ---------- sidebar: icon rail (ad-rail) ---------- */
 .ad-rail {
-  background: var(--surface-strong); /* match the topbar in light theme */
+  background: rgba(255, 255, 255, 0.72);
   border-right: 1px solid var(--border);
   padding: 18px 0 20px;
   display: flex;
@@ -152,14 +153,15 @@ body {
   -webkit-backdrop-filter: blur(12px);
 }
 :root[data-theme="dark"] .ad-rail {
-  background: linear-gradient(180deg, #2d2b49, #2c2b45); /* match the dark topbar */
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-right-color: rgba(255, 255, 255, 0.06);
 }
 
 .ad-rail__logo {
   display: inline-flex;
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
   margin-bottom: 10px;
 }
 :root[data-theme="dark"] .ad-rail__logo {
@@ -244,6 +246,9 @@ body {
   flex-direction: column;
   align-items: center;
 }
+.ad-rail__foot .bibo-avatar {
+  --_s: 39px;
+}
 /* Avatar monogram + presence dot (rail foot + topbar account). */
 .bibo-avatar {
   --_s: 40px;
@@ -263,7 +268,7 @@ body {
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   font-weight: 600;
   font-size: 13px;
   background: #deeafe;
@@ -281,11 +286,15 @@ body {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 3px solid #fff;
+  border: 2px solid #fff;
   background: var(--text-muted);
 }
 :root[data-theme="dark"] .bibo-avatar__dot {
   border-color: var(--bg);
+}
+.bibo-avatar--sm .bibo-avatar__dot {
+  width: 10px;
+  height: 10px;
 }
 .bibo-avatar__dot--active {
   background: #10b981;
@@ -304,14 +313,14 @@ body {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 24px;
-  background: var(--surface-strong);
+  background: rgba(255, 255, 255, 0.72);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 :root[data-theme="dark"] .ad-topbar {
-  background: linear-gradient(180deg, #2d2b49, #2c2b45);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-bottom-color: rgba(255, 255, 255, 0.06);
 }
 :root[data-theme="dark"] .ad-bizpick__btn,
 :root[data-theme="dark"] .ad-newbiz {
@@ -350,15 +359,16 @@ body {
 /* keep the three control pills the same height */
 .ad-topbar .lang-trigger {
   height: 38px;
-  background: #f5f7fc;
+  background: #ffffff;
 }
-/* light: no hover change on the header lang button (dark override keeps its own) */
 .ad-topbar .lang-trigger:hover {
   border-color: var(--border);
+  background: #f5f7fc;
 }
 /* min-height so the seg still aligns at 38px but can grow with its padding */
 .ad-topbar .bibo-seg {
   min-height: 38px;
+  background: #f3f4fc;
 }
 
 /* standalone "new business" action on the header — same pill style as the
@@ -404,14 +414,15 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
-  background: #f5f7fc;
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 999px;
   cursor: pointer;
   box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.35);
 }
 .ad-bizpick__btn:hover:not(:disabled) {
-  border-color: var(--border); /* light: no hover change; dark override adds its own */
+  border-color: var(--border);
+  background: #f5f7fc;
 }
 .ad-bizpick__btn:disabled {
   cursor: default;
@@ -426,7 +437,7 @@ body {
   font-size: 11px;
   font-weight: 700;
   background: #ecebfb;
-  color: #6c5ce7;
+  color: #4c3cc9;
 }
 :root[data-theme="dark"] .ad-bizpick__ic {
   background: color-mix(in srgb, #6c5ce7 26%, transparent);
@@ -438,7 +449,7 @@ body {
 .ad-bizpick__btn svg {
   width: 15px;
   height: 15px;
-  color: var(--text-muted);
+  color: #9aa1b4;
 }
 /* dropdown menu (business switcher, etc.) */
 .ad-menu {
@@ -452,12 +463,15 @@ body {
   flex-direction: column;
   gap: 2px;
   padding: 6px;
-  background: var(--surface-strong);
+  background: #ffffff;
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+:root[data-theme="dark"] .ad-menu {
+  background: #161b25;
 }
 .ad-menu--left {
   left: 0;
@@ -486,6 +500,9 @@ body {
 }
 .ad-menu__opt:hover {
   background: var(--bg-inset);
+}
+:root[data-theme="dark"] .ad-menu__opt:hover {
+  background: #1e2632;
 }
 .ad-menu__label {
   flex: 1;
@@ -516,22 +533,34 @@ body {
 }
 .ad-menu__sep {
   height: 1px;
-  margin: 5px 6px;
-  background: var(--border);
+  margin: 3px 6px;
+  background: #e3e3e3;
+}
+:root[data-theme="dark"] .ad-menu__sep {
+  background: rgba(255, 255, 255, 0.06);
 }
 .ad-menu__action {
-  color: var(--text-muted);
+  color: #3d4351;
+}
+.ad-menu__action .ad-menu__label {
+  font-size: 15px;
+}
+.ad-menu__action:hover {
+  background: #f6f7fc;
+}
+:root[data-theme="dark"] .ad-menu__action:hover {
+  background: #1e2632;
 }
 .ad-menu__plus {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
 }
 .ad-menu__plus svg {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 
 /* theme segmented pill */
@@ -1917,6 +1946,12 @@ select.input:focus,
 }
 .lang-switcher .lang-label {
   white-space: nowrap;
+}
+.ad-topbar .lang-label {
+  color: #5b6276;
+}
+:root[data-theme="dark"] .ad-topbar .lang-label {
+  color: #a6adbf;
 }
 .lang-caret {
   color: var(--text-muted);

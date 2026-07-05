@@ -21,7 +21,8 @@
     "statScreenshots": "スクリーンショット",
     "vsYesterday": "前日比",
     "ofMembers": "{{count}} 名の{{members}}中",
-    "todayLabel": "本日"
+    "todayLabel": "本日",
+    "newTeam": "新しいチーム"
   },
   "employees": {
     "newBusiness": "新規ビジネス",

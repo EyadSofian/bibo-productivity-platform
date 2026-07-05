@@ -20,7 +20,7 @@
   "theme": {
     "light": "ライト",
     "dark": "ダーク",
-    "auto": "自動"
+    "auto": "システム"
   },
   "time": {
     "never": "なし",

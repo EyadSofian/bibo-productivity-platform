@@ -20,7 +20,7 @@
   "theme": {
     "light": "Light",
     "dark": "Dark",
-    "auto": "Auto"
+    "auto": "System"
   },
   "time": {
     "never": "Never",

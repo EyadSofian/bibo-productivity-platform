@@ -20,7 +20,7 @@
   "theme": {
     "light": "浅色",
     "dark": "深色",
-    "auto": "自动"
+    "auto": "系统"
   },
   "time": {
     "never": "从未",

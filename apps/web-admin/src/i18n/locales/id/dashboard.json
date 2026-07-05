@@ -21,7 +21,8 @@
     "statScreenshots": "Tangkapan layar",
     "vsYesterday": "vs kemarin",
     "ofMembers": "dari {{count}} {{members}}",
-    "todayLabel": "hari ini"
+    "todayLabel": "hari ini",
+    "newTeam": "Tim baru"
   },
   "employees": {
     "newBusiness": "Bisnis baru",

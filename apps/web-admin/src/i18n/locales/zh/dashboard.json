@@ -21,7 +21,8 @@
     "statScreenshots": "截图",
     "vsYesterday": "较昨日",
     "ofMembers": "共 {{count}} 名{{members}}",
-    "todayLabel": "今日"
+    "todayLabel": "今日",
+    "newTeam": "新建团队"
   },
   "employees": {
     "newBusiness": "新建企业",

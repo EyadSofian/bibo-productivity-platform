@@ -97,6 +97,25 @@ const PlusIcon = () => (
   </RailIcon>
 );
 
+const LogOutIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden
+  >
+    <path d="m16 17 5-5-5-5" />
+    <path d="M21 12H9" />
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+  </svg>
+);
+
 /** Two-letter monogram from a name (falls back to the first two chars). */
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -183,7 +202,7 @@ function BizPicker() {
             <span className="ad-menu__plus">
               <PlusIcon />
             </span>
-            <span className="ad-menu__label">{t("employees.newBusiness")}</span>
+            <span className="ad-menu__label">{t("dashboard.newTeam")}</span>
           </button>
         </div>
       )}
@@ -198,6 +217,7 @@ function AccountMenu() {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(open, () => setOpen(false));
   const displayName = user?.display_name ?? user?.email ?? "";
+  const email = user?.email ?? user?.username ?? "";
 
   return (
     <div className="ad-acct" ref={ref}>
@@ -215,11 +235,23 @@ function AccountMenu() {
         </span>
       </button>
       {open && (
-        <div className="ad-acctmenu" role="menu">
-          <div className="ad-acctmenu__name" title={displayName}>
-            {displayName}
+        <div className="ad-menu ad-menu--right" role="menu" style={{ minWidth: 200 }}>
+          <div style={{ padding: "8px 10px 10px" }}>
+            <div style={{ fontSize: "13.5px", fontWeight: 800 }} title={displayName}>
+              {displayName}
+            </div>
+            <div style={{ fontSize: "12px", color: "#9aa1b4", marginTop: 3 }}>{email}</div>
           </div>
-          <button className="link-row" role="menuitem" onClick={logout}>
+          <div className="ad-menu__sep" />
+          <button
+            className="ad-menu__opt"
+            role="menuitem"
+            onClick={logout}
+            style={{ color: "#f43f5e", fontSize: "15px" }}
+          >
+            <span style={{ display: "inline-flex", lineHeight: 0 }}>
+              <LogOutIcon />
+            </span>
             {t("actions.signOut")}
           </button>
         </div>
