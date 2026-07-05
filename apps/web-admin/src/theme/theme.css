@@ -55,6 +55,12 @@
   --data-mint: #10b981;
   --data-amber: #f59e0b;
   --data-rose: #f43f5e;
+  /* brand (lavender-indigo) + focal stat card, per offline design */
+  --brand-tint: #f4f2fe;
+  --brand-600: #5b4bd6;
+  --focal-grad: linear-gradient(155deg, #20242e, #111319);
+  --focal-border: rgba(255, 255, 255, 0.08);
+  --focal-muted: rgba(255, 255, 255, 0.58);
 }
 
 :root[data-theme="dark"] {
@@ -84,6 +90,10 @@
   --data-mint: #34d399;
   --data-amber: #fbbf24;
   --data-rose: #fb7185;
+  /* focal stat card — near-black gradient + lavender border per offline dark */
+  --focal-grad: linear-gradient(155deg, #0e1016, #050608);
+  --focal-border: rgba(139, 125, 246, 0.32);
+  --focal-muted: rgba(255, 255, 255, 0.55);
 }
 
 * {
@@ -2233,7 +2243,7 @@ select.input:focus,
   background: #ffffff;
 }
 :root[data-theme="dark"] .ad-stats .bibo-card--default {
-  background: var(--surface);
+  background: #161b25; /* offline --surface-card (solid, not glass) */
 }
 .bibo-card {
   border: 1px solid var(--border);
@@ -2243,17 +2253,17 @@ select.input:focus,
   -webkit-backdrop-filter: blur(12px);
 }
 .bibo-card--focal {
-  background: #1a1c25;
-  border-color: color-mix(in srgb, var(--violet) 40%, #1a1c25);
+  background: var(--focal-grad);
+  border-color: var(--focal-border);
 }
 /* focal card sits on a dark surface in both themes → force light text */
 .bibo-stat--focal .bibo-stat__value {
-  color: #f4f5fa;
+  color: #fff;
 }
 .bibo-stat--focal .bibo-stat__label,
 .bibo-stat--focal .bibo-stat__unit,
 .bibo-stat--focal .bibo-stat__sub {
-  color: #a6abbd;
+  color: var(--focal-muted);
 }
 
 .bibo-stat__top {
@@ -2267,23 +2277,24 @@ select.input:focus,
   width: 43px;
   height: 43px;
   border-radius: 12px;
-  background: #F4F2FE;
+  background: var(--brand-tint);
   border: none;
-  color: var(--accent);
+  color: var(--brand-600);
 }
 .bibo-stat__icon svg {
   width: 20px;
   height: 20px;
 }
 :root[data-theme="dark"] .bibo-stat__icon {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--brand-tint);
   border-color: transparent;
-  color: #20202e;
+  color: var(--brand-600);
 }
-.bibo-stat--focal .bibo-stat__icon {
-  background: #343840;
+.bibo-stat--focal .bibo-stat__icon,
+:root[data-theme="dark"] .bibo-stat--focal .bibo-stat__icon {
+  background: #2c2d32;
   border-color: transparent;
-  color: #e7e9f0;
+  color: #fff;
 }
 .bibo-stat__label {
   color: var(--text-muted);
