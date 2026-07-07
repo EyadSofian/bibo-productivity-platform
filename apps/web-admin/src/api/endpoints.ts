@@ -1,5 +1,15 @@
 import { request } from "./client";
 import { tokenStore } from "./tokenStore";
+import {
+  demoActivity,
+  demoBrowser,
+  demoBusinesses,
+  demoEmployees,
+  demoKeystrokes,
+  demoRoster,
+  demoScreenshots,
+  isDemo,
+} from "./demo";
 import type {
   AccountType,
   ActivityResponse,
@@ -76,6 +86,7 @@ export function createBusiness(name: string) {
 }
 
 export function listMyBusinesses() {
+  if (isDemo()) return Promise.resolve({ businesses: demoBusinesses });
   return request<{ businesses: Business[] }>("/v1/businesses/mine");
 }
 
@@ -108,23 +119,27 @@ export function createEmployee(input: {
 }
 
 export function listBusinessEmployees(businessId: string) {
+  if (isDemo()) return Promise.resolve({ employees: demoEmployees() });
   return request<{ employees: Employee[] }>(`/v1/businesses/${businessId}/employees`);
 }
 
 // ---------- reports ----------
 export function reportEmployees(businessId: string) {
+  if (isDemo()) return Promise.resolve({ employees: demoRoster() });
   return request<{ employees: ReportEmployee[] }>("/v1/reports/employees", {
     query: { business_id: businessId },
   });
 }
 
 export function reportActivity(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve(demoActivity(employeeId));
   return request<ActivityResponse>(`/v1/reports/employees/${employeeId}/activity`, {
     query: { from, to },
   });
 }
 
 export function reportKeystrokes(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve(demoKeystrokes(employeeId));
   return request<{ buckets: KeystrokeBucket[] }>(
     `/v1/reports/employees/${employeeId}/keystrokes`,
     { query: { from, to } },
@@ -132,6 +147,7 @@ export function reportKeystrokes(employeeId: string, from: number, to: number) {
 }
 
 export function reportBrowser(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve(demoBrowser(employeeId));
   return request<{ visits: BrowserVisit[] }>(`/v1/reports/employees/${employeeId}/browser`, {
     query: { from, to },
   });
@@ -144,6 +160,7 @@ export function reportScreenshots(
   limit = 60,
   offset = 0,
 ) {
+  if (isDemo()) return Promise.resolve(demoScreenshots(employeeId));
   return request<ScreenshotsResponse>(`/v1/reports/employees/${employeeId}/screenshots`, {
     query: { from, to, limit, offset },
   });
