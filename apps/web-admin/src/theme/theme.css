@@ -134,9 +134,12 @@ body,
 }
 
 body {
-  /* light theme (default): flat backdrop; dark keeps the signature gradient */
+  /* light theme (default): subtle blue-grey lavender gradient per the offline
+     design; dark keeps its own signature gradient below */
   background-color: #eaedf6;
-  background-image: none;
+  background-image: radial-gradient(1200px 800px at 12% -8%, #ece9fa, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #e7ecf8, transparent 50%),
+    linear-gradient(160deg, #eef0f8, #e4e8f3);
   background-attachment: fixed;
   background-repeat: no-repeat;
   color: var(--text);
@@ -2900,9 +2903,9 @@ select.input:focus,
   color: var(--text-muted);
   transition: background 0.12s ease, color 0.12s ease;
 }
+/* hovering an unselected tab only changes the text — no background pill */
 .bibo-tab:hover {
   color: var(--text);
-  background: var(--surface-hover);
 }
 .bibo-tab--on,
 .bibo-tab--on:hover {
