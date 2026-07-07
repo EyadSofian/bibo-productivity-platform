@@ -11,9 +11,11 @@
       "time": "Time",
       "page": "Page",
       "browser": "Browser",
-      "duration": "Duration"
+      "duration": "Duration",
+      "domain": "Domain"
     },
-    "untitled": "(untitled)"
+    "untitled": "(untitled)",
+    "title": "Sites visited"
   },
   "keystrokes": {
     "empty": "No keystroke activity for this range.",
@@ -29,6 +31,7 @@
     "unavailable": "unavailable",
     "alt": "Screenshot {{time}}",
     "loading": "Loading…",
-    "display": "display {{id}}"
+    "display": "display {{id}}",
+    "title": "Captured screenshots"
   }
 }

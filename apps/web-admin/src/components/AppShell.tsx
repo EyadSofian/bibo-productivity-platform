@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../auth/AuthContext";
 import { useTheme, type ThemeMode } from "../theme/ThemeProvider";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
+import { DetailHeaderContext } from "../detailHeader";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 /** Brand mark — violet gradient tile with the pulse glyph (matches the auth logo). */
@@ -277,7 +278,14 @@ export function AppShell() {
   const activeNav = NAV.find((n) =>
     n.end ? location.pathname === n.to : location.pathname.startsWith(n.to),
   );
-  const title = activeNav?.label ?? t("nav.dashboard");
+  const baseTitle = activeNav?.label ?? t("nav.dashboard");
+
+  // On a member detail page (/employees/:id) the header shows the member's name
+  // (pushed up from EmployeeDetail) and the business picker is hidden.
+  const isDetail = location.pathname.startsWith("/employees/");
+  const [detailTitle, setDetailTitle] = useState<string | null>(null);
+  const detailHeader = useMemo(() => ({ setTitle: setDetailTitle }), []);
+  const title = isDetail ? detailTitle ?? baseTitle : baseTitle;
 
   const displayName = user?.display_name ?? user?.email ?? "";
 
@@ -313,7 +321,7 @@ export function AppShell() {
         <header className="ad-topbar">
           <div className="ad-topbar__title">{title}</div>
           <div className="ad-topbar__right">
-            <BizPicker />
+            {!isDetail && <BizPicker />}
             <LanguageSwitcher />
             <div className="bibo-seg bibo-seg--sm" role="tablist" aria-label={t("language")}>
               {(["light", "dark", "system"] as ThemeMode[]).map((m) => (
@@ -334,7 +342,9 @@ export function AppShell() {
         </header>
 
         <div className={`content${location.pathname === "/" ? " content--flat" : ""}`}>
-          <Outlet />
+          <DetailHeaderContext.Provider value={detailHeader}>
+            <Outlet />
+          </DetailHeaderContext.Provider>
         </div>
       </main>
     </div>

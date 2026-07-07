@@ -11,9 +11,11 @@
       "time": "Waktu",
       "page": "Halaman",
       "browser": "Browser",
-      "duration": "Durasi"
+      "duration": "Durasi",
+      "domain": "Domain"
     },
-    "untitled": "(tanpa judul)"
+    "untitled": "(tanpa judul)",
+    "title": "Situs dikunjungi"
   },
   "keystrokes": {
     "empty": "Tidak ada aktivitas ketikan untuk rentang ini.",
@@ -29,6 +31,7 @@
     "unavailable": "tidak tersedia",
     "alt": "Tangkapan layar {{time}}",
     "loading": "Memuat…",
-    "display": "layar {{id}}"
+    "display": "layar {{id}}",
+    "title": "Tangkapan layar"
   }
 }

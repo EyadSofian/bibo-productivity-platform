@@ -11,9 +11,11 @@
       "time": "时间",
       "page": "页面",
       "browser": "浏览器",
-      "duration": "时长"
+      "duration": "时长",
+      "domain": "域名"
     },
-    "untitled": "（无标题）"
+    "untitled": "（无标题）",
+    "title": "访问的网站"
   },
   "keystrokes": {
     "empty": "此时间范围内没有按键活动。",
@@ -29,6 +31,7 @@
     "unavailable": "无法显示",
     "alt": "截图 {{time}}",
     "loading": "加载中…",
-    "display": "显示器 {{id}}"
+    "display": "显示器 {{id}}",
+    "title": "已捕获的截图"
   }
 }

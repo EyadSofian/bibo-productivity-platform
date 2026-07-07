@@ -11,9 +11,11 @@
       "time": "Thời gian",
       "page": "Trang",
       "browser": "Trình duyệt",
-      "duration": "Thời lượng"
+      "duration": "Thời lượng",
+      "domain": "Tên miền"
     },
-    "untitled": "(không có tiêu đề)"
+    "untitled": "(không có tiêu đề)",
+    "title": "Trang đã truy cập"
   },
   "keystrokes": {
     "empty": "Không có hoạt động gõ phím nào trong khoảng thời gian này.",
@@ -29,6 +31,7 @@
     "unavailable": "không khả dụng",
     "alt": "Ảnh chụp màn hình {{time}}",
     "loading": "Đang tải…",
-    "display": "màn hình {{id}}"
+    "display": "màn hình {{id}}",
+    "title": "Ảnh chụp màn hình"
   }
 }

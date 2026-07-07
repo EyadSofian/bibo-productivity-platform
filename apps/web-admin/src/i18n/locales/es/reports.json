@@ -11,9 +11,11 @@
       "time": "Hora",
       "page": "Página",
       "browser": "Navegador",
-      "duration": "Duración"
+      "duration": "Duración",
+      "domain": "Dominio"
     },
-    "untitled": "(sin título)"
+    "untitled": "(sin título)",
+    "title": "Sitios visitados"
   },
   "keystrokes": {
     "empty": "No hay actividad de teclado para este intervalo.",
@@ -29,6 +31,7 @@
     "unavailable": "no disponible",
     "alt": "Captura de pantalla {{time}}",
     "loading": "Cargando…",
-    "display": "pantalla {{id}}"
+    "display": "pantalla {{id}}",
+    "title": "Capturas de pantalla"
   }
 }

@@ -24,6 +24,7 @@ import { dayRangeToUnix, fmtDuration, isoDate } from "../format";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
+import { useDetailHeader } from "../detailHeader";
 
 type Tab = "activity" | "keystrokes" | "browser" | "screenshots";
 const TABS: Tab[] = ["activity", "keystrokes", "browser", "screenshots"];
@@ -97,6 +98,7 @@ export function EmployeeDetail() {
   const businessId = params.get("business");
   const { businesses } = useBusinesses();
   const { user } = useAuth();
+  const { setTitle } = useDetailHeader();
   const terms = memberTerms(businesses.find((b) => b.id === businessId)?.kind);
 
   // Single-day view by default; switch to "range" for a custom span.
@@ -123,6 +125,13 @@ export function EmployeeDetail() {
       .then((r) => setEmployee(r.employees.find((e) => e.id === id) ?? null))
       .catch(() => {});
   }, [businessId, id]);
+
+  // Push the member's name into the app header (replaces the section label);
+  // cleared on unmount so other pages keep their own title.
+  useEffect(() => {
+    setTitle(employee?.display_name ?? null);
+    return () => setTitle(null);
+  }, [employee, setTitle]);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -307,11 +316,12 @@ export function EmployeeDetail() {
               <>
                 {tab === "activity" &&
                   (activity ? <ActivityPanel data={activity} /> : <Spinner />)}
-                {tab !== "activity" && (
+                {/* Browser panel renders its own table card */}
+                {tab === "browser" && (visits ? <BrowserPanel visits={visits} /> : <Spinner />)}
+                {(tab === "keystrokes" || tab === "screenshots") && (
                   <div className="bibo-card bibo-card--default ad-cardpad">
                     {tab === "keystrokes" &&
                       (keystrokes ? <KeystrokePanel buckets={keystrokes} /> : <Spinner />)}
-                    {tab === "browser" && (visits ? <BrowserPanel visits={visits} /> : <Spinner />)}
                     {tab === "screenshots" &&
                       (shots ? <ScreenshotGallery shots={shots} /> : <Spinner />)}
                   </div>

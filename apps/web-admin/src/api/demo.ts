@@ -17,6 +17,7 @@ import type {
   Employee,
   KeystrokeBucket,
   ReportEmployee,
+  ScreenshotMeta,
   ScreenshotsResponse,
 } from "./types";
 
@@ -143,40 +144,46 @@ export function demoKeystrokes(employeeId: string): { buckets: KeystrokeBucket[]
 const SITES: [string, string][] = [
   ["github.com", "GitHub — pull requests"],
   ["figma.com", "Figma — Design file"],
-  ["youtube.com", "YouTube"],
-  ["notion.so", "Notion — Notes"],
   ["stackoverflow.com", "Stack Overflow"],
-  ["docs.google.com", "Google Docs"],
-  ["mail.google.com", "Gmail"],
+  ["linear.app", "Linear — Issues"],
+  ["developer.mozilla.org", "MDN Web Docs"],
+  ["notion.so", "Notion — Notes"],
+  ["youtube.com", "YouTube"],
+  ["news.ycombinator.com", "Hacker News"],
 ];
 
 export function demoBrowser(employeeId: string): { visits: BrowserVisit[] } {
   const r = seeded(employeeId + ":web");
-  const visits: BrowserVisit[] = [];
-  for (let i = 0; i < 8; i++) {
-    const [url, title] = SITES[Math.floor(r() * SITES.length)];
-    visits.push({
-      ts: dayStart() + (8 + Math.floor(r() * 9)) * HOUR + Math.floor(r() * HOUR),
-      url: `https://${url}`,
-      page_title: title,
-      browser: "Chrome",
-      duration_s: Math.round((3 + r() * 40) * 60),
-    });
-  }
-  visits.sort((a, b) => a.ts - b.ts);
+  const browsers = ["Chrome", "Arc"];
+  // one visit per distinct domain
+  const visits: BrowserVisit[] = SITES.map(([url, title]) => ({
+    ts: dayStart() + (8 + Math.floor(r() * 9)) * HOUR + Math.floor(r() * HOUR),
+    url: `https://${url}`,
+    page_title: title,
+    browser: browsers[Math.floor(r() * browsers.length)],
+    duration_s: Math.round((8 + r() * 60) * 60),
+  }));
   return { visits };
 }
 
+const SHOT_APPS = [
+  "VS Code", "VS Code", "Chrome", "Figma", "Figma", "VS Code", "VS Code", "Terminal",
+  "Chrome", "VS Code", "VS Code", "Notion", "Slack", "Figma", "VS Code", "Chrome",
+  "VS Code", "Figma", "VS Code", "Terminal", "Notion", "Figma",
+];
 export function demoScreenshots(employeeId: string): ScreenshotsResponse {
   const r = seeded(employeeId + ":shots");
-  const n = 6 + Math.floor(r() * 12);
-  const screenshots = Array.from({ length: n }, (_, i) => ({
+  const n = 22;
+  const start = dayStart() + 8 * HOUR + 12 * 60;
+  // app carried alongside the meta so the gallery can badge each card
+  const screenshots: (ScreenshotMeta & { app: string })[] = Array.from({ length: n }, (_, i) => ({
     client_uuid: `demo-${employeeId}-${i}`,
-    ts: dayStart() + 8 * HOUR + i * (600 + Math.round(r() * 2400)),
+    ts: start + i * (10 * 60 + 7),
     byte_size: 120000 + Math.round(r() * 400000),
     width: 2560,
     height: 1440,
     display_id: 0,
+    app: SHOT_APPS[i % SHOT_APPS.length],
   }));
   return { screenshots, limit: 60, offset: 0 };
 }

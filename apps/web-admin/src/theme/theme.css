@@ -2644,7 +2644,7 @@ select.input:focus,
 .ad-table th {
   text-align: left;
   padding: 18px 20px;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -2675,15 +2675,15 @@ select.input:focus,
   background: #f3f4fc;
 }
 :root[data-theme="dark"] .ad-table tbody tr:hover td {
-  background: #222634;
+  background: #1f2633;
 }
 .ad-table td {
   padding: 16px 20px;
-  border-top: 1px solid rgba(20, 22, 27, 0.07);
+  border-top: 0.5px solid rgba(20, 22, 27, 0.07);
   vertical-align: middle;
 }
 :root[data-theme="dark"] .ad-table td {
-  border-top-color: rgba(255, 255, 255, 0.07);
+  border-top-color: rgba(255, 255, 255, 0.06);
 }
 /* last row: no divider line at the bottom */
 .ad-table tbody tr:last-child td {
@@ -3148,4 +3148,74 @@ select.input:focus,
 :root[data-theme="dark"] .ad-timechip:not(.ad-timechip--on) {
   background: #11151f;
   color: #6b7488;
+}
+
+/* ── Captured screenshots gallery (offline design) ───────────────────── */
+.ad-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+  margin-top: 6px;
+}
+.ad-shot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  padding: 0;
+  appearance: none;
+  background: none;
+  display: block;
+  width: 100%;
+  cursor: default;
+}
+.ad-shot--clickable {
+  cursor: pointer;
+}
+.ad-shot__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.ad-shot__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.3) 100%);
+}
+.ad-shot__app {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 18, 26, 0.82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.ad-shot__t {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+/* Sites-visited (browser) table: smaller domain cell than the roster */
+.ad-panel .ad-table .ad-name {
+  gap: 10px;
+}
+.ad-panel .ad-table .ad-name__txt {
+  font-size: 13px;
+}
+/* breathing room below the last row of the Sites-visited card */
+.ad-panel .ad-tablecard {
+  padding-bottom: 24px;
 }
