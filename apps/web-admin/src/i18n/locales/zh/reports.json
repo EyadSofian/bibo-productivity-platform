@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "此时间范围内未记录任何活动。"
+    "empty": "此时间范围内未记录任何活动。",
+    "timeline": "今日时间线",
+    "breakdown": "应用和窗口明细",
+    "idle": "空闲"
   },
   "browser": {
     "empty": "此时间范围内没有浏览记录。",
@@ -17,7 +20,9 @@
     "summary_one": "{{count}} 个时间段内共 {{keystrokes}} 次按键",
     "summary_other": "{{count}} 个时间段内共 {{keystrokes}} 次按键",
     "tooltip": "{{time}} — {{count}} 次按键",
-    "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。"
+    "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。",
+    "title": "全天按键次数",
+    "keypresses": "次按键"
   },
   "screenshots": {
     "empty": "此时间范围内没有截图。",

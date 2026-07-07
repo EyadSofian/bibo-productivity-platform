@@ -26,6 +26,7 @@
   },
   "employees": {
     "newBusiness": "新規ビジネス",
+    "newOrg": "新規{{org}}",
     "loading": "読み込んでいます…",
     "loadingMembers": "{{members}}を読み込んでいます…",
     "errorLoadMembers": "{{members}}を読み込めませんでした。",
@@ -42,6 +43,9 @@
   "newBusinessModal": {
     "title": "新規ビジネス",
     "nameLabel": "ビジネス名",
+    "orgNameLabel": "{{org}}名",
+    "namePlaceholder": "例：Acme Studio",
+    "namePlaceholderFamily": "例：田中家",
     "cancel": "キャンセル",
     "create": "作成",
     "creating": "作成しています…",
@@ -55,6 +59,7 @@
     "shareCredentials": "これらの認証情報を{{member}}に共有してください。デスクトップアプリのログインピッカーからサインインします。",
     "cancel": "キャンセル",
     "adding": "追加しています…",
+    "generate": "生成",
     "errorTaken": "そのメールまたはユーザー名はすでに使用されています。",
     "errorCreate": "{{member}}を作成できませんでした。"
   },
@@ -81,6 +86,8 @@
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット"
-    }
+    },
+    "singleDay": "単日",
+    "dateRange": "期間"
   }
 }

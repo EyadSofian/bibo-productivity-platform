@@ -26,6 +26,7 @@
   },
   "employees": {
     "newBusiness": "Doanh nghiệp mới",
+    "newOrg": "Tạo {{org}} mới",
     "loading": "Đang tải…",
     "loadingMembers": "Đang tải {{members}}…",
     "errorLoadMembers": "Không thể tải {{members}}.",
@@ -42,6 +43,9 @@
   "newBusinessModal": {
     "title": "Doanh nghiệp mới",
     "nameLabel": "Tên doanh nghiệp",
+    "orgNameLabel": "Tên {{org}}",
+    "namePlaceholder": "vd: Acme Studio",
+    "namePlaceholderFamily": "vd: Gia đình Trần",
     "cancel": "Hủy",
     "create": "Tạo",
     "creating": "Đang tạo…",
@@ -55,6 +59,7 @@
     "shareCredentials": "Chia sẻ thông tin đăng nhập này với {{member}}; họ đăng nhập từ bộ chọn đăng nhập của ứng dụng máy tính.",
     "cancel": "Hủy",
     "adding": "Đang thêm…",
+    "generate": "Tạo",
     "errorTaken": "Email hoặc tên đăng nhập đó đã được sử dụng.",
     "errorCreate": "Không thể tạo {{member}}."
   },
@@ -81,6 +86,8 @@
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
       "screenshots": "Ảnh chụp màn hình"
-    }
+    },
+    "singleDay": "Một ngày",
+    "dateRange": "Khoảng ngày"
   }
 }

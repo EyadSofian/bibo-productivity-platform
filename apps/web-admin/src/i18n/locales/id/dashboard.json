@@ -26,6 +26,7 @@
   },
   "employees": {
     "newBusiness": "Bisnis baru",
+    "newOrg": "{{org}} baru",
     "loading": "Memuat…",
     "loadingMembers": "Memuat {{members}}…",
     "errorLoadMembers": "Tidak dapat memuat {{members}}.",
@@ -42,6 +43,9 @@
   "newBusinessModal": {
     "title": "Bisnis baru",
     "nameLabel": "Nama bisnis",
+    "orgNameLabel": "Nama {{org}}",
+    "namePlaceholder": "mis. Acme Studio",
+    "namePlaceholderFamily": "mis. Keluarga Tran",
     "cancel": "Batal",
     "create": "Buat",
     "creating": "Membuat…",
@@ -55,6 +59,7 @@
     "shareCredentials": "Bagikan kredensial ini dengan {{member}}; mereka masuk dari pemilih login aplikasi desktop.",
     "cancel": "Batal",
     "adding": "Menambahkan…",
+    "generate": "Buat",
     "errorTaken": "Email atau nama pengguna tersebut sudah digunakan.",
     "errorCreate": "Tidak dapat membuat {{member}}."
   },
@@ -81,6 +86,8 @@
       "keystrokes": "Ketikan",
       "browser": "Peramban",
       "screenshots": "Tangkapan layar"
-    }
+    },
+    "singleDay": "Satu hari",
+    "dateRange": "Rentang tanggal"
   }
 }

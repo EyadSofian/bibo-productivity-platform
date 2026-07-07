@@ -26,6 +26,7 @@
   },
   "employees": {
     "newBusiness": "New business",
+    "newOrg": "New {{org}}",
     "loading": "Loading…",
     "loadingMembers": "Loading {{members}}…",
     "errorLoadMembers": "Could not load {{members}}.",
@@ -42,6 +43,9 @@
   "newBusinessModal": {
     "title": "New business",
     "nameLabel": "Business name",
+    "orgNameLabel": "{{org}} name",
+    "namePlaceholder": "e.g. Acme Studio",
+    "namePlaceholderFamily": "e.g. The Tran Family",
     "cancel": "Cancel",
     "create": "Create",
     "creating": "Creating…",
@@ -55,6 +59,7 @@
     "shareCredentials": "Share these credentials with the {{member}}; they sign in from the desktop app's login picker.",
     "cancel": "Cancel",
     "adding": "Adding…",
+    "generate": "Generate",
     "errorTaken": "That email or username is already taken.",
     "errorCreate": "Could not create {{member}}."
   },
@@ -81,6 +86,8 @@
       "keystrokes": "Keystrokes",
       "browser": "Browser",
       "screenshots": "Screenshots"
-    }
+    },
+    "singleDay": "Single day",
+    "dateRange": "Date range"
   }
 }

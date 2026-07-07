@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "Không có hoạt động nào được ghi nhận trong khoảng thời gian này."
+    "empty": "Không có hoạt động nào được ghi nhận trong khoảng thời gian này.",
+    "timeline": "Dòng thời gian hôm nay",
+    "breakdown": "Phân tích ứng dụng & cửa sổ",
+    "idle": "Nghỉ"
   },
   "browser": {
     "empty": "Không có lượt truy cập trình duyệt nào trong khoảng thời gian này.",
@@ -17,7 +20,9 @@
     "summary_one": "{{keystrokes}} lần gõ phím trong {{count}} nhóm",
     "summary_other": "{{keystrokes}} lần gõ phím trong {{count}} nhóm",
     "tooltip": "{{time}} — {{count}} lần gõ phím",
-    "privacyNote": "Chỉ đếm số lần. Các phím riêng lẻ không bao giờ được thu thập hay lưu trữ — biểu đồ này hiển thị khối lượng gõ phím, không phải nội dung."
+    "privacyNote": "Chỉ đếm số lần. Các phím riêng lẻ không bao giờ được thu thập hay lưu trữ — biểu đồ này hiển thị khối lượng gõ phím, không phải nội dung.",
+    "title": "Số phím gõ trong ngày",
+    "keypresses": "lượt gõ phím"
   },
   "screenshots": {
     "empty": "Không có ảnh chụp màn hình nào trong khoảng thời gian này.",

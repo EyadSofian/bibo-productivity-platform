@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "No se registró actividad para este intervalo."
+    "empty": "No se registró actividad para este intervalo.",
+    "timeline": "Cronología de hoy",
+    "breakdown": "Desglose de apps y ventanas",
+    "idle": "Inactivo"
   },
   "browser": {
     "empty": "No hay visitas del navegador para este intervalo.",
@@ -17,7 +20,9 @@
     "summary_one": "{{keystrokes}} pulsaciones de teclas en {{count}} segmento",
     "summary_other": "{{keystrokes}} pulsaciones de teclas en {{count}} segmentos",
     "tooltip": "{{time}} — {{count}} pulsaciones de teclas",
-    "privacyNote": "Solo recuentos. Las teclas individuales nunca se capturan ni se almacenan: este gráfico muestra el volumen de escritura, no el contenido."
+    "privacyNote": "Solo recuentos. Las teclas individuales nunca se capturan ni se almacenan: este gráfico muestra el volumen de escritura, no el contenido.",
+    "title": "Pulsaciones durante el día",
+    "keypresses": "pulsaciones"
   },
   "screenshots": {
     "empty": "No hay capturas de pantalla para este intervalo.",

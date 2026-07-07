@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "Tidak ada aktivitas yang tercatat untuk rentang ini."
+    "empty": "Tidak ada aktivitas yang tercatat untuk rentang ini.",
+    "timeline": "Linimasa hari ini",
+    "breakdown": "Rincian aplikasi & jendela",
+    "idle": "Idle"
   },
   "browser": {
     "empty": "Tidak ada kunjungan browser untuk rentang ini.",
@@ -17,7 +20,9 @@
     "summary_one": "{{keystrokes}} ketikan dalam {{count}} keranjang",
     "summary_other": "{{keystrokes}} ketikan dalam {{count}} keranjang",
     "tooltip": "{{time}} — {{count}} ketikan",
-    "privacyNote": "Hanya jumlah. Tombol individual tidak pernah direkam atau disimpan — grafik ini menunjukkan volume ketikan, bukan isinya."
+    "privacyNote": "Hanya jumlah. Tombol individual tidak pernah direkam atau disimpan — grafik ini menunjukkan volume ketikan, bukan isinya.",
+    "title": "Ketikan sepanjang hari",
+    "keypresses": "ketikan"
   },
   "screenshots": {
     "empty": "Tidak ada tangkapan layar untuk rentang ini.",

@@ -8,6 +8,10 @@
   --border: #e3e3e3;
   --text: #1a1a1a;
   --text-muted: #6b6b6b;
+  /* aliases used by components ported from the offline design */
+  --text-primary: var(--text);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
   --accent: #2d6cdf;
   --accent-weak: #eaf1fe;
   --danger: #c0392b;
@@ -56,9 +60,21 @@
   --data-mint: #10b981;
   --data-amber: #f59e0b;
   --data-rose: #f43f5e;
+  --data-lavender: #8b7df6;
+  --data-teal: #14b8a6;
+  /* sunken track/inset surfaces (timeline, app bars, donut ring) */
+  --surface-sunken: #edeff5;
+  --control-track: rgba(20, 22, 27, 0.1);
   /* brand (lavender-indigo) + focal stat card, per offline design */
   --brand-tint: #f4f2fe;
+  --brand-400: #8b7df6;
+  --brand-500: #6c5ce7;
   --brand-600: #5b4bd6;
+  --ring-focus: 0 0 0 3px rgba(108, 92, 231, 0.45);
+  --surface-hover: #f1f3f8;
+  --border-strong: #cbd2e0;
+  --border-subtle: rgba(20, 22, 27, 0.08);
+  --ink: #1b1f2b;
   --focal-grad: linear-gradient(155deg, #20242e, #111319);
   --focal-border: rgba(255, 255, 255, 0.08);
   --focal-muted: rgba(255, 255, 255, 0.58);
@@ -91,10 +107,19 @@
   --data-mint: #34d399;
   --data-amber: #fbbf24;
   --data-rose: #fb7185;
+  --data-lavender: #a78bfa;
+  --data-teal: #2dd4bf;
+  --surface-sunken: #1b212d;
+  --control-track: rgba(255, 255, 255, 0.1);
   /* focal stat card — near-black gradient + lavender border per offline dark */
   --focal-grad: linear-gradient(155deg, #0e1016, #050608);
   --focal-border: rgba(139, 125, 246, 0.32);
   --focal-muted: rgba(255, 255, 255, 0.55);
+  --surface-hover: #1f2633;
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --brand-500: #6c5ce7;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --ink: #0b0e16;
 }
 
 * {
@@ -295,6 +320,12 @@ body {
 .bibo-avatar--sm .bibo-avatar__dot {
   width: 10px;
   height: 10px;
+}
+/* smaller presence dot on roster-table avatars */
+.ad-name .bibo-avatar__dot {
+  width: 8px;
+  height: 8px;
+  border-width: 1.5px;
 }
 .bibo-avatar__dot--active {
   background: #10b981;
@@ -2112,6 +2143,153 @@ select.input:focus,
   font-size: var(--fz-md);
   margin: 0 0 var(--sp-3);
 }
+
+/* ---- bibo-dlg (offline-style dialog): icon + title + close, body, footer ---- */
+/* soften + blur the overlay when it wraps a bibo-dlg (scoped; other modals keep
+   their solid backdrop) */
+.modal-backdrop:has(.bibo-dlg) {
+  background: rgba(20, 24, 40, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.bibo-dlg {
+  width: var(--_w, 440px);
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 30px 70px -18px rgba(20, 22, 40, 0.55), 0 8px 20px -12px rgba(20, 22, 40, 0.4);
+  overflow: hidden;
+  animation: bibo-dlg-fade 0.18s ease;
+}
+:root[data-theme="dark"] .bibo-dlg {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 80px -16px rgba(0, 0, 0, 0.7), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
+}
+@keyframes bibo-dlg-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bibo-dlg__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 22px 0;
+}
+.bibo-dlg__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand-600);
+}
+.bibo-dlg__icon svg {
+  width: 22px;
+  height: 22px;
+}
+.bibo-dlg__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.bibo-dlg__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.bibo-dlg__close:hover {
+  background: var(--bg-inset);
+  color: var(--text);
+}
+.bibo-dlg__close svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-dlg__body {
+  padding: 18px 22px 6px;
+}
+.bibo-dlg__foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px 20px;
+}
+/* dialog field label: smaller + muted (scoped to the dialog) */
+.bibo-dlg__body .bibo-field__lbl {
+  font-size: 14px;
+  color: #5b6276;
+}
+/* dialog primary (Create) button label colour */
+.bibo-dlg__foot .bibo-btn--primary {
+  color: #f1f3f8;
+}
+/* dialog ghost (Cancel) button label colour */
+.bibo-dlg__foot .bibo-btn--ghost {
+  color: #a6adbf;
+}
+/* dialog secondary (Generate) button */
+.bibo-dlg .bibo-btn--secondary {
+  font-size: 14px;
+}
+.bibo-dlg .bibo-btn--secondary svg {
+  width: 24px;
+  height: 24px;
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-btn--secondary {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
+}
+.bibo-dlg .bibo-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+/* dialog input in dark theme: solid navy fill + light border, text/hover/focus */
+:root[data-theme="dark"] .bibo-dlg .bibo-input {
+  background: #1b212d;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input:hover:not(:focus-within) {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input:focus-within {
+  border-color: var(--brand-400);
+  box-shadow: var(--ring-focus);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input input {
+  color: #f4f2fe;
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input input::placeholder {
+  color: #5b6276;
+}
+:root[data-theme="dark"] .bibo-dlg--org .bibo-input input::placeholder {
+  color: #a6adbf;
+}
+/* password field: larger, more-spaced placeholder dots */
+.bibo-input--dots input::placeholder {
+  font-size: 16px;
+  letter-spacing: 2px;
+}
 .lightbox-img {
   max-width: 90vw;
   max-height: 85vh;
@@ -2251,9 +2429,52 @@ select.input:focus,
    ============================================================ */
 .ad-wrap {
   max-width: 1180px;
+  margin-inline: auto;
 }
 .ad-pagehead {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.ad-pagehead__main {
+  min-width: 0;
+}
+.ad-pagehead__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* "New team" secondary button (scoped to the page header — leaves the wizard's
+   secondary button untouched). Light: white with faint dark border; dark:
+   outline that fills on hover. */
+.ad-pagehead__actions .bibo-btn--secondary {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid rgba(20, 22, 27, 0.11);
+}
+.ad-pagehead__actions .bibo-btn--secondary:hover:not(:disabled) {
+  background: #f5f7fc;
+  color: var(--text);
+  border-color: rgba(20, 22, 27, 0.18);
+}
+:root[data-theme="dark"] .ad-pagehead__actions .bibo-btn--secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="dark"] .ad-pagehead__actions .bibo-btn--secondary:hover:not(:disabled) {
+  background: #1f2633;
+  color: #fff;
+  border-color: #1f2633;
+}
+.ad-pagehead__actions .bibo-btn {
+  font-size: 14px;
+}
+.ad-pagehead__actions .bibo-btn--secondary svg {
+  width: 22px;
+  height: 22px;
 }
 .ad-h1 {
   margin: 0;
@@ -2271,7 +2492,8 @@ select.input:focus,
 /* ---- stat cards grid ---- */
 .ad-stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* wide screens: all four cards on one row, filling the centered content column */
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
   margin-bottom: 20px;
 }
@@ -2409,6 +2631,16 @@ select.input:focus,
   min-width: 720px; /* keep columns readable; scroll instead of squishing names */
   border-collapse: collapse;
 }
+/* Employees roster: give the name room (long names clamp within it) and centre
+   the Login column in the remaining space */
+.ad-table--roster th:first-child,
+.ad-table--roster td:first-child {
+  width: 44%;
+}
+.ad-table--roster th:nth-child(2),
+.ad-table--roster td:nth-child(2) {
+  text-align: center;
+}
 .ad-table th {
   text-align: left;
   padding: 18px 20px;
@@ -2447,8 +2679,11 @@ select.input:focus,
 }
 .ad-table td {
   padding: 16px 20px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(20, 22, 27, 0.07);
   vertical-align: middle;
+}
+:root[data-theme="dark"] .ad-table td {
+  border-top-color: rgba(255, 255, 255, 0.07);
 }
 /* last row: no divider line at the bottom */
 .ad-table tbody tr:last-child td {
@@ -2505,25 +2740,412 @@ select.input:focus,
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
   padding: 0;
   border: none;
   background: none;
   cursor: pointer;
-  color: var(--accent);
-  font-size: 14px;
+  color: #5b4bd6;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
+  text-decoration: none;
 }
 .ad-viewlink svg {
-  width: 15px;
-  height: 15px;
+  width: 14px;
+  height: 14px;
 }
 .ad-viewlink:hover {
   text-decoration: underline;
 }
 
+/* medium screens: two per row */
+@media (max-width: 1080px) {
+  .ad-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* narrow screens: stacked */
 @media (max-width: 560px) {
   .ad-stats {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Employee detail — offline-parity redesign ─────────────────────────
+   Breadcrumb, detail header, date mode, pill tabs, activity timeline +
+   app breakdown. Adapted from the offline design (ad-* classes) and reuses
+   the existing bibo-* stat/card/seg/avatar system. UI-only. */
+.ad-crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.ad-crumb a,
+.ad-crumb button {
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+}
+.ad-crumb a:hover,
+.ad-crumb button:hover {
+  color: var(--brand-600);
+}
+.ad-crumb svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+.ad-crumb__here {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ad-detailhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ad-detailhead__id {
+  min-width: 0;
+}
+.ad-detailhead__name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ad-detailhead__login {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ad-datemode {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* date-mode segmented control track (light) */
+.ad-datemode .bibo-seg {
+  background: #f2f4fb;
+}
+.ad-datefield {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+:root[data-theme="dark"] .ad-datefield {
+  background: #1b212d;
+}
+.ad-datefield svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+.ad-datefield input {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.ad-datefield__lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: #9aa1b4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* pill tabs */
+.bibo-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.bibo-tab {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.bibo-tab:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.bibo-tab--on,
+.bibo-tab--on:hover {
+  color: var(--brand-600);
+  background: var(--brand-tint);
+}
+:root[data-theme="dark"] .bibo-tab--on,
+:root[data-theme="dark"] .bibo-tab--on:hover {
+  color: #4a3bc0;
+  background: #e9e8f3;
+}
+
+.ad-tabwrap {
+  margin-top: 16px;
+}
+.ad-panel {
+  margin-top: 16px;
+}
+.ad-twocol {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+/* small screens: stack — Today's timeline on top, App & window breakdown below */
+@media (max-width: 1024px) {
+  .ad-twocol {
+    grid-template-columns: 1fr;
+  }
+}
+/* dark: report panels (activity two-col + keystrokes/browser/screenshots)
+   use a solid surface, not the glass default */
+:root[data-theme="dark"] .ad-panel .bibo-card--default {
+  background: #171a25;
+}
+
+.ad-panelhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ad-paneltitle {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+/* activity timeline
+   --tl-empty : colour of idle stripes + the two ends (solid)
+   --tl-track : bar background showing through the stripe gaps */
+.ad-timeline {
+  --tl-empty: #f2f4fb;
+  --tl-track: #ffffff;
+  position: relative;
+  height: 54px;
+  border-radius: 12px;
+  background: var(--tl-track);
+  overflow: hidden;
+}
+:root[data-theme="dark"] .ad-timeline {
+  --tl-empty: #11151f;
+  --tl-track: var(--surface-sunken);
+}
+/* wrapper so the hover tooltip can sit above the bar (outside overflow:hidden) */
+.ad-tlbox {
+  position: relative;
+}
+.ad-tltip {
+  position: absolute;
+  top: -8px;
+  transform: translate(-50%, -100%);
+  background: #1b1f2b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.5);
+}
+.ad-tlseg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: filter 0.12s ease, background 0.12s ease;
+}
+/* only the coloured (app) blocks react to hover; idle & ends stay put */
+.ad-tlseg:hover {
+  filter: brightness(1.08);
+}
+/* idle = diagonal stripes (no colour change on hover) */
+.ad-tlseg.idle {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--tl-empty) 0 6px,
+    transparent 6px 12px
+  );
+}
+.ad-tlseg.idle:hover {
+  filter: none;
+}
+/* the two ends: solid, no stripes */
+.ad-tlseg.end {
+  background: var(--tl-empty);
+}
+.ad-tlseg.end:hover {
+  filter: none;
+}
+.ad-tlaxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* donut */
+.bibo-donut {
+  flex: none;
+}
+
+/* app & window breakdown bars */
+.ad-appbars {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.ad-appbar {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.ad-appbar__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+.ad-appbar__name .txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-appbar__name .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+.ad-appbar__track {
+  height: 9px;
+  border-radius: 5px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.ad-appbar__fill {
+  height: 100%;
+  border-radius: 5px;
+}
+.ad-appbar__val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+
+/* ── Keystrokes-through-the-day bar chart (offline design) ────────────── */
+.ad-act-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ad-act-num {
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.ad-act-lbl {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.ad-chartscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 26px 0 4px;
+}
+.ad-chartscroll::-webkit-scrollbar {
+  height: 8px;
+}
+.ad-chartscroll::-webkit-scrollbar-track {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+}
+.ad-chartscroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.ad-timechips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.ad-timechip {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--border-subtle);
+  background: #f2f4fb;
+  color: #9aa1b4;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ad-timechip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.ad-timechip--on,
+.ad-timechip--on:hover {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+}
+/* dark: unselected chips use a deep surface + readable label */
+:root[data-theme="dark"] .ad-timechip:not(.ad-timechip--on) {
+  background: #11151f;
+  color: #6b7488;
 }
