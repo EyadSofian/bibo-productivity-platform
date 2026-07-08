@@ -35,3 +35,8 @@ deploy/
 # Marketing: production-rendered output (generated at deploy time by marketing/build.mjs production)
 marketing/site-prod/
 marketing/site-staging/
+.playwright-mcp/page-*
+brian.nguyen.work@gmail.com-2026-06-20T08_55_14.616Z_public.pem
+app.crediential.txt
+certificate/mac_app_distribution.cer
+scripts/vps-monitor.sh
