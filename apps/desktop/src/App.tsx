@@ -270,8 +270,11 @@ function App() {
     } catch {
       /* clear locally regardless */
     }
+    // Only drop the session — settings are local (no auth) and are loaded once on
+    // mount. Clearing them here left the router stuck on the loading gate
+    // (`settings === null`) with nothing to reload them, so logout never reached
+    // the welcome/login screen. BRI-21
     setSession(null);
-    setSettings(null);
     setScreen("Dashboard");
   }
 
