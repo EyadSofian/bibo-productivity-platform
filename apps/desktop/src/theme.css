@@ -337,6 +337,13 @@ body {
   gap: var(--sp-3);
 }
 
+/* stat-card grid: container-responsive — each card keeps a min width and the row
+   reflows 4→3→2→1 as the available space shrinks, so cards never squeeze their
+   text off the edge (BRI-20) */
+.bb-statgrid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
 .btn {
   font: inherit;
   font-size: var(--fz-sm);
@@ -751,7 +758,11 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
+  /* wrap instead of overflowing when the card is narrow (long localized labels
+     like "Thời gian hoạt động hôm nay") — BRI-20 */
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 .bibo-stat__value {
   font-size: 22px;

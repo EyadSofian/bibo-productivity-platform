@@ -252,7 +252,7 @@ export function Dashboard() {
       <p className="dash-intro">
         {t("dashboard.greeting")} · <strong>{dateStr}</strong>
       </p>
-      <div className="grid" style={{ gridTemplateColumns: "1.1fr 1fr 1.1fr 0.85fr" }}>
+      <div className="grid bb-statgrid">
         {/* delta values are PLACEHOLDERS to match the mock — the backend doesn't
             yet return vs-yesterday comparisons. Top app's sub (%) is real (by_app). */}
         <StatCard
