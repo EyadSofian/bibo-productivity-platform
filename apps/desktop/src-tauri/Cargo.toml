@@ -44,6 +44,8 @@ time = { version = "0.3", features = ["formatting"] }
 # macOS-only: CoreFoundation bindings used by the permission/event-tap backend.
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10"
+# make the main window non-movable via NSWindow.setMovable: (BRI-22)
+objc = "0.2"
 
 # Windows-only: Win32 bindings for idle detection (M1) and the keyboard hook (M2).
 [target.'cfg(target_os = "windows")'.dependencies]

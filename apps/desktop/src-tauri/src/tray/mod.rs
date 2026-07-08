@@ -25,7 +25,6 @@ const TRAY_ID: &str = "main";
 /// them (on a language change). Managed in Tauri state.
 struct MenuItems {
     open: MenuItem<tauri::Wry>,
-    start: MenuItem<tauri::Wry>,
     stop: MenuItem<tauri::Wry>,
     quit: MenuItem<tauri::Wry>,
 }
@@ -109,7 +108,8 @@ fn icon_for(state: State) -> tauri::image::Image<'static> {
 pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()> {
     let loc = current_locale(app);
     let open = MenuItem::with_id(app, "open", tr(&loc, "open"), true, None::<&str>)?;
-    let start = MenuItem::with_id(app, "start", tr(&loc, "start"), true, None::<&str>)?;
+    // "Start" is intentionally omitted from the tray menu — the tray only offers
+    // Stop (pause); tracking is resumed elsewhere. BRI-22
     let stop = MenuItem::with_id(app, "stop", tr(&loc, "stop"), true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", tr(&loc, "quit"), true, None::<&str>)?;
     let menu = Menu::with_items(
@@ -117,7 +117,6 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
         &[
             &open,
             &PredefinedMenuItem::separator(app)?,
-            &start,
             &stop,
             &PredefinedMenuItem::separator(app)?,
             &quit,
@@ -130,7 +129,6 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_main(app),
-            "start" => set_paused(app, false),
             "stop" => set_paused(app, true),
             "quit" => app.exit(0),
             _ => {}
@@ -139,7 +137,7 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
 
     // Keep handles so refresh() can enable/disable Start vs Stop, and relabel() can
     // re-translate all items when the language changes.
-    app.manage(MenuItems { open, start, stop, quit });
+    app.manage(MenuItems { open, stop, quit });
 
     refresh(app);
     start_status_updater(app.clone(), control);
@@ -149,6 +147,7 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
 /// Show + focus the main window (it may be hidden in menu-bar-only mode).
 pub fn show_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
+        let _ = w.center(); // window is fixed — re-center it every time it's shown
         let _ = w.show();
         let _ = w.set_focus();
     }
@@ -204,10 +203,9 @@ fn render(app: &AppHandle, state: State) {
         let _ = tray.set_tooltip(Some(tip));
     }
 
-    // Start is available only when paused; Stop only when running (tracking/idle).
+    // Stop is available only while running (tracking/idle). Start is not in the menu.
     let paused = state == State::Paused;
     if let Some(items) = app.try_state::<MenuItems>() {
-        let _ = items.start.set_enabled(paused);
         let _ = items.stop.set_enabled(!paused);
     }
 }
@@ -218,7 +216,6 @@ pub fn relabel(app: &AppHandle) {
     let loc = current_locale(app);
     if let Some(items) = app.try_state::<MenuItems>() {
         let _ = items.open.set_text(tr(&loc, "open"));
-        let _ = items.start.set_text(tr(&loc, "start"));
         let _ = items.stop.set_text(tr(&loc, "stop"));
         let _ = items.quit.set_text(tr(&loc, "quit"));
     }

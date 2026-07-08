@@ -1,30 +1,19 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { call as invoke } from "../api";
+import { listen } from "@tauri-apps/api/event";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
 /**
  * TrayMenu — a top-right popover on the welcome surface that mirrors the desktop
- * app's system-tray menu (status · language · Open / Start / Stop / Quit). Purely
- * visual on this screen: there's no tracking session before setup, so it toggles
- * only the on-screen status (matching the offline-app mockup and the web-admin
- * auth demo). The real controls live in the native tray once the app is set up.
+ * app's system-tray menu (status · language · Open / Start / Stop / Quit). The
+ * status reflects the app's REAL tracking state (read from `tracking_state` and
+ * kept in sync via the "tracking-state" broadcast), and Start/Stop drive the real
+ * `set_paused` command — no longer a purely-visual toggle (BRI-22).
  */
 
-type TrackState = "tracking" | "paused";
+type TrackStatus = "tracking" | "idle" | "paused";
 
-const PauseGlyph = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-    strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    <rect x="14" y="3" width="5" height="18" rx="1" />
-    <rect x="5" y="3" width="5" height="18" rx="1" />
-  </svg>
-);
-const RecordGlyph = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-    <circle cx="12" cy="12" r="9" />
-    <circle cx="12" cy="12" r="3.5" fill="currentColor" />
-  </svg>
-);
 const OpenIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
     strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -54,9 +43,19 @@ const PowerIcon = () => (
 
 export function TrayMenu() {
   const { t } = useTranslation("welcome");
-  const [state, setState] = useState<TrackState>("paused");
+  const [status, setStatus] = useState<TrackStatus>("paused");
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  // Reflect the app's real tracking state: read it once, then follow the tray's
+  // "tracking-state" broadcast (same source the main-window pill uses).
+  useEffect(() => {
+    invoke<TrackStatus>("tracking_state").then(setStatus).catch(() => {});
+    const unlisten = listen<TrackStatus>("tracking-state", (e) => setStatus(e.payload));
+    return () => {
+      unlisten.then((f) => f());
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -74,8 +73,9 @@ export function TrayMenu() {
     };
   }, [open]);
 
-  const stateLabel = state === "tracking" ? t("tray.tracking") : t("tray.paused");
-  const stateColor = state === "tracking" ? "#10b981" : "#3b82f6";
+  const tracking = status !== "paused"; // "tracking" or "idle" both count as on
+  const stateLabel = tracking ? t("tray.tracking") : t("tray.paused");
+  const stateColor = tracking ? "#10b981" : "#ef4444"; // red round dot when not tracking
 
   return (
     <div className="tray" ref={ref}>
@@ -88,7 +88,7 @@ export function TrayMenu() {
         aria-label={`${t("tray.status")}: ${stateLabel}`}
         onClick={() => setOpen((o) => !o)}
       >
-        {state === "tracking" ? <RecordGlyph /> : <PauseGlyph />}
+        <span className={`tray-livedot ${tracking ? "tray-livedot--on" : "tray-livedot--off"}`} aria-hidden />
       </button>
 
       {open && (
@@ -105,24 +105,19 @@ export function TrayMenu() {
             <OpenIcon />
             {t("tray.open")}
           </button>
-          <button
-            type="button"
-            className="tray-item"
-            disabled={state === "tracking"}
-            onClick={() => {
-              setState("tracking");
-              setOpen(false);
-            }}
-          >
+          {/* This popup only shows on the pre-auth screens (welcome / sign-in /
+              onboarding). Tracking must not start before the user logs in or picks
+              "just me", so Start is disabled here. BRI-22 */}
+          <button type="button" className="tray-item" disabled aria-disabled>
             <PlayIcon />
             {t("tray.start")}
           </button>
           <button
             type="button"
             className="tray-item"
-            disabled={state === "paused"}
+            disabled={!tracking}
             onClick={() => {
-              setState("paused");
+              invoke("set_paused", { paused: true }).catch(() => {});
               setOpen(false);
             }}
           >

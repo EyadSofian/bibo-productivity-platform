@@ -323,7 +323,9 @@ function App() {
 
   return (
     <div className="app">
-      <div className="app-titlebar" data-tauri-drag-region>
+      {/* not a drag region — the window is fixed (non-movable, always centered);
+          it only shows/hides via the tray. BRI-22 */}
+      <div className="app-titlebar">
         <span className="app-titlebar-title">BiBoTracking — {t(`nav.${screen}`)}</span>
         <AppTrayMenu status={status} onToggleTracking={toggleTracking} />
       </div>

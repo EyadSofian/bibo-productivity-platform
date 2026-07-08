@@ -2549,6 +2549,39 @@ td {
   width: 17px;
   height: 17px;
 }
+/* pulsing status dot in the tray trigger — green while tracking, red when not,
+   same live-pulse ring as .bb-live__dot (BRI-22) */
+.tray-livedot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.tray-livedot--on {
+  background-image: radial-gradient(circle, #10b981 38%, rgba(16, 185, 129, 0) 72%);
+  animation: tray-livedot-on 1.8s ease-out infinite;
+}
+.tray-livedot--off {
+  background-image: radial-gradient(circle, #ef4444 38%, rgba(239, 68, 68, 0) 72%);
+  animation: tray-livedot-off 1.8s ease-out infinite;
+}
+@keyframes tray-livedot-on {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+  }
+}
+@keyframes tray-livedot-off {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+  }
+}
 .tray-menu {
   position: absolute;
   top: calc(100% + 8px);
