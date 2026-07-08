@@ -400,18 +400,18 @@ body {
 .lang-menu {
   position: absolute;
   z-index: 60;
-  min-width: 100%;
+  min-width: 190px;
   width: max-content;
-  max-width: 240px;
+  max-width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 5px;
+  gap: 2px;
+  padding: 6px;
   background: var(--surface-strong, var(--bg));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 16px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
 }
 .lang-menu.down {
@@ -426,28 +426,41 @@ body {
 .lang-menu.left {
   left: 0;
 }
+/* menu options — offline .bb-lang__opt: no flag, active shows a check on the
+   right (margin-left:auto) with a subtle brand tint */
 .lang-opt {
   font: inherit;
   font-size: var(--fz-sm);
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  padding: 6px var(--sp-2);
+  padding: 8px 10px;
   border: none;
   background: none;
-  color: var(--text);
-  border-radius: 4px;
+  color: var(--text-muted);
+  border-radius: 11px;
 }
 .lang-opt:hover {
-  background: var(--bg-inset);
+  background: var(--bg-subtle);
+  color: var(--text);
 }
 .lang-opt.active {
   color: var(--accent);
   background: var(--accent-weak);
-  font-weight: 600;
+  font-weight: 700;
+}
+.lang-opt .ck {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--accent);
+}
+.lang-opt .ck svg {
+  width: 15px;
+  height: 15px;
 }
 /* onboarding / welcome: switcher pinned top-right of the centered surface */
 .welcome-lang {
@@ -2327,6 +2340,10 @@ td {
   --text-muted: #6b6b6b;
   --surface: #ffffff;
   --surface-strong: #ffffff;
+  /* keep brand tint light too, so the language menu's active option doesn't pick
+     up the dark-theme --accent-weak on this forced-white surface (BRI-16) */
+  --accent: #6c5ce7;
+  --accent-weak: #ece9fd;
   color: var(--text);
   background: #ffffff;
 }
@@ -2483,6 +2500,19 @@ td {
   background: var(--surface-strong, var(--bg));
 }
 .welcome .lang-globe {
+  color: var(--text-muted);
+}
+/* Welcome/Login/Onboarding force a white surface, so keep the language pill light
+   even when the app/OS theme is dark — otherwise the global
+   `[data-theme="dark"] .lang-trigger` rule (higher specificity) leaks a dark fill
+   onto the white screen and the button is unreadable. BRI-16 */
+:root[data-theme="dark"] .welcome .lang-trigger {
+  background: var(--surface-strong);
+  border-color: var(--border);
+  color: var(--text);
+}
+:root[data-theme="dark"] .welcome .lang-caret,
+:root[data-theme="dark"] .welcome .lang-globe {
   color: var(--text-muted);
 }
 

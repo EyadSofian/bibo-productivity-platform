@@ -116,10 +116,23 @@ export function LanguageSwitcher({
               className={`lang-opt${l.code === code ? " active" : ""}`}
               onClick={() => pick(l.code)}
             >
-              <span className="lang-flag" aria-hidden>
-                {l.flag}
-              </span>
               {l.label}
+              {l.code === code && (
+                <span className="ck" aria-hidden>
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="15"
+                    height="15"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
+              )}
             </button>
           ))}
         </div>
