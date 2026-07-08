@@ -792,25 +792,55 @@ body {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
+/* segmented control — offline "bibo-seg" pill style (used only in Settings):
+   rounded track with a white/navy raised thumb marking the active option */
 .segmented {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  flex-wrap: wrap;
 }
 .segmented button {
   font: inherit;
-  font-size: var(--fz-sm);
-  border: none;
-  background: var(--bg-inset);
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-muted);
-  padding: 5px var(--sp-3);
+  padding: 6px 14px;
+  border-radius: 999px;
   cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+.segmented button:not(.active):not([disabled]):hover {
+  color: var(--text);
 }
 .segmented button.active {
-  background: var(--accent-weak);
-  color: var(--accent);
-  font-weight: 600;
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.25);
+}
+.segmented button[disabled] {
+  cursor: default;
+}
+:root[data-theme="dark"] .segmented {
+  background: #11151e;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+:root[data-theme="dark"] .segmented button {
+  color: #a6adbf;
+}
+/* active thumb = offline "surface-raised", lifted off the sunken track */
+:root[data-theme="dark"] .segmented button.active {
+  background: #1b212d;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* ---------- data ---------- */
@@ -931,32 +961,73 @@ td {
   min-height: 2px;
 }
 
-/* ---------- settings ---------- */
+/* ---------- settings ----------
+   cards match the offline "bibo-card" language: 18px radius, glass surface in
+   light, solid navy in dark (same surface as the report panels) */
 .set-group {
   background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(24, 32, 64, 0.08), 0 2px 6px rgba(24, 32, 64, 0.04);
   overflow: hidden;
+}
+/* dark: solid offline "surface-card" with shadow-md + a faint top rim-light,
+   matching the offline .card (no glass blur) */
+:root[data-theme="dark"] .set-group {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .set-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid var(--border);
+  gap: 20px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .set-row:last-child {
   border-bottom: none;
 }
 .set-title {
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
 }
 .set-desc {
-  color: var(--text-muted);
-  font-size: var(--fz-xs);
-  margin-top: 2px;
+  color: #9aa1b4;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 3px;
+  max-width: 64ch;
+}
+/* narrow: let the control drop below its label instead of squeezing */
+@media (max-width: 640px) {
+  .set-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+/* read-only value on the right of a settings row (offline .ad-readonly) */
+.ad-readonly {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b6276;
+}
+/* uppercase section label grouping settings cards (offline .ad-set-sec) */
+.ad-set-sec {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9aa1b4;
+  margin: 22px 4px 10px;
 }
 
 /* ---------- add-members (signup wizard) ---------- */
@@ -1346,6 +1417,28 @@ select.input:focus,
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
+}
+.bibo-btn--sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  gap: 6px;
+}
+.bibo-btn--sm svg {
+  width: 16px;
+  height: 16px;
+}
+/* dark: settings cleanup button sits on the card surface — matching fill,
+   faint rim, lighter hover (offline surface-card / surface-hover) */
+:root[data-theme="dark"] .set-group .bibo-btn--secondary {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
+}
+:root[data-theme="dark"] .set-group .bibo-btn--secondary:hover:not(:disabled) {
+  background: #1f2633;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
 }
 .bibo-btn--primary {
   background: #6c5ce7;
