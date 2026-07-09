@@ -99,16 +99,18 @@ function headAlts() {
 // host-agnostic so the same markup works on staging and production. Opens on hover or focus
 // (keyboard / touch via tabindex + :focus-within in styles.css).
 function langSwitcher(code) {
+  const check = `<svg class="ck" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`;
   const items = Object.keys(LOCALES)
     .map((c) => {
       const cur = c === code ? ' aria-current="true"' : "";
-      return `<a class="lang-opt" href="${relUrlFor(c)}" data-loc="${c}"${cur}><span class="lang-flag">${LOCALES[c].flag}</span>${LOCALES[c].label}</a>`;
+      return `<a class="lang-opt" href="${relUrlFor(c)}" data-loc="${c}"${cur}>${LOCALES[c].label}${check}</a>`;
     })
     .join("");
-  const cur = LOCALES[code];
+  const globe = `<svg class="lang-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>`;
   return (
     `<div class="lang-switcher" aria-label="Language" tabindex="0">` +
-    `<span class="lang-flag">${cur.flag}</span><span class="lang-label">${cur.label}</span>` +
+    globe +
+    `<span class="lang-label">${code.toUpperCase()}</span>` +
     `<svg class="lang-caret" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>` +
     `<div class="lang-menu">${items}</div></div>`
   );
