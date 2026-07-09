@@ -337,11 +337,21 @@ body {
   gap: var(--sp-3);
 }
 
-/* stat-card grid: container-responsive — each card keeps a min width and the row
-   reflows 4→3→2→1 as the available space shrinks, so cards never squeeze their
-   text off the edge (BRI-20) */
+/* stat-card grid: Active time & Keypresses (1st, 3rd) wider; Top app &
+   Screenshots (2nd, 4th) narrower. The cards' overflow:hidden + 2-line value
+   clamp keep everything contained even at the narrowest window (BRI-20). */
 .bb-statgrid {
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: 1fr 0.8fr 1fr 0.72fr;
+  /* don't stretch across the whole row on wide windows — cap the width so all four
+     cards stay compact (Top app & Screenshots narrowest), leaving space on the
+     right. Below this width the grid just fills, so it never overflows when narrow. */
+  max-width: 1040px;
+}
+/* very narrow: drop to two columns so cards don't get unusably thin */
+@media (max-width: 620px) {
+  .bb-statgrid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .btn {
@@ -728,6 +738,9 @@ body {
   border-radius: 16px;
   padding: 14px 16px;
   box-shadow: 0 1px 2px rgba(16, 18, 40, 0.04), 0 6px 18px rgba(16, 18, 40, 0.05);
+  /* never let the value/footer (or its sparkline) spill outside the rounded card
+     when the window is narrow — BRI-20 */
+  overflow: hidden;
 }
 .bibo-stat__top {
   display: flex;
@@ -769,8 +782,14 @@ body {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.15;
-  /* allow the value to wrap (e.g. "4h 30m" → 4h / 30m) so it never clips and all
-     four cards fit without horizontal scrolling */
+  /* wrap (e.g. "4h 30m" → 4h / 30m) but cap at 2 lines with an ellipsis so a long
+     app name ("Google Chrome") can't grow the card into / over the footer — BRI-20 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .bibo-stat__foot {
   display: flex;

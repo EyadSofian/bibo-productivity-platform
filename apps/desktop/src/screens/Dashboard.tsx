@@ -38,7 +38,7 @@ function hourlyActivity(timeline: Seg[], dayStart: number, now: number): number[
 
 // Tiny smoothed sparkline (gradient area + line + end dot) from a value series.
 function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const W = 46, H = 20, P = 3;
+  const W = 38, H = 18, P = 3;
   const n = values.length;
   if (n < 2) return null;
   const max = Math.max(...values);
