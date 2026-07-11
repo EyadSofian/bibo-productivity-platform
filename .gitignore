@@ -35,6 +35,9 @@ deploy/
 # Marketing: production-rendered output (generated at deploy time by marketing/build.mjs production)
 marketing/site-prod/
 marketing/site-staging/
+
+# Marketing: local offline-design reference dumps (never committed)
+marketing/site/_*.html
 .playwright-mcp/page-*
 brian.nguyen.work@gmail.com-2026-06-20T08_55_14.616Z_public.pem
 app.crediential.txt
