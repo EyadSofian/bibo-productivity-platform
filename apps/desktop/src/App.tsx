@@ -198,6 +198,15 @@ function App() {
     }
   }, [session, settings, pastAuthGate]);
 
+  // Tracking must not run before setup is complete (BRI-22): pause it on the
+  // welcome/login/onboarding surfaces (native tray icon goes red), resume when
+  // the user reaches the main app.
+  const inSetup = !pastAuthGate || settings?.onboarding_completed === false;
+  useEffect(() => {
+    if (session === undefined || settings === null) return; // still loading
+    invoke("set_paused", { paused: inSetup }).catch(() => {});
+  }, [session === undefined, settings === null, inSetup]);
+
   // Startup permission check (ticket: no OS prompts at launch). The app no longer
   // requests permissions on startup; instead, once per launch, if a required
   // permission is missing we explain why and open the Permissions screen so every
