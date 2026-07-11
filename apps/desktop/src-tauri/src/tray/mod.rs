@@ -5,7 +5,7 @@
 //! Indicator (glanceable, updated every couple seconds):
 //!   🟢 tracking   🟡 idle (present, not counting active time)   🔴 paused
 
-use std::sync::atomic::{AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -25,9 +25,16 @@ const TRAY_ID: &str = "main";
 /// them (on a language change). Managed in Tauri state.
 struct MenuItems {
     open: MenuItem<tauri::Wry>,
+    start: MenuItem<tauri::Wry>,
     stop: MenuItem<tauri::Wry>,
+    version: MenuItem<tauri::Wry>,
     quit: MenuItem<tauri::Wry>,
 }
+
+/// True while the user is on the welcome/login/onboarding surfaces (not the
+/// dashboard). Start stays disabled there — tracking is resumed by finishing
+/// setup, not from the tray. Defaults to true until the UI reports otherwise.
+static IN_SETUP: AtomicBool = AtomicBool::new(true);
 
 /// The active UI locale persisted in settings (defaults to "en" if unavailable).
 fn current_locale(app: &AppHandle) -> String {
@@ -55,6 +62,7 @@ fn tr(locale: &str, key: &str) -> String {
         "open" => s("Open main UI", "打开主界面", "メイン画面を開く", "Mở giao diện chính", "Buka antarmuka utama", "Ouvrir l'interface", "Abrir la interfaz"),
         "start" => s("Start", "开始", "開始", "Bắt đầu", "Mulai", "Démarrer", "Iniciar"),
         "stop" => s("Stop", "停止", "停止", "Dừng", "Hentikan", "Arrêter", "Detener"),
+        "version" => s("Version", "版本", "バージョン", "Phiên bản", "Versi", "Version", "Versión"),
         "quit" => s("Quit BiBoTracking", "退出 BiBoTracking", "BiBoTracking を終了", "Thoát BiBoTracking", "Keluar dari BiBoTracking", "Quitter BiBoTracking", "Salir de BiBoTracking"),
         "tip_tracking" => s("tracking", "正在跟踪", "トラッキング中", "đang theo dõi", "melacak", "suivi en cours", "en seguimiento"),
         "tip_idle" => s("idle (not counting)", "空闲（未计数）", "アイドル（カウントなし）", "không hoạt động (không tính)", "diam (tidak menghitung)", "inactif (pas de comptage)", "inactivo (sin contar)"),
@@ -108,17 +116,27 @@ fn icon_for(state: State) -> tauri::image::Image<'static> {
 pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()> {
     let loc = current_locale(app);
     let open = MenuItem::with_id(app, "open", tr(&loc, "open"), true, None::<&str>)?;
-    // "Start" is intentionally omitted from the tray menu — the tray only offers
-    // Stop (pause); tracking is resumed elsewhere. BRI-22
+    // Start resumes tracking, but only from the dashboard (disabled during
+    // welcome/login/onboarding — see IN_SETUP). BRI-22
+    let start = MenuItem::with_id(app, "start", tr(&loc, "start"), false, None::<&str>)?;
     let stop = MenuItem::with_id(app, "stop", tr(&loc, "stop"), true, None::<&str>)?;
+    let version = MenuItem::with_id(
+        app,
+        "version",
+        version_label(app, &loc),
+        false,
+        None::<&str>,
+    )?;
     let quit = MenuItem::with_id(app, "quit", tr(&loc, "quit"), true, None::<&str>)?;
     let menu = Menu::with_items(
         app,
         &[
             &open,
             &PredefinedMenuItem::separator(app)?,
+            &start,
             &stop,
             &PredefinedMenuItem::separator(app)?,
+            &version,
             &quit,
         ],
     )?;
@@ -129,6 +147,7 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_main(app),
+            "start" => set_paused(app, false),
             "stop" => set_paused(app, true),
             "quit" => app.exit(0),
             _ => {}
@@ -137,11 +156,29 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
 
     // Keep handles so refresh() can enable/disable Start vs Stop, and relabel() can
     // re-translate all items when the language changes.
-    app.manage(MenuItems { open, stop, quit });
+    app.manage(MenuItems {
+        open,
+        start,
+        stop,
+        version,
+        quit,
+    });
 
     refresh(app);
     start_status_updater(app.clone(), control);
     Ok(())
+}
+
+/// "Version 1.4.1" — localized word + the app version from tauri.conf.json.
+fn version_label(app: &AppHandle, loc: &str) -> String {
+    format!("{} {}", tr(loc, "version"), app.package_info().version)
+}
+
+/// Record whether the user is still in setup (welcome/login/onboarding) and pause
+/// tracking accordingly; on the dashboard tracking resumes and Start becomes usable.
+pub fn set_in_setup(app: &AppHandle, in_setup: bool) {
+    IN_SETUP.store(in_setup, Ordering::Relaxed);
+    set_paused(app, in_setup);
 }
 
 /// Show + focus the main window (it may be hidden in menu-bar-only mode).
@@ -202,9 +239,11 @@ fn render(app: &AppHandle, state: State) {
         let _ = tray.set_tooltip(Some(tip));
     }
 
-    // Stop is available only while running (tracking/idle). Start is not in the menu.
+    // Stop is available only while running (tracking/idle); Start only while
+    // paused AND on the dashboard (never from the setup surfaces).
     let paused = state == State::Paused;
     if let Some(items) = app.try_state::<MenuItems>() {
+        let _ = items.start.set_enabled(paused && !IN_SETUP.load(Ordering::Relaxed));
         let _ = items.stop.set_enabled(!paused);
     }
 }
@@ -215,7 +254,9 @@ pub fn relabel(app: &AppHandle) {
     let loc = current_locale(app);
     if let Some(items) = app.try_state::<MenuItems>() {
         let _ = items.open.set_text(tr(&loc, "open"));
+        let _ = items.start.set_text(tr(&loc, "start"));
         let _ = items.stop.set_text(tr(&loc, "stop"));
+        let _ = items.version.set_text(version_label(app, &loc));
         let _ = items.quit.set_text(tr(&loc, "quit"));
     }
     refresh(app); // re-renders the localized tooltip
