@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "The open-source Hubstaff alternative · macOS &amp; Windows",
-    "headlineA": "See where work time ",
-    "headlineB": "actually goes",
-    "headlineC": ".",
+    "headlineA": "Time tracking that<br>respects ",
+    "headlineB": "the<br>people it<br>measures.",
+    "headlineC": "",
     "ledeA": "A free, open-source ",
     "ledeStrong": "Hubstaff alternative",
     "ledeB": " for macOS &amp; Windows. BiBoTracking measures\n          active app &amp; window time, keystroke volume, periodic screenshots and browser activity —\n          stored locally on each computer, and rolled up for owners in a clean web dashboard.",
@@ -105,6 +105,8 @@
     "intro": "The desktop app the employee runs, and the web dashboard owners sign in to. Real product, real data.",
     "tabDesktop": "Desktop app",
     "tabWeb": "Web dashboard",
+    "roleDesktop": "For employees or kids",
+    "roleWeb": "For parents or owners",
     "capDesktop": "The desktop app — dashboard, activity, screenshots, browser and org-managed settings.",
     "capWeb": "The owner dashboard — drill into any employee's activity, keystrokes, browser and screenshots."
   },
@@ -116,6 +118,7 @@
       "p": "The employee installs BiBoTracking on macOS or Windows and grants the requested capture permissions (Accessibility, Input Monitoring and Screen Recording on macOS). Status auto-updates the moment they're granted."
     },
     "step2": {
+      "p": "Optional. Logs the domains you visit so browsing shows in reports.",
       "h": "Add the Chrome extension",
       "pA": "Optional. The Manifest&nbsp;V3 extension auto-discovers the local app and reports browser pages to ",
       "pB": " — never to the cloud. ",
@@ -127,6 +130,7 @@
     }
   },
   "showcase": {
+    "zoomHint": "Click any screen to zoom in",
     "kicker": "Inside the product",
     "title": "Built for clarity, on both ends.",
     "intro": "The same data, presented for whoever's looking — flat, minimal, dark or light.",

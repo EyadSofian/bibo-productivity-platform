@@ -16,7 +16,7 @@
 // on whatever host serves the files. Only SEO-facing URLs (canonical, og:url, hreflang,
 // JSON-LD, sitemap) are absolute and therefore environment-specific.
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -173,6 +173,11 @@ function analytics() {
 
 const template = readFileSync(join(SRC, "template.html"), "utf8");
 
+// Cache-buster for the stylesheet: use its mtime so every edit forces browsers to
+// reload styles.css instead of serving a stale cached copy.
+let cssV = "1";
+try { cssV = String(Math.floor(statSync(join(SITE, "styles.css")).mtimeMs)); } catch (_) {}
+
 for (const code of Object.keys(LOCALES)) {
   const strings = flatten(JSON.parse(readFileSync(join(SRC, "i18n", `${code}.json`), "utf8")));
   let html = template;
@@ -194,7 +199,8 @@ for (const code of Object.keys(LOCALES)) {
     .split("{{__autodetect}}").join(autoDetect(code))
     .split("{{__locale_js}}").join(localeJs(code))
     .split("{{__head_alts}}").join(headAlts())
-    .split("{{__lang_switcher}}").join(langSwitcher(code));
+    .split("{{__lang_switcher}}").join(langSwitcher(code))
+    .split('href="/styles.css"').join(`href="/styles.css?v=${cssV}"`);
 
   // 3) per-locale canonical/og:url/JSON-LD url + og:locale. Targeted replacements
   // (NOT a blanket BASE-url swap, which would also clobber the hreflang alternates).

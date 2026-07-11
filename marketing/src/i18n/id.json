@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "Alternatif Hubstaff open-source · macOS &amp; Windows",
-    "headlineA": "Lihat ke mana waktu kerja ",
-    "headlineB": "benar-benar pergi",
-    "headlineC": ".",
+    "headlineA": "Pelacakan waktu<br>yang menghormati<br>",
+    "headlineB": "orang yang<br>diukurnya.",
+    "headlineC": "",
     "ledeA": "Alternatif ",
     "ledeStrong": "Hubstaff",
     "ledeB": " yang gratis dan open-source untuk macOS &amp; Windows. BiBoTracking mengukur\n          waktu aktif aplikasi &amp; jendela, volume ketukan tombol, screenshot berkala, dan aktivitas browser —\n          disimpan secara lokal di setiap komputer, dan dirangkum untuk pemilik dalam dashboard web yang rapi.",
@@ -105,6 +105,8 @@
     "intro": "Aplikasi desktop yang dijalankan karyawan, dan dashboard web tempat pemilik masuk. Produk nyata, data nyata.",
     "tabDesktop": "Aplikasi desktop",
     "tabWeb": "Dashboard web",
+    "roleDesktop": "Untuk karyawan atau anak",
+    "roleWeb": "Untuk orang tua atau pemilik",
     "capDesktop": "Aplikasi desktop — dashboard, aktivitas, screenshot, browser, dan pengaturan yang dikelola organisasi.",
     "capWeb": "Dashboard pemilik — telusuri aktivitas, ketukan tombol, browser, dan screenshot setiap karyawan."
   },
@@ -116,6 +118,7 @@
       "p": "Karyawan menginstal BiBoTracking di macOS atau Windows dan memberikan izin tangkap yang diminta (Accessibility, Input Monitoring, dan Screen Recording di macOS). Status diperbarui otomatis saat izin diberikan."
     },
     "step2": {
+      "p": "Opsional. Mencatat domain yang Anda kunjungi agar penjelajahan muncul di laporan.",
       "h": "Tambahkan ekstensi Chrome",
       "pA": "Opsional. Ekstensi Manifest&nbsp;V3 menemukan aplikasi lokal secara otomatis dan melaporkan halaman browser ke ",
       "pB": " — tidak pernah ke cloud. ",
@@ -127,6 +130,7 @@
     }
   },
   "showcase": {
+    "zoomHint": "Klik layar mana pun untuk memperbesar",
     "kicker": "Di dalam produk",
     "title": "Dibangun untuk kejelasan, di kedua sisi.",
     "intro": "Data yang sama, disajikan untuk siapa pun yang melihat — datar, minimal, gelap atau terang.",
