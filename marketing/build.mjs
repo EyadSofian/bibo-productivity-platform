@@ -39,6 +39,12 @@ const ENVS = {
     ga: "G-EKVNL0JY98",
     out: "site-prod",
   },
+  staging: {
+    base: "https://employeetracking.namnguyen.pro",
+    ga: "",
+    out: "site-staging",
+    noindex: true, // staging must never be crawled/indexed
+  },
 };
 
 const ENV_NAME = (process.argv[2] || process.env.SITE_ENV || "default").toLowerCase();
@@ -173,6 +179,10 @@ for (const code of Object.keys(LOCALES)) {
   for (const [key, val] of Object.entries(strings)) {
     html = html.split(`{{${key}}}`).join(val);
   }
+  // Staging: swap the indexing meta for noindex so crawlers never index this host.
+  if (ENV.noindex) {
+    html = html.replace('content="index, follow, max-image-preview:large"', 'content="noindex, nofollow"');
+  }
   // 2) build placeholders
   html = html
     .split("{{__lang}}").join(LOCALES[code].bcp47)
@@ -234,8 +244,13 @@ ${urls}
 writeFileSync(join(SITE, "sitemap.xml"), sitemap, "utf8");
 console.log("✓ sitemap.xml");
 
-// robots.txt — welcomes search + AI crawlers; the Sitemap line is environment-specific.
-const robots = `# Search engines and AI / answer-engine crawlers are welcome to crawl and cite
+// robots.txt — welcomes search + AI crawlers on prod; staging blocks everything.
+const robots = ENV.noindex
+  ? `# Staging environment — do not crawl or index.
+User-agent: *
+Disallow: /
+`
+  : `# Search engines and AI / answer-engine crawlers are welcome to crawl and cite
 # this site. (Note: if Cloudflare "Block AI bots" / AI Crawl Control is enabled,
 # it overrides this file and blocks AI crawlers at the edge — disable it there.)
 User-agent: *

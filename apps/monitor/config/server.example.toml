@@ -1,0 +1,50 @@
+# bibomon server config (mac VPS). Real file lives at ~/monitoring/etc/bibomon.toml
+listen = ":3200"                # cloudflared already routes monitor.namnguyen.pro here
+db = "/Users/namng/monitoring/data/bibomon.db"
+token = "CHANGE-ME"             # must match agent token
+dash_user = "admin"
+dash_pass = "CHANGE-ME"
+retention_days = 30
+raw_request_hours = 48
+agent_host = "oracle-a1"        # alert if this host goes silent
+keepalive_service = "bibotracking"
+keepalive_path = "/v1/keepalive"
+
+[telegram]
+token = "CHANGE-ME"
+chat_id = "462097600"
+
+[[probe]]
+name = "bibotracker.com"
+url = "https://bibotracker.com/healthz"
+
+[[probe]]
+name = "api.biboreward.com"
+url = "https://api.biboreward.com/healthz"
+
+[[probe]]
+name = "app.biboreward.com"
+url = "https://app.biboreward.com/"
+
+[[probe]]
+name = "biboreward.com"
+url = "https://biboreward.com/"
+
+[[probe]]
+name = "thebibolab.com"
+url = "https://thebibolab.com/"
+
+[[probe]]
+name = "staging (employeetracking)"
+url = "https://employeetracking.namnguyen.pro/healthz"
+
+[local]
+host = "mac-vps"
+
+[[local.service_probe]]
+unit = "bibotracking-staging"
+url = "http://127.0.0.1:8080/healthz"
+
+[[local.tail]]
+service = "bibotracking-staging"
+file = "/Users/namng/ctracking/logs/backend.log"

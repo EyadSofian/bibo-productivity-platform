@@ -20,7 +20,8 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
   (`127.0.0.1`), never the cloud.
 - `marketing/` — static landing site (see i18n build below).
 - `docs/` — design docs + `docs/tickets/` (numbered work log; `00-INDEX.md` is the index).
-- `deploy/` — deploy scripts (**gitignored**, local-only). `.claude/skills/` — also local-only.
+- `deploy/` — deploy scripts (**gitignored**, local-only). Skills live globally in
+  `~/.claude/skills/` (moved out of the repo-local `.claude/skills/` on 2026-07-04).
 
 ## Run locally (scripts/)
 - `scripts/dev-db.sh` — Postgres in Docker (`ctracking-dev-db`, role/db `ctracking`, :5432).
@@ -69,7 +70,7 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
 - **desktop:** compile-time Cargo features in `src-tauri/Cargo.toml` (`local|staging|production`,
   default **production**) pick `DEFAULT_BACKEND_URL` (`settings/mod.rs`, order local>staging>prod);
   `CTRACKING_BACKEND_URL` env overrides at runtime.
-- **Deploy skills** (local-only `.claude/skills/`): `deploy-staging` (live, employeetracking,
+- **Deploy skills** (global `~/.claude/skills/`): `deploy-staging` (live, employeetracking,
   macOS/launchd/Cloudflare-tunnel), `deploy-production` (live pipeline → bibotracker.com on
   Ubuntu VPS `root@vinahost`: Go binary + PG16 + **Cloudflare Tunnel**, systemd, no nginx;
   `deploy/deploy-prod.sh`). `build-desktop-dmg` / `build-desktop-exe` build the installers.

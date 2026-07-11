@@ -575,7 +575,7 @@
     if (winModal) {
       const dl = document.getElementById('winmodal-download');
       const closeWin = () => winModal.classList.remove('open');
-      document.querySelectorAll('a[href$=".msi"]').forEach(a => {
+      document.querySelectorAll('a[href$=".msi"]:not(#winmodal-download)').forEach(a => {
         a.addEventListener('click', (e) => {
           e.preventDefault();
           dl.href = a.getAttribute('href');
