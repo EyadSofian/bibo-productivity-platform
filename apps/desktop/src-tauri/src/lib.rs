@@ -60,6 +60,7 @@ pub fn run() {
             commands::track_event,
 
             commands::set_paused,
+            commands::set_in_setup,
             commands::is_paused,
             commands::tracking_state,
             commands::dashboard_data,

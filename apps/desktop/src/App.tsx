@@ -204,7 +204,7 @@ function App() {
   const inSetup = !pastAuthGate || settings?.onboarding_completed === false;
   useEffect(() => {
     if (session === undefined || settings === null) return; // still loading
-    invoke("set_paused", { paused: inSetup }).catch(() => {});
+    invoke("set_in_setup", { inSetup }).catch(() => {});
   }, [session === undefined, settings === null, inSetup]);
 
   // Startup permission check (ticket: no OS prompts at launch). The app no longer

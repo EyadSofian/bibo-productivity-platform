@@ -28,6 +28,13 @@ pub fn set_paused(paused: bool, app: tauri::AppHandle) {
     crate::tray::set_paused(&app, paused);
 }
 
+/// UI reports whether the user is still on the setup surfaces (welcome/login/
+/// onboarding). Pauses tracking there and gates the tray Start item.
+#[tauri::command]
+pub fn set_in_setup(in_setup: bool, app: tauri::AppHandle) {
+    crate::tray::set_in_setup(&app, in_setup);
+}
+
 /// Product analytics from the web UI (e.g. `app_active`, `ui_click`). Reuses the same
 /// Aptabase pipeline as `app_started` — per-launch session, batching, offline
 /// queue. Fire-and-forget: never fails the caller. `props` carry event-specific fields.
