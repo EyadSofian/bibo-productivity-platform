@@ -1,7 +1,7 @@
 {
   "name": "@ctracking/desktop",
   "private": true,
-  "version": "1.4.1",
+  "version": "1.5.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -15,6 +15,7 @@
     "sign:dev": "../../scripts/sign-macos.sh src-tauri/target/debug/bundle/macos/ctracking.app"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "^5.2.8",
     "@sentry/react": "^10.59.0",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2",

@@ -213,8 +213,13 @@ pub fn start_keyboard(db: Arc<Db>, control: Arc<TrackerControl>) {
 
     // Tap: blocks while active; returns if it can't be created (permission not yet
     // granted) — retry so it starts as soon as the user grants Input Monitoring.
+    // Only attempt once granted: the bare CGEventTapCreate attempt registers the
+    // app with TCC and can surface the OS prompt, which must stay user-initiated.
     thread::spawn(|| loop {
-        crate::platform::run_keyboard_tap();
+        use crate::platform::{permission_status, Permission, PermissionState};
+        if permission_status(Permission::InputMonitoring) == PermissionState::Granted {
+            crate::platform::run_keyboard_tap();
+        }
         thread::sleep(Duration::from_secs(3));
     });
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { call as invoke } from "./api";
 import { Sentry } from "./sentry";
 import { autoCheckAndPrompt } from "./updater";
@@ -7,6 +7,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { track } from "./analytics";
 import { useTranslation } from "react-i18next";
 import { Segmented } from "./ui";
+import { dragWindow } from "./components/dragWindow";
 import { Dashboard } from "./screens/Dashboard";
 import { Permissions } from "./screens/Permissions";
 import { Screenshots } from "./screens/Screenshots";
@@ -16,12 +17,8 @@ import { Settings, type AppSettings, type CaptureManaged } from "./screens/Setti
 import { Login, type Session } from "./screens/Login";
 import { Welcome } from "./screens/Welcome";
 import { Onboarding } from "./screens/Onboarding";
-import { Consent } from "./screens/Consent";
 import { LanguageSwitcher } from "./components/LanguageSwitcher";
-
-// Windows has no per-feature OS permission prompts, so we gate first-run capture on
-// an in-app consent screen. macOS relies on TCC and skips it.
-const IS_WINDOWS = navigator.userAgent.includes("Windows");
+import { AppTrayMenu } from "./components/AppTrayMenu";
 
 type Screen =
   | "Dashboard"
@@ -39,6 +36,71 @@ const NAV: Screen[] = [
   "Permissions",
   "Settings",
 ];
+
+/* ---- sidebar icons (stroke = currentColor, so they follow the nav item color) ---- */
+const svgProps = {
+  viewBox: "0 0 24 24",
+  fill: "none",
+  stroke: "currentColor",
+  strokeWidth: 2,
+  strokeLinecap: "round",
+  strokeLinejoin: "round",
+} as const;
+const GridIcon = () => (
+  <svg {...svgProps} aria-hidden>
+    <rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
+const ActivityIcon = () => (
+  <svg {...svgProps} aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+);
+const CameraNavIcon = () => (
+  <svg {...svgProps} aria-hidden>
+    <path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4z" /><circle cx="12" cy="13" r="3.2" />
+  </svg>
+);
+const GlobeNavIcon = () => (
+  <svg {...svgProps} aria-hidden>
+    <circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a13 13 0 0 1 0 18 13 13 0 0 1 0-18" />
+  </svg>
+);
+const ShieldNavIcon = () => (
+  <svg {...svgProps} aria-hidden><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
+);
+const GearIcon = () => (
+  <svg {...svgProps} aria-hidden>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+const HardDriveIcon = () => (
+  <svg {...svgProps} aria-hidden>
+    <path d="M10 16h.01" />
+    <path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
+    <path d="M21.946 12.013H2.054" />
+    <path d="M6 16h.01" />
+  </svg>
+);
+const UserIcon = () => (
+  <svg {...svgProps} aria-hidden><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
+);
+const NAV_ICON: Record<Screen, () => ReactElement> = {
+  Dashboard: GridIcon,
+  Activity: ActivityIcon,
+  Screenshots: CameraNavIcon,
+  Browser: GlobeNavIcon,
+  Permissions: ShieldNavIcon,
+  Settings: GearIcon,
+};
+
+/* pause glyph shown inside the header tracking pill when paused ("❚❚ Paused") */
+const PauseBars = () => (
+  <svg className="bb-trackpill__glyph" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+    <rect x="6" y="4" width="4" height="16" rx="1" />
+    <rect x="14" y="4" width="4" height="16" rx="1" />
+  </svg>
+);
 
 function applyTheme(mode: string) {
   const root = document.documentElement;
@@ -127,6 +189,57 @@ function App() {
   // Past the auth gate when either signed in OR running in personal/local mode.
   const pastAuthGate = session != null || settings?.local_only === true;
 
+  // Reaching the welcome page re-arms onboarding: whichever path the user takes
+  // from there (Only me or sign-in), the intro flow shows again afterwards.
+  useEffect(() => {
+    if (session === undefined || settings === null) return; // still loading
+    if (!pastAuthGate && settings.onboarding_completed) {
+      updateSettings({ onboarding_completed: false });
+    }
+  }, [session, settings, pastAuthGate]);
+
+  // Tracking must not run before setup is complete (BRI-22): pause it on the
+  // welcome/login/onboarding surfaces (native tray icon goes red), resume when
+  // the user reaches the main app.
+  const inSetup = !pastAuthGate || settings?.onboarding_completed === false;
+  useEffect(() => {
+    if (session === undefined || settings === null) return; // still loading
+    invoke("set_in_setup", { inSetup }).catch(() => {});
+  }, [session === undefined, settings === null, inSetup]);
+
+  // Startup permission check (ticket: no OS prompts at launch). The app no longer
+  // requests permissions on startup; instead, once per launch, if a required
+  // permission is missing we explain why and open the Permissions screen so every
+  // OS prompt stays user-initiated.
+  const [permNotice, setPermNotice] = useState(false);
+  const permCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!pastAuthGate || !settings?.onboarding_completed || permCheckedRef.current) return;
+    permCheckedRef.current = true;
+    invoke<{ required: boolean; state: string }[]>("permissions_status")
+      .then((caps) => {
+        if (caps.some((c) => c.required && c.state !== "granted")) {
+          setPermNotice(true);
+          setScreen("Permissions");
+        }
+      })
+      .catch(() => {});
+  }, [pastAuthGate, settings]);
+
+  // While the notice is up, keep re-checking (same cadence as the Permissions
+  // screen) and auto-dismiss it once every required permission is granted.
+  useEffect(() => {
+    if (!permNotice) return;
+    const check = () =>
+      invoke<{ required: boolean; state: string }[]>("permissions_status")
+        .then((caps) => {
+          if (!caps.some((c) => c.required && c.state !== "granted")) setPermNotice(false);
+        })
+        .catch(() => {});
+    const id = setInterval(check, 1500);
+    return () => clearInterval(id);
+  }, [permNotice]);
+
   // Re-apply the org capture policy and reload settings. Run on login AND whenever
   // the window regains focus, so admin changes show up next time it's reopened
   // (closing the window doesn't unmount the webview, so a one-time effect wouldn't).
@@ -209,8 +322,11 @@ function App() {
     } catch {
       /* clear locally regardless */
     }
+    // Only drop the session — settings are local (no auth) and are loaded once on
+    // mount. Clearing them here left the router stuck on the loading gate
+    // (`settings === null`) with nothing to reload them, so logout never reached
+    // the welcome/login screen. BRI-21
     setSession(null);
-    setSettings(null);
     setScreen("Dashboard");
   }
 
@@ -234,36 +350,22 @@ function App() {
     );
   }
 
-  // Windows: require first-run consent before showing the app (capture stays off in
-  // the backend until `consented` is persisted).
-  if (IS_WINDOWS && settings && !settings.consented) {
-    return <Consent onConsent={() => updateSettings({ consented: true })} />;
-  }
-
-  // First-run onboarding (welcome → toggles → permissions), shown once per install.
+  // First-run onboarding (3 steps: what's captured → configure → permissions),
+  // shown once per install. Step 1 is the "What BiBoTracking captures" disclosure,
+  // so finishing/skipping it also records `consented` (gates capture on Windows).
   if (settings && !settings.onboarding_completed) {
     return (
       <Onboarding
         settings={settings}
         captureManaged={captureManaged}
         onChange={updateSettings}
-        onFinish={() => updateSettings({ onboarding_completed: true })}
+        onFinish={() => updateSettings({ onboarding_completed: true, consented: true })}
       />
     );
   }
 
-  const pillClass =
-    status === "paused" ? "pill-danger" : status === "idle" ? "pill-warn" : "pill-success";
-  const pillContent =
-    status === "paused" ? (
-      `❚❚ ${t("status.paused")}`
-    ) : status === "idle" ? (
-      <>🟡 {t("status.idle")}</>
-    ) : (
-      <>
-        <span className="dot" /> {t("status.tracking")}
-      </>
-    );
+  const trackClass =
+    status === "paused" ? "is-paused" : status === "idle" ? "is-idle" : "is-tracking";
   const pillTitle =
     status === "paused"
       ? t("statusTooltip.paused")
@@ -273,44 +375,73 @@ function App() {
 
   return (
     <div className="app">
+      <div className="app-titlebar" onMouseDown={dragWindow}>
+        <span className="app-titlebar-title">BiBoTracking — {t(`nav.${screen}`)}</span>
+        <AppTrayMenu status={status} onToggleTracking={toggleTracking} />
+      </div>
+      <div className="app-body">
       <aside className="sidebar">
         <div className="brand">
-          BiBoTracking
-          {version && <span className="brand-version">v{version}</span>}
+          <span className="brand-logo" aria-hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M4.5 12 h3.2 l1.8 -4.4 l2.4 8.8 l1.8 -4.4 h4.5" />
+            </svg>
+          </span>
+          <span className="brand-text">
+            <span className="brand-name">Bi<span className="brand-accent">Bo</span>Tracking</span>
+            {version && <span className="brand-version">v{version}</span>}
+          </span>
         </div>
-        {NAV.map((n) => (
-          <div
-            key={n}
-            className={`nav-item ${screen === n ? "active" : ""}`}
-            onClick={() => setScreen(n)}
-          >
-            {t(`nav.${n}`)}
-          </div>
-        ))}
+        <nav className="nav">
+          {NAV.map((n) => {
+            const Ic = NAV_ICON[n];
+            return (
+              <div
+                key={n}
+                className={`nav-item ${screen === n ? "active" : ""}`}
+                onClick={() => setScreen(n)}
+              >
+                <span className="nav-ic"><Ic /></span>
+                {t(`nav.${n}`)}
+              </div>
+            );
+          })}
+        </nav>
         <div className="sidebar-foot">
+          <div
+            className={`side-status ${status === "paused" ? "paused" : status === "idle" ? "idle" : ""}`}
+            title={t(`statusTooltip.${status}`)}
+          >
+            <span className="dot" /> {t(`status.${status}`)}
+          </div>
           {session ? (
-            <>
-              <div title={session.email}>{session.email}</div>
-              <button className="signout" onClick={signOut}>
+            <div className="account-box">
+              <div className="account-row">
+                <span className="account-ic"><UserIcon /></span>
+                <span className="account-text" title={session.email}>{session.email}</span>
+              </div>
+              <button className="account-link" onClick={signOut}>
                 {t("account.signOut")}
               </button>
-            </>
+            </div>
           ) : (
-            <>
-              <div className="muted" title={t("account.localTooltip")}>
-                {t("account.local")}
+            <div className="account-box">
+              <div className="account-row" title={t("account.localTooltip")}>
+                <span className="account-ic"><HardDriveIcon /></span>
+                <span className="account-text">{t("account.local")}</span>
               </div>
               <button
-                className="signout"
+                className="account-link"
                 onClick={() => {
                   setShowLogin(true);
                   updateSettings({ local_only: false });
                 }}
                 title={t("account.setupAgainTooltip")}
               >
-                {t("account.setupAgain")}
+                {t("account.setupAgain")} <span aria-hidden>→</span>
               </button>
-            </>
+            </div>
           )}
         </div>
       </aside>
@@ -318,8 +449,8 @@ function App() {
       <div className="main">
         <header className="header">
           <h1>{t(`nav.${screen}`)}</h1>
-          <div className="row">
-            <LanguageSwitcher />
+          <div className="header-right">
+            <LanguageSwitcher compact />
             <Segmented
               options={["Light", "Dark", "System"]}
               value={theme}
@@ -330,18 +461,41 @@ function App() {
               }}
               onChange={(v) => updateSettings({ theme: v })}
             />
-            <button
-              className={`pill ${pillClass}`}
-              onClick={toggleTracking}
-              style={{ cursor: "pointer", background: "transparent" }}
-              title={pillTitle}
-            >
-              {pillContent}
-            </button>
+            <span className="bibo-tip">
+              <button
+                className={`bb-trackpill ${trackClass}`}
+                onClick={toggleTracking}
+                aria-label={pillTitle}
+              >
+                {status === "paused" ? <PauseBars /> : <span className="bb-trackpill__dot" />}
+                {t(`status.${status}`)}
+              </button>
+              <span className="bibo-tip__bubble" role="tooltip">{pillTitle}</span>
+            </span>
           </div>
         </header>
 
         <main className="content">
+          {permNotice && (
+            <div className="perm-notice" role="alert">
+              <div className="perm-notice__text">
+                <strong>{t("permissions:startupNotice.title")}</strong>
+                <span>{t("permissions:startupNotice.body")}</span>
+                {screen !== "Permissions" && (
+                  <button className="perm-notice__link" onClick={() => setScreen("Permissions")}>
+                    {t("permissions:startupNotice.open")} <span aria-hidden>→</span>
+                  </button>
+                )}
+              </div>
+              <button
+                className="perm-notice__close"
+                aria-label={t("permissions:startupNotice.dismiss")}
+                onClick={() => setPermNotice(false)}
+              >
+                ×
+              </button>
+            </div>
+          )}
           {screen === "Dashboard" && <Dashboard />}
           {screen === "Activity" && <Activity />}
           {screen === "Screenshots" && <Screenshots />}
@@ -356,6 +510,7 @@ function App() {
             />
           )}
         </main>
+      </div>
       </div>
     </div>
   );

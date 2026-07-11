@@ -60,6 +60,7 @@ pub fn run() {
             commands::track_event,
 
             commands::set_paused,
+            commands::set_in_setup,
             commands::is_paused,
             commands::tracking_state,
             commands::dashboard_data,
@@ -155,11 +156,9 @@ pub fn run() {
                 });
             }
 
-            // Register with macOS TCC up front so the app appears in the Accessibility
-            // and Input Monitoring lists and the user gets the prompts. No-ops once
-            // granted. (Screen Recording is requested from the Permissions screen.)
-            platform::request_accessibility();
-            platform::request_input_monitoring();
+            // Permissions are NOT requested at startup — the UI detects missing ones
+            // and routes the user to the Permissions screen, where every request is
+            // user-initiated (see App.tsx startup check).
 
             // Start the trackers, keyboard counter, screenshots, retention cleanup.
             let shots_dir = data_dir.join("screenshots");

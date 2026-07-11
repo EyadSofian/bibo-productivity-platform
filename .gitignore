@@ -38,8 +38,8 @@ marketing/site-staging/
 
 # Marketing: local offline-design reference dumps (never committed)
 marketing/site/_*.html
-.playwright-mcp/page-*
-brian.nguyen.work@gmail.com-2026-06-20T08_55_14.616Z_public.pem
+.playwright-mcp/*
 app.crediential.txt
+brian.nguyen.work@gmail.com-2026-06-20T08_55_14.616Z_public.pem
 certificate/mac_app_distribution.cer
 scripts/vps-monitor.sh

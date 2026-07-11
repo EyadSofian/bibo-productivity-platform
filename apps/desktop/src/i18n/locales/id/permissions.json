@@ -1,4 +1,5 @@
 {
+  "title": "Izin",
   "intro": "BiBoTracking menggunakan kemampuan di bawah ini. Status diperbarui secara otomatis.",
   "granted": "Diberikan",
   "quitReopen": "Keluar & Buka Lagi",
@@ -6,8 +7,14 @@
   "openSettings": "Buka Pengaturan Sistem →",
   "off": "Nonaktif",
   "summary": "{{granted}} dari {{total}} aktif · Diperiksa ulang otomatis",
-  "recheck": "Periksa Ulang",
+  "recheck": "Segarkan",
   "restartNote": "Beberapa izin memerlukan keluar & membuka aplikasi kembali agar berlaku.",
+  "startupNotice": {
+    "title": "Izin diperlukan",
+    "body": "BiBoTracking dimulai tanpa beberapa izin yang diperlukan — aplikasi tidak pernah memintanya secara otomatis. Berikan izin di bawah untuk mengaktifkan pelacakan penuh.",
+    "open": "Buka halaman Izin",
+    "dismiss": "Tutup"
+  },
   "caps": {
     "accessibility": {
       "label": "Aksesibilitas",
@@ -15,7 +22,7 @@
     },
     "input_monitoring": {
       "label": "Pemantauan Input",
-      "description": "Mengizinkan aplikasi menghitung ketikan (hanya jumlah — tidak pernah tombol mana)."
+      "description": "Diperlukan untuk menghitung ketukan tombol."
     },
     "screen_recording": {
       "label": "Perekaman Layar",

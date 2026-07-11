@@ -1,6 +1,7 @@
 {
   "screenshots": {
-    "intro": "Capturas periódicas (cada 5 min) — y a demanda. Requiere la grabación de pantalla.",
+    "title": "Capturas de pantalla de hoy",
+    "intro": "Capturadas automáticamente cada 5 minutos.",
     "captureNow": "Capturar ahora",
     "capturing": "Capturando…",
     "captured": "Se capturó {{count}} pantalla.",
@@ -12,6 +13,13 @@
     "shotAlt": "captura de pantalla {{time}}"
   },
   "browser": {
+    "visitedTitle": "Sitios visitados hoy",
+    "visitedSub": "Agrupados por dominio, los más visitados primero.",
+    "live": "En vivo · se actualiza cada 3 s",
+    "colDomain": "Dominio",
+    "colStart": "Hora",
+    "colDuration": "Duración",
+    "colBrowser": "Navegador",
     "title": "Seguir las páginas web",
     "subtitle": "Instale la extensión BiBoTracking para ver aquí las páginas que visita.",
     "gifPlaceholder": "[ GIF: instalación de la extensión de Chrome ]",
