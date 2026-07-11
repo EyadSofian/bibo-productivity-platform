@@ -112,6 +112,9 @@ body {
    title centered, tray button pinned right (matches the auth-surface title bar) */
 .app-titlebar {
   position: relative;
+  /* backdrop-filter makes this a stacking context; without an explicit z-index the
+     open tray menu paints under the header's tracking pill/tooltip (z-index 50) */
+  z-index: 70;
   flex: none;
   height: 40px;
   display: flex;
@@ -337,6 +340,23 @@ body {
   gap: var(--sp-3);
 }
 
+/* stat-card grid: Active time & Keypresses (1st, 3rd) wider; Top app &
+   Screenshots (2nd, 4th) narrower. The cards' overflow:hidden + 2-line value
+   clamp keep everything contained even at the narrowest window (BRI-20). */
+.bb-statgrid {
+  grid-template-columns: 1fr 0.8fr 1fr 0.72fr;
+  /* don't stretch across the whole row on wide windows — cap the width so all four
+     cards stay compact (Top app & Screenshots narrowest), leaving space on the
+     right. Below this width the grid just fills, so it never overflows when narrow. */
+  max-width: 1040px;
+}
+/* very narrow: drop to two columns so cards don't get unusably thin */
+@media (max-width: 620px) {
+  .bb-statgrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 .btn {
   font: inherit;
   font-size: var(--fz-sm);
@@ -400,18 +420,18 @@ body {
 .lang-menu {
   position: absolute;
   z-index: 60;
-  min-width: 100%;
+  min-width: 190px;
   width: max-content;
-  max-width: 240px;
+  max-width: 260px;
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  padding: 5px;
+  gap: 2px;
+  padding: 6px;
   background: var(--surface-strong, var(--bg));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: 16px;
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
 }
 .lang-menu.down {
@@ -426,28 +446,41 @@ body {
 .lang-menu.left {
   left: 0;
 }
+/* menu options — offline .bb-lang__opt: no flag, active shows a check on the
+   right (margin-left:auto) with a subtle brand tint */
 .lang-opt {
   font: inherit;
   font-size: var(--fz-sm);
+  font-weight: 600;
   text-align: left;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 8px;
   white-space: nowrap;
-  padding: 6px var(--sp-2);
+  padding: 8px 10px;
   border: none;
   background: none;
-  color: var(--text);
-  border-radius: 4px;
+  color: var(--text-muted);
+  border-radius: 11px;
 }
 .lang-opt:hover {
-  background: var(--bg-inset);
+  background: var(--bg-subtle);
+  color: var(--text);
 }
 .lang-opt.active {
   color: var(--accent);
   background: var(--accent-weak);
-  font-weight: 600;
+  font-weight: 700;
+}
+.lang-opt .ck {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--accent);
+}
+.lang-opt .ck svg {
+  width: 15px;
+  height: 15px;
 }
 /* onboarding / welcome: switcher pinned top-right of the centered surface */
 .welcome-lang {
@@ -708,6 +741,9 @@ body {
   border-radius: 16px;
   padding: 14px 16px;
   box-shadow: 0 1px 2px rgba(16, 18, 40, 0.04), 0 6px 18px rgba(16, 18, 40, 0.05);
+  /* never let the value/footer (or its sparkline) spill outside the rounded card
+     when the window is narrow — BRI-20 */
+  overflow: hidden;
 }
 .bibo-stat__top {
   display: flex;
@@ -738,15 +774,25 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
+  /* wrap instead of overflowing when the card is narrow (long localized labels
+     like "Thời gian hoạt động hôm nay") — BRI-20 */
+  min-width: 0;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 }
 .bibo-stat__value {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.15;
-  /* allow the value to wrap (e.g. "4h 30m" → 4h / 30m) so it never clips and all
-     four cards fit without horizontal scrolling */
+  /* wrap (e.g. "4h 30m" → 4h / 30m) but cap at 2 lines with an ellipsis so a long
+     app name ("Google Chrome") can't grow the card into / over the footer — BRI-20 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .bibo-stat__foot {
   display: flex;
@@ -1324,6 +1370,50 @@ td {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+
+/* startup notice: required permission missing (shown above the screen content) */
+.perm-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #f59e0b 45%, transparent);
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  font-size: 13px;
+  color: var(--text);
+}
+.perm-notice__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.perm-notice__link {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: underline;
+}
+.perm-notice__close {
+  margin-left: auto;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.perm-notice__close:hover {
+  opacity: 1;
 }
 
 /* status badge (Granted / Off) */
@@ -2327,6 +2417,10 @@ td {
   --text-muted: #6b6b6b;
   --surface: #ffffff;
   --surface-strong: #ffffff;
+  /* keep brand tint light too, so the language menu's active option doesn't pick
+     up the dark-theme --accent-weak on this forced-white surface (BRI-16) */
+  --accent: #6c5ce7;
+  --accent-weak: #ece9fd;
   color: var(--text);
   background: #ffffff;
 }
@@ -2485,6 +2579,19 @@ td {
 .welcome .lang-globe {
   color: var(--text-muted);
 }
+/* Welcome/Login/Onboarding force a white surface, so keep the language pill light
+   even when the app/OS theme is dark — otherwise the global
+   `[data-theme="dark"] .lang-trigger` rule (higher specificity) leaks a dark fill
+   onto the white screen and the button is unreadable. BRI-16 */
+:root[data-theme="dark"] .welcome .lang-trigger {
+  background: var(--surface-strong);
+  border-color: var(--border);
+  color: var(--text);
+}
+:root[data-theme="dark"] .welcome .lang-caret,
+:root[data-theme="dark"] .welcome .lang-globe {
+  color: var(--text-muted);
+}
 
 /* ---- tray menu (top-right): mirrors the native system-tray popover ---- */
 .tray {
@@ -2507,6 +2614,39 @@ td {
 .tray-trigger svg {
   width: 17px;
   height: 17px;
+}
+/* pulsing status dot in the tray trigger — green while tracking, red when not,
+   same live-pulse ring as .bb-live__dot (BRI-22) */
+.tray-livedot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+}
+.tray-livedot--on {
+  background-image: radial-gradient(circle, #10b981 38%, rgba(16, 185, 129, 0) 72%);
+  animation: tray-livedot-on 1.8s ease-out infinite;
+}
+.tray-livedot--off {
+  background-image: radial-gradient(circle, #ef4444 38%, rgba(239, 68, 68, 0) 72%);
+  animation: tray-livedot-off 1.8s ease-out infinite;
+}
+@keyframes tray-livedot-on {
+  0% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+  }
+}
+@keyframes tray-livedot-off {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgba(239, 68, 68, 0);
+  }
 }
 .tray-menu {
   position: absolute;
@@ -2727,10 +2867,17 @@ td {
   border: none;
   cursor: pointer;
   font: inherit;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--brand);
   padding: 0 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.welcome .auth-signup svg {
+  width: 13px;
+  height: 13px;
 }
 .welcome .auth-signup:hover {
   text-decoration: underline;

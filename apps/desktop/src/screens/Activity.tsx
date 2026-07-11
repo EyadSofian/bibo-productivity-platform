@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { call as invoke } from "../api";
 import { Card } from "../ui";
@@ -60,6 +60,7 @@ export function Activity() {
   const [dayStart, setDayStart] = useState(startOfTodayTs());
   const [total, setTotal] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -108,8 +109,10 @@ export function Activity() {
   const max = Math.max(1, ...slots);
   // Busiest 30-minute window (argmax) — derived from existing data, no extra call.
   const busiest = slots.reduce((bi, v, i, a) => (v > a[bi] ? i : bi), 0);
-  // Selected slot drives the highlight / tooltip / detail note; defaults to busiest.
-  const sel = selected != null && selected < slots.length ? selected : busiest;
+  // Selected slot drives the highlight / tooltip / detail note. Defaults to the
+  // latest slot so opening Activity shows the most recent activity (BRI-17).
+  const lastSlot = Math.max(0, slots.length - 1);
+  const sel = selected != null && selected < slots.length ? selected : lastSlot;
   // Display window: trim leading empty slots so the chart starts when typing began.
   let firstActive = slots.findIndex((v) => v > 0);
   if (firstActive < 0) firstActive = 0;
@@ -117,6 +120,17 @@ export function Activity() {
   for (let i = firstActive; i < slots.length; i++) view.push(i);
 
   const chartW = PAD * 2 + Math.max(0, view.length - 1) * STEP + BAR_W;
+
+  // Scroll the chart so the selected slot is centered — on open it lands on the
+  // latest slot; picking an hour glides the chart to that hour (BRI-17).
+  useEffect(() => {
+    const el = chartRef.current;
+    if (!el) return;
+    const k = sel - firstActive;
+    if (k < 0) return;
+    const barCenter = PAD + k * STEP + BAR_W / 2;
+    el.scrollTo({ left: Math.max(0, barCenter - el.clientWidth / 2), behavior: "smooth" });
+  }, [sel, firstActive]);
 
   return (
     <div className="bb-act">
@@ -147,7 +161,7 @@ export function Activity() {
               </span>
             </div>
 
-            <div className="bb-act-chart">
+            <div className="bb-act-chart" ref={chartRef}>
               <svg
                 width={chartW}
                 height={CHART_H}

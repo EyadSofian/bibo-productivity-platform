@@ -38,7 +38,7 @@ function hourlyActivity(timeline: Seg[], dayStart: number, now: number): number[
 
 // Tiny smoothed sparkline (gradient area + line + end dot) from a value series.
 function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const W = 46, H = 20, P = 3;
+  const W = 38, H = 18, P = 3;
   const n = values.length;
   if (n < 2) return null;
   const max = Math.max(...values);
@@ -252,7 +252,7 @@ export function Dashboard() {
       <p className="dash-intro">
         {t("dashboard.greeting")} · <strong>{dateStr}</strong>
       </p>
-      <div className="grid" style={{ gridTemplateColumns: "1.1fr 1fr 1.1fr 0.85fr" }}>
+      <div className="grid bb-statgrid">
         {/* delta values are PLACEHOLDERS to match the mock — the backend doesn't
             yet return vs-yesterday comparisons. Top app's sub (%) is real (by_app). */}
         <StatCard
@@ -366,7 +366,8 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="bb-byapp">
-              {data.by_app.map((a) => (
+              {/* show at most the 10 most-used apps (list is sorted by usage) */}
+              {data.by_app.slice(0, 10).map((a) => (
                 <div className="bb-byapp__row" key={a.app_name}>
                   <span className="bb-byapp__name" title={a.app_name}>
                     <span

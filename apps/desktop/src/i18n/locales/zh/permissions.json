@@ -9,6 +9,12 @@
   "summary": "已启用 {{total}} 项中的 {{granted}} 项 · 自动重新检查",
   "recheck": "刷新",
   "restartNote": "部分权限需要退出并重新打开应用后才能生效。",
+  "startupNotice": {
+    "title": "需要权限",
+    "body": "BiBoTracking 启动时缺少部分必需权限 — 应用不会自动弹出请求。请在下方授予权限以启用完整跟踪功能。",
+    "open": "打开权限页面",
+    "dismiss": "关闭"
+  },
   "caps": {
     "accessibility": {
       "label": "辅助功能",

@@ -9,6 +9,12 @@
   "summary": "{{granted}} of {{total}} enabled · Re-checks automatically",
   "recheck": "Refresh",
   "restartNote": "Some permissions require quitting & reopening the app to take effect.",
+  "startupNotice": {
+    "title": "Permissions needed",
+    "body": "BiBoTracking started without some required permissions — it never asks for them automatically. Grant them below to enable full tracking.",
+    "open": "Open Permissions",
+    "dismiss": "Dismiss"
+  },
   "caps": {
     "accessibility": {
       "label": "Accessibility",

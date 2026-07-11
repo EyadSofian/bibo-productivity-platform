@@ -68,7 +68,7 @@ import esMedia from "./locales/es/media.json";
 /** Supported locales (en is the source of truth). `zh` = Simplified Chinese. */
 export const LOCALES = [
   { code: "en", label: "English", flag: "🇺🇸" },
-  { code: "zh", label: "中文", flag: "🇨🇳" },
+  { code: "zh", label: "中文（简体）", flag: "🇨🇳" },
   { code: "ja", label: "日本語", flag: "🇯🇵" },
   { code: "vi", label: "Tiếng Việt", flag: "🇻🇳" },
   { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },

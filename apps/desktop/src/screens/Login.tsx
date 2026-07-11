@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { call as invoke } from "../api";
+import { openUrl } from "@tauri-apps/plugin-opener";
 import { useTranslation } from "react-i18next";
 import { BrandMark } from "../ui";
 import { AuthTitleBar } from "../components/AuthTitleBar";
@@ -56,6 +57,16 @@ export function Login({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // Open the web signup wizard in the system browser (same as the Welcome screen).
+  async function openSignup() {
+    try {
+      const url = await invoke<string>("signup_url");
+      await openUrl(url);
+    } catch {
+      /* ignore — user can still sign in */
+    }
+  }
 
   async function signIn(e: React.FormEvent) {
     e.preventDefault();
@@ -137,10 +148,22 @@ export function Login({
             </div>
           </label>
 
-          {/* hidden but kept in flow so the layout below doesn't shift up */}
-          <div className="auth-forgot-row" style={{ visibility: "hidden" }} aria-hidden>
-            <button type="button" className="auth-link" tabIndex={-1} onClick={() => {}}>
-              {t("login.forgot")}
+          {/* "Sign up on the web" link, right-aligned just under the password */}
+          <div className="auth-forgot-row">
+            <button type="button" className="auth-signup" onClick={openSignup}>
+              {t("login.signupLink")}
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
             </button>
           </div>
 
@@ -151,14 +174,6 @@ export function Login({
           >
             {busy ? t("login.submitting") : t("login.submit")}
           </button>
-
-          {/* hidden but kept in flow so the layout above doesn't shift down */}
-          <p className="auth-foot-link" style={{ visibility: "hidden" }} aria-hidden>
-            {t("login.noAccount")}{" "}
-            <button type="button" className="auth-signup" tabIndex={-1} onClick={() => {}}>
-              {t("login.signupLink")}
-            </button>
-          </p>
         </div>
       </form>
     </div>
