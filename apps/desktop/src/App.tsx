@@ -189,6 +189,48 @@ function App() {
   // Past the auth gate when either signed in OR running in personal/local mode.
   const pastAuthGate = session != null || settings?.local_only === true;
 
+  // Reaching the welcome page re-arms onboarding: whichever path the user takes
+  // from there (Only me or sign-in), the intro flow shows again afterwards.
+  useEffect(() => {
+    if (session === undefined || settings === null) return; // still loading
+    if (!pastAuthGate && settings.onboarding_completed) {
+      updateSettings({ onboarding_completed: false });
+    }
+  }, [session, settings, pastAuthGate]);
+
+  // Startup permission check (ticket: no OS prompts at launch). The app no longer
+  // requests permissions on startup; instead, once per launch, if a required
+  // permission is missing we explain why and open the Permissions screen so every
+  // OS prompt stays user-initiated.
+  const [permNotice, setPermNotice] = useState(false);
+  const permCheckedRef = useRef(false);
+  useEffect(() => {
+    if (!pastAuthGate || !settings?.onboarding_completed || permCheckedRef.current) return;
+    permCheckedRef.current = true;
+    invoke<{ required: boolean; state: string }[]>("permissions_status")
+      .then((caps) => {
+        if (caps.some((c) => c.required && c.state !== "granted")) {
+          setPermNotice(true);
+          setScreen("Permissions");
+        }
+      })
+      .catch(() => {});
+  }, [pastAuthGate, settings]);
+
+  // While the notice is up, keep re-checking (same cadence as the Permissions
+  // screen) and auto-dismiss it once every required permission is granted.
+  useEffect(() => {
+    if (!permNotice) return;
+    const check = () =>
+      invoke<{ required: boolean; state: string }[]>("permissions_status")
+        .then((caps) => {
+          if (!caps.some((c) => c.required && c.state !== "granted")) setPermNotice(false);
+        })
+        .catch(() => {});
+    const id = setInterval(check, 1500);
+    return () => clearInterval(id);
+  }, [permNotice]);
+
   // Re-apply the org capture policy and reload settings. Run on login AND whenever
   // the window regains focus, so admin changes show up next time it's reopened
   // (closing the window doesn't unmount the webview, so a one-time effect wouldn't).
@@ -425,6 +467,26 @@ function App() {
         </header>
 
         <main className="content">
+          {permNotice && (
+            <div className="perm-notice" role="alert">
+              <div className="perm-notice__text">
+                <strong>{t("permissions:startupNotice.title")}</strong>
+                <span>{t("permissions:startupNotice.body")}</span>
+                {screen !== "Permissions" && (
+                  <button className="perm-notice__link" onClick={() => setScreen("Permissions")}>
+                    {t("permissions:startupNotice.open")} <span aria-hidden>→</span>
+                  </button>
+                )}
+              </div>
+              <button
+                className="perm-notice__close"
+                aria-label={t("permissions:startupNotice.dismiss")}
+                onClick={() => setPermNotice(false)}
+              >
+                ×
+              </button>
+            </div>
+          )}
           {screen === "Dashboard" && <Dashboard />}
           {screen === "Activity" && <Activity />}
           {screen === "Screenshots" && <Screenshots />}

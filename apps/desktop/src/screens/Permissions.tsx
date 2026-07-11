@@ -66,6 +66,20 @@ const REQUEST_CMD: Record<string, string> = {
   accessibility: "request_accessibility",
 };
 
+// macOS shows the Screen Recording / Input Monitoring OS prompt only ONCE per
+// app — every later request call is a silent no-op. (Accessibility re-prompts
+// on every call, so it's not listed.) Remember which one-shot prompts were used
+// so later clicks deep-link to System Settings instead of doing nothing.
+const PROMPT_ONCE = ["screen_recording", "input_monitoring"];
+const ASKED_LS_KEY = "permPromptAsked";
+function loadAsked(): Record<string, boolean> {
+  try {
+    return JSON.parse(localStorage.getItem(ASKED_LS_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
 // Render order for the rows (matches the design); unknown keys sink to the end.
 const ORDER = ["screen_recording", "input_monitoring", "accessibility"];
 const rank = (k: string) => (ORDER.indexOf(k) === -1 ? 99 : ORDER.indexOf(k));
@@ -73,10 +87,12 @@ const rank = (k: string) => (ORDER.indexOf(k) === -1 ? 99 : ORDER.indexOf(k));
 /* Full-screen action: a Granted/Off badge or a Request/Open-Settings button. */
 function Action({
   cap,
+  askedOnce,
   onOpen,
   onRequest,
 }: {
   cap: Cap;
+  askedOnce: boolean;
   onOpen: (k: string) => void;
   onRequest: (k: string) => void;
 }) {
@@ -92,14 +108,15 @@ function Action({
     return <button className="bibo-btn bibo-btn--secondary bibo-btn--sm">{t("quitReopen")}</button>;
 
   // Not granted: a single Request button — it triggers the OS prompt, or opens
-  // System Settings where a direct request isn't available.
+  // System Settings where a direct request isn't available (or the one-shot OS
+  // prompt was already used — see PROMPT_ONCE).
   if (cap.can_request || cap.can_open_settings)
     return (
       <button
         className="bibo-btn bibo-btn--secondary bibo-btn--sm"
         onClick={() => (cap.can_request ? onRequest(cap.key) : onOpen(cap.key))}
       >
-        <span>{t("request")}</span>
+        <span>{askedOnce && cap.can_open_settings ? t("openSettings") : t("request")}</span>
       </button>
     );
 
@@ -111,10 +128,12 @@ function Action({
 /* Compact action for the onboarding step: a single Request/Open/Granted control. */
 function CompactAction({
   cap,
+  askedOnce,
   onOpen,
   onRequest,
 }: {
   cap: Cap;
+  askedOnce: boolean;
   onOpen: (k: string) => void;
   onRequest: (k: string) => void;
 }) {
@@ -133,7 +152,7 @@ function CompactAction({
   if (cap.can_request)
     return (
       <button className="perm-request" onClick={() => onRequest(cap.key)}>
-        {t("request")}
+        {askedOnce && cap.can_open_settings ? t("openSettings") : t("request")}
       </button>
     );
   if (cap.can_open_settings)
@@ -148,6 +167,7 @@ function CompactAction({
 export function Permissions({ compact = false }: { compact?: boolean } = {}) {
   const { t } = useTranslation("permissions");
   const [caps, setCaps] = useState<Cap[] | null>(null);
+  const [asked, setAsked] = useState<Record<string, boolean>>(loadAsked);
 
   const refresh = async () => {
     try {
@@ -172,7 +192,23 @@ export function Permissions({ compact = false }: { compact?: boolean } = {}) {
     invoke("open_permission_settings", { which }).catch(() => {});
   const request = (which: string) => {
     const cmd = REQUEST_CMD[which];
-    if (cmd) invoke(cmd).then(refresh).catch(() => {});
+    if (!cmd) return;
+    if (PROMPT_ONCE.includes(which)) {
+      if (asked[which]) {
+        // The one-shot OS prompt was already used — requesting again would be a
+        // silent no-op, so take the user to the System Settings pane instead.
+        openSettings(which);
+        return;
+      }
+      const next = { ...asked, [which]: true };
+      setAsked(next);
+      try {
+        localStorage.setItem(ASKED_LS_KEY, JSON.stringify(next));
+      } catch {
+        /* non-fatal: falls back to per-session memory */
+      }
+    }
+    invoke(cmd).then(refresh).catch(() => {});
   };
 
   const rows = caps ?? [];
@@ -191,7 +227,7 @@ export function Permissions({ compact = false }: { compact?: boolean } = {}) {
               <span className="perm-label">
                 {t(`caps.${r.key}.label`, { defaultValue: r.label })}
               </span>
-              <CompactAction cap={r} onOpen={openSettings} onRequest={request} />
+              <CompactAction cap={r} askedOnce={!!asked[r.key]} onOpen={openSettings} onRequest={request} />
             </div>
           );
         })}
@@ -235,7 +271,7 @@ export function Permissions({ compact = false }: { compact?: boolean } = {}) {
               </div>
             </div>
             <div className="bb-perm__act">
-              <Action cap={r} onOpen={openSettings} onRequest={request} />
+              <Action cap={r} askedOnce={!!asked[r.key]} onOpen={openSettings} onRequest={request} />
             </div>
           </div>
         );

@@ -9,6 +9,12 @@
   "summary": "{{granted}} de {{total}} activadas · Se revisa automáticamente",
   "recheck": "Actualizar",
   "restartNote": "Algunos permisos requieren salir y volver a abrir la aplicación para aplicarse.",
+  "startupNotice": {
+    "title": "Se necesitan permisos",
+    "body": "BiBoTracking se inició sin algunos permisos necesarios; la aplicación nunca los solicita automáticamente. Concédelos abajo para activar el seguimiento completo.",
+    "open": "Abrir Permisos",
+    "dismiss": "Cerrar"
+  },
   "caps": {
     "accessibility": {
       "label": "Accesibilidad",

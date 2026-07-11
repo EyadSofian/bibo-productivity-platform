@@ -9,6 +9,12 @@
   "summary": "Đã bật {{granted}} trên {{total}} · Tự động kiểm tra lại",
   "recheck": "Làm mới",
   "restartNote": "Một số quyền cần thoát và mở lại ứng dụng mới có hiệu lực.",
+  "startupNotice": {
+    "title": "Cần cấp quyền",
+    "body": "BiBoTracking đã khởi động khi còn thiếu một số quyền bắt buộc — ứng dụng không bao giờ tự động hỏi quyền. Hãy cấp quyền bên dưới để bật đầy đủ tính năng theo dõi.",
+    "open": "Mở trang Quyền",
+    "dismiss": "Đóng"
+  },
   "caps": {
     "accessibility": {
       "label": "Trợ năng",

@@ -9,6 +9,12 @@
   "summary": "{{granted}} sur {{total}} activées · Revérification automatique",
   "recheck": "Actualiser",
   "restartNote": "Certaines autorisations nécessitent de quitter et de rouvrir l’application pour prendre effet.",
+  "startupNotice": {
+    "title": "Autorisations requises",
+    "body": "BiBoTracking a démarré sans certaines autorisations requises — l’application ne les demande jamais automatiquement. Accordez-les ci-dessous pour activer le suivi complet.",
+    "open": "Ouvrir les autorisations",
+    "dismiss": "Fermer"
+  },
   "caps": {
     "accessibility": {
       "label": "Accessibilité",
