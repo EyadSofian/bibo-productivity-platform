@@ -7,6 +7,7 @@ import { getVersion } from "@tauri-apps/api/app";
 import { track } from "./analytics";
 import { useTranslation } from "react-i18next";
 import { Segmented } from "./ui";
+import { dragWindow } from "./components/dragWindow";
 import { Dashboard } from "./screens/Dashboard";
 import { Permissions } from "./screens/Permissions";
 import { Screenshots } from "./screens/Screenshots";
@@ -323,9 +324,7 @@ function App() {
 
   return (
     <div className="app">
-      {/* not a drag region — the window is fixed (non-movable, always centered);
-          it only shows/hides via the tray. BRI-22 */}
-      <div className="app-titlebar">
+      <div className="app-titlebar" onMouseDown={dragWindow}>
         <span className="app-titlebar-title">BiBoTracking — {t(`nav.${screen}`)}</span>
         <AppTrayMenu status={status} onToggleTracking={toggleTracking} />
       </div>

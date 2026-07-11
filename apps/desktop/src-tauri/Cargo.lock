@@ -935,7 +935,6 @@ dependencies = [
  "core-foundation 0.10.1",
  "csv",
  "getrandom 0.2.17",
- "objc",
  "os_info",
  "reqwest 0.12.28",
  "rusqlite",

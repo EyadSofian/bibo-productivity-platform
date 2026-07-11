@@ -147,7 +147,6 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
 /// Show + focus the main window (it may be hidden in menu-bar-only mode).
 pub fn show_main(app: &AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
-        let _ = w.center(); // window is fixed — re-center it every time it's shown
         let _ = w.show();
         let _ = w.set_focus();
     }

@@ -43,26 +43,6 @@ fn apply_dock_policy(app: &tauri::AppHandle, hide: bool) {
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 fn apply_dock_policy(_app: &tauri::AppHandle, _hide: bool) {}
 
-/// Pin the main window: non-movable + centered (it only shows/hides). On macOS the
-/// Overlay title bar stays OS-draggable, so clear NSWindow.movable directly. BRI-22
-#[cfg(target_os = "macos")]
-fn lock_window_in_place(win: &tauri::WebviewWindow) {
-    use objc::runtime::{Object, NO};
-    use objc::{msg_send, sel, sel_impl};
-    if let Ok(ptr) = win.ns_window() {
-        let ns = ptr as *mut Object;
-        unsafe {
-            let _: () = msg_send![ns, setMovable: NO];
-            let _: () = msg_send![ns, setMovableByWindowBackground: NO];
-        }
-    }
-    let _ = win.center();
-}
-#[cfg(not(target_os = "macos"))]
-fn lock_window_in_place(win: &tauri::WebviewWindow) {
-    let _ = win.center();
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Sentry error reporting for the Rust core. Held for the whole process (drop =
@@ -147,9 +127,6 @@ pub fn run() {
             // listener does NOT fire on native window activation in the webview. Throttled
             // to ≥30 s so rapid switching doesn't spam.
             if let Some(win) = app.get_webview_window("main") {
-                // Lock the window in place — non-movable (the Overlay title bar would
-                // otherwise stay OS-draggable) and re-centered; it only shows/hides. BRI-22
-                lock_window_in_place(&win);
                 let w = win.clone();
                 let analytics_queue = data_dir.join("analytics-queue");
                 let analytics_session_id = analytics_session.0.clone();
