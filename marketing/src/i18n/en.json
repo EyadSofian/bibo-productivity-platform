@@ -120,14 +120,13 @@
     "step2": {
       "p": "Optional. Logs the domains you visit so browsing shows in reports.",
       "h": "Add the Chrome extension",
-      "pA": "Optional. The Manifest&nbsp;V3 extension auto-discovers the local app and reports browser pages to ",
-      "pB": " — never to the cloud. ",
       "link": "Get it on the Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Owners watch the rollup",
       "p": "Activity syncs one-way to the dashboard, where owners review time, keystrokes, browser history and screenshots per employee."
-    }
+    },
+    "intro": "No server setup required to get started."
   },
   "showcase": {
     "zoomHint": "Click any screen to zoom in",
@@ -199,8 +198,7 @@
       "activity": "Activity / keystroke level",
       "activityUs": " — counts only",
       "browser": "Browser / URL tracking",
-      "dashboard": "Owner web dashboard &amp; reports",
-      "perseat": "No per-seat pricing"
+      "dashboard": "Owner web dashboard &amp; reports"
     },
     "note": "Comparison based on publicly listed Hubstaff plans and features. “Hubstaff” is a trademark of its respective owner; BiBoTracking is not affiliated with or endorsed by Hubstaff."
   },
@@ -278,17 +276,23 @@
     "downloadWin": "Download for Windows"
   },
   "footer": {
-    "download": "Download app",
+    "download": "macOS",
     "chrome": "Chrome extension",
     "signIn": "Sign in",
     "pricing": "Pricing",
     "oss": "Open source",
     "privacy": "Privacy policy",
     "contact": "Contact",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · MIT licensed open source",
     "github": "GitHub",
-    "telegram": "Telegram support",
-    "downloadWin": "Windows app"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Product",
+    "colResources": "Resources",
+    "colConnect": "Connect",
+    "tagline": "Privacy-first, local-first time & activity tracking. Open source and self-hostable.",
+    "colDownloads": "Downloads",
+    "compare": "The same core tracking, without the per-seat bill"
   },
   "personas": {
     "kicker": "Who it's for",

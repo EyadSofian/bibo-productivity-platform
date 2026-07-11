@@ -120,14 +120,13 @@
     "step2": {
       "p": "任意。訪問したドメインを記録し、Web閲覧をレポートに表示します。",
       "h": "Chrome拡張機能を追加",
-      "pA": "任意です。Manifest&nbsp;V3拡張機能がローカルアプリを自動検出し、ブラウザのページを ",
-      "pB": " に報告します — クラウドには一切送信しません。 ",
       "link": "Chrome Web Storeで入手&nbsp;→"
     },
     "step3": {
       "h": "オーナーは集約を確認",
       "p": "アクティビティは一方向にダッシュボードへ同期され、オーナーは従業員ごとの時間、キーストローク、ブラウザ履歴、スクリーンショットを確認できます。"
-    }
+    },
+    "intro": "サーバー設定は不要ですぐに始められます。"
   },
   "showcase": {
     "zoomHint": "画面をクリックして拡大",
@@ -199,8 +198,7 @@
       "activity": "アクティビティ / キーストロークレベル",
       "activityUs": " — 回数のみ",
       "browser": "ブラウザ / URLの追跡",
-      "dashboard": "オーナー向けWebダッシュボード&amp;レポート",
-      "perseat": "ユーザー単位の課金なし"
+      "dashboard": "オーナー向けWebダッシュボード&amp;レポート"
     },
     "note": "比較は公開されているHubstaffのプランと機能に基づいています。「Hubstaff」はそれぞれの所有者の商標です。BiBoTrackingはHubstaffと提携しておらず、その推奨も受けていません。"
   },
@@ -278,17 +276,23 @@
     "downloadWin": "Windows版をダウンロード"
   },
   "footer": {
-    "download": "アプリをダウンロード",
+    "download": "macOS",
     "chrome": "Chrome拡張機能",
     "signIn": "ログイン",
     "pricing": "料金",
     "oss": "オープンソース",
     "privacy": "プライバシーポリシー",
     "contact": "お問い合わせ",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · MITライセンスのオープンソース",
     "github": "GitHub",
-    "telegram": "Telegram サポート",
-    "downloadWin": "Windows アプリ"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "製品",
+    "colResources": "リソース",
+    "colConnect": "連絡先",
+    "tagline": "プライバシー重視・ローカルファーストの時間とアクティビティの記録。オープンソースでセルフホスト可能。",
+    "colDownloads": "ダウンロード",
+    "compare": "同じコア追跡機能を、席数課金なしで"
   },
   "personas": {
     "kicker": "対象ユーザー",

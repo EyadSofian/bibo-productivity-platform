@@ -120,14 +120,13 @@
     "step2": {
       "p": "Opcional. Registra los dominios que visitas para mostrar la navegación en los informes.",
       "h": "Añada la extensión de Chrome",
-      "pA": "Opcional. La extensión Manifest&nbsp;V3 detecta automáticamente la aplicación local e informa de las páginas del navegador a ",
-      "pB": ", nunca a la nube. ",
       "link": "Consíguela en la Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Los propietarios consultan el resumen",
       "p": "La actividad se sincroniza de forma unidireccional con el panel, donde los propietarios revisan el tiempo, las pulsaciones, el historial de navegación y las capturas de pantalla de cada empleado."
-    }
+    },
+    "intro": "Sin configuración de servidor para empezar."
   },
   "showcase": {
     "zoomHint": "Haz clic en cualquier pantalla para ampliar",
@@ -199,8 +198,7 @@
       "activity": "Nivel de actividad / pulsaciones",
       "activityUs": " — solo recuentos",
       "browser": "Seguimiento de navegador / URL",
-      "dashboard": "Panel web &amp; informes para el propietario",
-      "perseat": "Sin precio por usuario"
+      "dashboard": "Panel web &amp; informes para el propietario"
     },
     "note": "Comparativa basada en los planes y funciones de Hubstaff publicados públicamente. “Hubstaff” es una marca comercial de su respectivo propietario; BiBoTracking no está afiliado a Hubstaff ni cuenta con su respaldo."
   },
@@ -278,17 +276,23 @@
     "downloadWin": "Descargar para Windows"
   },
   "footer": {
-    "download": "Descargar aplicación",
+    "download": "macOS",
     "chrome": "Extensión de Chrome",
     "signIn": "Iniciar sesión",
     "pricing": "Precios",
     "oss": "Código abierto",
     "privacy": "Política de privacidad",
     "contact": "Contacto",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · Código abierto con licencia MIT",
     "github": "GitHub",
-    "telegram": "Soporte por Telegram",
-    "downloadWin": "App de Windows"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Producto",
+    "colResources": "Recursos",
+    "colConnect": "Contacto",
+    "tagline": "Seguimiento de tiempo y actividad local y centrado en la privacidad. Código abierto y auto-alojable.",
+    "colDownloads": "Descargas",
+    "compare": "El mismo seguimiento esencial, sin cobro por usuario"
   },
   "personas": {
     "kicker": "Para quién",

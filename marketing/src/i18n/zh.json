@@ -120,14 +120,13 @@
     "step2": {
       "p": "可选。记录你访问的域名，让网页浏览显示在报告中。",
       "h": "添加 Chrome 扩展",
-      "pA": "可选。Manifest&nbsp;V3 扩展会自动发现本地应用，并将浏览器页面上报给 ",
-      "pB": " — 绝不发往云端。 ",
       "link": "在 Chrome Web Store 获取&nbsp;→"
     },
     "step3": {
       "h": "所有者查看汇总",
       "p": "活动单向同步到控制台，所有者可在此按员工查看时长、按键、浏览历史和屏幕截图。"
-    }
+    },
+    "intro": "无需配置服务器即可开始。"
   },
   "showcase": {
     "zoomHint": "点击任意界面放大",
@@ -199,8 +198,7 @@
       "activity": "活动 / 按键级别",
       "activityUs": " — 仅统计次数",
       "browser": "浏览器 / URL 追踪",
-      "dashboard": "所有者网页控制台 &amp; 报表",
-      "perseat": "无按席位计费"
+      "dashboard": "所有者网页控制台 &amp; 报表"
     },
     "note": "对比基于 Hubstaff 公开列出的套餐和功能。“Hubstaff”是其各自所有者的商标；BiBoTracking 与 Hubstaff 无任何关联，也未获其背书。"
   },
@@ -278,17 +276,23 @@
     "downloadWin": "下载 Windows 版"
   },
   "footer": {
-    "download": "下载应用",
+    "download": "macOS",
     "chrome": "Chrome 扩展",
     "signIn": "登录",
     "pricing": "价格",
     "oss": "开源",
     "privacy": "隐私政策",
     "contact": "联系我们",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · MIT 许可开源",
     "github": "GitHub",
-    "telegram": "Telegram 支持",
-    "downloadWin": "Windows 应用"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "产品",
+    "colResources": "资源",
+    "colConnect": "联系",
+    "tagline": "隐私优先、本地优先的时间与活动追踪。开源且可自托管。",
+    "colDownloads": "下载",
+    "compare": "同样的核心追踪，无需按席位付费"
   },
   "personas": {
     "kicker": "适用人群",

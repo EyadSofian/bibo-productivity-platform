@@ -120,14 +120,13 @@
     "step2": {
       "p": "Opsional. Mencatat domain yang Anda kunjungi agar penjelajahan muncul di laporan.",
       "h": "Tambahkan ekstensi Chrome",
-      "pA": "Opsional. Ekstensi Manifest&nbsp;V3 menemukan aplikasi lokal secara otomatis dan melaporkan halaman browser ke ",
-      "pB": " — tidak pernah ke cloud. ",
       "link": "Dapatkan di Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Pemilik memantau rangkuman",
       "p": "Aktivitas tersinkronisasi satu arah ke dashboard, tempat pemilik meninjau waktu, ketukan tombol, riwayat browser, dan screenshot per karyawan."
-    }
+    },
+    "intro": "Tanpa perlu konfigurasi server untuk memulai."
   },
   "showcase": {
     "zoomHint": "Klik layar mana pun untuk memperbesar",
@@ -199,8 +198,7 @@
       "activity": "Tingkat aktivitas / ketukan tombol",
       "activityUs": " — hanya hitungan",
       "browser": "Pelacakan browser / URL",
-      "dashboard": "Dashboard web pemilik &amp; laporan",
-      "perseat": "Tanpa harga per pengguna"
+      "dashboard": "Dashboard web pemilik &amp; laporan"
     },
     "note": "Perbandingan berdasarkan paket dan fitur Hubstaff yang terdaftar publik. “Hubstaff” adalah merek dagang dari pemiliknya masing-masing; BiBoTracking tidak berafiliasi dengan atau didukung oleh Hubstaff."
   },
@@ -278,17 +276,23 @@
     "downloadWin": "Unduh untuk Windows"
   },
   "footer": {
-    "download": "Unduh aplikasi",
+    "download": "macOS",
     "chrome": "Ekstensi Chrome",
     "signIn": "Masuk",
     "pricing": "Harga",
     "oss": "Open source",
     "privacy": "Kebijakan privasi",
     "contact": "Kontak",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · Open source berlisensi MIT",
     "github": "GitHub",
-    "telegram": "Dukungan Telegram",
-    "downloadWin": "Aplikasi Windows"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Produk",
+    "colResources": "Sumber Daya",
+    "colConnect": "Hubungi",
+    "tagline": "Pelacakan waktu & aktivitas yang mengutamakan privasi dan lokal. Open source dan bisa di-host sendiri.",
+    "colDownloads": "Unduhan",
+    "compare": "Pelacakan inti yang sama, tanpa tagihan per pengguna"
   },
   "personas": {
     "kicker": "Untuk siapa",

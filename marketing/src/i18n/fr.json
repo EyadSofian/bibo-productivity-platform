@@ -120,14 +120,13 @@
     "step2": {
       "p": "Optionnel. Enregistre les domaines visités pour afficher la navigation dans les rapports.",
       "h": "Ajoutez l'extension Chrome",
-      "pA": "Optionnel. L'extension Manifest&nbsp;V3 détecte automatiquement l'application locale et rapporte les pages de navigation à ",
-      "pB": " — jamais au cloud. ",
       "link": "Obtenez-la sur le Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Les dirigeants suivent la synthèse",
       "p": "L'activité se synchronise de manière unidirectionnelle vers le tableau de bord, où les dirigeants consultent le temps, les frappes, l'historique de navigation et les captures d'écran par employé."
-    }
+    },
+    "intro": "Aucune configuration de serveur requise pour démarrer."
   },
   "showcase": {
     "zoomHint": "Cliquez sur un écran pour zoomer",
@@ -199,8 +198,7 @@
       "activity": "Niveau d'activité / de frappes",
       "activityUs": " — comptages uniquement",
       "browser": "Suivi du navigateur / des URL",
-      "dashboard": "Tableau de bord web &amp; rapports pour le dirigeant",
-      "perseat": "Aucune facturation par utilisateur"
+      "dashboard": "Tableau de bord web &amp; rapports pour le dirigeant"
     },
     "note": "Comparaison basée sur les forfaits et fonctionnalités Hubstaff listés publiquement. « Hubstaff » est une marque déposée de son propriétaire respectif ; BiBoTracking n'est ni affilié à Hubstaff ni approuvé par lui."
   },
@@ -278,17 +276,23 @@
     "downloadWin": "Télécharger pour Windows"
   },
   "footer": {
-    "download": "Télécharger l'application",
+    "download": "macOS",
     "chrome": "Extension Chrome",
     "signIn": "Se connecter",
     "pricing": "Tarifs",
     "oss": "Open source",
     "privacy": "Politique de confidentialité",
     "contact": "Contact",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · Open source sous licence MIT",
     "github": "GitHub",
-    "telegram": "Support Telegram",
-    "downloadWin": "Appli Windows"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Produit",
+    "colResources": "Ressources",
+    "colConnect": "Contact",
+    "tagline": "Suivi du temps et de l'activité local et respectueux de la vie privée. Open source et auto-hébergeable.",
+    "colDownloads": "Téléchargements",
+    "compare": "Le même suivi essentiel, sans facturation par utilisateur"
   },
   "personas": {
     "kicker": "Pour qui",
