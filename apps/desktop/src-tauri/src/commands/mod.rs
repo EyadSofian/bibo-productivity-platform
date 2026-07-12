@@ -157,6 +157,8 @@ pub fn set_settings(
         value.screenshot_interval_s = cur.screenshot_interval_s;
         value.idle_threshold_s = cur.idle_threshold_s;
         value.screenshot_retention_days = cur.screenshot_retention_days;
+        value.screenshot_mode = cur.screenshot_mode;
+        value.screenshot_skip_apps = cur.screenshot_skip_apps;
     }
     crate::settings::apply(&value, &control);
     crate::apply_dock_policy(&app, value.hide_dock);
@@ -196,6 +198,12 @@ pub async fn apply_org_policy(
         if let Some(v) = policy.screenshot_retention_days {
             s.screenshot_retention_days = v;
         }
+        if let Some(v) = policy.screenshot_mode {
+            s.screenshot_mode = v;
+        }
+        if let Some(v) = policy.screenshot_skip_apps {
+            s.screenshot_skip_apps = v;
+        }
         crate::settings::apply(&s, &control);
         let _ = crate::settings::save(&settings.path, &s);
         *settings.current.lock().unwrap() = s;
@@ -209,6 +217,14 @@ pub fn capture_policy(
     settings: State<Arc<crate::settings::SettingsState>>,
 ) -> crate::settings::CaptureManaged {
     *settings.managed.lock().unwrap()
+}
+
+/// The curated sensitive-app list for the Settings UI (grouped by category):
+/// skip-list suggestions and the privacy-mode prefill. Fetched from the backend
+/// so the rules stay server-controlled; falls back to the baked-in copy offline.
+#[tauri::command]
+pub async fn privacy_apps() -> Result<Vec<crate::sync::client::PrivacyAppCategory>, String> {
+    Ok(crate::fetch_privacy_apps_or_baked().await)
 }
 
 /// Browser ingest link info for Settings (active port + whether a token exists).
@@ -228,14 +244,18 @@ pub fn browser_link(link: State<crate::server::BrowserLink>) -> BrowserLinkInfo 
 
 /// Capture a screenshot of every display right now. Returns how many were saved.
 #[tauri::command]
-pub fn capture_now(app: tauri::AppHandle, db: State<Arc<Db>>) -> Result<usize, String> {
+pub fn capture_now(
+    app: tauri::AppHandle,
+    db: State<Arc<Db>>,
+    control: State<Arc<TrackerControl>>,
+) -> Result<usize, String> {
     use tauri::Manager;
     let dir = app
         .path()
         .app_data_dir()
         .map_err(err)?
         .join("screenshots");
-    Ok(crate::trackers::capture_once(&db, &dir))
+    Ok(crate::trackers::capture_once(&db, &dir, &control))
 }
 
 // ---------- dashboard ----------

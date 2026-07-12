@@ -81,6 +81,47 @@ pub struct Policy {
     /// 'team' | 'family' — drives the onboarding copy (employee vs kid).
     #[serde(default)]
     pub kind: Option<String>,
+    /// "full_screen" | "active_window" — org-set screenshot capture mode.
+    #[serde(default)]
+    pub screenshot_mode: Option<String>,
+    /// App names whose capture ticks are skipped entirely while frontmost.
+    #[serde(default)]
+    pub screenshot_skip_apps: Option<Vec<String>>,
+}
+
+/// One category of the backend's curated sensitive-app list
+/// (`GET /v1/public/screenshot-privacy-apps`). Serialized back to the UI as-is.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrivacyAppCategory {
+    pub key: String,
+    pub apps: Vec<String>,
+}
+
+#[derive(Deserialize)]
+struct PrivacyAppsResp {
+    categories: Vec<PrivacyAppCategory>,
+}
+
+/// `GET /v1/public/screenshot-privacy-apps` — the curated sensitive-app list
+/// (privacy-mode auto-skip + UI suggestions). Public, no auth: personal
+/// (no-account) users need it too, so this is a free function that doesn't
+/// require a session. Callers fall back to the baked-in
+/// `trackers::DEFAULT_PRIVACY_APPS` on any error.
+pub async fn fetch_privacy_apps(base_url: &str) -> Result<Vec<PrivacyAppCategory>, String> {
+    let http = reqwest::Client::builder()
+        .timeout(std::time::Duration::from_secs(15))
+        .build()
+        .unwrap_or_default();
+    let url = format!(
+        "{}/v1/public/screenshot-privacy-apps",
+        base_url.trim_end_matches('/')
+    );
+    let resp = http.get(url).send().await.map_err(net_err)?;
+    if !resp.status().is_success() {
+        return Err(status_err(resp).await);
+    }
+    let parsed: PrivacyAppsResp = resp.json().await.map_err(|e| e.to_string())?;
+    Ok(parsed.categories)
 }
 
 // ---------- sync batch contract (docs/11) ----------

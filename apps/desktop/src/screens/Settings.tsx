@@ -38,6 +38,8 @@ export type AppSettings = {
   domain_only: boolean;
   hide_dock: boolean;
   capture_screenshots: boolean;
+  screenshot_mode: string;
+  screenshot_skip_apps: string[];
   count_keystrokes: boolean;
   consented: boolean;
   local_only: boolean;
@@ -45,6 +47,71 @@ export type AppSettings = {
 };
 
 const IS_WINDOWS = navigator.userAgent.includes("Windows");
+
+// The curated sensitive-app list (backend-served via the `privacy_apps`
+// command, baked-in fallback offline), rendered as skip-list suggestions.
+type PrivacyAppCategory = { key: string; apps: string[] };
+
+/** Normalize a stored mode (incl. pre-rename values) to the two current modes. */
+function normalizeMode(m: string): "privacy" | "normal" {
+  return m === "normal" || m === "full_screen" ? "normal" : "privacy";
+}
+
+/** One selectable screenshot-mode card: radio dot + label + explanation. */
+function ModeOption({
+  label,
+  desc,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  label: string;
+  desc: string;
+  selected: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-start",
+        textAlign: "left",
+        width: "100%",
+        font: "inherit",
+        color: "var(--text)",
+        cursor: disabled ? "default" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        background: selected ? "var(--accent-weak)" : "var(--bg-inset)",
+        border: selected ? "1px solid var(--accent)" : "1px solid var(--border)",
+        borderRadius: 11,
+        padding: "10px 12px",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          flexShrink: 0,
+          marginTop: 2,
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          border: selected ? "4px solid var(--accent)" : "2px solid var(--border)",
+        }}
+      />
+      <span>
+        <span style={{ display: "block", fontWeight: 600, fontSize: 13 }}>{label}</span>
+        <span className="bb-row__desc" style={{ display: "block", marginTop: 2 }}>{desc}</span>
+      </span>
+    </button>
+  );
+}
 
 type FileResult = { name: string; rows: number };
 type ExportSummary = { dir: string; files: FileResult[] };
@@ -245,10 +312,14 @@ export function Settings({
   const [updMsg, setUpdMsg] = useState<string>("");
   const [updBusy, setUpdBusy] = useState(false);
   const [version, setVersion] = useState<string>("");
+  const [skipAppInput, setSkipAppInput] = useState("");
+  const [skipOpen, setSkipOpen] = useState(false);
+  const [privacyApps, setPrivacyApps] = useState<PrivacyAppCategory[]>([]);
 
   useEffect(() => {
     invoke<BrowserLinkInfo>("browser_link").then(setLink).catch(() => {});
     getVersion().then(setVersion).catch(() => {});
+    invoke<PrivacyAppCategory[]>("privacy_apps").then(setPrivacyApps).catch(() => {});
   }, []);
 
   // Manual update check (auto-check also runs once on launch). Progress strings are
@@ -274,6 +345,53 @@ export function Settings({
   // Capture settings are locked when the org manages them and hasn't allowed overrides.
   const captureLocked =
     !!captureManaged && captureManaged.managed && !captureManaged.allow_employee_override;
+
+  function addSkipApp() {
+    if (!settings) return;
+    const name = skipAppInput.trim();
+    setSkipAppInput("");
+    if (!name) return;
+    const cur = settings.screenshot_skip_apps;
+    if (cur.some((a) => a.toLowerCase() === name.toLowerCase())) return;
+    onChange({ screenshot_skip_apps: [...cur, name] });
+  }
+
+  const hasSkipApp = (a: string) =>
+    !!settings && settings.screenshot_skip_apps.some((x) => x.toLowerCase() === a.toLowerCase());
+
+  // Entries the user typed themselves (not part of any suggested category).
+  const suggestedLower = new Set(
+    privacyApps.flatMap((c) => c.apps.map((a) => a.toLowerCase())),
+  );
+  const customSkipApps = (settings?.screenshot_skip_apps ?? []).filter(
+    (a) => !suggestedLower.has(a.toLowerCase()),
+  );
+
+  function addSkipApps(apps: string[]) {
+    if (!settings) return;
+    const fresh = apps.filter((a) => !hasSkipApp(a));
+    if (fresh.length) {
+      onChange({ screenshot_skip_apps: [...settings.screenshot_skip_apps, ...fresh] });
+    }
+  }
+
+  function removeSkipApps(apps: string[]) {
+    if (!settings) return;
+    const drop = new Set(apps.map((a) => a.toLowerCase()));
+    onChange({
+      screenshot_skip_apps: settings.screenshot_skip_apps.filter((x) => !drop.has(x.toLowerCase())),
+    });
+  }
+
+  function setMode(m: "privacy" | "normal") {
+    if (!settings) return;
+    const patch: Partial<AppSettings> = { screenshot_mode: m };
+    // Switching into privacy with an empty skip list prefills the curated rules.
+    if (m === "privacy" && settings.screenshot_skip_apps.length === 0 && privacyApps.length > 0) {
+      patch.screenshot_skip_apps = privacyApps.flatMap((c) => c.apps);
+    }
+    onChange(patch);
+  }
 
   async function runExport(kind: "csv" | "json") {
     setExportMsg(null);
@@ -353,67 +471,107 @@ export function Settings({
         )}
       </Section>
 
-      <Section title={t("capture")}>
-        {captureLocked && (
-          <div className="muted" style={{ fontSize: 12, padding: "12px 2px 0" }}>
+      {captureLocked ? (
+        // Org-managed and no override allowed: the capture settings are not
+        // rendered at all — just the notice.
+        <Section title={t("capture")}>
+          <div className="muted" style={{ fontSize: 12, padding: "12px 2px" }}>
             {t("managedNotice")}
           </div>
-        )}
-        <Row title={t("captureScreenshots")}>
-          <Switch
-            checked={settings.capture_screenshots}
-            disabled={captureLocked}
-            onChange={(v) => onChange({ capture_screenshots: v })}
-          />
-        </Row>
-        <Row title={t("countKeystrokes")}>
-          <Switch
-            checked={settings.count_keystrokes}
-            disabled={captureLocked}
-            onChange={(v) => onChange({ count_keystrokes: v })}
-          />
-        </Row>
-        <Row title={t("screenshotInterval")}>
-          <Select
-            width={140}
-            value={settings.screenshot_interval_s}
-            disabled={captureLocked || !settings.capture_screenshots}
-            onChange={(v) => onChange({ screenshot_interval_s: v })}
-            options={[
-              { label: t("minUnit", { count: 1 }), value: 60 },
-              { label: t("minUnit", { count: 5 }), value: 300 },
-              { label: t("minUnit", { count: 10 }), value: 600 },
-              { label: t("minUnit", { count: 15 }), value: 900 },
-            ]}
-          />
-        </Row>
-        <Row title={t("idleThreshold")}>
-          <Select
-            width={140}
-            value={settings.idle_threshold_s}
-            disabled={captureLocked}
-            onChange={(v) => onChange({ idle_threshold_s: v })}
-            options={[
-              { label: t("secUnit", { count: 60 }), value: 60 },
-              { label: t("minUnit", { count: 3 }), value: 180 },
-              { label: t("minUnit", { count: 5 }), value: 300 },
-            ]}
-          />
-        </Row>
-        <Row title={t("screenshotRetention")}>
-          <Select
-            width={140}
-            value={settings.screenshot_retention_days}
-            disabled={captureLocked}
-            onChange={(v) => onChange({ screenshot_retention_days: v })}
-            options={[
-              { label: t("daysUnit", { count: 7 }), value: 7 },
-              { label: t("daysUnit", { count: 30 }), value: 30 },
-              { label: t("daysUnit", { count: 90 }), value: 90 },
-            ]}
-          />
-        </Row>
-      </Section>
+        </Section>
+      ) : (
+        <>
+          <Section title={t("screenshots")}>
+            <Row title={t("captureScreenshots")}>
+              <Switch
+                checked={settings.capture_screenshots}
+                onChange={(v) => onChange({ capture_screenshots: v })}
+              />
+            </Row>
+            {settings.capture_screenshots && (
+              <>
+                <Row title={t("screenshotMode")} desc={t("screenshotModeDesc")}>
+                  <div role="radiogroup" aria-label={t("screenshotMode")} style={{ display: "grid", gap: 8, width: 320, maxWidth: "100%" }}>
+                    <ModeOption
+                      label={t("modePrivacy")}
+                      desc={t("modePrivacyDesc")}
+                      selected={normalizeMode(settings.screenshot_mode) === "privacy"}
+                      onSelect={() => setMode("privacy")}
+                    />
+                    <ModeOption
+                      label={t("modeNormal")}
+                      desc={t("modeNormalDesc")}
+                      selected={normalizeMode(settings.screenshot_mode) === "normal"}
+                      onSelect={() => setMode("normal")}
+                    />
+                  </div>
+                </Row>
+                {normalizeMode(settings.screenshot_mode) === "privacy" && (
+                  <Row title={t("skipApps")} desc={t("skipAppsDesc")}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="bb-readonly">
+                        {t("skipAppsCount", { count: settings.screenshot_skip_apps.length })}
+                      </span>
+                      <button
+                        className="bibo-btn bibo-btn--secondary bibo-btn--sm"
+                        onClick={() => setSkipOpen(true)}
+                      >
+                        {t("skipAppsManage")}
+                      </button>
+                    </div>
+                  </Row>
+                )}
+                <Row title={t("screenshotInterval")}>
+                  <Select
+                    width={140}
+                    value={settings.screenshot_interval_s}
+                    onChange={(v) => onChange({ screenshot_interval_s: v })}
+                    options={[
+                      { label: t("minUnit", { count: 1 }), value: 60 },
+                      { label: t("minUnit", { count: 5 }), value: 300 },
+                      { label: t("minUnit", { count: 10 }), value: 600 },
+                      { label: t("minUnit", { count: 15 }), value: 900 },
+                    ]}
+                  />
+                </Row>
+                <Row title={t("screenshotRetention")}>
+                  <Select
+                    width={140}
+                    value={settings.screenshot_retention_days}
+                    onChange={(v) => onChange({ screenshot_retention_days: v })}
+                    options={[
+                      { label: t("daysUnit", { count: 7 }), value: 7 },
+                      { label: t("daysUnit", { count: 30 }), value: 30 },
+                      { label: t("daysUnit", { count: 90 }), value: 90 },
+                    ]}
+                  />
+                </Row>
+              </>
+            )}
+          </Section>
+
+          <Section title={t("capture")}>
+            <Row title={t("countKeystrokes")}>
+              <Switch
+                checked={settings.count_keystrokes}
+                onChange={(v) => onChange({ count_keystrokes: v })}
+              />
+            </Row>
+            <Row title={t("idleThreshold")}>
+              <Select
+                width={140}
+                value={settings.idle_threshold_s}
+                onChange={(v) => onChange({ idle_threshold_s: v })}
+                options={[
+                  { label: t("secUnit", { count: 60 }), value: 60 },
+                  { label: t("minUnit", { count: 3 }), value: 180 },
+                  { label: t("minUnit", { count: 5 }), value: 300 },
+                ]}
+              />
+            </Row>
+          </Section>
+        </>
+      )}
 
       <Section title={t("privacy")}>
         <Row title={t("storeDomainOnly")} desc={t("storeDomainOnlyDesc")}>
@@ -481,6 +639,176 @@ export function Settings({
           </div>
         )}
       </Section>
+
+      {skipOpen && (
+        <div
+          onClick={() => setSkipOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 100,
+          }}
+        >
+          <div
+            className="bibo-card bibo-card--default"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 480,
+              maxWidth: "calc(100vw - 48px)",
+              maxHeight: "calc(100vh - 96px)",
+              display: "flex",
+              flexDirection: "column",
+              padding: 20,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <div className="bb-row__title" style={{ fontSize: 15 }}>{t("skipAppsModalTitle")}</div>
+              <button
+                type="button"
+                aria-label="Close"
+                onClick={() => setSkipOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text)", fontSize: 18, lineHeight: 1 }}
+              >
+                ×
+              </button>
+            </div>
+            <div className="bb-row__desc" style={{ marginBottom: 12 }}>{t("skipAppsDesc")}</div>
+
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input
+                value={skipAppInput}
+                placeholder={t("skipAppsPlaceholder")}
+                autoFocus
+                onChange={(e) => setSkipAppInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addSkipApp();
+                  }
+                }}
+                style={{
+                  font: "inherit",
+                  fontSize: 13,
+                  color: "var(--text)",
+                  background: "var(--bg-inset)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 11,
+                  padding: "8px 12px",
+                  flex: 1,
+                }}
+              />
+              <button
+                className="bibo-btn bibo-btn--secondary bibo-btn--sm"
+                disabled={!skipAppInput.trim()}
+                onClick={addSkipApp}
+              >
+                {t("skipAppsAdd")}
+              </button>
+            </div>
+
+            {customSkipApps.length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <div className="bb-row__desc" style={{ marginBottom: 4 }}>{t("skipAppsCustom")}</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {customSkipApps.map((a) => (
+                    <span key={a} className="bibo-badge bibo-badge--positive">
+                      {a}
+                      <button
+                        type="button"
+                        aria-label={t("skipAppsRemove", { name: a })}
+                        onClick={() => removeSkipApps([a])}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "inherit",
+                          padding: 0,
+                          lineHeight: 1,
+                          fontSize: 13,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {privacyApps.map((cat) => {
+                const added = cat.apps.filter(hasSkipApp);
+                return (
+                  <div key={cat.key} style={{ marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span className="bb-row__desc" style={{ fontWeight: 600 }}>
+                        {t(`skipAppsCat${cat.key}`)} ({added.length}/{cat.apps.length})
+                      </span>
+                      {added.length < cat.apps.length && (
+                        <button
+                          type="button"
+                          className="bibo-btn bibo-btn--ghost bibo-btn--sm"
+                          style={{ padding: "1px 8px", fontSize: 11 }}
+                          onClick={() => addSkipApps(cat.apps)}
+                        >
+                          {t("skipAppsAddAll")}
+                        </button>
+                      )}
+                      {added.length > 0 && (
+                        <button
+                          type="button"
+                          className="bibo-btn bibo-btn--ghost bibo-btn--sm"
+                          style={{ padding: "1px 8px", fontSize: 11 }}
+                          onClick={() => removeSkipApps(cat.apps)}
+                        >
+                          {t("skipAppsRemoveAll")}
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                      {cat.apps.map((s) => {
+                        const on = hasSkipApp(s);
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            role="checkbox"
+                            aria-checked={on}
+                            className="bibo-btn bibo-btn--sm"
+                            style={{
+                              padding: "2px 10px",
+                              fontSize: 12,
+                              borderRadius: 999,
+                              border: on ? "1px solid var(--accent)" : "1px solid var(--border)",
+                              background: on ? "var(--accent-weak)" : "transparent",
+                              color: "var(--text)",
+                              cursor: "pointer",
+                            }}
+                            onClick={() => (on ? removeSkipApps([s]) : addSkipApps([s]))}
+                          >
+                            {on ? "✓ " : "+ "}
+                            {s}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+              <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" onClick={() => setSkipOpen(false)}>
+                {t("skipAppsDone")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

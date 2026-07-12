@@ -24,6 +24,36 @@
     "ariaLabel": "Ambang batas diam",
     "saved": "Ambang batas diam diperbarui."
   },
+  "screenshotMode": {
+    "title": "Mode tangkapan layar",
+    "desc": "Pilih cara layar ditangkap.",
+    "ariaLabel": "Mode tangkapan layar",
+    "privacy": "Privasi",
+    "privacyDesc": "Hanya jendela aktif yang ditangkap — tidak pernah seluruh layar. Tangkapan layar dilewati saat aplikasi di daftar lewati berada di depan (daftar sudah terisi aplikasi obrolan, kata sandi, dan perbankan yang umum).",
+    "normal": "Normal",
+    "normalDesc": "Semua layar ditangkap penuh.",
+    "saved": "Mode tangkapan layar diperbarui."
+  },
+  "skipApps": {
+    "title": "Lewati aplikasi",
+    "desc": "Tangkapan layar tidak diambil saat salah satu aplikasi ini berada di depan. Pencocokan fleksibel: \"Zalo\" juga cocok dengan \"Zalo PC\".",
+    "placeholder": "Nama aplikasi, mis. Zalo",
+    "add": "Tambah",
+    "remove": "Hapus {{name}}",
+    "saved": "Daftar lewati diperbarui.",
+    "catChat": "Obrolan & sosial",
+    "catSecurity": "Kata sandi & keamanan",
+    "catWork": "Kerja & rapat",
+    "catMail": "Email",
+    "manage": "Kelola…",
+    "modalTitle": "Daftar lewati tangkapan layar",
+    "count_one": "{{count}} aplikasi",
+    "count_other": "{{count}} aplikasi",
+    "done": "Selesai",
+    "custom": "Kustom",
+    "addAll": "Tambah semua",
+    "removeAll": "Hapus semua"
+  },
   "retention": {
     "title": "Retensi tangkapan layar",
     "desc": "Berapa lama backend menyimpan tangkapan layar yang diunggah untuk {{name}}. \"Tidak pernah\" menyimpannya tanpa batas waktu.",
@@ -52,5 +82,7 @@
   },
   "account": {
     "title": "Akun"
-  }
+  },
+  "groupPolicy": "Kebijakan pelacakan",
+  "groupScreenshots": "Tangkapan layar"
 }

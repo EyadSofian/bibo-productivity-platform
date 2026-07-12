@@ -43,6 +43,22 @@ fn apply_dock_policy(app: &tauri::AppHandle, hide: bool) {
 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
 fn apply_dock_policy(_app: &tauri::AppHandle, _hide: bool) {}
 
+/// Fetch the curated sensitive-app list from the backend (skip-list suggestions
+/// + prefill), falling back to the baked-in copy when the backend is
+/// unreachable (offline / personal use).
+pub async fn fetch_privacy_apps_or_baked() -> Vec<sync::client::PrivacyAppCategory> {
+    match sync::client::fetch_privacy_apps(&settings::backend_base_url()).await {
+        Ok(categories) if !categories.is_empty() => categories,
+        Ok(_) | Err(_) => trackers::DEFAULT_PRIVACY_APPS
+            .iter()
+            .map(|(key, apps)| sync::client::PrivacyAppCategory {
+                key: key.to_string(),
+                apps: apps.iter().map(|a| a.to_string()).collect(),
+            })
+            .collect(),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Sentry error reporting for the Rust core. Held for the whole process (drop =
@@ -87,6 +103,7 @@ pub fn run() {
             commands::sync_status,
             commands::apply_org_policy,
             commands::capture_policy,
+            commands::privacy_apps,
         ])
         .setup(|app| {
             // Open the local SQLite DB under the app data dir.

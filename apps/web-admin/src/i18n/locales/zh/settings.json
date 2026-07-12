@@ -24,6 +24,36 @@
     "ariaLabel": "空闲阈值",
     "saved": "空闲阈值已更新。"
   },
+  "screenshotMode": {
+    "title": "截图模式",
+    "desc": "选择屏幕的截取方式。",
+    "ariaLabel": "截图模式",
+    "privacy": "隐私",
+    "privacyDesc": "仅截取当前活动窗口，绝不截取整个屏幕。当跳过列表中的应用位于前台时不会截图（列表已预填常见的聊天、密码和银行应用）。",
+    "normal": "普通",
+    "normalDesc": "完整截取所有屏幕。",
+    "saved": "截图模式已更新。"
+  },
+  "skipApps": {
+    "title": "跳过的应用",
+    "desc": "当这些应用位于前台时不会截图。匹配较为宽松：“Zalo”也能匹配“Zalo PC”。",
+    "placeholder": "应用名称，例如 Zalo",
+    "add": "添加",
+    "remove": "移除 {{name}}",
+    "saved": "跳过列表已更新。",
+    "catChat": "聊天与社交",
+    "catSecurity": "密码与安全",
+    "catWork": "办公与会议",
+    "catMail": "邮件",
+    "manage": "管理…",
+    "modalTitle": "截图跳过列表",
+    "count_one": "{{count}} 个应用",
+    "count_other": "{{count}} 个应用",
+    "done": "完成",
+    "custom": "自定义",
+    "addAll": "全部添加",
+    "removeAll": "全部移除"
+  },
   "retention": {
     "title": "截图保留期",
     "desc": "后端为 {{name}} 保留已上传截图的时长。“永不”表示无限期保留。",
@@ -52,5 +82,7 @@
   },
   "account": {
     "title": "账户"
-  }
+  },
+  "groupPolicy": "跟踪策略",
+  "groupScreenshots": "截图"
 }

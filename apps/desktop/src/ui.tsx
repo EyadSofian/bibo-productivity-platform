@@ -47,6 +47,11 @@ const TrendUpIcon = () => (
     <path d="M7 17 17 7M9 7h8v8" />
   </svg>
 );
+const TrendDownIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden>
+    <path d="M7 7l10 10M17 9v8H9" />
+  </svg>
+);
 
 export function StatCard({
   icon,
@@ -54,6 +59,7 @@ export function StatCard({
   value,
   focal,
   delta,
+  deltaDir = "up",
   sub,
   chart,
 }: {
@@ -62,6 +68,8 @@ export function StatCard({
   value: string;
   focal?: boolean;
   delta?: ReactNode;
+  /** Trend direction: colours the delta and picks the arrow ("none" = no arrow, neutral). */
+  deltaDir?: "up" | "down" | "none";
   sub?: ReactNode;
   chart?: ReactNode;
 }) {
@@ -75,8 +83,9 @@ export function StatCard({
       {(delta || sub || chart) && (
         <div className="bibo-stat__foot">
           {delta && (
-            <span className="bibo-stat__delta bibo-stat__delta--up">
-              <TrendUpIcon />
+            <span className={`bibo-stat__delta bibo-stat__delta--${deltaDir}`}>
+              {deltaDir === "up" && <TrendUpIcon />}
+              {deltaDir === "down" && <TrendDownIcon />}
               {delta}
             </span>
           )}
