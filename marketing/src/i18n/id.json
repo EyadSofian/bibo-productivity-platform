@@ -1,17 +1,17 @@
 {
   "meta": {
     "title": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source",
-    "description": "Alternatif Hubstaff gratis dan open-source untuk macOS &amp; Windows — lacak waktu aplikasi, ketukan tombol, screenshot &amp; aktivitas browser. Local-first, bisa di-self-host, 100% gratis.",
+    "description": "Alternatif Hubstaff gratis dan open-source untuk macOS &amp; Windows — lacak waktu aplikasi, ketukan tombol, screenshot &amp; aktivitas browser. Local-first, bisa di-self-host, gratis &amp; open source.",
     "ogTitle": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source untuk macOS &amp; Windows",
-    "ogDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Waktu aplikasi & jendela, ketukan tombol, screenshot, dan aktivitas browser — local-first dan bisa di-self-host. 100% gratis.",
+    "ogDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Waktu aplikasi & jendela, ketukan tombol, screenshot, dan aktivitas browser — local-first dan bisa di-self-host. Gratis & open source.",
     "ogImageAlt": "BiBoTracking — pelacakan waktu & aktivitas untuk macOS & Windows",
     "twitterTitle": "BiBoTracking — Alternatif Hubstaff Gratis & Open-Source",
-    "twitterDescription": "Pelacakan waktu &amp; aktivitas karyawan yang gratis, open-source, dan bisa di-self-host untuk macOS &amp; Windows. 100% gratis.",
+    "twitterDescription": "Pelacakan waktu &amp; aktivitas karyawan yang gratis, open-source, dan bisa di-self-host untuk macOS &amp; Windows. Gratis &amp; open source.",
     "twitterImageAlt": "Dashboard BiBoTracking"
   },
   "jsonld": {
     "appDescription": "Alternatif Hubstaff gratis dan open-source untuk macOS & Windows. Melacak waktu aplikasi & jendela, jumlah ketukan tombol, screenshot berkala, dan aktivitas browser — local-first dan bisa di-self-host.",
-    "offerFree": "100% gratis — semua fitur termasuk, tanpa harga per pengguna",
+    "offerFree": "Gratis & open source — karyawan tanpa batas, tanpa harga per pengguna",
     "feature1": "Pelacakan waktu aplikasi dan jendela",
     "feature2": "Hitungan aktivitas ketukan tombol (tanpa isi tombol)",
     "feature3": "Screenshot otomatis di bawah 50KB",
@@ -23,11 +23,11 @@
   "faq": {
     "q1": {
       "name": "Adakah alternatif Hubstaff yang gratis dan open-source?",
-      "answer": "Ya. BiBoTracking adalah alternatif Hubstaff yang gratis dan open-source untuk macOS & Windows. Aplikasi ini melacak waktu aplikasi dan jendela, jumlah ketukan tombol, screenshot, dan aktivitas browser, serta 100% gratis — atau self-host secara gratis, selamanya."
+      "answer": "Ya. BiBoTracking adalah alternatif Hubstaff yang gratis dan open-source untuk macOS & Windows. Aplikasi ini melacak waktu aplikasi dan jendela, jumlah ketukan tombol, screenshot, dan aktivitas browser, serta gratis & open source — atau self-host secara gratis, selamanya."
     },
     "q2": {
       "name": "Berapa biaya BiBoTracking?",
-      "answer": "100% gratis dengan semua fitur termasuk di dalamnya dan tanpa harga per pengguna. Screenshot disimpan selama 30 hari; semua data lainnya disimpan selamanya. Tim yang membutuhkan retensi screenshot lebih lama, dukungan khusus, atau fitur kustom bisa memesan panggilan untuk paket khusus. Anda juga bisa self-host versi open-source-nya secara gratis."
+      "answer": "Semua yang BiBoTracking tawarkan hari ini sepenuhnya gratis, tanpa harga per pengguna. Screenshot disimpan selama 30 hari; semua data lainnya disimpan selamanya. Fitur berbayar opsional mungkin ditambahkan di masa depan — selalu berupa kemampuan baru, tidak pernah sesuatu yang saat ini gratis. Tim yang membutuhkan retensi screenshot lebih lama, dukungan khusus, atau fitur kustom bisa memesan panggilan untuk paket khusus. Anda juga bisa self-host versi open-source-nya secara gratis."
     },
     "q3": {
       "name": "Apakah BiBoTracking merekam apa yang diketik karyawan?",
@@ -59,7 +59,7 @@
     "downloadMac": "Unduh untuk macOS",
     "addChrome": "Tambahkan ke Chrome",
     "signUp": "Daftar",
-    "note": "100% gratis · open source &amp; bisa di-self-host · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
+    "note": "Gratis &amp; open source · bisa di-self-host · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
     "dashboardAlt": "Dashboard desktop BiBoTracking yang menampilkan waktu aktif, aplikasi teratas, ketukan tombol, dan screenshot",
     "activeToday": "Aktif hari ini",
     "downloadWin": "Unduh untuk Windows"
@@ -179,7 +179,7 @@
   "compare": {
     "kicker": "BiBoTracking vs Hubstaff",
     "title": "Pelacakan inti yang sama, tanpa tagihan per pengguna.",
-    "intro": "Jika Anda menggunakan Hubstaff untuk pemantauan aplikasi, screenshot, dan aktivitas, Anda sudah paham alurnya. Ini versi open-source dan local-first — 100% gratis, dan milik Anda untuk di-self-host.",
+    "intro": "Jika Anda menggunakan Hubstaff untuk pemantauan aplikasi, screenshot, dan aktivitas, Anda sudah paham alurnya. Ini versi open-source dan local-first — gratis & open source, dan milik Anda untuk di-self-host.",
     "thFeature": "Fitur",
     "thUs": "Employee&nbsp;Tracker",
     "thThem": "Hubstaff",
@@ -187,7 +187,7 @@
     "no": "Tidak",
     "row": {
       "price": "Harga",
-      "priceUs": "100% gratis",
+      "priceUs": "Gratis (open source)",
       "priceThem": "Berbayar, per&nbsp;pengguna / bulan",
       "oss": "Open source",
       "selfhost": "Bisa di-self-host",
@@ -225,13 +225,13 @@
   },
   "pricing": {
     "kicker": "Harga",
-    "title": "100% gratis. Selamanya.",
-    "intro": "Tanpa uji coba, tanpa kursi yang dihitung, tanpa kartu kredit. Setiap fitur, gratis — screenshot disimpan 30 hari, semua data lainnya disimpan selamanya.",
+    "title": "Gratis hari ini. Fitur inti tetap gratis selamanya.",
+    "intro": "Semua yang BiBoTracking tawarkan hari ini sepenuhnya gratis — tanpa uji coba, tanpa kursi yang dihitung, tanpa kartu kredit. Seiring produk berkembang, fitur berbayar opsional mungkin ditambahkan untuk tim yang butuh lebih. Apa pun yang Anda gunakan hari ini tidak akan pernah dipindahkan ke balik paywall.",
     "free": {
-      "tag": "Paket gratis",
-      "badge": "100% gratis",
+      "tag": "Inti gratis",
+      "badge": "Gratis selamanya",
       "per": "selamanya",
-      "sub": "Setiap fitur, setiap sinyal, dashboard web lengkap — sepenuhnya gratis.",
+      "sub": "Semua yang tersedia hari ini — aplikasi desktop, ekstensi Chrome, dashboard web lengkap, karyawan tanpa batas. Gratis selamanya.",
       "li1": "Karyawan tanpa batas — tanpa harga per pengguna",
       "li2": "Aplikasi desktop, ekstensi Chrome &amp; dashboard web",
       "li3": "Screenshot disimpan 30 hari; semua data lainnya disimpan selamanya",
@@ -246,7 +246,8 @@
       "li2": "Dukungan prioritas &amp; onboarding",
       "li3": "Fitur kustom &amp; integrasi",
       "btn": "Pesan panggilan"
-    }
+    },
+    "pledge": "<strong>Janji kami:</strong> apa pun yang gratis hari ini tetap gratis selamanya. Fitur berbayar di masa depan selalu berupa kemampuan baru yang opsional — tidak pernah menarik kembali yang sudah gratis."
   },
   "oss": {
     "kicker": "Open source",
@@ -268,8 +269,8 @@
     "github": "Lihat kode di GitHub"
   },
   "cta": {
-    "title": "100% gratis. Selamanya.",
-    "intro": "Unduh aplikasi desktop dan daftar — tanpa kartu, tanpa hitungan waktu uji coba. Setiap fitur, sepenuhnya gratis, atau self-host secara gratis.",
+    "title": "Gratis hari ini. Fitur inti tetap gratis selamanya.",
+    "intro": "Unduh aplikasi desktop dan daftar — tanpa kartu, tanpa hitungan waktu uji coba. Fitur inti gratis selamanya — atau self-host seluruh stack secara gratis.",
     "downloadMac": "Unduh untuk macOS",
     "addChrome": "Tambahkan ke Chrome",
     "signUp": "Daftar",

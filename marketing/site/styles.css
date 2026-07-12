@@ -561,6 +561,9 @@ h2.title { font-size: 34px; line-height: 1.15; letter-spacing: -.02em; margin: 0
 .lp-price__ctas .lp-btn { width: 100%; justify-content: center; }
 .lp-price--focal .lp-btn--secondary { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.35); }
 .lp-price--focal .lp-btn--secondary:hover { background: rgba(255,255,255,.2); }
+.lp-pledge { max-width: 720px; margin: 24px auto 0; text-align: center; font-size: 14px; line-height: 1.55; color: var(--ink-soft);
+  background: var(--accent-weak); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 18px; }
+.lp-pledge strong { color: var(--accent); }
 
 /* ---------- open source (offline) ---------- */
 .lp-oss__foot { text-align: center; margin-top: 40px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
