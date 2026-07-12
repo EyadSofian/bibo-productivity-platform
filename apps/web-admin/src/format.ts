@@ -44,7 +44,12 @@ export function dayRangeToUnix(fromDate: string, toDate: string): { from: number
 }
 
 export function isoDate(d: Date): string {
-  return d.toISOString().slice(0, 10);
+  // LOCAL date, not toISOString() (UTC) — for a UTC+7 viewer the UTC date is
+  // still yesterday between local midnight and 7am, which made the default day
+  // view (and its screenshot gallery) query an already-ended window.
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 export function daysAgoIso(n: number): string {
