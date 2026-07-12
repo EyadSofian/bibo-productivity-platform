@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "开源的 Hubstaff 替代方案 · macOS &amp; Windows",
-    "headlineA": "看清工作时间",
-    "headlineB": "究竟花在哪",
-    "headlineC": "。",
+    "headlineA": "尊重每一位<br>被衡量者的<br>",
+    "headlineB": "时间<br>追踪",
+    "headlineC": "",
     "ledeA": "一款免费、开源的 ",
     "ledeStrong": "Hubstaff 替代方案",
     "ledeB": "，专为 macOS 和 Windows 打造。BiBoTracking 测量\n          活跃的应用 &amp; 窗口时长、按键量、定时屏幕截图和浏览器活动 —\n          数据存储在每台电脑本地，并在简洁的网页控制台中为所有者汇总呈现。",
@@ -105,6 +105,8 @@
     "intro": "员工运行的桌面应用，以及所有者登录的网页控制台。真实产品，真实数据。",
     "tabDesktop": "桌面应用",
     "tabWeb": "网页控制台",
+    "roleDesktop": "面向员工或孩子",
+    "roleWeb": "面向家长或负责人",
     "capDesktop": "桌面应用 — 控制台、活动、屏幕截图、浏览器和组织托管的设置。",
     "capWeb": "所有者控制台 — 深入查看任意员工的活动、按键、浏览器和屏幕截图。"
   },
@@ -116,17 +118,18 @@
       "p": "员工在 macOS 或 Windows 上安装 BiBoTracking，并授予所需的捕捉权限（在 macOS 上为辅助功能、输入监控和屏幕录制）。授权后状态会即时自动更新。"
     },
     "step2": {
+      "p": "可选。记录你访问的域名，让网页浏览显示在报告中。",
       "h": "添加 Chrome 扩展",
-      "pA": "可选。Manifest&nbsp;V3 扩展会自动发现本地应用，并将浏览器页面上报给 ",
-      "pB": " — 绝不发往云端。 ",
       "link": "在 Chrome Web Store 获取&nbsp;→"
     },
     "step3": {
       "h": "所有者查看汇总",
       "p": "活动单向同步到控制台，所有者可在此按员工查看时长、按键、浏览历史和屏幕截图。"
-    }
+    },
+    "intro": "无需配置服务器即可开始。"
   },
   "showcase": {
+    "zoomHint": "点击任意界面放大",
     "kicker": "产品内部一览",
     "title": "两端皆为清晰而生。",
     "intro": "同样的数据，为每位查看者量身呈现 — 扁平、极简，深色或浅色。",
@@ -195,8 +198,7 @@
       "activity": "活动 / 按键级别",
       "activityUs": " — 仅统计次数",
       "browser": "浏览器 / URL 追踪",
-      "dashboard": "所有者网页控制台 &amp; 报表",
-      "perseat": "无按席位计费"
+      "dashboard": "所有者网页控制台 &amp; 报表"
     },
     "note": "对比基于 Hubstaff 公开列出的套餐和功能。“Hubstaff”是其各自所有者的商标；BiBoTracking 与 Hubstaff 无任何关联，也未获其背书。"
   },
@@ -274,17 +276,23 @@
     "downloadWin": "下载 Windows 版"
   },
   "footer": {
-    "download": "下载应用",
+    "download": "macOS",
     "chrome": "Chrome 扩展",
     "signIn": "登录",
     "pricing": "价格",
     "oss": "开源",
     "privacy": "隐私政策",
     "contact": "联系我们",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · MIT 许可开源",
     "github": "GitHub",
-    "telegram": "Telegram 支持",
-    "downloadWin": "Windows 应用"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "产品",
+    "colResources": "资源",
+    "colConnect": "联系",
+    "tagline": "隐私优先、本地优先的时间与活动追踪。开源且可自托管。",
+    "colDownloads": "下载",
+    "compare": "同样的核心追踪，无需按席位付费"
   },
   "personas": {
     "kicker": "适用人群",

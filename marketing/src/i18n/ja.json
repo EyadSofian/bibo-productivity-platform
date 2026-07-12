@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "オープンソースのHubstaff代替ツール · macOS &amp; Windows",
-    "headlineA": "業務時間が",
-    "headlineB": "実際にどこへ使われているか",
-    "headlineC": "を可視化。",
+    "headlineA": "測る人を<br>尊重する<br>",
+    "headlineB": "時間<br>トラッキング",
+    "headlineC": "",
     "ledeA": "macOS と Windows 向けの無料・オープンソースな",
     "ledeStrong": "Hubstaff代替ツール",
     "ledeB": "です。BiBoTrackingは、\n          アクティブなアプリ&amp;ウィンドウの使用時間、キーストローク量、定期的なスクリーンショット、ブラウザのアクティビティを計測し —\n          各コンピューター上にローカル保存しつつ、オーナー向けには見やすいWebダッシュボードに集約します。",
@@ -105,6 +105,8 @@
     "intro": "従業員が実行するデスクトップアプリと、オーナーがログインするWebダッシュボード。本物の製品、本物のデータです。",
     "tabDesktop": "デスクトップアプリ",
     "tabWeb": "Webダッシュボード",
+    "roleDesktop": "従業員や子ども向け",
+    "roleWeb": "保護者やオーナー向け",
     "capDesktop": "デスクトップアプリ — ダッシュボード、アクティビティ、スクリーンショット、ブラウザ、組織管理の設定。",
     "capWeb": "オーナーダッシュボード — 任意の従業員のアクティビティ、キーストローク、ブラウザ、スクリーンショットを掘り下げて確認。"
   },
@@ -116,17 +118,18 @@
       "p": "従業員がBiBoTrackingを macOS または Windows にインストールし、要求されるキャプチャ権限（macOS ではアクセシビリティ、入力監視、画面収録）を付与します。権限が付与された瞬間にステータスが自動更新されます。"
     },
     "step2": {
+      "p": "任意。訪問したドメインを記録し、Web閲覧をレポートに表示します。",
       "h": "Chrome拡張機能を追加",
-      "pA": "任意です。Manifest&nbsp;V3拡張機能がローカルアプリを自動検出し、ブラウザのページを ",
-      "pB": " に報告します — クラウドには一切送信しません。 ",
       "link": "Chrome Web Storeで入手&nbsp;→"
     },
     "step3": {
       "h": "オーナーは集約を確認",
       "p": "アクティビティは一方向にダッシュボードへ同期され、オーナーは従業員ごとの時間、キーストローク、ブラウザ履歴、スクリーンショットを確認できます。"
-    }
+    },
+    "intro": "サーバー設定は不要ですぐに始められます。"
   },
   "showcase": {
+    "zoomHint": "画面をクリックして拡大",
     "kicker": "製品の中身",
     "title": "両サイドとも、明快さを追求して構築。",
     "intro": "同じデータを、見る人に合わせて表示 — フラットでミニマル、ダークでもライトでも。",
@@ -195,8 +198,7 @@
       "activity": "アクティビティ / キーストロークレベル",
       "activityUs": " — 回数のみ",
       "browser": "ブラウザ / URLの追跡",
-      "dashboard": "オーナー向けWebダッシュボード&amp;レポート",
-      "perseat": "ユーザー単位の課金なし"
+      "dashboard": "オーナー向けWebダッシュボード&amp;レポート"
     },
     "note": "比較は公開されているHubstaffのプランと機能に基づいています。「Hubstaff」はそれぞれの所有者の商標です。BiBoTrackingはHubstaffと提携しておらず、その推奨も受けていません。"
   },
@@ -274,17 +276,23 @@
     "downloadWin": "Windows版をダウンロード"
   },
   "footer": {
-    "download": "アプリをダウンロード",
+    "download": "macOS",
     "chrome": "Chrome拡張機能",
     "signIn": "ログイン",
     "pricing": "料金",
     "oss": "オープンソース",
     "privacy": "プライバシーポリシー",
     "contact": "お問い合わせ",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · MITライセンスのオープンソース",
     "github": "GitHub",
-    "telegram": "Telegram サポート",
-    "downloadWin": "Windows アプリ"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "製品",
+    "colResources": "リソース",
+    "colConnect": "連絡先",
+    "tagline": "プライバシー重視・ローカルファーストの時間とアクティビティの記録。オープンソースでセルフホスト可能。",
+    "colDownloads": "ダウンロード",
+    "compare": "同じコア追跡機能を、席数課金なしで"
   },
   "personas": {
     "kicker": "対象ユーザー",

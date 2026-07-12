@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "L'alternative open source à Hubstaff · macOS &amp; Windows",
-    "headlineA": "Voyez où passe ",
-    "headlineB": "vraiment le temps de travail",
-    "headlineC": ".",
+    "headlineA": "Un suivi du temps<br>qui respecte<br>",
+    "headlineB": "les gens<br>qu'il mesure.",
+    "headlineC": "",
     "ledeA": "Une alternative ",
     "ledeStrong": "à Hubstaff",
     "ledeB": ", gratuite et open source, pour macOS &amp; Windows. BiBoTracking mesure\n          le temps actif par application &amp; fenêtre, le volume de frappes, des captures d'écran périodiques et l'activité du navigateur —\n          stockés localement sur chaque ordinateur, et synthétisés pour les dirigeants dans un tableau de bord web épuré.",
@@ -105,6 +105,8 @@
     "intro": "L'application de bureau qu'utilise l'employé, et le tableau de bord web auquel les dirigeants se connectent. Vrai produit, vraies données.",
     "tabDesktop": "Application de bureau",
     "tabWeb": "Tableau de bord web",
+    "roleDesktop": "Pour les employés ou les enfants",
+    "roleWeb": "Pour les parents ou les propriétaires",
     "capDesktop": "L'application de bureau — tableau de bord, activité, captures d'écran, navigateur et paramètres gérés par l'organisation.",
     "capWeb": "Le tableau de bord du dirigeant — explorez en détail l'activité, les frappes, le navigateur et les captures d'écran de chaque employé."
   },
@@ -116,17 +118,18 @@
       "p": "L'employé installe BiBoTracking sur macOS ou Windows et accorde les autorisations de capture demandées (Accessibilité, Surveillance de la saisie et Enregistrement de l'écran sur macOS). Le statut se met à jour automatiquement dès qu'elles sont accordées."
     },
     "step2": {
+      "p": "Optionnel. Enregistre les domaines visités pour afficher la navigation dans les rapports.",
       "h": "Ajoutez l'extension Chrome",
-      "pA": "Optionnel. L'extension Manifest&nbsp;V3 détecte automatiquement l'application locale et rapporte les pages de navigation à ",
-      "pB": " — jamais au cloud. ",
       "link": "Obtenez-la sur le Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Les dirigeants suivent la synthèse",
       "p": "L'activité se synchronise de manière unidirectionnelle vers le tableau de bord, où les dirigeants consultent le temps, les frappes, l'historique de navigation et les captures d'écran par employé."
-    }
+    },
+    "intro": "Aucune configuration de serveur requise pour démarrer."
   },
   "showcase": {
+    "zoomHint": "Cliquez sur un écran pour zoomer",
     "kicker": "À l'intérieur du produit",
     "title": "Conçu pour la clarté, des deux côtés.",
     "intro": "Les mêmes données, présentées pour celui qui les regarde — épuré, minimal, sombre ou clair.",
@@ -195,8 +198,7 @@
       "activity": "Niveau d'activité / de frappes",
       "activityUs": " — comptages uniquement",
       "browser": "Suivi du navigateur / des URL",
-      "dashboard": "Tableau de bord web &amp; rapports pour le dirigeant",
-      "perseat": "Aucune facturation par utilisateur"
+      "dashboard": "Tableau de bord web &amp; rapports pour le dirigeant"
     },
     "note": "Comparaison basée sur les forfaits et fonctionnalités Hubstaff listés publiquement. « Hubstaff » est une marque déposée de son propriétaire respectif ; BiBoTracking n'est ni affilié à Hubstaff ni approuvé par lui."
   },
@@ -274,17 +276,23 @@
     "downloadWin": "Télécharger pour Windows"
   },
   "footer": {
-    "download": "Télécharger l'application",
+    "download": "macOS",
     "chrome": "Extension Chrome",
     "signIn": "Se connecter",
     "pricing": "Tarifs",
     "oss": "Open source",
     "privacy": "Politique de confidentialité",
     "contact": "Contact",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · Open source sous licence MIT",
     "github": "GitHub",
-    "telegram": "Support Telegram",
-    "downloadWin": "Appli Windows"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Produit",
+    "colResources": "Ressources",
+    "colConnect": "Contact",
+    "tagline": "Suivi du temps et de l'activité local et respectueux de la vie privée. Open source et auto-hébergeable.",
+    "colDownloads": "Téléchargements",
+    "compare": "Le même suivi essentiel, sans facturation par utilisateur"
   },
   "personas": {
     "kicker": "Pour qui",

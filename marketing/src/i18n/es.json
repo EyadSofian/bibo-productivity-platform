@@ -50,9 +50,9 @@
   },
   "hero": {
     "eyebrow": "La alternativa de código abierto a Hubstaff · macOS &amp; Windows",
-    "headlineA": "Vea adónde va realmente ",
-    "headlineB": "el tiempo de trabajo",
-    "headlineC": ".",
+    "headlineA": "Seguimiento del tiempo<br>que respeta<br>",
+    "headlineB": "a las personas<br>que mide.",
+    "headlineC": "",
     "ledeA": "Una alternativa gratuita y de código abierto a ",
     "ledeStrong": "Hubstaff",
     "ledeB": " para macOS y Windows. BiBoTracking mide\n          el tiempo activo por aplicación &amp; ventana, el volumen de pulsaciones, capturas de pantalla periódicas y la actividad del navegador,\n          almacenado localmente en cada equipo y consolidado para los propietarios en un panel web claro.",
@@ -105,6 +105,8 @@
     "intro": "La aplicación de escritorio que ejecuta el empleado y el panel web en el que inician sesión los propietarios. Producto real, datos reales.",
     "tabDesktop": "Aplicación de escritorio",
     "tabWeb": "Panel web",
+    "roleDesktop": "Para empleados o niños",
+    "roleWeb": "Para padres o propietarios",
     "capDesktop": "La aplicación de escritorio: panel, actividad, capturas de pantalla, navegador y ajustes gestionados por la organización.",
     "capWeb": "El panel del propietario: profundice en la actividad, las pulsaciones, el navegador y las capturas de pantalla de cualquier empleado."
   },
@@ -116,17 +118,18 @@
       "p": "El empleado instala BiBoTracking en macOS o Windows y concede los permisos de captura solicitados (Accesibilidad, Monitorización de entrada y Grabación de pantalla en macOS). El estado se actualiza automáticamente en cuanto se conceden."
     },
     "step2": {
+      "p": "Opcional. Registra los dominios que visitas para mostrar la navegación en los informes.",
       "h": "Añada la extensión de Chrome",
-      "pA": "Opcional. La extensión Manifest&nbsp;V3 detecta automáticamente la aplicación local e informa de las páginas del navegador a ",
-      "pB": ", nunca a la nube. ",
       "link": "Consíguela en la Chrome Web Store&nbsp;→"
     },
     "step3": {
       "h": "Los propietarios consultan el resumen",
       "p": "La actividad se sincroniza de forma unidireccional con el panel, donde los propietarios revisan el tiempo, las pulsaciones, el historial de navegación y las capturas de pantalla de cada empleado."
-    }
+    },
+    "intro": "Sin configuración de servidor para empezar."
   },
   "showcase": {
+    "zoomHint": "Haz clic en cualquier pantalla para ampliar",
     "kicker": "Por dentro del producto",
     "title": "Diseñado para la claridad, en ambos extremos.",
     "intro": "Los mismos datos, presentados para quien los mire: plano, minimalista, en modo oscuro o claro.",
@@ -195,8 +198,7 @@
       "activity": "Nivel de actividad / pulsaciones",
       "activityUs": " — solo recuentos",
       "browser": "Seguimiento de navegador / URL",
-      "dashboard": "Panel web &amp; informes para el propietario",
-      "perseat": "Sin precio por usuario"
+      "dashboard": "Panel web &amp; informes para el propietario"
     },
     "note": "Comparativa basada en los planes y funciones de Hubstaff publicados públicamente. “Hubstaff” es una marca comercial de su respectivo propietario; BiBoTracking no está afiliado a Hubstaff ni cuenta con su respaldo."
   },
@@ -274,17 +276,23 @@
     "downloadWin": "Descargar para Windows"
   },
   "footer": {
-    "download": "Descargar aplicación",
+    "download": "macOS",
     "chrome": "Extensión de Chrome",
     "signIn": "Iniciar sesión",
     "pricing": "Precios",
     "oss": "Código abierto",
     "privacy": "Política de privacidad",
     "contact": "Contacto",
-    "copyright": "© 2026 BiBoTracking · macOS &amp; Windows",
+    "copyright": "© 2026 BiBoTracking · Código abierto con licencia MIT",
     "github": "GitHub",
-    "telegram": "Soporte por Telegram",
-    "downloadWin": "App de Windows"
+    "telegram": "Telegram",
+    "downloadWin": "Windows",
+    "colProduct": "Producto",
+    "colResources": "Recursos",
+    "colConnect": "Contacto",
+    "tagline": "Seguimiento de tiempo y actividad local y centrado en la privacidad. Código abierto y auto-alojable.",
+    "colDownloads": "Descargas",
+    "compare": "El mismo seguimiento esencial, sin cobro por usuario"
   },
   "personas": {
     "kicker": "Para quién",

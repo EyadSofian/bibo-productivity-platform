@@ -1,0 +1,11 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="BiBoTracking">
+  <defs>
+    <linearGradient id="bibo-g" x1="8" y1="6" x2="56" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B7DF6"></stop>
+      <stop offset="1" stop-color="#5B4BD6"></stop>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="17" fill="url(#bibo-g)"></rect>
+  <circle cx="32" cy="32" r="16" stroke="#fff" stroke-opacity="0.85" stroke-width="3"></circle>
+  <path d="M19 33.5 L26 33.5 L29.5 25 L34.5 41 L38 33.5 L45 33.5" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+</svg>
