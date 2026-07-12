@@ -1,18 +1,17 @@
 {
   "meta": {
     "title": "BiBoTracking — Alternativa gratuita y de código abierto a Hubstaff",
-    "description": "Una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows: monitorice el tiempo en aplicaciones, las pulsaciones de teclado, las capturas de pantalla &amp; la actividad del navegador. Local-first, autoalojable y gratis durante 2 años.",
+    "description": "Una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows: monitorice el tiempo en aplicaciones, las pulsaciones de teclado, las capturas de pantalla &amp; la actividad del navegador. Local-first, autoalojable y 100% gratis.",
     "ogTitle": "BiBoTracking — Alternativa gratuita y de código abierto a Hubstaff para macOS y Windows",
-    "ogDescription": "Una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows. Tiempo por aplicación y ventana, pulsaciones de teclado, capturas de pantalla y actividad del navegador: local-first y autoalojable. Gratis durante 2 años, luego $1/mes.",
+    "ogDescription": "Una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows. Tiempo por aplicación y ventana, pulsaciones de teclado, capturas de pantalla y actividad del navegador: local-first y autoalojable. 100% gratis.",
     "ogImageAlt": "BiBoTracking — seguimiento de tiempo y actividad para macOS y Windows",
     "twitterTitle": "BiBoTracking — Alternativa gratuita y de código abierto a Hubstaff",
-    "twitterDescription": "Seguimiento de tiempo &amp; actividad de empleados gratuito, de código abierto y autoalojable para macOS y Windows. Gratis durante 2 años, luego $1/mes.",
+    "twitterDescription": "Seguimiento de tiempo &amp; actividad de empleados gratuito, de código abierto y autoalojable para macOS y Windows. 100% gratis.",
     "twitterImageAlt": "Panel de BiBoTracking"
   },
   "jsonld": {
     "appDescription": "Una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows. Registra el tiempo por aplicación y ventana, el recuento de pulsaciones de teclado, capturas de pantalla periódicas y la actividad del navegador: local-first y autoalojable.",
-    "offerFree": "Gratis durante los primeros 2 años",
-    "offerPaid": "$1/mes después de 2 años, o autoalójelo gratis",
+    "offerFree": "100% gratis — todas las funciones incluidas, sin precio por usuario",
     "feature1": "Seguimiento de tiempo por aplicación y ventana",
     "feature2": "Recuento de actividad de pulsaciones (sin el contenido de las teclas)",
     "feature3": "Capturas de pantalla automáticas de menos de 50KB",
@@ -24,11 +23,11 @@
   "faq": {
     "q1": {
       "name": "¿Existe una alternativa a Hubstaff gratuita y de código abierto?",
-      "answer": "Sí. BiBoTracking es una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows. Registra el tiempo por aplicación y ventana, el recuento de pulsaciones, las capturas de pantalla y la actividad del navegador, y es gratis durante sus primeros dos años (luego $1/mes); o autoalójelo gratis, para siempre."
+      "answer": "Sí. BiBoTracking es una alternativa gratuita y de código abierto a Hubstaff para macOS y Windows. Registra el tiempo por aplicación y ventana, el recuento de pulsaciones, las capturas de pantalla y la actividad del navegador, y es 100% gratis; o autoalójelo gratis, para siempre."
     },
     "q2": {
       "name": "¿Cuánto cuesta BiBoTracking?",
-      "answer": "Es gratis durante los primeros dos años con todas las funciones incluidas. Después, son $1 al mes con una tarifa plana por el servicio alojado, sin precio por usuario. También puede autoalojar la versión de código abierto de forma gratuita."
+      "answer": "Es 100% gratis, con todas las funciones incluidas y sin precio por usuario. Las capturas de pantalla se conservan 30 días; todos los demás datos se conservan para siempre. Los equipos que necesiten una retención de capturas más larga, soporte dedicado o funciones personalizadas pueden reservar una llamada para un plan a medida. También puede autoalojar la versión de código abierto de forma gratuita."
     },
     "q3": {
       "name": "¿BiBoTracking registra lo que los empleados escriben?",
@@ -60,7 +59,7 @@
     "downloadMac": "Descargar para macOS",
     "addChrome": "Añadir a Chrome",
     "signUp": "Registrarse",
-    "note": "Gratis durante 2 años, luego $1/mes · de código abierto &amp; autoalojable · macOS&nbsp;universal (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
+    "note": "100% gratis · de código abierto &amp; autoalojable · macOS&nbsp;universal (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
     "dashboardAlt": "Panel de escritorio de BiBoTracking mostrando tiempo activo, aplicación principal, pulsaciones y capturas de pantalla",
     "activeToday": "Activo hoy",
     "downloadWin": "Descargar para Windows"
@@ -177,7 +176,7 @@
   "compare": {
     "kicker": "BiBoTracking vs Hubstaff",
     "title": "El mismo seguimiento esencial, sin la factura por usuario.",
-    "intro": "Si usa Hubstaff para monitorizar aplicaciones, capturas de pantalla y actividad, ya conoce el flujo de trabajo. Esta es la versión de código abierto y local-first, por un precio plano, o gratis si la aloja usted mismo.",
+    "intro": "Si usa Hubstaff para monitorizar aplicaciones, capturas de pantalla y actividad, ya conoce el flujo de trabajo. Esta es la versión de código abierto y local-first: 100% gratis, y suya para autoalojar.",
     "thFeature": "Función",
     "thUs": "Employee&nbsp;Tracker",
     "thThem": "Hubstaff",
@@ -185,7 +184,7 @@
     "no": "No",
     "row": {
       "price": "Precio",
-      "priceUs": "Gratis 2 años, luego $1/mes plano",
+      "priceUs": "100% gratis",
       "priceThem": "De pago, por&nbsp;usuario / mes",
       "oss": "Código abierto",
       "selfhost": "Autoalojable",
@@ -224,26 +223,27 @@
   },
   "pricing": {
     "kicker": "Precios",
-    "title": "Gratis durante dos años. Luego, un dólar.",
-    "intro": "Sin pruebas, sin usuarios que contar, sin tarjeta de crédito para empezar. Solo instale y listo.",
-    "perMonth": "/mes",
+    "title": "100% gratis. Para siempre.",
+    "intro": "Sin pruebas, sin usuarios que contar, sin tarjeta de crédito. Todas las funciones, gratis: las capturas de pantalla se conservan 30 días, todos los demás datos se conservan para siempre.",
     "free": {
-      "tag": "Año 1 &amp; 2",
-      "badge": "Gratis ahora",
-      "sub": "Todas las funciones, todas las señales, el panel web completo: gratis durante sus primeros dos años.",
-      "li1": "Empleados ilimitados",
+      "tag": "Plan gratuito",
+      "badge": "100% gratis",
+      "per": "para siempre",
+      "sub": "Todas las funciones, todas las señales, el panel web completo: totalmente gratis.",
+      "li1": "Empleados ilimitados — sin precio por usuario",
       "li2": "Aplicación de escritorio, extensión de Chrome &amp; panel web",
-      "li3": "Capturas de pantalla, actividad, pulsaciones &amp; informes del navegador",
+      "li3": "Capturas de pantalla conservadas 30 días; todos los demás datos para siempre",
       "btn": "Descargar para macOS",
       "btnWin": "Descargar para Windows"
     },
-    "paid": {
-      "tag": "Después de 2 años",
-      "sub": "Un único dólar plano al mes mantiene en marcha el servicio alojado. Eso es todo.",
-      "li1": "Todo lo del periodo gratuito",
-      "li2": "Sincronización &amp; almacenamiento alojados de forma continua",
-      "li3": "O autoalójelo gratis, para siempre",
-      "btn": "Ver autoalojamiento"
+    "custom": {
+      "tag": "Personalizado",
+      "amt": "Hablemos",
+      "sub": "¿Necesita una retención de capturas más larga, soporte dedicado o funciones personalizadas? Diseñemos un plan que se ajuste a su equipo.",
+      "li1": "Periodos de retención de capturas más largos",
+      "li2": "Soporte prioritario &amp; onboarding",
+      "li3": "Funciones personalizadas &amp; integraciones",
+      "btn": "Reservar una llamada"
     }
   },
   "oss": {
@@ -266,8 +266,8 @@
     "github": "Ver el código en GitHub"
   },
   "cta": {
-    "title": "Gratis durante sus primeros dos años.",
-    "intro": "Descargue la aplicación de escritorio y regístrese: sin tarjeta, sin reloj de prueba. Tras dos años son solo $1/mes, o autoalójela gratis.",
+    "title": "100% gratis. Para siempre.",
+    "intro": "Descargue la aplicación de escritorio y regístrese: sin tarjeta, sin reloj de prueba. Todas las funciones, totalmente gratis, o autoalójela gratis.",
     "downloadMac": "Descargar para macOS",
     "addChrome": "Añadir a Chrome",
     "signUp": "Registrarse",
@@ -305,5 +305,21 @@
       "p": "Vigila el tiempo de pantalla de tus hijos con las mismas señales suaves y transparentes — para hablarlo juntos.",
       "tag": "Cuenta gratis"
     }
+  },
+  "win": {
+    "title": "Abrir la aplicación en Windows",
+    "body": "BiBoTracking es una aplicación indie, gratuita y de código abierto. No hemos pagado un costoso certificado de firma de código de Windows, así que la primera vez que ejecutes el instalador, Windows puede mostrar la pantalla «Windows protegió tu PC». Es normal en las aplicaciones indie: la aplicación es segura y cada línea de su código es pública en GitHub.",
+    "dlgTitle": "Windows protegió tu PC",
+    "dlgBody": "Microsoft Defender SmartScreen impidió el inicio de una aplicación no reconocida. Ejecutar esta aplicación podría poner en riesgo tu PC.",
+    "dlgApp": "Aplicación: EmployeeTracker-Windows-x64.msi",
+    "dlgPublisher": "Editor: Editor desconocido",
+    "dlgMoreInfo": "Más información",
+    "dlgRun": "Ejecutar de todas formas",
+    "dlgDont": "No ejecutar",
+    "step1": "En esa pantalla, haz clic en <strong>Más información</strong>.",
+    "step2": "Luego haz clic en <strong>Ejecutar de todas formas</strong> para iniciar el instalador.",
+    "cont": "Entendido: descargar ahora",
+    "close": "Cancelar",
+    "foot": "¿Prefieres verificar primero? Explora todo el código fuente en <a href=\"https://github.com/ngnclht1102/bibo-emplooyee-tracking\" target=\"_blank\" rel=\"noopener\">GitHub</a>."
   }
 }

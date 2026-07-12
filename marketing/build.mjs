@@ -39,6 +39,12 @@ const ENVS = {
     ga: "G-EKVNL0JY98",
     out: "site-prod",
   },
+  staging: {
+    base: "https://employeetracking.namnguyen.pro",
+    ga: "",
+    out: "site-staging",
+    noindex: true, // staging must never be crawled/indexed
+  },
 };
 
 const ENV_NAME = (process.argv[2] || process.env.SITE_ENV || "default").toLowerCase();
@@ -96,7 +102,7 @@ function langSwitcher(code) {
   const items = Object.keys(LOCALES)
     .map((c) => {
       const cur = c === code ? ' aria-current="true"' : "";
-      return `<a class="lang-opt" href="${relUrlFor(c)}"${cur}><span class="lang-flag">${LOCALES[c].flag}</span>${LOCALES[c].label}</a>`;
+      return `<a class="lang-opt" href="${relUrlFor(c)}" data-loc="${c}"${cur}><span class="lang-flag">${LOCALES[c].flag}</span>${LOCALES[c].label}</a>`;
     })
     .join("");
   const cur = LOCALES[code];
@@ -107,6 +113,45 @@ function langSwitcher(code) {
     `<div class="lang-menu">${items}</div></div>`
   );
 }
+
+// Auto language detection. Emitted into <head> of the ENGLISH ROOT page only: on first
+// visit (no stored choice) it matches the browser's preferred languages against the
+// localized pages and redirects there; an explicit "en" preference (or any earlier "en"
+// in the language list) stays on English. Localized pages get NO redirect — landing on
+// /zh/ etc. is already an explicit choice and crawlers must not be bounced.
+function autoDetect(code) {
+  if (code !== "en") return "";
+  const seg = Object.keys(LOCALES).filter((c) => c !== "en"); // redirect targets
+  const set = JSON.stringify(Object.fromEntries(seg.map((c) => [c, 1])));
+  return (
+    `<script>(function(){try{` +
+    `var S=${set},saved=localStorage.getItem('locale'),t=null;` +
+    `if(saved){if(saved!=='en'&&S[saved])t=saved;}` +
+    `else{var L=navigator.languages||[navigator.language||''];` +
+    `for(var i=0;i<L.length;i++){var b=(L[i]||'').toLowerCase().split('-')[0];` +
+    `if(b==='en')break;if(b==='in')b='id';if(S[b]){t=b;break;}}}` +
+    `if(t)location.replace('/'+t+'/');}catch(e){}})();</script>`
+  );
+}
+
+// Language switcher behaviour + locale hand-off (emitted on every page, baked with the
+// page's own locale code):
+//  - click/tap the trigger to toggle the menu open (CSS-only :hover broke on touch and
+//    left a hover-gap on desktop where the menu closed before you could reach an option);
+//  - clicking outside closes it;
+//  - clicking a language option stores the pick so the root-page auto-detect honours it;
+//  - clicking through to the admin app (sign in / sign up) writes the current page's
+//    language to localStorage so web-admin (same origin, same 'locale' key) opens in it.
+const localeJs = (code) =>
+  `<script>(function(){try{var P=${JSON.stringify(code)};` +
+  `document.addEventListener('click',function(e){var a=e.target.closest('a[href^="/admin"]');` +
+  `if(a){try{localStorage.setItem('locale',P);}catch(_){}}});` +
+  `var sw=document.querySelector('.lang-switcher');if(!sw)return;` +
+  `sw.addEventListener('click',function(e){var o=e.target.closest('.lang-opt');` +
+  `if(o){try{localStorage.setItem('locale',o.getAttribute('data-loc'));}catch(_){}return;}` +
+  `e.preventDefault();sw.classList.toggle('open');});` +
+  `document.addEventListener('click',function(e){if(!sw.contains(e.target))sw.classList.remove('open');});` +
+  `}catch(e){}})();</script>`;
 
 // Analytics block injected into <head> (empty when no GA id is configured, e.g. staging).
 function analytics() {
@@ -134,12 +179,18 @@ for (const code of Object.keys(LOCALES)) {
   for (const [key, val] of Object.entries(strings)) {
     html = html.split(`{{${key}}}`).join(val);
   }
+  // Staging: swap the indexing meta for noindex so crawlers never index this host.
+  if (ENV.noindex) {
+    html = html.replace('content="index, follow, max-image-preview:large"', 'content="noindex, nofollow"');
+  }
   // 2) build placeholders
   html = html
     .split("{{__lang}}").join(LOCALES[code].bcp47)
     .split("{{__base}}").join(BASE)
     .split("{{__host}}").join(HOST)
     .split("{{__analytics}}").join(analytics())
+    .split("{{__autodetect}}").join(autoDetect(code))
+    .split("{{__locale_js}}").join(localeJs(code))
     .split("{{__head_alts}}").join(headAlts())
     .split("{{__lang_switcher}}").join(langSwitcher(code));
 
@@ -193,8 +244,13 @@ ${urls}
 writeFileSync(join(SITE, "sitemap.xml"), sitemap, "utf8");
 console.log("✓ sitemap.xml");
 
-// robots.txt — welcomes search + AI crawlers; the Sitemap line is environment-specific.
-const robots = `# Search engines and AI / answer-engine crawlers are welcome to crawl and cite
+// robots.txt — welcomes search + AI crawlers on prod; staging blocks everything.
+const robots = ENV.noindex
+  ? `# Staging environment — do not crawl or index.
+User-agent: *
+Disallow: /
+`
+  : `# Search engines and AI / answer-engine crawlers are welcome to crawl and cite
 # this site. (Note: if Cloudflare "Block AI bots" / AI Crawl Control is enabled,
 # it overrides this file and blocks AI crawlers at the edge — disable it there.)
 User-agent: *

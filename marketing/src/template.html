@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  {{__autodetect}}
   <title>{{meta.title}}</title>
   <meta name="description" content="{{meta.description}}" />
   <meta name="keywords" content="BiBoTracking, bibo employee tracking, hubstaff alternative, free hubstaff alternative, open source hubstaff alternative, employee time tracking software, employee monitoring software, macOS time tracking, Windows time tracking, screenshot monitoring software, productivity tracking, self-hosted time tracking, open source employee monitoring, time tracking app for mac, time tracking app for windows, employee monitoring for windows" />
@@ -43,10 +44,9 @@
     "description": "{{jsonld.appDescription}}",
     "url": "{{__base}}/",
     "downloadUrl": "{{__base}}/download/EmployeeTracker-macOS.dmg",
-    "softwareVersion": "1.3.8",
+    "softwareVersion": "1.5.0",
     "offers": [
-      { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "{{jsonld.offerFree}}" },
-      { "@type": "Offer", "price": "1", "priceCurrency": "USD", "description": "{{jsonld.offerPaid}}" }
+      { "@type": "Offer", "price": "0", "priceCurrency": "USD", "description": "{{jsonld.offerFree}}" }
     ],
     "featureList": [
       "{{jsonld.feature1}}",
@@ -172,7 +172,6 @@
     <div class="wrap">
       <div class="stat"><b>4</b><span>{{stats.signals}}</span></div>
       <div class="stat"><b>100%</b><span>{{stats.local}}</span></div>
-      <div class="stat"><b>&lt;50 KB</b><span>{{stats.screenshot}}</span></div>
       <div class="stat"><b>0</b><span>{{stats.keystrokes}}</span></div>
     </div>
   </section>
@@ -392,7 +391,7 @@
             <span class="price-tag">{{pricing.free.tag}}</span>
             <span class="price-badge">{{pricing.free.badge}}</span>
           </div>
-          <div class="price-amt">$0 <span>{{pricing.perMonth}}</span></div>
+          <div class="price-amt">$0 <span>{{pricing.free.per}}</span></div>
           <p class="price-sub">{{pricing.free.sub}}</p>
           <ul class="price-list">
             <li>{{pricing.free.li1}}</li>
@@ -404,16 +403,16 @@
         </div>
         <div class="price reveal">
           <div class="price-head">
-            <span class="price-tag">{{pricing.paid.tag}}</span>
+            <span class="price-tag">{{pricing.custom.tag}}</span>
           </div>
-          <div class="price-amt">$1 <span>{{pricing.perMonth}}</span></div>
-          <p class="price-sub">{{pricing.paid.sub}}</p>
+          <div class="price-amt"><span class="price-custom">{{pricing.custom.amt}}</span></div>
+          <p class="price-sub">{{pricing.custom.sub}}</p>
           <ul class="price-list">
-            <li>{{pricing.paid.li1}}</li>
-            <li>{{pricing.paid.li2}}</li>
-            <li>{{pricing.paid.li3}}</li>
+            <li>{{pricing.custom.li1}}</li>
+            <li>{{pricing.custom.li2}}</li>
+            <li>{{pricing.custom.li3}}</li>
           </ul>
-          <a class="btn btn-ghost" href="#oss">{{pricing.paid.btn}}</a>
+          <a class="btn btn-ghost" href="https://appt.link/meet-with-brian-nguyen-bibo-founder-rQoJp3Dr/web-conference" target="_blank" rel="noopener">{{pricing.custom.btn}}</a>
         </div>
       </div>
     </div>
@@ -496,6 +495,41 @@
   <!-- ===================== LIGHTBOX ===================== -->
   <div class="lightbox" id="lightbox"><img src="" alt="" /></div>
 
+  <!-- ============ WINDOWS INSTALL NOTICE (SmartScreen) ============ -->
+  <div class="winmodal" id="winmodal" role="dialog" aria-modal="true" aria-labelledby="winmodal-title">
+    <div class="winmodal-card">
+      <button class="winmodal-x" id="winmodal-close" aria-label="{{win.close}}">&times;</button>
+      <h3 class="winmodal-title" id="winmodal-title">{{win.title}}</h3>
+      <p class="winmodal-lede">{{win.body}}</p>
+
+      <!-- faithful mock of the actual SmartScreen dialog -->
+      <div class="ss-dialog" aria-hidden="true">
+        <div class="ss-title">{{win.dlgTitle}}</div>
+        <p class="ss-body">{{win.dlgBody}}</p>
+        <div class="ss-meta">
+          <div>{{win.dlgApp}}</div>
+          <div>{{win.dlgPublisher}}</div>
+        </div>
+        <span class="ss-moreinfo">{{win.dlgMoreInfo}}</span>
+        <div class="ss-actions">
+          <span class="ss-btn ss-run">{{win.dlgRun}}</span>
+          <span class="ss-btn">{{win.dlgDont}}</span>
+        </div>
+      </div>
+
+      <ol class="winmodal-steps">
+        <li><span class="step-badge">1</span><span>{{win.step1}}</span></li>
+        <li><span class="step-badge">2</span><span>{{win.step2}}</span></li>
+      </ol>
+
+      <div class="winmodal-cta">
+        <a class="btn btn-primary btn-lg" id="winmodal-download" href="/download/EmployeeTracker-Windows-x64.msi" download>{{win.cont}}</a>
+        <button class="btn btn-ghost" id="winmodal-cancel" type="button">{{win.close}}</button>
+      </div>
+      <p class="winmodal-foot">{{win.foot}}</p>
+    </div>
+  </div>
+
   <script>
     // sticky nav shadow
     const nav = document.getElementById('nav');
@@ -535,6 +569,26 @@
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+    // Windows install notice — intercept .msi downloads to explain the SmartScreen prompt
+    const winModal = document.getElementById('winmodal');
+    if (winModal) {
+      const dl = document.getElementById('winmodal-download');
+      const closeWin = () => winModal.classList.remove('open');
+      document.querySelectorAll('a[href$=".msi"]:not(#winmodal-download)').forEach(a => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          dl.href = a.getAttribute('href');
+          winModal.classList.add('open');
+        });
+      });
+      document.getElementById('winmodal-close').addEventListener('click', closeWin);
+      document.getElementById('winmodal-cancel').addEventListener('click', closeWin);
+      winModal.addEventListener('click', (e) => { if (e.target === winModal) closeWin(); });
+      dl.addEventListener('click', () => setTimeout(closeWin, 500));
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeWin(); });
+    }
   </script>
+  {{__locale_js}}
 </body>
 </html>

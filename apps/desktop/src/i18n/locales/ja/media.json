@@ -1,6 +1,7 @@
 {
   "screenshots": {
-    "intro": "定期的なキャプチャ（5分ごと）とオンデマンドのキャプチャを行います。画面収録の許可が必要です。",
+    "title": "本日のスクリーンショット",
+    "intro": "5分ごとに自動的に撮影されます。",
     "captureNow": "今すぐキャプチャ",
     "capturing": "キャプチャ中…",
     "captured": "{{count}} 台のディスプレイをキャプチャしました。",
@@ -12,6 +13,13 @@
     "shotAlt": "スクリーンショット {{time}}"
   },
   "browser": {
+    "visitedTitle": "今日アクセスしたサイト",
+    "visitedSub": "ドメインごとにグループ化、利用が多い順。",
+    "live": "ライブ · 3秒ごとに更新",
+    "colDomain": "ドメイン",
+    "colStart": "時刻",
+    "colDuration": "利用時間",
+    "colBrowser": "ブラウザ",
     "title": "ウェブページを記録する",
     "subtitle": "BiBoTracking 拡張機能をインストールすると、訪問したページをここで確認できます。",
     "gifPlaceholder": "[ GIF：Chrome 拡張機能のインストール ]",

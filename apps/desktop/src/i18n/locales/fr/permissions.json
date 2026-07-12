@@ -1,4 +1,5 @@
 {
+  "title": "Autorisations",
   "intro": "BiBoTracking utilise les fonctionnalités ci-dessous. Le statut se met à jour automatiquement.",
   "granted": "Accordé",
   "quitReopen": "Quitter et rouvrir",
@@ -6,8 +7,14 @@
   "openSettings": "Ouvrir les Réglages système →",
   "off": "Désactivé",
   "summary": "{{granted}} sur {{total}} activées · Revérification automatique",
-  "recheck": "Revérifier",
+  "recheck": "Actualiser",
   "restartNote": "Certaines autorisations nécessitent de quitter et de rouvrir l’application pour prendre effet.",
+  "startupNotice": {
+    "title": "Autorisations requises",
+    "body": "BiBoTracking a démarré sans certaines autorisations requises — l’application ne les demande jamais automatiquement. Accordez-les ci-dessous pour activer le suivi complet.",
+    "open": "Ouvrir les autorisations",
+    "dismiss": "Fermer"
+  },
   "caps": {
     "accessibility": {
       "label": "Accessibilité",
@@ -15,7 +22,7 @@
     },
     "input_monitoring": {
       "label": "Surveillance des saisies",
-      "description": "Permet à l'application de compter les frappes (comptage uniquement — jamais quelles touches)."
+      "description": "Requis pour compter les frappes."
     },
     "screen_recording": {
       "label": "Enregistrement de l'écran",

@@ -12,6 +12,7 @@ import (
 	"ctracking/backend/internal/filestore"
 	"ctracking/backend/internal/handlers"
 	"ctracking/backend/internal/middleware"
+	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/retention"
 	"ctracking/backend/internal/store"
 
@@ -22,6 +23,11 @@ import (
 // New builds the Gin engine with all routes registered. The store, file store, and
 // retention service are shared with the caller (which also runs the retention sweeper).
 func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *retention.Service) *gin.Engine {
+	// Route gin's own output (access logs, route table, debug warnings) into the same
+	// captured stream as obs/log so every line lands in the log file too.
+	gin.DefaultWriter = obs.Writer()
+	gin.DefaultErrorWriter = obs.Writer()
+
 	r := gin.New()
 	r.Use(gin.Logger(), gin.Recovery(), middleware.CORS(cfg.AllowedOrigin))
 
@@ -41,6 +47,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
+	keepaliveH := handlers.NewKeepaliveHandler(cfg.KeepaliveToken)
 
 	// Counted installer downloads (production, when static content is served). Takes
 	// precedence over the static NoRoute fallback below.
@@ -54,6 +61,12 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	v1.GET("/public/businesses", authH.PublicBusinesses)
 	// Public download totals (aggregate counts only).
 	v1.GET("/public/stats/downloads", downloadsH.Stats)
+
+	// CPU keep-alive (token-gated, NOT rate-limited): keeps the Oracle Always Free
+	// box above the idle-reclamation CPU threshold. Only mounted when a token is set.
+	if keepaliveH.Enabled() {
+		v1.POST("/keepalive", keepaliveH.Burn)
+	}
 
 	// Auth endpoints, rate-limited to throttle credential guessing.
 	a := v1.Group("/auth", middleware.LoginRateLimit())
@@ -106,6 +119,16 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 func staticSite(dir string) gin.HandlerFunc {
 	marketingIndex := filepath.Join(dir, "index.html")
 	adminIndex := filepath.Join(dir, "admin", "index.html")
+	// serve sends a file, forcing HTML to revalidate every load so a deploy takes
+	// effect immediately (browsers otherwise heuristically cache HTML that carries
+	// no Cache-Control and keep serving the stale page even on refresh). Cache-busted
+	// assets (styles.css?v=, hashed JS/CSS) and latest.json keep their default behaviour.
+	serve := func(c *gin.Context, file string) {
+		if strings.HasSuffix(file, ".html") {
+			c.Header("Cache-Control", "no-cache")
+		}
+		c.File(file)
+	}
 	return func(c *gin.Context) {
 		p := c.Request.URL.Path
 		if p == "/healthz" || p == "/v1" || strings.HasPrefix(p, "/v1/") {
@@ -115,22 +138,22 @@ func staticSite(dir string) gin.HandlerFunc {
 		file := filepath.Join(dir, filepath.Clean("/"+p))
 		if fi, err := os.Stat(file); err == nil {
 			if !fi.IsDir() {
-				c.File(file)
+				serve(c, file)
 				return
 			}
 			// Directory request (e.g. a locale page like /zh/): serve its index.html
 			// if present, so localized pages aren't swallowed by the root fallback.
 			if idx := filepath.Join(file, "index.html"); idx != marketingIndex {
 				if fi2, err2 := os.Stat(idx); err2 == nil && !fi2.IsDir() {
-					c.File(idx)
+					serve(c, idx)
 					return
 				}
 			}
 		}
 		if p == "/admin" || strings.HasPrefix(p, "/admin/") {
-			c.File(adminIndex)
+			serve(c, adminIndex)
 			return
 		}
-		c.File(marketingIndex)
+		serve(c, marketingIndex)
 	}
 }
