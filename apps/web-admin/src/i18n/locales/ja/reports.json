@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "この期間に記録されたアクティビティはありません。"
+    "empty": "この期間に記録されたアクティビティはありません。",
+    "timeline": "本日のタイムライン",
+    "breakdown": "アプリ・ウィンドウ内訳",
+    "idle": "アイドル"
   },
   "browser": {
     "empty": "この期間のブラウザ閲覧履歴はありません。",
@@ -8,22 +11,27 @@
       "time": "時刻",
       "page": "ページ",
       "browser": "ブラウザ",
-      "duration": "時間"
+      "duration": "時間",
+      "domain": "ドメイン"
     },
-    "untitled": "（無題）"
+    "untitled": "（無題）",
+    "title": "訪問したサイト"
   },
   "keystrokes": {
     "empty": "この期間のキー入力アクティビティはありません。",
     "summary_one": "{{count}} 個のバケットで合計 {{keystrokes}} 回のキー入力",
     "summary_other": "{{count}} 個のバケットで合計 {{keystrokes}} 回のキー入力",
     "tooltip": "{{time}} — {{count}} 回のキー入力",
-    "privacyNote": "回数のみを記録します。個々のキーが取得・保存されることはありません。このチャートは入力内容ではなく入力量を示しています。"
+    "privacyNote": "回数のみを記録します。個々のキーが取得・保存されることはありません。このチャートは入力内容ではなく入力量を示しています。",
+    "title": "1日のキー入力",
+    "keypresses": "キー入力"
   },
   "screenshots": {
     "empty": "この期間のスクリーンショットはありません。",
     "unavailable": "利用できません",
     "alt": "スクリーンショット {{time}}",
     "loading": "読み込み中…",
-    "display": "ディスプレイ {{id}}"
+    "display": "ディスプレイ {{id}}",
+    "title": "取得したスクリーンショット"
   }
 }

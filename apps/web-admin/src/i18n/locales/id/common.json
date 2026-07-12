@@ -20,7 +20,7 @@
   "theme": {
     "light": "Terang",
     "dark": "Gelap",
-    "auto": "Otomatis"
+    "auto": "Sistem"
   },
   "time": {
     "never": "Belum pernah",
@@ -30,7 +30,7 @@
     "daysAgo": "{{count}} hr lalu"
   },
   "terms": {
-    "team": { "one": "Karyawan", "many": "Karyawan", "lowerOne": "karyawan", "lowerMany": "karyawan", "addCta": "Tambah karyawan" },
-    "family": { "one": "Anak", "many": "Anak", "lowerOne": "anak", "lowerMany": "anak", "addCta": "Tambah anak" }
+    "team": { "one": "Karyawan", "many": "Karyawan", "lowerOne": "karyawan", "lowerMany": "karyawan", "addCta": "Tambah karyawan", "org": "tim" },
+    "family": { "one": "Anak", "many": "Anak", "lowerOne": "anak", "lowerMany": "anak", "addCta": "Tambah anak", "org": "keluarga" }
   }
 }

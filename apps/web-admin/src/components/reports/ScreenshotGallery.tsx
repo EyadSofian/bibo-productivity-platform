@@ -5,11 +5,36 @@ import type { ScreenshotMeta } from "../../api/types";
 import { fmtBytes, fmtTime } from "../../format";
 import { Empty, Modal, Spinner } from "../ui";
 
-// Loads one auth-gated screenshot into an object URL, revoking on unmount.
-function Thumb({ meta, onClick }: { meta: ScreenshotMeta; onClick: () => void }) {
-  const { t } = useTranslation("reports");
+// A screenshot may carry the active app (demo/enriched data) for the badge.
+type ShotMeta = ScreenshotMeta & { app?: string };
+
+// Per-app placeholder gradient shown until the real thumbnail loads (or if the
+// image is unavailable). Colours mirror the offline design.
+const APP_GRADIENTS: Record<string, [string, string]> = {
+  "VS Code": ["#6c5ce7", "#3a2f87"],
+  Chrome: ["#38bdf8", "#1f6f9c"],
+  Figma: ["#34d399", "#0f7a5a"],
+  Terminal: ["#2dd4bf", "#136b60"],
+  Notion: ["#f472b6", "#9c3a6e"],
+  Slack: ["#fbbf24", "#9c7414"],
+  Zoom: ["#56ccf2", "#2f6f9c"],
+  Spotify: ["#34d399", "#0f7a5a"],
+};
+const gradientFor = (app?: string) => {
+  const [a, b] = (app && APP_GRADIENTS[app]) || APP_GRADIENTS["VS Code"];
+  return `linear-gradient(135deg, ${a}, ${b})`;
+};
+
+const hhmmss = (ts: number) => {
+  const d = new Date(ts * 1000);
+  return [d.getHours(), d.getMinutes(), d.getSeconds()]
+    .map((x) => String(x).padStart(2, "0"))
+    .join(":");
+};
+
+// One gallery card: real thumbnail when it loads, gradient placeholder before.
+function Shot({ meta, onOpen }: { meta: ShotMeta; onOpen: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
-  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -20,7 +45,7 @@ function Thumb({ meta, onClick }: { meta: ScreenshotMeta; onClick: () => void })
         if (alive) setUrl(u);
         else URL.revokeObjectURL(u);
       })
-      .catch(() => alive && setFailed(true));
+      .catch(() => {});
     return () => {
       alive = false;
       if (made) URL.revokeObjectURL(made);
@@ -28,21 +53,14 @@ function Thumb({ meta, onClick }: { meta: ScreenshotMeta; onClick: () => void })
   }, [meta.client_uuid]);
 
   return (
-    <div className="shot">
-      <button className="thumb-btn" onClick={onClick} disabled={!url}>
-        <div className="thumb">
-          {failed ? (
-            <span>{t("screenshots.unavailable")}</span>
-          ) : url ? (
-            <img src={url} alt={t("screenshots.alt", { time: fmtTime(meta.ts) })} />
-          ) : (
-            <Spinner />
-          )}
-        </div>
-      </button>
-      <div className="cap num">
-        {fmtTime(meta.ts)} · {fmtBytes(meta.byte_size)}
-      </div>
+    <div className={`ad-shot${url ? " ad-shot--clickable" : ""}`} onClick={url ? onOpen : undefined}>
+      <div
+        className="ad-shot__img"
+        style={url ? { backgroundImage: `url("${url}")` } : { background: gradientFor(meta.app) }}
+      />
+      <div className="ad-shot__veil" />
+      {meta.app && <span className="ad-shot__app">{meta.app}</span>}
+      <span className="ad-shot__t">{hhmmss(meta.ts)}</span>
     </div>
   );
 }
@@ -97,9 +115,12 @@ export function ScreenshotGallery({ shots }: { shots: ScreenshotMeta[] }) {
 
   return (
     <>
-      <div className="gallery">
+      <div className="ad-panelhead">
+        <div className="ad-paneltitle">{t("screenshots.title")}</div>
+      </div>
+      <div className="ad-gallery">
         {shots.map((s) => (
-          <Thumb key={s.client_uuid} meta={s} onClick={() => setActive(s)} />
+          <Shot key={s.client_uuid} meta={s as ShotMeta} onOpen={() => setActive(s)} />
         ))}
       </div>
       {active && <Lightbox meta={active} onClose={() => setActive(null)} />}

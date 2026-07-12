@@ -11,11 +11,22 @@
     "table": {
       "login": "登录账号",
       "lastSeen": "最后在线",
-      "activeToday": "今日活跃"
-    }
+      "activeToday": "今日活跃",
+      "focus": "专注度",
+      "name": "姓名"
+    },
+    "statRecorded": "今日已记录",
+    "statActive": "今日活跃",
+    "statFocus": "平均专注度",
+    "statScreenshots": "截图",
+    "vsYesterday": "较昨日",
+    "ofMembers": "共 {{count}} 名{{members}}",
+    "todayLabel": "今日",
+    "newTeam": "新建团队"
   },
   "employees": {
     "newBusiness": "新建企业",
+    "newOrg": "新建{{org}}",
     "loading": "加载中…",
     "loadingMembers": "正在加载{{members}}…",
     "errorLoadMembers": "无法加载{{members}}。",
@@ -32,6 +43,9 @@
   "newBusinessModal": {
     "title": "新建企业",
     "nameLabel": "企业名称",
+    "orgNameLabel": "{{org}}名称",
+    "namePlaceholder": "例如 Acme Studio",
+    "namePlaceholderFamily": "例如 陈氏家庭",
     "cancel": "取消",
     "create": "创建",
     "creating": "正在创建…",
@@ -45,6 +59,7 @@
     "shareCredentials": "请将这些凭据分享给该{{member}}；他们将通过桌面应用的登录选择器登录。",
     "cancel": "取消",
     "adding": "正在添加…",
+    "generate": "生成",
     "errorTaken": "该邮箱或用户名已被占用。",
     "errorCreate": "无法创建{{member}}。"
   },
@@ -71,6 +86,8 @@
       "keystrokes": "按键",
       "browser": "浏览器",
       "screenshots": "截图"
-    }
+    },
+    "singleDay": "单日",
+    "dateRange": "日期范围"
   }
 }

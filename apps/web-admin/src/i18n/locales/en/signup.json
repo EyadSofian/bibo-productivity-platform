@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "How will you use BiBoTracking?",
+    "sub": "You can change this later.",
+    "back": "Back",
     "justMeTitle": "Just me",
     "justMeDesc": "Track my own activity & performance. Stays 100% on my computer.",
     "justMeTag": "No account needed",
@@ -33,7 +35,7 @@
     "familyTitle": "My family",
     "familyDesc": "Keep an eye on my kids' screen time & activity.",
     "familyTag": "Free account",
-    "caption": "ⓘ \"Just me\" downloads the app and runs offline — nothing is uploaded."
+    "caption": "Personal tracking lives in the desktop app — no admin account needed."
   },
   "personal": {
     "back": "← Back",
@@ -52,8 +54,10 @@
     "identifierPlaceholder": "you@example.com or a username",
     "password": "Password",
     "passwordPlaceholder": "min 8 characters",
+    "strength": { "weak": "Weak", "medium": "Medium", "strong": "Strong" },
     "creating": "Creating…",
-    "continue": "Continue →"
+    "continue": "Continue",
+    "available": "Available"
   },
   "setup": {
     "title": "Name your {{noun}}",
@@ -62,7 +66,7 @@
     "placeholderFamily": "Cooper Family",
     "placeholderTeam": "Cooper Co.",
     "saving": "Saving…",
-    "continue": "Continue →"
+    "continue": "Continue"
   },
   "done": {
     "title": "You're all set!",
@@ -70,27 +74,28 @@
     "orgReady": "{{noun}} ready",
     "membersAdded": "{{count}} {{members}} added",
     "membersLater": "Add {{members}} later",
-    "goToDashboard": "Go to dashboard →"
+    "goToDashboard": "Go to dashboard"
   },
   "clipboard": {
     "text": "BiBoTracking login\nUsername or email: {{login}}\nPassword: {{password}}"
   },
   "members": {
     "title": "Add your {{members}}",
-    "sub": "Each {{member}} gets a login — a username (no email needed) or their email. We pre-fill a username and a temporary password; share them, and the {{member}} can change the password after signing in. You can also do this later from the dashboard.",
+    "sub": "Add them now or skip — you can invite later.",
     "name": "Name",
     "namePlaceholder": "Jordan Lee",
     "loginLabel": "Username or email (their login)",
     "tempPassword": "Temporary password",
     "generateTitle": "Generate a new password",
-    "newPassword": "↻ New",
+    "newPassword": "New",
+    "suggestion": "Suggestion",
     "adding": "Adding…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "{{count}} {{members}} added — copy each login and share it.",
     "copied": "Copied ✓",
     "copyLogin": "Copy login",
     "remove": "remove",
-    "finish": "Finish →",
+    "finish": "Finish",
     "doneAdding": "Done adding",
     "skip": "Skip for now"
   }

@@ -24,7 +24,6 @@ export function LanguageSwitcher({
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const code = LOCALES.find((l) => l.code === i18n.resolvedLanguage)?.code ?? "en";
-  const current = LOCALES.find((l) => l.code === code) ?? LOCALES[0];
 
   useEffect(() => {
     if (!open) return;
@@ -58,38 +57,68 @@ export function LanguageSwitcher({
         title={t("language")}
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="lang-flag" aria-hidden>
-          {current.flag}
-        </span>
-        <span className="lang-label">{current.label}</span>
         <svg
-          className="lang-caret"
+          className="lang-globe"
           viewBox="0 0 24 24"
-          width="13"
-          height="13"
+          width="16"
+          height="16"
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
           aria-hidden
         >
-          <path d="M6 9l6 6 6-6" />
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+          <path d="M2 12h20" />
+        </svg>
+        <span className="lang-label">{code.toUpperCase()}</span>
+        <svg
+          className="lang-caret"
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="m6 9 6 6 6-6" />
         </svg>
       </button>
       {open && (
-        <div className={`lang-menu ${drop} ${align}`} role="listbox">
+        <div
+          className={`ad-menu ad-menu--${align}${drop === "up" ? " ad-menu--up" : ""}`}
+          role="listbox"
+        >
           {LOCALES.map((l) => (
             <button
               type="button"
               key={l.code}
               role="option"
               aria-selected={l.code === code}
-              className={`lang-opt${l.code === code ? " active" : ""}`}
+              className={`ad-menu__opt${l.code === code ? " on" : ""}`}
               onClick={() => pick(l.code)}
             >
-              <span className="lang-flag" aria-hidden>
-                {l.flag}
-              </span>
               {l.label}
+              {l.code === code && (
+                <span className="ck" aria-hidden>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </span>
+              )}
             </button>
           ))}
         </div>

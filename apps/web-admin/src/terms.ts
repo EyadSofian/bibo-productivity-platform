@@ -11,6 +11,7 @@ export interface MemberTerms {
   lowerMany: string; // "employees" | "kids"
   addCta: string; // "Add employee" | "Add kid"
   idAbbrev: string; // "emp" | "kid" — used in generated usernames (e.g. acme_emp1)
+  org: string; // "team" | "family" — the organization's own noun (localized)
 }
 
 /** Resolve localized member terminology from a business kind. Defaults to team
@@ -25,5 +26,6 @@ export function memberTerms(kind: BusinessKind | undefined | null): MemberTerms 
     lowerMany: term("lowerMany"),
     addCta: term("addCta"),
     idAbbrev: group === "family" ? "kid" : "emp",
+    org: term("org"),
   };
 }
