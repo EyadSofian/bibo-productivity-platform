@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { cleanupScreenshots, updateBusinessSettings } from "../api/endpoints";
-import { ApiError, type BusinessSettingsPatch } from "../api/types";
+import { cleanupScreenshots, getPrivacyApps, updateBusinessSettings } from "../api/endpoints";
+import { ApiError, type BusinessSettingsPatch, type PrivacyAppCategory, type ScreenshotMode } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { Empty, Modal, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
@@ -22,6 +22,66 @@ function formatBytes(n: number): string {
 }
 
 const CLEANUP_PRESETS = [7, 14, 30, 90];
+
+/** Normalize a stored mode (incl. pre-rename values) to the two current modes. */
+function normalizeMode(m: string | undefined): ScreenshotMode {
+  return m === "normal" || m === "full_screen" ? "normal" : "privacy";
+}
+
+/** One selectable mode card: radio dot + label + explanation. */
+function ModeOption({
+  label,
+  desc,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  label: string;
+  desc: string;
+  selected: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={selected}
+      disabled={disabled}
+      onClick={onSelect}
+      style={{
+        display: "flex",
+        gap: 10,
+        alignItems: "flex-start",
+        textAlign: "left",
+        width: "100%",
+        font: "inherit",
+        color: "inherit",
+        cursor: disabled ? "default" : "pointer",
+        background: selected ? "var(--accent-weak)" : "transparent",
+        border: selected ? "1px solid var(--accent)" : "1px solid var(--border)",
+        borderRadius: 10,
+        padding: "10px 12px",
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          flexShrink: 0,
+          marginTop: 2,
+          width: 14,
+          height: 14,
+          borderRadius: "50%",
+          border: selected ? "4px solid var(--accent)" : "2px solid var(--border)",
+        }}
+      />
+      <span>
+        <span style={{ display: "block", fontWeight: 600 }}>{label}</span>
+        <span className="muted" style={{ display: "block", fontSize: 12, marginTop: 2 }}>{desc}</span>
+      </span>
+    </button>
+  );
+}
 
 // Interval/idle presets in seconds, with the minute count for label interpolation.
 const INTERVAL_PRESETS = [
@@ -54,6 +114,16 @@ export function Settings() {
   const [retention, setRetention] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<{ kind: "success" | "danger"; text: string } | null>(null);
+  const [skipAppInput, setSkipAppInput] = useState("");
+  const [skipOpen, setSkipOpen] = useState(false);
+  // The curated sensitive-app list (backend-served) rendered as suggestions.
+  const [privacyApps, setPrivacyApps] = useState<PrivacyAppCategory[]>([]);
+
+  useEffect(() => {
+    getPrivacyApps()
+      .then((res) => setPrivacyApps(res.categories))
+      .catch(() => {});
+  }, []);
 
   // Manual "clean up now".
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -111,6 +181,44 @@ export function Settings() {
     savePatch({ screenshot_retention_days: value }, t("retention.saved"));
   }
 
+  const skipApps = selected?.screenshot_skip_apps ?? [];
+
+  function saveMode(m: ScreenshotMode) {
+    const patch: BusinessSettingsPatch = { screenshot_mode: m };
+    // Switching into privacy with an empty skip list prefills the curated rules.
+    if (m === "privacy" && skipApps.length === 0 && privacyApps.length > 0) {
+      patch.screenshot_skip_apps = privacyApps.flatMap((c) => c.apps);
+    }
+    savePatch(patch, t("screenshotMode.saved"));
+  }
+
+  const hasSkipApp = (a: string) => skipApps.some((x) => x.toLowerCase() === a.toLowerCase());
+
+  // Entries the owner typed themselves (not part of any suggested category).
+  const suggestedLower = new Set(privacyApps.flatMap((c) => c.apps.map((a) => a.toLowerCase())));
+  const customSkipApps = skipApps.filter((a) => !suggestedLower.has(a.toLowerCase()));
+
+  function addSkipApp(app?: string) {
+    const name = (app ?? skipAppInput).trim();
+    if (!name || !selected) return;
+    setSkipAppInput("");
+    addSkipApps([name]);
+  }
+
+  function addSkipApps(apps: string[]) {
+    const fresh = apps.filter((a) => !hasSkipApp(a));
+    if (!fresh.length) return;
+    savePatch({ screenshot_skip_apps: [...skipApps, ...fresh] }, t("skipApps.saved"));
+  }
+
+  function removeSkipApps(apps: string[]) {
+    const drop = new Set(apps.map((a) => a.toLowerCase()));
+    savePatch(
+      { screenshot_skip_apps: skipApps.filter((a) => !drop.has(a.toLowerCase())) },
+      t("skipApps.saved"),
+    );
+  }
+
   return (
     <div className="ad-wrap" style={{ paddingBottom: 32 }}>
       <div className="ad-pagehead">
@@ -163,6 +271,44 @@ export function Settings() {
                 </button>
               </div>
             </div>
+
+            <div className="set-row">
+              <div>
+                <div className="set-title">{t("screenshotMode.title")}</div>
+                <div className="set-desc">{t("screenshotMode.desc")}</div>
+              </div>
+              <div role="radiogroup" aria-label={t("screenshotMode.ariaLabel")} style={{ display: "grid", gap: 8, width: 380, maxWidth: "100%" }}>
+                <ModeOption
+                  label={t("screenshotMode.privacy")}
+                  desc={t("screenshotMode.privacyDesc")}
+                  selected={normalizeMode(selected.screenshot_mode) === "privacy"}
+                  disabled={saving}
+                  onSelect={() => saveMode("privacy")}
+                />
+                <ModeOption
+                  label={t("screenshotMode.normal")}
+                  desc={t("screenshotMode.normalDesc")}
+                  selected={normalizeMode(selected.screenshot_mode) === "normal"}
+                  disabled={saving}
+                  onSelect={() => saveMode("normal")}
+                />
+              </div>
+            </div>
+
+            {normalizeMode(selected.screenshot_mode) === "privacy" && (
+              <div className="set-row">
+                <div>
+                  <div className="set-title">{t("skipApps.title")}</div>
+                  <div className="set-desc">{t("skipApps.desc")}</div>
+                </div>
+                <div className="toolbar" style={{ gap: 10 }}>
+                  <span className="muted">{t("skipApps.count", { count: skipApps.length })}</span>
+                  <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" disabled={saving} onClick={() => setSkipOpen(true)}>
+                    {t("skipApps.manage")}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <div className="set-row">
               <div>
@@ -234,6 +380,131 @@ export function Settings() {
 
           {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
         </>
+      )}
+
+      {skipOpen && selected && (
+        <Modal title={t("skipApps.modalTitle")} onClose={() => setSkipOpen(false)}>
+          <p className="muted" style={{ marginTop: 0 }}>{t("skipApps.desc")}</p>
+
+          <div className="toolbar" style={{ gap: 8, marginBottom: 12 }}>
+            <input
+              className="input"
+              value={skipAppInput}
+              placeholder={t("skipApps.placeholder")}
+              disabled={saving}
+              autoFocus
+              onChange={(e) => setSkipAppInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addSkipApp();
+                }
+              }}
+            />
+            <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" disabled={saving || !skipAppInput.trim()} onClick={() => addSkipApp()}>
+              {t("skipApps.add")}
+            </button>
+          </div>
+
+          {customSkipApps.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>{t("skipApps.custom")}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {customSkipApps.map((a) => (
+                  <span key={a} className="pill">
+                    {a}
+                    <button
+                      type="button"
+                      disabled={saving}
+                      aria-label={t("skipApps.remove", { name: a })}
+                      onClick={() => removeSkipApps([a])}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        color: "inherit",
+                        padding: "0 2px",
+                        marginLeft: 4,
+                        lineHeight: 1,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ maxHeight: 300, overflowY: "auto" }}>
+            {privacyApps.map((cat) => {
+              const added = cat.apps.filter(hasSkipApp);
+              return (
+                <div key={cat.key} style={{ marginBottom: 12 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <span className="muted" style={{ fontSize: 12, fontWeight: 700 }}>
+                      {t(`skipApps.cat${cat.key}`)} ({added.length}/{cat.apps.length})
+                    </span>
+                    {added.length < cat.apps.length && (
+                      <button
+                        className="bibo-btn bibo-btn--ghost"
+                        style={{ padding: "1px 8px", fontSize: 11 }}
+                        disabled={saving}
+                        onClick={() => addSkipApps(cat.apps)}
+                      >
+                        {t("skipApps.addAll")}
+                      </button>
+                    )}
+                    {added.length > 0 && (
+                      <button
+                        className="bibo-btn bibo-btn--ghost"
+                        style={{ padding: "1px 8px", fontSize: 11 }}
+                        disabled={saving}
+                        onClick={() => removeSkipApps(cat.apps)}
+                      >
+                        {t("skipApps.removeAll")}
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                    {cat.apps.map((s) => {
+                      const on = hasSkipApp(s);
+                      return (
+                        <button
+                          key={s}
+                          type="button"
+                          role="checkbox"
+                          aria-checked={on}
+                          disabled={saving}
+                          style={{
+                            font: "inherit",
+                            padding: "2px 10px",
+                            fontSize: 12,
+                            borderRadius: 999,
+                            cursor: "pointer",
+                            color: "inherit",
+                            border: on ? "1px solid var(--accent)" : "1px solid var(--border)",
+                            background: on ? "var(--accent-weak)" : "transparent",
+                          }}
+                          onClick={() => (on ? removeSkipApps([s]) : addSkipApps([s]))}
+                        >
+                          {on ? "✓ " : "+ "}
+                          {s}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="toolbar" style={{ justifyContent: "flex-end", marginTop: 12 }}>
+            <button className="bibo-btn bibo-btn--primary" onClick={() => setSkipOpen(false)}>
+              {t("skipApps.done")}
+            </button>
+          </div>
+        </Modal>
       )}
 
       {confirmOpen && selected && (

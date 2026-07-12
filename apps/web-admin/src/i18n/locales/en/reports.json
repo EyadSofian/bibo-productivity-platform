@@ -32,6 +32,9 @@
     "alt": "Screenshot {{time}}",
     "loading": "Loading…",
     "display": "display {{id}}",
-    "title": "Captured screenshots"
+    "title": "Captured screenshots",
+    "prev": "Previous screenshot",
+    "next": "Next screenshot",
+    "close": "Close"
   }
 }

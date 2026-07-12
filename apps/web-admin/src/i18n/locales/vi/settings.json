@@ -24,6 +24,36 @@
     "ariaLabel": "Ngưỡng nhàn rỗi",
     "saved": "Đã cập nhật ngưỡng nhàn rỗi."
   },
+  "screenshotMode": {
+    "title": "Chế độ chụp màn hình",
+    "desc": "Chọn cách chụp màn hình.",
+    "ariaLabel": "Chế độ chụp màn hình",
+    "privacy": "Riêng tư",
+    "privacyDesc": "Chỉ chụp cửa sổ đang dùng — không bao giờ chụp toàn màn hình. Sẽ không chụp khi các ứng dụng trong danh sách bỏ qua đang ở phía trước (danh sách được điền sẵn các ứng dụng trò chuyện, mật khẩu và ngân hàng phổ biến).",
+    "normal": "Thông thường",
+    "normalDesc": "Chụp đầy đủ tất cả màn hình.",
+    "saved": "Đã cập nhật chế độ chụp màn hình."
+  },
+  "skipApps": {
+    "title": "Ứng dụng bỏ qua",
+    "desc": "Sẽ không chụp màn hình khi các ứng dụng này đang ở phía trước. So khớp linh hoạt: \"Zalo\" cũng khớp với \"Zalo PC\".",
+    "placeholder": "Tên ứng dụng, ví dụ Zalo",
+    "add": "Thêm",
+    "remove": "Xóa {{name}}",
+    "saved": "Đã cập nhật danh sách bỏ qua.",
+    "catChat": "Trò chuyện & MXH",
+    "catSecurity": "Mật khẩu & bảo mật",
+    "catWork": "Công việc & họp",
+    "catMail": "Email",
+    "manage": "Quản lý…",
+    "modalTitle": "Danh sách bỏ qua chụp màn hình",
+    "count_one": "{{count}} ứng dụng",
+    "count_other": "{{count}} ứng dụng",
+    "done": "Xong",
+    "custom": "Tùy chỉnh",
+    "addAll": "Thêm tất cả",
+    "removeAll": "Xóa tất cả"
+  },
   "retention": {
     "title": "Thời gian lưu ảnh chụp màn hình",
     "desc": "Thời gian backend lưu giữ các ảnh chụp màn hình đã tải lên cho {{name}}. \"Không bao giờ\" sẽ giữ chúng vô thời hạn.",

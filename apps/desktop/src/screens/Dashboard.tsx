@@ -172,6 +172,7 @@ function buildAxis(winStartRaw: number, winEndRaw: number) {
 export function Dashboard() {
   const { t, i18n } = useTranslation("screens");
   const [data, setData] = useState<DashboardData | null>(null);
+  const [yesterday, setYesterday] = useState<DashboardData | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -184,8 +185,15 @@ export function Dashboard() {
           fromTs: from,
           toTs: to,
         });
+        // Same window shifted back one day ("yesterday at this time"), so the
+        // vs-yesterday deltas compare like with like, not partial vs full day.
+        const y = await invoke<DashboardData>("dashboard_data", {
+          fromTs: from - 86400,
+          toTs: to - 86400,
+        });
         if (alive) {
           setData(d);
+          setYesterday(y);
           setErr(null);
         }
       } catch (e) {
@@ -247,21 +255,36 @@ export function Dashboard() {
   // Real sparkline series: today's active seconds per hour.
   const spark = hourlyActivity(data.timeline, dayStart, now);
 
+  // Real vs-yesterday(-at-this-time) deltas. No delta is shown when yesterday
+  // has no data for the metric (a percent change would be meaningless).
+  const pctDelta = (today: number, yest: number | null | undefined) => {
+    if (yest == null || yest <= 0) return null;
+    const pct = Math.round(((today - yest) / yest) * 100);
+    return { text: `${Math.abs(pct)}%`, dir: (pct >= 0 ? "up" : "down") as "up" | "down" };
+  };
+  const activeDelta = pctDelta(data.total_active_s, yesterday?.total_active_s);
+  const keysDelta = pctDelta(data.keypresses, yesterday?.keypresses);
+  const shotsDiff = yesterday != null ? data.screenshots - yesterday.screenshots : null;
+
+  // Top app's real time today, stacked ("3h" over "42m") like the design.
+  const topSecs = data.by_app[0]?.total_s ?? 0;
+  const topH = Math.floor(topSecs / 3600);
+  const topM = Math.floor((topSecs % 3600) / 60);
+
   return (
     <>
       <p className="dash-intro">
         {t("dashboard.greeting")} · <strong>{dateStr}</strong>
       </p>
       <div className="grid bb-statgrid">
-        {/* delta values are PLACEHOLDERS to match the mock — the backend doesn't
-            yet return vs-yesterday comparisons. Top app's sub (%) is real (by_app). */}
         <StatCard
           focal
           icon={<ClockIcon />}
           label={t("dashboard.activeTimeToday")}
           value={fmt(data.total_active_s)}
-          delta="12%"
-          sub={t("dashboard.vsYesterday")}
+          delta={activeDelta?.text}
+          deltaDir={activeDelta?.dir}
+          sub={activeDelta ? t("dashboard.vsYesterday") : t("dashboard.today")}
           chart={<Sparkline values={spark} color="#9d92f7" />}
         />
         <StatCard
@@ -269,12 +292,21 @@ export function Dashboard() {
           label={t("dashboard.topApp")}
           value={data.top_app ?? "—"}
           delta={
-            <span className="bibo-stat__delta-stack">
-              3h
-              <br />
-              42m
-            </span>
+            topSecs > 0 ? (
+              <span className="bibo-stat__delta-stack">
+                {topH > 0 ? (
+                  <>
+                    {topH}h
+                    <br />
+                    {topM}m
+                  </>
+                ) : (
+                  <>{topM}m</>
+                )}
+              </span>
+            ) : undefined
           }
+          deltaDir="none"
           sub={topPct != null ? `${topPct}%` : undefined}
           chart={<Sparkline values={spark} color="#8b7cf0" />}
         />
@@ -282,16 +314,18 @@ export function Dashboard() {
           icon={<KeyboardIcon />}
           label={t("dashboard.keypresses")}
           value={data.keypresses.toLocaleString()}
-          delta="8%"
-          sub={t("dashboard.vsYesterday")}
+          delta={keysDelta?.text}
+          deltaDir={keysDelta?.dir}
+          sub={keysDelta ? t("dashboard.vsYesterday") : t("dashboard.today")}
           chart={<Sparkline values={spark} color="#38bdf8" />}
         />
         <StatCard
           icon={<CameraIcon />}
           label={t("dashboard.screenshots")}
           value={String(data.screenshots)}
-          delta="+4"
-          sub={t("dashboard.today")}
+          delta={shotsDiff != null && shotsDiff !== 0 ? `${shotsDiff > 0 ? "+" : "-"}${Math.abs(shotsDiff)}` : undefined}
+          deltaDir={shotsDiff != null && shotsDiff < 0 ? "down" : "up"}
+          sub={shotsDiff != null && shotsDiff !== 0 ? t("dashboard.vsYesterday") : t("dashboard.today")}
           chart={<Sparkline values={spark} color="#34d399" />}
         />
       </div>

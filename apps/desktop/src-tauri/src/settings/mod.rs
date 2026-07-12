@@ -27,6 +27,16 @@ pub struct Settings {
     /// Capture periodic screenshots. User opt-out (Settings). Default on.
     #[serde(default = "default_true")]
     pub capture_screenshots: bool,
+    /// "privacy" (frontmost window only — the default) | "normal" (one shot per
+    /// display). Window shots fall back to full screen when the window can't be
+    /// captured. Pre-rename values ("full_screen"/"active_window") still parse.
+    #[serde(default = "default_screenshot_mode")]
+    pub screenshot_mode: String,
+    /// App names for which the capture tick is skipped entirely while that app is
+    /// frontmost (case-insensitive whole-word match on the active window's app
+    /// name). Prefilled with the curated sensitive-app rules; user-editable.
+    #[serde(default = "default_skip_apps")]
+    pub screenshot_skip_apps: Vec<String>,
     /// Count keystrokes (counts only, never keys). User opt-out (Settings). Default on.
     #[serde(default = "default_true")]
     pub count_keystrokes: bool,
@@ -60,11 +70,19 @@ fn default_locale() -> String {
     "en".into()
 }
 
+fn default_screenshot_mode() -> String {
+    "privacy".into()
+}
+
+fn default_skip_apps() -> Vec<String> {
+    crate::trackers::default_privacy_apps_flat()
+}
+
 /// Compile-time default backend, chosen by Cargo feature (see Cargo.toml `[features]`).
 /// Resolution order: local > staging > production (the default). Not stored in
 /// settings (so a stale settings.json can't pin it to the wrong env).
 const DEFAULT_BACKEND_URL: &str = if cfg!(feature = "local") {
-    "http://localhost:8080"
+    "http://localhost:8090"
 } else if cfg!(feature = "staging") {
     // Private pre-prod host — set via CTRACKING_BACKEND_URL at runtime, or edit locally.
     "https://staging.example.com"
@@ -104,6 +122,8 @@ impl Default for Settings {
             domain_only: false,
             hide_dock: false,
             capture_screenshots: true,
+            screenshot_mode: default_screenshot_mode(),
+            screenshot_skip_apps: default_skip_apps(),
             count_keystrokes: true,
             consented: false,
             local_only: false,
@@ -149,6 +169,10 @@ pub fn apply(s: &Settings, control: &crate::trackers::TrackerControl) {
         .screenshot_retention_days
         .store(s.screenshot_retention_days, Relaxed);
     control.domain_only.store(s.domain_only, Relaxed);
+    control
+        .screenshot_mode
+        .store(crate::trackers::shot_mode_from_str(&s.screenshot_mode), Relaxed);
+    *control.screenshot_skip_apps.write().unwrap() = s.screenshot_skip_apps.clone();
 
     // Capture opt-outs. On Windows nothing captures until the user has consented
     // (there are no per-feature OS prompts); macOS relies on TCC and ignores consent.

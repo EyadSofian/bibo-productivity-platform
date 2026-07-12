@@ -160,12 +160,11 @@ function OnbSelect({
 }
 
 function StepConfigure({
-  t, settings, onChange, captureLocked,
+  t, settings, onChange,
 }: {
   t: TF;
   settings: AppSettings;
   onChange: (patch: Partial<AppSettings>) => void;
-  captureLocked: boolean;
 }) {
   return (
     <>
@@ -177,7 +176,6 @@ function StepConfigure({
           <span className="onb-set-label">{t("settings:captureScreenshots")}</span>
           <button
             className={`switch ${settings.capture_screenshots ? "" : "off"}`}
-            disabled={captureLocked}
             onClick={() => onChange({ capture_screenshots: !settings.capture_screenshots })}
           />
         </div>
@@ -186,50 +184,50 @@ function StepConfigure({
           <span className="onb-set-label">{t("settings:countKeystrokes")}</span>
           <button
             className={`switch ${settings.count_keystrokes ? "" : "off"}`}
-            disabled={captureLocked}
             onClick={() => onChange({ count_keystrokes: !settings.count_keystrokes })}
           />
         </div>
-        <div className="onb-set-row">
-          <span className="onb-set-ic"><TimerIcon /></span>
-          <span className="onb-set-label">{t("settings:screenshotInterval")}</span>
-          <OnbSelect
-            value={settings.screenshot_interval_s}
-            disabled={captureLocked || !settings.capture_screenshots}
-            onChange={(v) => onChange({ screenshot_interval_s: v })}
-            options={[
-              { label: t("settings:minUnit", { count: 1 }), value: 60 },
-              { label: t("settings:minUnit", { count: 5 }), value: 300 },
-              { label: t("settings:minUnit", { count: 10 }), value: 600 },
-              { label: t("settings:minUnit", { count: 15 }), value: 900 },
-            ]}
-          />
-        </div>
+        {settings.capture_screenshots && (
+          <>
+            <div className="onb-set-row">
+              <span className="onb-set-ic"><TimerIcon /></span>
+              <span className="onb-set-label">{t("settings:screenshotInterval")}</span>
+              <OnbSelect
+                value={settings.screenshot_interval_s}
+                onChange={(v) => onChange({ screenshot_interval_s: v })}
+                options={[
+                  { label: t("settings:minUnit", { count: 1 }), value: 60 },
+                  { label: t("settings:minUnit", { count: 5 }), value: 300 },
+                  { label: t("settings:minUnit", { count: 10 }), value: 600 },
+                  { label: t("settings:minUnit", { count: 15 }), value: 900 },
+                ]}
+              />
+            </div>
+            <div className="onb-set-row">
+              <span className="onb-set-ic"><HistoryIcon /></span>
+              <span className="onb-set-label">{t("settings:screenshotRetention")}</span>
+              <OnbSelect
+                value={settings.screenshot_retention_days}
+                onChange={(v) => onChange({ screenshot_retention_days: v })}
+                options={[
+                  { label: t("settings:daysUnit", { count: 7 }), value: 7 },
+                  { label: t("settings:daysUnit", { count: 30 }), value: 30 },
+                  { label: t("settings:daysUnit", { count: 90 }), value: 90 },
+                ]}
+              />
+            </div>
+          </>
+        )}
         <div className="onb-set-row">
           <span className="onb-set-ic"><CoffeeIcon /></span>
           <span className="onb-set-label">{t("settings:idleThreshold")}</span>
           <OnbSelect
             value={settings.idle_threshold_s}
-            disabled={captureLocked}
             onChange={(v) => onChange({ idle_threshold_s: v })}
             options={[
               { label: t("settings:secUnit", { count: 60 }), value: 60 },
               { label: t("settings:minUnit", { count: 3 }), value: 180 },
               { label: t("settings:minUnit", { count: 5 }), value: 300 },
-            ]}
-          />
-        </div>
-        <div className="onb-set-row">
-          <span className="onb-set-ic"><HistoryIcon /></span>
-          <span className="onb-set-label">{t("settings:screenshotRetention")}</span>
-          <OnbSelect
-            value={settings.screenshot_retention_days}
-            disabled={captureLocked}
-            onChange={(v) => onChange({ screenshot_retention_days: v })}
-            options={[
-              { label: t("settings:daysUnit", { count: 7 }), value: 7 },
-              { label: t("settings:daysUnit", { count: 30 }), value: 30 },
-              { label: t("settings:daysUnit", { count: 90 }), value: 90 },
             ]}
           />
         </div>
@@ -284,8 +282,13 @@ export function Onboarding({
   const captureLocked =
     !!captureManaged && captureManaged.managed && !captureManaged.allow_employee_override;
 
-  const next = () => (step < 3 ? setStep(step + 1) : onFinish());
-  const back = () => setStep((s) => Math.max(1, s - 1));
+  // The configure step is dropped entirely when the org locks capture settings —
+  // there is nothing the user could change there.
+  const stepSeq = captureLocked ? [1, 3] : [1, 2, 3];
+  const stepIdx = Math.max(0, stepSeq.indexOf(step));
+  const next = () =>
+    stepIdx < stepSeq.length - 1 ? setStep(stepSeq[stepIdx + 1]) : onFinish();
+  const back = () => setStep(stepSeq[Math.max(0, stepIdx - 1)]);
 
   return (
     <div className="login welcome onboarding-screen">
@@ -296,19 +299,19 @@ export function Onboarding({
 
       <div className="capture-steps">
         <div className="capture-pips">
-          {[1, 2, 3].map((n) => (
-            <span key={n} className={`pip ${n < step ? "done" : n === step ? "on" : ""}`} />
+          {stepSeq.map((n, i) => (
+            <span key={n} className={`pip ${i < stepIdx ? "done" : i === stepIdx ? "on" : ""}`} />
           ))}
         </div>
         <span className="capture-step-label">
-          {t("media:ui.stepOf", { current: step, total: 3 })}
+          {t("media:ui.stepOf", { current: stepIdx + 1, total: stepSeq.length })}
         </span>
       </div>
 
       <div className="login-card">
         {step === 1 && <StepCaptures t={t} persona={persona} />}
-        {step === 2 && (
-          <StepConfigure t={t} settings={settings} onChange={onChange} captureLocked={captureLocked} />
+        {step === 2 && !captureLocked && (
+          <StepConfigure t={t} settings={settings} onChange={onChange} />
         )}
         {step === 3 && <StepPermissions t={t} />}
       </div>

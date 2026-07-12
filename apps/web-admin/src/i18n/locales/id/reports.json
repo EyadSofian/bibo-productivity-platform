@@ -32,6 +32,9 @@
     "alt": "Tangkapan layar {{time}}",
     "loading": "Memuat…",
     "display": "layar {{id}}",
-    "title": "Tangkapan layar"
+    "title": "Tangkapan layar",
+    "prev": "Screenshot sebelumnya",
+    "next": "Screenshot berikutnya",
+    "close": "Tutup"
   }
 }

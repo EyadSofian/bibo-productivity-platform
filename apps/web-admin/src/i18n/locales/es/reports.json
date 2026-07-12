@@ -32,6 +32,9 @@
     "alt": "Captura de pantalla {{time}}",
     "loading": "Cargando…",
     "display": "pantalla {{id}}",
-    "title": "Capturas de pantalla"
+    "title": "Capturas de pantalla",
+    "prev": "Captura anterior",
+    "next": "Captura siguiente",
+    "close": "Cerrar"
   }
 }

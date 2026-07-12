@@ -32,6 +32,9 @@
     "alt": "Ảnh chụp màn hình {{time}}",
     "loading": "Đang tải…",
     "display": "màn hình {{id}}",
-    "title": "Ảnh chụp màn hình"
+    "title": "Ảnh chụp màn hình",
+    "prev": "Ảnh chụp trước",
+    "next": "Ảnh chụp sau",
+    "close": "Đóng"
   }
 }

@@ -31,6 +31,20 @@ export interface AuthResponse {
 /** A business is a team or a family; `kind` drives member wording (employees/kids). */
 export type BusinessKind = "team" | "family";
 
+/**
+ * How employee screens are captured. "privacy" (the default) captures only the
+ * frontmost window; "normal" captures every display in full. The backend may
+ * still return pre-rename values ("full_screen"/"active_window") — normalize
+ * before comparing.
+ */
+export type ScreenshotMode = "privacy" | "normal";
+
+/** One category of the backend's curated sensitive-app list. */
+export interface PrivacyAppCategory {
+  key: string;
+  apps: string[];
+}
+
 export interface Business {
   id: string;
   name: string;
@@ -40,6 +54,8 @@ export interface Business {
   screenshot_interval_s: number;
   idle_threshold_s: number;
   allow_employee_override: boolean;
+  screenshot_mode: string; // normalize to ScreenshotMode before comparing
+  screenshot_skip_apps: string[];
 }
 
 export interface BusinessSettingsPatch {
@@ -47,6 +63,8 @@ export interface BusinessSettingsPatch {
   screenshot_interval_s?: number;
   idle_threshold_s?: number;
   allow_employee_override?: boolean;
+  screenshot_mode?: ScreenshotMode;
+  screenshot_skip_apps?: string[];
 }
 
 export interface Employee {
@@ -69,6 +87,11 @@ export interface ReportEmployee {
   role?: "owner" | "employee";
   last_seen: number | null;
   active_today_s: number;
+  active_yesterday_s: number;
+  screenshots_today: number;
+  screenshots_yesterday: number;
+  /** 0–100 share of active time with keyboard input; null when no activity today. */
+  focus_pct_today: number | null;
 }
 
 export interface ActivitySample {

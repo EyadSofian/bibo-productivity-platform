@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"ctracking/backend/internal/privacyapps"
+
 	"github.com/jackc/pgx/v5"
 )
 
@@ -14,18 +16,20 @@ var ErrForbidden = errors.New("forbidden")
 
 // Business is a company/team owned by a user.
 type Business struct {
-	ID                      string `json:"id"`
-	Name                    string `json:"name"`
-	Kind                    string `json:"kind"` // 'team' | 'family'
-	OwnerUserID             string `json:"owner_user_id"`
-	ScreenshotRetentionDays *int   `json:"screenshot_retention_days"`
-	ScreenshotIntervalS     int    `json:"screenshot_interval_s"`
-	IdleThresholdS          int    `json:"idle_threshold_s"`
-	AllowEmployeeOverride   bool   `json:"allow_employee_override"`
+	ID                      string   `json:"id"`
+	Name                    string   `json:"name"`
+	Kind                    string   `json:"kind"` // 'team' | 'family'
+	OwnerUserID             string   `json:"owner_user_id"`
+	ScreenshotRetentionDays *int     `json:"screenshot_retention_days"`
+	ScreenshotIntervalS     int      `json:"screenshot_interval_s"`
+	IdleThresholdS          int      `json:"idle_threshold_s"`
+	AllowEmployeeOverride   bool     `json:"allow_employee_override"`
+	ScreenshotMode          string   `json:"screenshot_mode"` // 'privacy' | 'normal'
+	ScreenshotSkipApps      []string `json:"screenshot_skip_apps"`
 }
 
 // businessCols is the column list backing a Business scan (see scanBusiness).
-const businessCols = "id, name, kind, owner_user_id, screenshot_retention_days, screenshot_interval_s, idle_threshold_s, allow_employee_override"
+const businessCols = "id, name, kind, owner_user_id, screenshot_retention_days, screenshot_interval_s, idle_threshold_s, allow_employee_override, screenshot_mode, screenshot_skip_apps"
 
 // Employee is a member with the employee role within a business.
 type Employee struct {
@@ -62,7 +66,8 @@ type scanner interface {
 func scanBusiness(s scanner) (Business, error) {
 	var b Business
 	err := s.Scan(&b.ID, &b.Name, &b.Kind, &b.OwnerUserID, &b.ScreenshotRetentionDays,
-		&b.ScreenshotIntervalS, &b.IdleThresholdS, &b.AllowEmployeeOverride)
+		&b.ScreenshotIntervalS, &b.IdleThresholdS, &b.AllowEmployeeOverride,
+		&b.ScreenshotMode, &b.ScreenshotSkipApps)
 	return b, err
 }
 
@@ -193,6 +198,8 @@ var settableColumns = map[string]bool{
 	"screenshot_interval_s":     true,
 	"idle_threshold_s":          true,
 	"allow_employee_override":   true,
+	"screenshot_mode":           true,
+	"screenshot_skip_apps":      true,
 }
 
 // UpdateBusinessSettings updates only the provided columns (keys must be in
@@ -224,11 +231,13 @@ func (s *Store) UpdateBusinessSettings(ctx context.Context, businessID string, f
 
 // CapturePolicy is the org-controlled capture configuration the desktop applies.
 type CapturePolicy struct {
-	ScreenshotIntervalS     int    `json:"screenshot_interval_s"`
-	IdleThresholdS          int    `json:"idle_threshold_s"`
-	ScreenshotRetentionDays *int   `json:"screenshot_retention_days"`
-	AllowEmployeeOverride   bool   `json:"allow_employee_override"`
-	Kind                    string `json:"kind"` // 'team' | 'family' — drives onboarding copy
+	ScreenshotIntervalS     int      `json:"screenshot_interval_s"`
+	IdleThresholdS          int      `json:"idle_threshold_s"`
+	ScreenshotRetentionDays *int     `json:"screenshot_retention_days"`
+	AllowEmployeeOverride   bool     `json:"allow_employee_override"`
+	Kind                    string   `json:"kind"` // 'team' | 'family' — drives onboarding copy
+	ScreenshotMode          string   `json:"screenshot_mode"`
+	ScreenshotSkipApps      []string `json:"screenshot_skip_apps"`
 }
 
 // PolicyForUser returns the capture policy for the user's business, or nil when the
@@ -243,9 +252,9 @@ func (s *Store) PolicyForUser(ctx context.Context, userID string) (*CapturePolic
 	}
 	var p CapturePolicy
 	err = s.pool.QueryRow(ctx,
-		`SELECT screenshot_interval_s, idle_threshold_s, screenshot_retention_days, allow_employee_override, kind
+		`SELECT screenshot_interval_s, idle_threshold_s, screenshot_retention_days, allow_employee_override, kind, screenshot_mode, screenshot_skip_apps
 		   FROM businesses WHERE id = $1`, bizID,
-	).Scan(&p.ScreenshotIntervalS, &p.IdleThresholdS, &p.ScreenshotRetentionDays, &p.AllowEmployeeOverride, &p.Kind)
+	).Scan(&p.ScreenshotIntervalS, &p.IdleThresholdS, &p.ScreenshotRetentionDays, &p.AllowEmployeeOverride, &p.Kind, &p.ScreenshotMode, &p.ScreenshotSkipApps)
 	if err != nil {
 		return nil, err
 	}
@@ -286,9 +295,11 @@ func createBusinessTx(ctx context.Context, tx pgx.Tx, ownerID, name, kind string
 	if kind == "" {
 		kind = "team"
 	}
+	// New businesses start in privacy mode with the skip-list prefilled from the
+	// curated sensitive-app rules; owners can add/remove entries afterwards.
 	b, err := scanBusiness(tx.QueryRow(ctx,
-		`INSERT INTO businesses (name, owner_user_id, kind) VALUES ($1, $2, $3) RETURNING `+businessCols,
-		name, ownerID, kind))
+		`INSERT INTO businesses (name, owner_user_id, kind, screenshot_skip_apps) VALUES ($1, $2, $3, $4) RETURNING `+businessCols,
+		name, ownerID, kind, privacyapps.Flat()))
 	if err != nil {
 		return Business{}, err
 	}

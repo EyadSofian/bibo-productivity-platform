@@ -1,17 +1,17 @@
 {
   "meta": {
     "title": "BiBoTracking — Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở",
-    "description": "Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS &amp; Windows — theo dõi thời gian sử dụng ứng dụng, lượt gõ phím, ảnh chụp màn hình &amp; hoạt động trình duyệt. Ưu tiên lưu cục bộ, tự lưu trữ được, 100% miễn phí.",
+    "description": "Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS &amp; Windows — theo dõi thời gian sử dụng ứng dụng, lượt gõ phím, ảnh chụp màn hình &amp; hoạt động trình duyệt. Ưu tiên lưu cục bộ, tự lưu trữ được, miễn phí &amp; mã nguồn mở.",
     "ogTitle": "BiBoTracking — Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS &amp; Windows",
-    "ogDescription": "Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS & Windows. Thời gian dùng ứng dụng & cửa sổ, lượt gõ phím, ảnh chụp màn hình và hoạt động trình duyệt — ưu tiên lưu cục bộ và tự lưu trữ được. 100% miễn phí.",
+    "ogDescription": "Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS & Windows. Thời gian dùng ứng dụng & cửa sổ, lượt gõ phím, ảnh chụp màn hình và hoạt động trình duyệt — ưu tiên lưu cục bộ và tự lưu trữ được. Miễn phí & mã nguồn mở.",
     "ogImageAlt": "BiBoTracking — theo dõi thời gian & hoạt động cho macOS & Windows",
     "twitterTitle": "BiBoTracking — Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở",
-    "twitterDescription": "Theo dõi thời gian &amp; hoạt động nhân viên cho macOS &amp; Windows — miễn phí, mã nguồn mở, tự lưu trữ được. 100% miễn phí.",
+    "twitterDescription": "Theo dõi thời gian &amp; hoạt động nhân viên miễn phí, mã nguồn mở, tự lưu trữ được cho macOS &amp; Windows. Miễn phí &amp; mã nguồn mở.",
     "twitterImageAlt": "Bảng điều khiển BiBoTracking"
   },
   "jsonld": {
     "appDescription": "Giải pháp thay thế Hubstaff miễn phí, mã nguồn mở cho macOS & Windows. Theo dõi thời gian dùng ứng dụng & cửa sổ, số lượt gõ phím, ảnh chụp màn hình định kỳ và hoạt động trình duyệt — ưu tiên lưu cục bộ và tự lưu trữ được.",
-    "offerFree": "100% miễn phí — đầy đủ mọi tính năng, không tính phí theo đầu người",
+    "offerFree": "Miễn phí & mã nguồn mở — không giới hạn nhân viên, không tính phí theo đầu người",
     "feature1": "Theo dõi thời gian dùng ứng dụng và cửa sổ",
     "feature2": "Đếm số lượt gõ phím (không lưu nội dung phím)",
     "feature3": "Ảnh chụp màn hình tự động dưới 50KB",
@@ -23,11 +23,11 @@
   "faq": {
     "q1": {
       "name": "Có giải pháp thay thế Hubstaff miễn phí, mã nguồn mở nào không?",
-      "answer": "Có. BiBoTracking là giải pháp thay thế Hubstaff miễn phí, mã nguồn mở dành cho macOS & Windows. Nó theo dõi thời gian dùng ứng dụng và cửa sổ, số lượt gõ phím, ảnh chụp màn hình và hoạt động trình duyệt, và 100% miễn phí — hoặc tự lưu trữ miễn phí, mãi mãi."
+      "answer": "Có. BiBoTracking là giải pháp thay thế Hubstaff miễn phí, mã nguồn mở dành cho macOS & Windows. Nó theo dõi thời gian dùng ứng dụng và cửa sổ, số lượt gõ phím, ảnh chụp màn hình và hoạt động trình duyệt, và hoàn toàn miễn phí & mã nguồn mở — hoặc tự lưu trữ miễn phí, mãi mãi."
     },
     "q2": {
       "name": "BiBoTracking có giá bao nhiêu?",
-      "answer": "100% miễn phí với đầy đủ mọi tính năng và không tính phí theo từng người dùng. Ảnh chụp màn hình được giữ trong 30 ngày; mọi dữ liệu khác được giữ mãi mãi. Các nhóm cần thời gian lưu ảnh chụp màn hình lâu hơn, hỗ trợ chuyên biệt hay tính năng tùy chỉnh có thể đặt lịch gọi để có gói riêng. Bạn cũng có thể tự lưu trữ bản mã nguồn mở miễn phí."
+      "answer": "Mọi thứ BiBoTracking cung cấp hôm nay đều hoàn toàn miễn phí, không tính phí theo đầu người. Ảnh chụp màn hình được giữ trong 30 ngày; mọi dữ liệu khác được giữ mãi mãi. Trong tương lai có thể có thêm các tính năng trả phí tùy chọn — nhưng luôn là tính năng mới, không bao giờ là thứ đang miễn phí hôm nay. Các nhóm cần thời gian lưu ảnh chụp màn hình lâu hơn, hỗ trợ chuyên biệt hay tính năng tùy chỉnh có thể đặt lịch gọi để có gói riêng. Bạn cũng có thể tự lưu trữ bản mã nguồn mở miễn phí."
     },
     "q3": {
       "name": "BiBoTracking có ghi lại những gì nhân viên gõ không?",
@@ -36,6 +36,10 @@
     "q4": {
       "name": "Tôi có thể tự lưu trữ BiBoTracking không?",
       "answer": "Có. Phần backend viết bằng Go, bảng điều khiển web, ứng dụng máy tính (macOS & Windows) và tiện ích Chrome đều là mã nguồn mở. Một tệp nhị phân Go duy nhất phục vụ cả API lẫn bảng điều khiển, dùng Postgres làm cơ sở dữ liệu, nên bạn có thể chạy toàn bộ hệ thống trên máy của mình miễn phí."
+    },
+    "q5": {
+      "name": "BiBoTracking có chụp màn hình chat riêng tư hay ứng dụng ngân hàng không?",
+      "answer": "Không — chế độ chụp màn hình riêng tư được bật mặc định. Thay vì ghi lại toàn màn hình, nó chỉ chụp cửa sổ đang dùng, và không bao giờ chụp các ứng dụng nhạy cảm: một danh sách bỏ qua tích hợp sẵn gồm các ứng dụng chat, ngân hàng và quản lý mật khẩu phổ biến (chủ sở hữu có thể mở rộng) sẽ chặn hoàn toàn ảnh chụp khi các ứng dụng đó đang ở phía trước. Các công cụ giám sát truyền thống như Hubstaff chụp toàn màn hình bất kể trên đó hiển thị gì."
     }
   },
   "nav": {
@@ -59,7 +63,7 @@
     "downloadMac": "Tải cho macOS",
     "addChrome": "Thêm tiện ích Chrome",
     "signUp": "Tạo tài khoản miễn phí",
-    "note": "100% miễn phí · mã nguồn mở &amp; tự lưu trữ được · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
+    "note": "Miễn phí &amp; mã nguồn mở · tự lưu trữ được · Universal&nbsp;macOS (Apple&nbsp;Silicon&nbsp;+&nbsp;Intel) &amp; Windows&nbsp;10+.",
     "dashboardAlt": "Bảng điều khiển ứng dụng để bàn BiBoTracking hiển thị thời gian hoạt động, ứng dụng hàng đầu, lượt gõ phím và ảnh chụp màn hình",
     "activeToday": "Đã ghi hôm nay",
     "downloadWin": "Tải cho Windows"
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Ảnh chụp màn hình",
-      "p": "Ảnh thu nhỏ làm mờ theo khoảng bạn đặt, dung lượng rất nhỏ."
+      "p": "Tự động chụp theo khoảng thời gian đặt sẵn, nén dưới 50&nbsp;KB, kèm thời hạn lưu tự xóa. Chế độ riêng tư (mặc định) chỉ chụp cửa sổ đang dùng — không bao giờ chụp toàn màn hình — và bỏ qua hoàn toàn các ứng dụng chat, ngân hàng và quản lý mật khẩu."
     },
     "browser": {
       "h": "Lịch sử duyệt web",
@@ -179,7 +183,7 @@
   "compare": {
     "kicker": "BiBoTracking so với Hubstaff",
     "title": "BiBoTracking so với<br>Hubstaff",
-    "intro": "So sánh mã nguồn mở trung thực.",
+    "intro": "Nếu bạn dùng Hubstaff để theo dõi ứng dụng, ảnh chụp màn hình và hoạt động, bạn đã quen với quy trình này. Đây là phiên bản mã nguồn mở, ưu tiên cục bộ — miễn phí & mã nguồn mở, và bạn có thể tự lưu trữ.",
     "thFeature": "Tính năng",
     "thUs": "BiBoTracking",
     "thThem": "Hubstaff",
@@ -187,7 +191,7 @@
     "no": "Không",
     "row": {
       "price": "Giá",
-      "priceUs": "Miễn phí 100%",
+      "priceUs": "Miễn phí (mã nguồn mở)",
       "priceThem": "$$$ / chỗ",
       "oss": "Mã nguồn mở",
       "selfhost": "Tự lưu trữ",
@@ -195,6 +199,7 @@
       "localThem": "Chỉ trên đám mây",
       "appTime": "Thời gian ứng dụng &amp; cửa sổ",
       "screenshots": "Ảnh chụp",
+      "privacyShots": "Chế độ chụp riêng tư — bỏ qua ứng dụng chat, ngân hàng &amp; mật khẩu",
       "activity": "Hoạt động bàn phím",
       "activityUs": " — chỉ đếm số lượt",
       "browser": "Lịch sử duyệt",
@@ -225,13 +230,13 @@
   },
   "pricing": {
     "kicker": "Bảng giá",
-    "title": "100% miễn phí. Mãi mãi.",
-    "intro": "Không dùng thử, không đếm số ghế, không cần thẻ tín dụng. Đầy đủ mọi tính năng, miễn phí — ảnh chụp màn hình được giữ 30 ngày, mọi dữ liệu khác được giữ mãi mãi.",
+    "title": "Miễn phí hôm nay. Phần lõi miễn phí mãi mãi.",
+    "intro": "Mọi thứ BiBoTracking cung cấp hôm nay đều hoàn toàn miễn phí — không dùng thử, không đếm số ghế, không cần thẻ tín dụng. Khi sản phẩm phát triển, có thể có thêm các tính năng trả phí tùy chọn cho những nhóm cần nhiều hơn. Những gì bạn đang dùng hôm nay sẽ không bao giờ bị đưa vào diện trả phí.",
     "free": {
-      "tag": "Gói miễn phí",
-      "badge": "100% miễn phí",
+      "tag": "Lõi miễn phí",
+      "badge": "Miễn phí mãi mãi",
       "per": "mãi mãi",
-      "sub": "Đầy đủ mọi tính năng, mọi tín hiệu, trọn vẹn bảng điều khiển web — hoàn toàn miễn phí.",
+      "sub": "Mọi thứ đang có hôm nay — ứng dụng để bàn, tiện ích Chrome, trọn vẹn bảng điều khiển web, không giới hạn nhân viên. Miễn phí mãi mãi.",
       "li1": "Không giới hạn số nhân viên — không tính phí theo đầu người",
       "li2": "Ứng dụng để bàn, tiện ích Chrome &amp; bảng điều khiển web",
       "li3": "Ảnh chụp màn hình được giữ 30 ngày; mọi dữ liệu khác được giữ mãi mãi",
@@ -246,7 +251,8 @@
       "li2": "Hỗ trợ ưu tiên &amp; hướng dẫn khởi đầu",
       "li3": "Tính năng tùy chỉnh &amp; tích hợp",
       "btn": "Đặt lịch gọi"
-    }
+    },
+    "pledge": "<strong>Cam kết của chúng tôi:</strong> những gì miễn phí hôm nay sẽ miễn phí mãi mãi. Các tính năng trả phí trong tương lai luôn là năng lực mới, tùy chọn — không bao giờ thu phí thứ bạn đang dùng miễn phí."
   },
   "oss": {
     "kicker": "Mã nguồn mở",
@@ -268,8 +274,8 @@
     "github": "Xem trên GitHub"
   },
   "cta": {
-    "title": "Bắt đầu theo dõi theo cách trung thực",
-    "intro": "Ứng dụng máy tính miễn phí. Đồng bộ khi bạn sẵn sàng.",
+    "title": "Miễn phí hôm nay. Phần lõi miễn phí mãi mãi.",
+    "intro": "Tải ứng dụng máy tính và đăng ký — không cần thẻ, không đồng hồ dùng thử. Phần lõi miễn phí mãi mãi — hoặc tự lưu trữ toàn bộ hệ thống miễn phí.",
     "downloadMac": "Tải cho macOS",
     "addChrome": "Thêm vào Chrome",
     "signUp": "Tạo tài khoản miễn phí",

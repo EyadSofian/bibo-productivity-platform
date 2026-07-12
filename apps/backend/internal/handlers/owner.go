@@ -185,6 +185,31 @@ func (h *OwnerHandler) UpdateSettings(c *gin.Context) {
 		}
 		fields["allow_employee_override"] = b
 	}
+	if raw, ok := body["screenshot_mode"]; ok {
+		var m string
+		if json.Unmarshal(raw, &m) != nil || (m != "privacy" && m != "normal") {
+			badRequest(c, "screenshot_mode must be 'privacy' or 'normal'")
+			return
+		}
+		fields["screenshot_mode"] = m
+	}
+	if raw, ok := body["screenshot_skip_apps"]; ok {
+		var apps []string
+		if json.Unmarshal(raw, &apps) != nil || len(apps) > 100 {
+			badRequest(c, "screenshot_skip_apps must be an array of up to 100 app names")
+			return
+		}
+		cleaned := make([]string, 0, len(apps))
+		for _, a := range apps {
+			a = strings.TrimSpace(a)
+			if a == "" || len(a) > 200 {
+				badRequest(c, "screenshot_skip_apps entries must be non-empty names up to 200 characters")
+				return
+			}
+			cleaned = append(cleaned, a)
+		}
+		fields["screenshot_skip_apps"] = cleaned
+	}
 
 	if err := h.store.UpdateBusinessSettings(c.Request.Context(), c.Param("id"), fields); err != nil {
 		serverError(c, err)
@@ -217,6 +242,8 @@ func (h *OwnerHandler) Policy(c *gin.Context) {
 		"screenshot_retention_days": p.ScreenshotRetentionDays,
 		"allow_employee_override":   p.AllowEmployeeOverride,
 		"kind":                      p.Kind,
+		"screenshot_mode":           p.ScreenshotMode,
+		"screenshot_skip_apps":      p.ScreenshotSkipApps,
 	})
 }
 

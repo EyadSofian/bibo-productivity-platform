@@ -29,6 +29,36 @@
     "ariaLabel": "Idle threshold",
     "saved": "Idle threshold updated."
   },
+  "screenshotMode": {
+    "title": "Screenshot mode",
+    "desc": "Choose how screens are captured.",
+    "ariaLabel": "Screenshot mode",
+    "privacy": "Privacy",
+    "privacyDesc": "Only the active window is captured — never the whole screen. No screenshot is taken while apps on the skip list are in front (prefilled with well-known chat, password and banking apps).",
+    "normal": "Normal",
+    "normalDesc": "Every screen is captured in full.",
+    "saved": "Screenshot mode updated."
+  },
+  "skipApps": {
+    "title": "Skip apps",
+    "desc": "No screenshot is taken while any of these apps is in front. Matching is forgiving: \"Zalo\" also covers \"Zalo PC\".",
+    "placeholder": "App name, e.g. Zalo",
+    "add": "Add",
+    "remove": "Remove {{name}}",
+    "saved": "Skip list updated.",
+    "catChat": "Chat & social",
+    "catSecurity": "Passwords & security",
+    "catWork": "Work & meetings",
+    "catMail": "Mail",
+    "manage": "Manage…",
+    "modalTitle": "Screenshot skip list",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "done": "Done",
+    "custom": "Custom",
+    "addAll": "Add all",
+    "removeAll": "Remove all"
+  },
   "retention": {
     "title": "Screenshot retention",
     "desc": "How long the backend keeps uploaded screenshots for {{name}}. \"Never\" keeps them indefinitely.",

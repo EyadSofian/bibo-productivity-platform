@@ -1,6 +1,6 @@
 //! Background sync worker (task 53).
 //!
-//! Pushes pending local rows (`synced = 0`) to the backend on a timer (~2–5 min)
+//! Pushes pending local rows (`synced = 0`) to the backend on a timer (~5 min)
 //! and once shortly after app start. One pass per table, batched. On a 2xx the
 //! backend echoes the accepted `client_uuid`s and we flip exactly those to
 //! `synced = 1` — never deleting local rows (docs/11). Failures back off
@@ -19,8 +19,8 @@ use super::client::BackendClient;
 use super::BATCH_LIMIT;
 use crate::storage::{Db, SyncTable};
 
-/// Base interval between sync passes (2 min). Backoff multiplies this on failure.
-const BASE_INTERVAL: Duration = Duration::from_secs(120);
+/// Base interval between sync passes (5 min). Backoff multiplies this on failure.
+const BASE_INTERVAL: Duration = Duration::from_secs(300);
 /// Cap the backoff so we still retry roughly every 16 min when the backend is down.
 const MAX_INTERVAL: Duration = Duration::from_secs(16 * 60);
 /// Short delay before the first pass so startup isn't blocked.

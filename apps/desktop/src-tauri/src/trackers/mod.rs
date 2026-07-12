@@ -8,8 +8,8 @@
 //! (active?, window, threshold, now) → optional sample-to-flush, so it's unit
 //! tested without real timers or platform calls.
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -39,6 +39,12 @@ pub struct TrackerControl {
     pub domain_only: AtomicBool,
     /// Capture periodic screenshots (user opt-out; Windows: also gated on consent).
     pub capture_screenshots: AtomicBool,
+    /// SHOT_MODE_PRIVACY | SHOT_MODE_NORMAL.
+    pub screenshot_mode: AtomicU8,
+    /// Skip the whole capture tick while any of these apps is frontmost
+    /// (case-insensitive whole-word match on the active window's app name).
+    /// Prefilled with the curated sensitive-app rules by default; user-editable.
+    pub screenshot_skip_apps: RwLock<Vec<String>>,
     /// Count keystrokes (user opt-out; Windows: also gated on consent).
     pub count_keystrokes: AtomicBool,
 }
@@ -52,9 +58,61 @@ impl TrackerControl {
             screenshot_retention_days: AtomicU64::new(DEFAULT_RETENTION_DAYS),
             domain_only: AtomicBool::new(false),
             capture_screenshots: AtomicBool::new(true),
+            screenshot_mode: AtomicU8::new(SHOT_MODE_PRIVACY),
+            screenshot_skip_apps: RwLock::new(default_privacy_apps_flat()),
             count_keystrokes: AtomicBool::new(true),
         }
     }
+}
+
+/// Screenshot capture modes (see `Settings::screenshot_mode`): privacy captures
+/// only the active window; normal captures every display.
+pub const SHOT_MODE_PRIVACY: u8 = 0;
+pub const SHOT_MODE_NORMAL: u8 = 1;
+
+/// Map the persisted mode string to its atomic value. "full_screen" is the
+/// pre-rename value of "normal"; anything else (including the pre-rename
+/// "active_window" and unknown/future strings) falls back to privacy — the
+/// default, and the mode that captures the least.
+pub fn shot_mode_from_str(s: &str) -> u8 {
+    match s {
+        "normal" | "full_screen" => SHOT_MODE_NORMAL,
+        _ => SHOT_MODE_PRIVACY,
+    }
+}
+
+/// Baked-in copy of the curated sensitive-app list, grouped by category —
+/// the offline fallback for the backend's `/v1/public/screenshot-privacy-apps`
+/// (single source of truth: `handlers/privacyapps.go` — keep in sync). In
+/// privacy mode a capture tick is skipped while any of these is frontmost.
+pub const DEFAULT_PRIVACY_APPS: &[(&str, &[&str])] = &[
+    ("Chat", &[
+        "Zalo", "WhatsApp", "Telegram", "Signal", "Viber", "WeChat", "Weixin",
+        "QQ", "LINE", "KakaoTalk", "Discord", "Messages", "FaceTime", "Element",
+        "Threema", "Wire", "Beeper", "Ferdium", "Rambox", "Caprine",
+    ]),
+    ("Security", &[
+        "1Password", "Bitwarden", "LastPass", "KeePass", "KeePassXC", "Keeper",
+        "NordPass", "Proton Pass", "Enpass", "RoboForm", "Keychain Access",
+        "Passwords", "Ledger Live", "Trezor Suite", "Exodus", "Electrum",
+        "Sparrow", "Proton VPN", "NordVPN", "TeamViewer", "AnyDesk",
+    ]),
+    ("Work", &[
+        "Slack", "Microsoft Teams", "Zoom", "zoom.us", "Webex", "DingTalk",
+        "Lark", "Feishu", "Mattermost", "Rocket.Chat",
+    ]),
+    ("Mail", &[
+        "Mail", "Outlook", "Thunderbird", "Spark", "Proton Mail", "eM Client",
+        "Mailbird", "Superhuman", "Airmail",
+    ]),
+];
+
+/// The baked-in list flattened for the matcher.
+pub fn default_privacy_apps_flat() -> Vec<String> {
+    DEFAULT_PRIVACY_APPS
+        .iter()
+        .flat_map(|(_, apps)| apps.iter().map(|a| a.to_string()))
+        .collect()
 }
 
 impl Default for TrackerControl {
@@ -274,13 +332,112 @@ fn compress_to_webp(img: &xcap::image::RgbaImage) -> (Vec<u8>, u32, u32) {
     smallest.expect("at least one encoding attempt")
 }
 
-/// Capture every display, compress to ≤50 KB WebP under `dir`, and record each in
-/// the DB. Returns how many shots were saved. Requires Screen Recording.
-pub fn capture_once(db: &Db, dir: &Path) -> usize {
+/// The active app is on the privacy skip-list. Forgiving match: case-insensitive,
+/// and the entry only has to appear as a whole word in the reported app name —
+/// "Zalo" matches "zalo", "Zalo PC", and "zalo - the best app", while "LINE"
+/// does not match "Outline".
+fn should_skip(app_name: &str, skip_apps: &[String]) -> bool {
+    let name = app_name.to_lowercase();
+    skip_apps.iter().any(|s| {
+        let pat = s.trim().to_lowercase();
+        !pat.is_empty() && contains_word(&name, &pat)
+    })
+}
+
+/// `pat` occurs in `name` bounded by non-alphanumeric characters (or the string
+/// ends), so partial words never match.
+fn contains_word(name: &str, pat: &str) -> bool {
+    let mut from = 0;
+    while let Some(off) = name[from..].find(pat) {
+        let b = from + off;
+        let e = b + pat.len();
+        let before = name[..b].chars().next_back();
+        let after = name[e..].chars().next();
+        if before.is_none_or(|c| !c.is_alphanumeric()) && after.is_none_or(|c| !c.is_alphanumeric()) {
+            return true;
+        }
+        from = b + name[b..].chars().next().map_or(1, |c| c.len_utf8());
+    }
+    false
+}
+
+/// Active-window mode: capture only the frontmost window. Candidates are the
+/// app's (pid-matched) non-minimized windows; among them prefer the one whose
+/// title equals the active window's title, then the topmost by z-order — an app
+/// can have several windows (e.g. two Chrome windows) and size says nothing
+/// about which is in front. Returns `None` on any lookup/capture miss so the
+/// caller falls back to a full-screen shot.
+fn capture_active_window(db: &Db, dir: &Path, active: &ActiveWindowInfo, now: i64) -> Option<usize> {
+    let windows = xcap::Window::all().ok()?;
+    let title = active.title.as_deref().unwrap_or("");
+    let win = windows
+        .into_iter()
+        .filter(|w| {
+            w.pid().map(|p| p as i64 == active.pid).unwrap_or(false)
+                && !w.is_minimized().unwrap_or(true)
+        })
+        .max_by_key(|w| {
+            let title_match = !title.is_empty() && w.title().map(|t| t == title).unwrap_or(false);
+            (title_match, w.z().unwrap_or(i32::MIN))
+        })?;
+    let img = win.capture_image().ok()?;
+    let (bytes, w, h) = compress_to_webp(&img);
+    let path = dir.join(format!("{now}_window.webp"));
+    if let Err(e) = std::fs::write(&path, &bytes) {
+        crate::log_warn!("screenshot", "save failed: {e}");
+        return None;
+    }
+    let shot = Screenshot {
+        ts: now,
+        file_path: path.to_string_lossy().into_owned(),
+        display_id: None,
+        width: Some(w as i64),
+        height: Some(h as i64),
+    };
+    if let Err(e) = db.insert_screenshot(&shot) {
+        crate::log_warn!("screenshot", "db insert failed: {e}");
+        return None;
+    }
+    Some(1)
+}
+
+/// Take one capture tick: skip entirely when the frontmost app is on the
+/// skip-list; otherwise capture per the configured mode (active-window shots
+/// fall back to full screen on a miss), compress to ≤50 KB WebP under `dir`,
+/// and record each shot in the DB. Returns how many shots were saved.
+/// Requires Screen Recording.
+pub fn capture_once(db: &Db, dir: &Path, control: &TrackerControl) -> usize {
     if let Err(e) = std::fs::create_dir_all(dir) {
         crate::log_warn!("screenshot", "create dir failed: {e}");
         return 0;
     }
+
+    let mode = control.screenshot_mode.load(Ordering::Relaxed);
+    let active = crate::platform::active_window();
+    // The skip-list is a privacy-mode feature (normal mode captures everything).
+    if mode == SHOT_MODE_PRIVACY {
+        if let Some(ref win) = active {
+            let skip = control.screenshot_skip_apps.read().unwrap();
+            if should_skip(&win.app_name, &skip) {
+                crate::log_info!("screenshot", "skipped tick: {} is on the skip-list", win.app_name);
+                return 0;
+            }
+        }
+    }
+
+    let now = now_ts();
+    if mode == SHOT_MODE_PRIVACY {
+        if let Some(saved) = active
+            .as_ref()
+            .and_then(|win| capture_active_window(db, dir, win, now))
+        {
+            return saved;
+        }
+        // Frontmost window not capturable (desktop focus, transient surface,
+        // window gone) — never silently drop the tick: full-screen fallback.
+        crate::log_info!("screenshot", "active-window capture missed; falling back to full screen");
+    }
+
     let monitors = match xcap::Monitor::all() {
         Ok(m) => m,
         Err(e) => {
@@ -289,7 +446,6 @@ pub fn capture_once(db: &Db, dir: &Path) -> usize {
         }
     };
 
-    let now = now_ts();
     let mut saved = 0;
     for (i, monitor) in monitors.into_iter().enumerate() {
         let img = match monitor.capture_image() {
@@ -358,7 +514,7 @@ pub fn start_screenshots(db: Arc<Db>, control: Arc<TrackerControl>, dir: std::pa
         if permission_status(Permission::ScreenRecording) != PermissionState::Granted {
             continue;
         }
-        capture_once(&db, &dir);
+        capture_once(&db, &dir, &control);
     });
 }
 
@@ -449,6 +605,52 @@ mod tests {
         let (bytes, w, h) = compress_to_webp(&img);
         assert!(bytes.len() <= SCREENSHOT_MAX_BYTES);
         assert_eq!((w, h), (800, 600));
+    }
+
+    #[test]
+    fn skip_list_matches_whole_words_case_insensitively() {
+        let list = vec!["Zalo".to_string(), "keychain access".to_string(), "LINE".to_string()];
+        assert!(should_skip("Zalo", &list));
+        assert!(should_skip("zalo", &list));
+        assert!(should_skip("ZALO", &list));
+        assert!(should_skip("Zalo PC", &list));
+        assert!(should_skip("zalo - the best app", &list));
+        assert!(should_skip("zalo.exe", &list));
+        assert!(should_skip("Keychain Access", &list));
+        assert!(should_skip("line", &list));
+        // Whole words only — no partial-word matching.
+        assert!(!should_skip("Outline", &list));
+        assert!(!should_skip("Zalos", &list));
+        assert!(!should_skip("Slack", &list));
+        assert!(!should_skip("Anything", &[]));
+        // Blank entries never match everything.
+        assert!(!should_skip("Anything", &["  ".to_string()]));
+    }
+
+    #[test]
+    fn shot_mode_parses_with_safe_fallback() {
+        assert_eq!(shot_mode_from_str("privacy"), SHOT_MODE_PRIVACY);
+        assert_eq!(shot_mode_from_str("normal"), SHOT_MODE_NORMAL);
+        // Pre-rename values from old settings.json / policies.
+        assert_eq!(shot_mode_from_str("full_screen"), SHOT_MODE_NORMAL);
+        assert_eq!(shot_mode_from_str("active_window"), SHOT_MODE_PRIVACY);
+        // Unknown / future values fall back to privacy (captures the least).
+        assert_eq!(shot_mode_from_str(""), SHOT_MODE_PRIVACY);
+        assert_eq!(shot_mode_from_str("blur"), SHOT_MODE_PRIVACY);
+    }
+
+    #[test]
+    fn baked_privacy_apps_cover_known_sensitive_apps() {
+        let apps = default_privacy_apps_flat();
+        assert!(apps.len() > 50);
+        // Spot-check the matcher against reported-name variants.
+        assert!(should_skip("Zalo", &apps));
+        assert!(should_skip("Telegram Desktop", &apps));
+        assert!(should_skip("zoom.us", &apps));
+        assert!(should_skip("Weixin", &apps));
+        assert!(should_skip("Microsoft Outlook", &apps));
+        assert!(!should_skip("Google Chrome", &apps));
+        assert!(!should_skip("Visual Studio Code", &apps));
     }
 
     #[test]

@@ -61,6 +61,9 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	v1.GET("/public/businesses", authH.PublicBusinesses)
 	// Public download totals (aggregate counts only).
 	v1.GET("/public/stats/downloads", downloadsH.Stats)
+	// Curated sensitive-app list for screenshot privacy mode / skip-list
+	// suggestions (public: the desktop needs it in personal mode too).
+	v1.GET("/public/screenshot-privacy-apps", handlers.PrivacyApps)
 
 	// CPU keep-alive (token-gated, NOT rate-limited): keeps the Oracle Always Free
 	// box above the idle-reclamation CPU threshold. Only mounted when a token is set.

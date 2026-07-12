@@ -24,6 +24,36 @@
     "ariaLabel": "Umbral de inactividad",
     "saved": "Umbral de inactividad actualizado."
   },
+  "screenshotMode": {
+    "title": "Modo de captura de pantalla",
+    "desc": "Elige cómo se capturan las pantallas.",
+    "ariaLabel": "Modo de captura de pantalla",
+    "privacy": "Privacidad",
+    "privacyDesc": "Solo se captura la ventana activa — nunca la pantalla completa. No se toman capturas mientras las apps de la lista de exclusión están en primer plano (lista prellenada con apps conocidas de chat, contraseñas y banca).",
+    "normal": "Normal",
+    "normalDesc": "Se capturan todas las pantallas por completo.",
+    "saved": "Modo de captura actualizado."
+  },
+  "skipApps": {
+    "title": "Apps omitidas",
+    "desc": "No se toma ninguna captura mientras alguna de estas apps está en primer plano. La coincidencia es flexible: \"Zalo\" también cubre \"Zalo PC\".",
+    "placeholder": "Nombre de la app, p. ej. Zalo",
+    "add": "Añadir",
+    "remove": "Quitar {{name}}",
+    "saved": "Lista actualizada.",
+    "catChat": "Chat y redes sociales",
+    "catSecurity": "Contraseñas y seguridad",
+    "catWork": "Trabajo y reuniones",
+    "catMail": "Correo",
+    "manage": "Gestionar…",
+    "modalTitle": "Lista de exclusión de capturas",
+    "count_one": "{{count}} app",
+    "count_other": "{{count}} apps",
+    "done": "Listo",
+    "custom": "Personalizadas",
+    "addAll": "Añadir todo",
+    "removeAll": "Quitar todo"
+  },
   "retention": {
     "title": "Retención de capturas de pantalla",
     "desc": "Cuánto tiempo conserva el backend las capturas de pantalla subidas de {{name}}. «Nunca» las conserva indefinidamente.",

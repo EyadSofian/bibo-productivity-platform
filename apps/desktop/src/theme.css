@@ -820,6 +820,12 @@ body {
 .bibo-stat__delta--up {
   color: #10b981;
 }
+.bibo-stat__delta--down {
+  color: #ef4444;
+}
+.bibo-stat__delta--none {
+  color: var(--text-muted);
+}
 .bibo-stat__sub {
   font-size: 12px;
   font-weight: 500;

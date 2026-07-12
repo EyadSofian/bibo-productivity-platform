@@ -24,6 +24,36 @@
     "ariaLabel": "Seuil d'inactivité",
     "saved": "Seuil d'inactivité mis à jour."
   },
+  "screenshotMode": {
+    "title": "Mode de capture d'écran",
+    "desc": "Choisissez comment les écrans sont capturés.",
+    "ariaLabel": "Mode de capture d'écran",
+    "privacy": "Confidentialité",
+    "privacyDesc": "Seule la fenêtre active est capturée — jamais l'écran entier. Aucune capture n'est prise lorsque les applications de la liste d'exclusion sont au premier plan (liste préremplie avec les applications de messagerie, de mots de passe et bancaires connues).",
+    "normal": "Normal",
+    "normalDesc": "Tous les écrans sont capturés en entier.",
+    "saved": "Mode de capture mis à jour."
+  },
+  "skipApps": {
+    "title": "Applications ignorées",
+    "desc": "Aucune capture n'est prise lorsque l'une de ces applications est au premier plan. La correspondance est souple : « Zalo » couvre aussi « Zalo PC ».",
+    "placeholder": "Nom de l'application, p. ex. Zalo",
+    "add": "Ajouter",
+    "remove": "Supprimer {{name}}",
+    "saved": "Liste mise à jour.",
+    "catChat": "Messagerie & réseaux sociaux",
+    "catSecurity": "Mots de passe & sécurité",
+    "catWork": "Travail & réunions",
+    "catMail": "E-mail",
+    "manage": "Gérer…",
+    "modalTitle": "Liste d'exclusion des captures",
+    "count_one": "{{count}} application",
+    "count_other": "{{count}} applications",
+    "done": "Terminé",
+    "custom": "Personnalisées",
+    "addAll": "Tout ajouter",
+    "removeAll": "Tout retirer"
+  },
   "retention": {
     "title": "Conservation des captures d'écran",
     "desc": "Durée pendant laquelle le serveur conserve les captures d'écran téléversées pour {{name}}. « Jamais » les conserve indéfiniment.",

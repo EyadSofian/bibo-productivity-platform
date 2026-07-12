@@ -3,7 +3,6 @@ package store
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -32,28 +31,50 @@ func (s *Store) OwnsEmployee(ctx context.Context, ownerID, employeeID string) (b
 
 // RosterEntry is one employee row with rollups for the dashboard roster.
 type RosterEntry struct {
-	ID           string     `json:"id"`
-	Email        string     `json:"email"`
-	Username     string     `json:"username"`
-	DisplayName  string     `json:"display_name"`
-	Role         string     `json:"role"` // 'owner' (self) | 'employee'
-	LastSeen     *time.Time `json:"last_seen"`
-	ActiveTodayS int64      `json:"active_today_s"`
+	ID               string `json:"id"`
+	Email            string `json:"email"`
+	Username         string `json:"username"`
+	DisplayName      string `json:"display_name"`
+	Role             string `json:"role"` // 'owner' (self) | 'employee'
+	LastSeen         *int64 `json:"last_seen"` // unix seconds (the web UI expects a number)
+	ActiveTodayS     int64  `json:"active_today_s"`
+	ActiveYesterdayS int64  `json:"active_yesterday_s"`
+	ScreenshotsToday int64  `json:"screenshots_today"`
+	ScreenshotsYday  int64  `json:"screenshots_yesterday"`
+	// Share of today's active time with keyboard input (0–100); null when no
+	// activity today. Keystrokes come in 60s buckets, so this is
+	// 60s × buckets-with-input ÷ active seconds, capped at 100.
+	FocusPctToday *int64 `json:"focus_pct_today"`
 }
 
-// Roster returns a business's employees with last-seen and active seconds in the
-// given [dayStart, dayEnd) window.
+// Roster returns a business's employees with last-seen, active seconds and
+// screenshot/keystroke rollups for the [dayStart, dayEnd) window plus the
+// preceding day (for the dashboard's vs-yesterday deltas).
 func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd int64) ([]RosterEntry, error) {
+	ydayStart := dayStart - 86400
 	rows, err := s.pool.Query(ctx, `
 		SELECT u.id, COALESCE(u.email, ''), COALESCE(u.username, ''), u.display_name, m.role,
-		       (SELECT max(last_seen_at) FROM devices d WHERE d.user_id = u.id) AS last_seen,
+		       (SELECT extract(epoch FROM max(last_seen_at))::bigint
+		          FROM devices d WHERE d.user_id = u.id) AS last_seen,
 		       COALESCE((SELECT sum(duration_s) FROM activity_samples a
 		                  WHERE a.user_id = u.id AND a.business_id = $1
-		                    AND a.ts >= $2 AND a.ts < $3), 0) AS active_today
+		                    AND a.ts >= $2 AND a.ts < $3), 0) AS active_today,
+		       COALESCE((SELECT sum(duration_s) FROM activity_samples a
+		                  WHERE a.user_id = u.id AND a.business_id = $1
+		                    AND a.ts >= $4 AND a.ts < $2), 0) AS active_yesterday,
+		       (SELECT count(*) FROM screenshots sc
+		         WHERE sc.user_id = u.id AND sc.business_id = $1
+		           AND sc.ts >= $2 AND sc.ts < $3) AS shots_today,
+		       (SELECT count(*) FROM screenshots sc
+		         WHERE sc.user_id = u.id AND sc.business_id = $1
+		           AND sc.ts >= $4 AND sc.ts < $2) AS shots_yesterday,
+		       (SELECT count(*) FROM keystroke_buckets k
+		         WHERE k.user_id = u.id AND k.business_id = $1
+		           AND k.ts_bucket >= $2 AND k.ts_bucket < $3 AND k.count > 0) AS key_minutes
 		  FROM memberships m
 		  JOIN users u ON u.id = m.user_id
 		 WHERE m.business_id = $1 AND m.role IN ('owner','employee')
-		 ORDER BY (m.role = 'owner') DESC, u.display_name`, businessID, dayStart, dayEnd)
+		 ORDER BY (m.role = 'owner') DESC, u.display_name`, businessID, dayStart, dayEnd, ydayStart)
 	if err != nil {
 		return nil, err
 	}
@@ -62,8 +83,17 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 	out := []RosterEntry{}
 	for rows.Next() {
 		var e RosterEntry
-		if err := rows.Scan(&e.ID, &e.Email, &e.Username, &e.DisplayName, &e.Role, &e.LastSeen, &e.ActiveTodayS); err != nil {
+		var keyMinutes int64
+		if err := rows.Scan(&e.ID, &e.Email, &e.Username, &e.DisplayName, &e.Role, &e.LastSeen,
+			&e.ActiveTodayS, &e.ActiveYesterdayS, &e.ScreenshotsToday, &e.ScreenshotsYday, &keyMinutes); err != nil {
 			return nil, err
+		}
+		if e.ActiveTodayS > 0 {
+			pct := keyMinutes * 60 * 100 / e.ActiveTodayS
+			if pct > 100 {
+				pct = 100
+			}
+			e.FocusPctToday = &pct
 		}
 		out = append(out, e)
 	}

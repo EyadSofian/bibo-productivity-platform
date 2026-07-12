@@ -20,6 +20,7 @@ import type {
   CreateEmployeeResponse,
   Employee,
   KeystrokeBucket,
+  PrivacyAppCategory,
   PublicBusiness,
   ReportEmployee,
   ScreenshotsResponse,
@@ -95,6 +96,10 @@ export function updateBusinessSettings(id: string, patch: BusinessSettingsPatch)
     method: "PATCH",
     body: patch,
   });
+}
+
+export function getPrivacyApps() {
+  return request<{ categories: PrivacyAppCategory[] }>("/v1/public/screenshot-privacy-apps");
 }
 
 export function cleanupScreenshots(id: string, olderThanDays: number) {

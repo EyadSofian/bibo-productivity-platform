@@ -66,6 +66,8 @@ export const demoBusinesses: Business[] = [
     screenshot_interval_s: 300,
     idle_threshold_s: 300,
     allow_employee_override: false,
+    screenshot_mode: "privacy",
+    screenshot_skip_apps: [],
   },
 ];
 
@@ -91,6 +93,10 @@ export function demoRoster(): ReportEmployee[] {
       role: m.role,
       last_seen: nowS() - m.ageMin * 60,
       active_today_s: active,
+      active_yesterday_s: Math.round(active * (0.7 + r() * 0.6)),
+      screenshots_today: 8 + Math.round(r() * 20),
+      screenshots_yesterday: 8 + Math.round(r() * 20),
+      focus_pct_today: 55 + Math.round(r() * 33),
     };
   });
 }
