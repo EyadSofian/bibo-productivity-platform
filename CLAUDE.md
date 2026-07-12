@@ -26,9 +26,9 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
 ## Run locally (scripts/)
 - `scripts/dev-db.sh` — Postgres in Docker (`ctracking-dev-db`, role/db `ctracking`, :5432).
   NOTE: a native Postgres.app can squat :5432 — only one can run at a time.
-- `scripts/dev-backend.sh` — Go backend on **:8080** (auto-runs goose migrations). Needs
+- `scripts/dev-backend.sh` — Go backend on **:8090** (auto-runs goose migrations). Needs
   `apps/backend/.env` (auto-copied from `.env.example`).
-- `scripts/dev-web.sh` — web-admin on `:5174/admin/` (Vite proxies `/v1` → :8080).
+- `scripts/dev-web.sh` — web-admin on `:5174/admin/` (Vite proxies `/v1` → :8090).
 - `scripts/dev-desktop.sh` — `tauri dev`; sets `CTRACKING_BACKEND_URL=http://localhost:5174`.
 
 ## Auth & data model (backend)
@@ -62,7 +62,7 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
 ## Environments (ticket 112) — local / staging / production
 | Env | Backend |
 |---|---|
-| local | `http://localhost:8080` |
+| local | `http://localhost:8090` |
 | staging | `https://staging.example.com` |
 | production | `https://bibotracker.com` (**LIVE** on Ubuntu VPS `root@vinahost` via Cloudflare Tunnel; verified e2e 2026-06-21) |
 - **web-admin:** `VITE_API_BASE` via Vite modes — `npm run dev` (local, proxy), `build:staging`
