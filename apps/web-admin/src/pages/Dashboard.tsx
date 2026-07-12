@@ -45,10 +45,6 @@ function seededSeries(seed: string, n = 8): number[] {
   }
   return out;
 }
-/** PLACEHOLDER focus percentage (55–88) derived deterministically from an id. */
-function placeholderFocus(seed: string): number {
-  return 55 + Math.round(seededSeries(seed, 1)[0] * 33);
-}
 
 const AVATAR_PALETTE = [
   { bg: "var(--info-soft)", fg: "var(--info)" },
@@ -81,6 +77,28 @@ const TrendUp = (
     <path d="M7 17 17 7M9 7h8v8" />
   </svg>
 );
+const TrendDown = (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
+    <path d="M7 7 17 17M17 9v8H9" />
+  </svg>
+);
+
+/** Real vs-yesterday delta, or null to hide the badge (no data to compare). */
+type Delta = { text: string; up: boolean } | null;
+
+/** Percent change today vs yesterday; hidden when there was nothing yesterday. */
+function pctDelta(today: number, yesterday: number): Delta {
+  if (yesterday <= 0) return null;
+  const pct = Math.round(((today - yesterday) / yesterday) * 100);
+  return { text: `${Math.abs(pct)}%`, up: pct >= 0 };
+}
+
+/** Absolute-count change today vs yesterday; hidden when unchanged. */
+function countDelta(today: number, yesterday: number): Delta {
+  const diff = today - yesterday;
+  if (diff === 0) return null;
+  return { text: `${diff > 0 ? "+" : "−"}${Math.abs(diff)}`, up: diff > 0 };
+}
 
 // ── stat card ────────────────────────────────────────────────────────
 function StatCard(props: {
@@ -88,7 +106,7 @@ function StatCard(props: {
   label: string;
   value: ReactNode;
   focal?: boolean;
-  delta?: string;
+  delta?: Delta;
   sub?: string;
   spark: { data: number[]; color: string };
 }) {
@@ -103,9 +121,9 @@ function StatCard(props: {
         <div className="bibo-stat__value">{value}</div>
         <div className="bibo-stat__foot">
           {delta && (
-            <span className="bibo-stat__delta bibo-stat__delta--up">
-              {TrendUp}
-              {delta}
+            <span className={`bibo-stat__delta bibo-stat__delta--${delta.up ? "up" : "down"}`}>
+              {delta.up ? TrendUp : TrendDown}
+              {delta.text}
             </span>
           )}
           {sub && <span className="bibo-stat__sub">{sub}</span>}
@@ -145,12 +163,16 @@ export function Dashboard() {
     };
   }, [selectedId]);
 
-  // ── derived / placeholder metrics for the stat cards ──
+  // ── derived metrics for the stat cards ──
   const totalRecordedS = rows.reduce((s, e) => s + (e.active_today_s || 0), 0);
+  const totalYesterdayS = rows.reduce((s, e) => s + (e.active_yesterday_s || 0), 0);
   const activeCount = rows.filter((e) => memberStatus(e.last_seen) !== "offline").length;
-  const focusVals = rows.map((e) => placeholderFocus(e.id)); // PLACEHOLDER pending backend
-  const avgFocus = focusVals.length ? Math.round(focusVals.reduce((a, b) => a + b, 0) / focusVals.length) : 0;
-  const screenshotCount = rows.length * 14 + 1; // PLACEHOLDER pending backend
+  const focusVals = rows.map((e) => e.focus_pct_today).filter((v): v is number => v != null);
+  const avgFocus = focusVals.length
+    ? Math.round(focusVals.reduce((a, b) => a + b, 0) / focusVals.length)
+    : null;
+  const screenshotCount = rows.reduce((s, e) => s + (e.screenshots_today || 0), 0);
+  const screenshotsYday = rows.reduce((s, e) => s + (e.screenshots_yesterday || 0), 0);
 
   return (
     <div className="ad-wrap" style={{ paddingBottom: 32 }}>
@@ -193,8 +215,8 @@ export function Dashboard() {
               icon={IconClock}
               label={t("dashboard.statRecorded")}
               value={fmtClock(totalRecordedS)}
-              delta="9%"
-              sub={t("dashboard.vsYesterday")}
+              delta={pctDelta(totalRecordedS, totalYesterdayS)}
+              sub={totalYesterdayS > 0 ? t("dashboard.vsYesterday") : t("dashboard.todayLabel")}
               spark={{ data: seededSeries("recorded"), color: "var(--violet)" }}
             />
             <StatCard
@@ -207,16 +229,15 @@ export function Dashboard() {
             <StatCard
               icon={IconTarget}
               label={t("dashboard.statFocus")}
-              value={<>{avgFocus}<span className="bibo-stat__unit">%</span></>}
-              delta="4%"
-              sub={t("dashboard.vsYesterday")}
+              value={avgFocus == null ? "—" : <>{avgFocus}<span className="bibo-stat__unit">%</span></>}
+              sub={t("dashboard.todayLabel")}
               spark={{ data: seededSeries("focus"), color: "var(--positive)" }}
             />
             <StatCard
               icon={IconCamera}
               label={t("dashboard.statScreenshots")}
               value={screenshotCount}
-              delta="+12"
+              delta={countDelta(screenshotCount, screenshotsYday)}
               sub={t("dashboard.todayLabel")}
               spark={{ data: seededSeries("shots"), color: "var(--data-mint)" }}
             />
@@ -239,8 +260,8 @@ export function Dashboard() {
                   const isSelf = e.role === "owner" || e.id === user?.id;
                   const status = memberStatus(e.last_seen);
                   const pal = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
-                  const focus = focusVals[i]; // PLACEHOLDER
-                  const col = focusColor(focus);
+                  const focus = e.focus_pct_today;
+                  const col = focus == null ? "var(--text-muted)" : focusColor(focus);
                   return (
                     <tr key={e.id}>
                       <td>
@@ -263,7 +284,7 @@ export function Dashboard() {
                       <td className="r">
                         <span className="ad-rowprod">
                           <Sparkline data={seededSeries(e.id)} color={col} width={56} height={20} />
-                          <span className="ad-rowprod__pct">{focus}%</span>
+                          <span className="ad-rowprod__pct">{focus == null ? "—" : `${focus}%`}</span>
                         </span>
                       </td>
                       <td className="r">

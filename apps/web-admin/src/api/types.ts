@@ -87,6 +87,11 @@ export interface ReportEmployee {
   role?: "owner" | "employee";
   last_seen: number | null;
   active_today_s: number;
+  active_yesterday_s: number;
+  screenshots_today: number;
+  screenshots_yesterday: number;
+  /** 0–100 share of active time with keyboard input; null when no activity today. */
+  focus_pct_today: number | null;
 }
 
 export interface ActivitySample {
