@@ -13,12 +13,15 @@ export function AuthLayout({
   children,
   wide,
   bare,
+  hideLockup,
   footer,
 }: {
   children: ReactNode;
   wide?: boolean;
   /** Skip the centered card wrapper — used by the two-column rail layout. */
   bare?: boolean;
+  /** Hide the brand lockup above the card (sign-in supplies its own inline mark). */
+  hideLockup?: boolean;
   footer?: ReactNode;
 }) {
   return (
@@ -26,8 +29,12 @@ export function AuthLayout({
       <div className="auth-lang">
         <LanguageSwitcher />
       </div>
-      <img className="auth-logo logo-light" src={lockupLight} alt="BiBoTracking" />
-      <img className="auth-logo logo-dark" src={lockupDark} alt="BiBoTracking" />
+      {!hideLockup && (
+        <>
+          <img className="auth-logo logo-light" src={lockupLight} alt="BiBoTracking" />
+          <img className="auth-logo logo-dark" src={lockupDark} alt="BiBoTracking" />
+        </>
+      )}
       {bare ? children : <div className={wide ? "auth-card wide" : "auth-card"}>{children}</div>}
       {footer && <div className="auth-foot">{footer}</div>}
     </div>

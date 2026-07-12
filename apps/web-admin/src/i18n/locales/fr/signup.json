@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "Comment allez-vous utiliser BiBoTracking ?",
+    "sub": "Vous pourrez changer cela plus tard.",
+    "back": "Retour",
     "justMeTitle": "Juste moi",
     "justMeDesc": "Suivre ma propre activité et mes performances. Tout reste à 100 % sur mon ordinateur.",
     "justMeTag": "Aucun compte requis",
@@ -33,7 +35,7 @@
     "familyTitle": "Ma famille",
     "familyDesc": "Gardez un œil sur le temps d'écran et l'activité de vos enfants.",
     "familyTag": "Compte gratuit",
-    "caption": "ⓘ « Juste moi » télécharge l'application et fonctionne hors ligne — rien n'est envoyé."
+    "caption": "Le suivi personnel se fait dans l'application de bureau — aucun compte administrateur requis."
   },
   "personal": {
     "back": "← Retour",
@@ -52,8 +54,10 @@
     "identifierPlaceholder": "vous@exemple.com ou un nom d'utilisateur",
     "password": "Mot de passe",
     "passwordPlaceholder": "8 caractères minimum",
+    "strength": { "weak": "Faible", "medium": "Moyen", "strong": "Fort" },
     "creating": "Création…",
-    "continue": "Continuer →"
+    "continue": "Continuer",
+    "available": "Disponible"
   },
   "setup": {
     "title": "Nommez votre {{noun}}",
@@ -62,7 +66,7 @@
     "placeholderFamily": "Famille Cooper",
     "placeholderTeam": "Cooper Co.",
     "saving": "Enregistrement…",
-    "continue": "Continuer →"
+    "continue": "Continuer"
   },
   "done": {
     "title": "Tout est prêt !",
@@ -70,27 +74,28 @@
     "orgReady": "{{noun}} prêt",
     "membersAdded": "{{count}} {{members}} ajoutés",
     "membersLater": "Ajouter {{members}} plus tard",
-    "goToDashboard": "Aller au tableau de bord →"
+    "goToDashboard": "Aller au tableau de bord"
   },
   "clipboard": {
     "text": "Identifiants BiBoTracking\nNom d'utilisateur ou e-mail : {{login}}\nMot de passe : {{password}}"
   },
   "members": {
     "title": "Ajoutez vos {{members}}",
-    "sub": "Chaque {{member}} reçoit un identifiant — un nom d'utilisateur (sans e-mail requis) ou son e-mail. Nous pré-remplissons un nom d'utilisateur et un mot de passe temporaire ; partagez-les, et le {{member}} pourra modifier son mot de passe après s'être connecté. Vous pouvez aussi le faire plus tard depuis le tableau de bord.",
+    "sub": "Ajoutez-les maintenant ou passez — vous pourrez inviter plus tard.",
     "name": "Nom",
     "namePlaceholder": "Jordan Lee",
     "loginLabel": "Nom d'utilisateur ou e-mail (son identifiant)",
     "tempPassword": "Mot de passe temporaire",
     "generateTitle": "Générer un nouveau mot de passe",
-    "newPassword": "↻ Nouveau",
+    "newPassword": "Nouveau",
+    "suggestion": "Suggestion",
     "adding": "Ajout…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "{{count}} {{members}} ajoutés — copiez chaque identifiant et partagez-le.",
     "copied": "Copié ✓",
     "copyLogin": "Copier l'identifiant",
     "remove": "supprimer",
-    "finish": "Terminer →",
+    "finish": "Terminer",
     "doneAdding": "Ajout terminé",
     "skip": "Ignorer pour l'instant"
   }

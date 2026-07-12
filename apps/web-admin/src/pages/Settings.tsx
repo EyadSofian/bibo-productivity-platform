@@ -1,12 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { cleanupScreenshots, getPrivacyApps, updateBusinessSettings } from "../api/endpoints";
 import { ApiError, type BusinessSettingsPatch, type PrivacyAppCategory, type ScreenshotMode } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
-import { BusinessPicker } from "../components/BusinessPicker";
 import { Empty, Modal, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
+
+// display-only icon (lucide trash-2), same svg pattern as other pages
+const svg = (children: ReactNode) => (
+  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+    {children}
+  </svg>
+);
+const IconTrash = svg(<><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>);
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -15,18 +22,6 @@ function formatBytes(n: number): string {
 }
 
 const CLEANUP_PRESETS = [7, 14, 30, 90];
-
-/** Small uppercase heading above a settings group. */
-function GroupTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      className="muted"
-      style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.6, margin: "0 0 8px 2px" }}
-    >
-      {children}
-    </div>
-  );
-}
 
 /** Normalize a stored mode (incl. pre-rename values) to the two current modes. */
 function normalizeMode(m: string | undefined): ScreenshotMode {
@@ -113,7 +108,7 @@ const PRESETS: { days: number | null; value: number | null }[] = [
 export function Settings() {
   const { t } = useTranslation("settings");
   const { user } = useAuth();
-  const { businesses, selected, selectedId, setSelectedId, loading, reload } = useBusinesses();
+  const { businesses, selected, selectedId, loading, reload } = useBusinesses();
   const terms = memberTerms(selected?.kind);
 
   const [retention, setRetention] = useState<number | null>(null);
@@ -225,22 +220,22 @@ export function Settings() {
   }
 
   return (
-    <div>
-      <div className="toolbar spread" style={{ justifyContent: "space-between" }}>
-        <h1 style={{ fontSize: "var(--fz-lg)", margin: 0 }}>{t("title")}</h1>
-        <BusinessPicker businesses={businesses} selectedId={selectedId} onChange={setSelectedId} />
+    <div className="ad-wrap" style={{ paddingBottom: 32 }}>
+      <div className="ad-pagehead">
+        <div className="ad-pagehead__main">
+          <h1 className="ad-h1">{t("title")}</h1>
+          {selected && (
+            <p className="ad-sub">
+              <Trans
+                t={t}
+                i18nKey="scope"
+                values={{ name: selected.name, members: terms.many }}
+                components={[<strong />]}
+              />
+            </p>
+          )}
+        </div>
       </div>
-
-      {selected && (
-        <p className="muted" style={{ marginTop: 0, marginBottom: 16 }}>
-          <Trans
-            t={t}
-            i18nKey="scope"
-            values={{ name: selected.name, members: terms.lowerMany }}
-            components={[<strong />]}
-          />
-        </p>
-      )}
 
       {loading && <Spinner label={t("loading")} />}
 
@@ -248,18 +243,12 @@ export function Settings() {
 
       {selected && (
         <>
-          <GroupTitle>{t("groupPolicy")}</GroupTitle>
-          <div className="set-group" style={{ marginBottom: 24 }}>
+          <div className="ad-set-sec">{t("sections.capture")}</div>
+          <div className="set-group">
             <div className="set-row">
               <div>
                 <div className="set-title">{t("capturePolicy.title")}</div>
-                <div className="set-desc">
-                  {t("capturePolicy.desc", {
-                    member: terms.lowerOne,
-                    members: terms.lowerMany,
-                    name: selected.name,
-                  })}
-                </div>
+                <div className="set-desc">{t("capturePolicy.desc", { members: terms.many })}</div>
               </div>
               <div
                 className="segmented"
@@ -283,28 +272,6 @@ export function Settings() {
               </div>
             </div>
 
-            <div className="set-row">
-              <div>
-                <div className="set-title">{t("idleThreshold.title")}</div>
-                <div className="set-desc">{t("idleThreshold.desc")}</div>
-              </div>
-              <div className="segmented" role="group" aria-label={t("idleThreshold.ariaLabel")}>
-                {IDLE_PRESETS.map((p) => (
-                  <button
-                    key={p.value}
-                    className={selected.idle_threshold_s === p.value ? "active" : ""}
-                    disabled={saving}
-                    onClick={() => savePatch({ idle_threshold_s: p.value }, t("idleThreshold.saved"))}
-                  >
-                    {t("presets.min", { count: p.minutes })}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <GroupTitle>{t("groupScreenshots")}</GroupTitle>
-          <div className="set-group" style={{ marginBottom: 24 }}>
             <div className="set-row">
               <div>
                 <div className="set-title">{t("screenshotMode.title")}</div>
@@ -336,7 +303,7 @@ export function Settings() {
                 </div>
                 <div className="toolbar" style={{ gap: 10 }}>
                   <span className="muted">{t("skipApps.count", { count: skipApps.length })}</span>
-                  <button className="btn" disabled={saving} onClick={() => setSkipOpen(true)}>
+                  <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" disabled={saving} onClick={() => setSkipOpen(true)}>
                     {t("skipApps.manage")}
                   </button>
                 </div>
@@ -346,7 +313,6 @@ export function Settings() {
             <div className="set-row">
               <div>
                 <div className="set-title">{t("screenshotInterval.title")}</div>
-                <div className="set-desc">{t("screenshotInterval.desc", { member: terms.lowerOne })}</div>
               </div>
               <div className="segmented" role="group" aria-label={t("screenshotInterval.ariaLabel")}>
                 {INTERVAL_PRESETS.map((p) => (
@@ -364,8 +330,24 @@ export function Settings() {
 
             <div className="set-row">
               <div>
+                <div className="set-title">{t("idleThreshold.title")}</div>
+              </div>
+              <div className="segmented" role="group" aria-label={t("idleThreshold.ariaLabel")}>
+                {IDLE_PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    className={selected.idle_threshold_s === p.value ? "active" : ""}
+                    disabled={saving}
+                    onClick={() => savePatch({ idle_threshold_s: p.value }, t("idleThreshold.saved"))}
+                  >
+                    {t("presets.min", { count: p.minutes })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="set-row">
+              <div>
                 <div className="set-title">{t("retention.title")}</div>
-                <div className="set-desc">{t("retention.desc", { name: selected.name })}</div>
               </div>
               <div className="segmented" role="group" aria-label={t("retention.ariaLabel")}>
                 {PRESETS.map((p) => (
@@ -380,14 +362,18 @@ export function Settings() {
                 ))}
               </div>
             </div>
+          </div>
 
+          <div className="ad-set-sec">{t("sections.storage")}</div>
+          <div className="set-group">
             <div className="set-row">
               <div>
                 <div className="set-title">{t("cleanup.title")}</div>
                 <div className="set-desc">{t("cleanup.desc", { name: selected.name })}</div>
               </div>
-              <button className="btn" disabled={cleaning} onClick={() => setConfirmOpen(true)}>
-                {t("cleanup.button")}
+              <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" disabled={cleaning} onClick={() => setConfirmOpen(true)}>
+                <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconTrash}</span>
+                <span>{t("cleanup.button")}</span>
               </button>
             </div>
           </div>
@@ -415,7 +401,7 @@ export function Settings() {
                 }
               }}
             />
-            <button className="btn" disabled={saving || !skipAppInput.trim()} onClick={() => addSkipApp()}>
+            <button className="bibo-btn bibo-btn--secondary bibo-btn--sm" disabled={saving || !skipAppInput.trim()} onClick={() => addSkipApp()}>
               {t("skipApps.add")}
             </button>
           </div>
@@ -461,7 +447,7 @@ export function Settings() {
                     </span>
                     {added.length < cat.apps.length && (
                       <button
-                        className="btn btn-ghost"
+                        className="bibo-btn bibo-btn--ghost"
                         style={{ padding: "1px 8px", fontSize: 11 }}
                         disabled={saving}
                         onClick={() => addSkipApps(cat.apps)}
@@ -471,7 +457,7 @@ export function Settings() {
                     )}
                     {added.length > 0 && (
                       <button
-                        className="btn btn-ghost"
+                        className="bibo-btn bibo-btn--ghost"
                         style={{ padding: "1px 8px", fontSize: 11 }}
                         disabled={saving}
                         onClick={() => removeSkipApps(cat.apps)}
@@ -514,7 +500,7 @@ export function Settings() {
           </div>
 
           <div className="toolbar" style={{ justifyContent: "flex-end", marginTop: 12 }}>
-            <button className="btn btn-primary" onClick={() => setSkipOpen(false)}>
+            <button className="bibo-btn bibo-btn--primary" onClick={() => setSkipOpen(false)}>
               {t("skipApps.done")}
             </button>
           </div>
@@ -544,23 +530,25 @@ export function Settings() {
           </div>
           <p className="muted">{t("cleanup.warning", { days: cleanupDays })}</p>
           <div className="toolbar" style={{ justifyContent: "flex-end", gap: 8 }}>
-            <button className="btn btn-ghost" disabled={cleaning} onClick={() => setConfirmOpen(false)}>
+            <button className="bibo-btn bibo-btn--secondary" disabled={cleaning} onClick={() => setConfirmOpen(false)}>
               {t("cleanup.cancel")}
             </button>
-            <button className="btn btn-primary" disabled={cleaning} onClick={runCleanup}>
+            <button className="bibo-btn bibo-btn--primary" disabled={cleaning} onClick={runCleanup}>
               {cleaning ? t("cleanup.deleting") : t("cleanup.delete", { days: cleanupDays })}
             </button>
           </div>
         </Modal>
       )}
 
-      <div className="set-group" style={{ marginTop: 24 }}>
+      <div className="ad-set-sec">{t("sections.account")}</div>
+      <div className="set-group">
         <div className="set-row">
-          <div>
-            <div className="set-title">{t("account.title")}</div>
-            <div className="set-desc">{user?.email || user?.username}</div>
-          </div>
-          <span className="muted">{user?.display_name}</span>
+          <div className="set-title">{t("account.email")}</div>
+          <div className="ad-readonly">{user?.email || user?.username}</div>
+        </div>
+        <div className="set-row">
+          <div className="set-title">{t("account.displayName")}</div>
+          <div className="ad-readonly">{user?.display_name || user?.username}</div>
         </div>
       </div>
     </div>

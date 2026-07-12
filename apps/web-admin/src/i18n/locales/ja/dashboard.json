@@ -11,11 +11,22 @@
     "table": {
       "login": "ログイン",
       "lastSeen": "最終アクティブ",
-      "activeToday": "本日のアクティブ時間"
-    }
+      "activeToday": "本日のアクティブ時間",
+      "focus": "集中度",
+      "name": "名前"
+    },
+    "statRecorded": "本日の記録",
+    "statActive": "本日のアクティブ",
+    "statFocus": "平均集中度",
+    "statScreenshots": "スクリーンショット",
+    "vsYesterday": "前日比",
+    "ofMembers": "{{count}} 名の{{members}}中",
+    "todayLabel": "本日",
+    "newTeam": "新しいチーム"
   },
   "employees": {
     "newBusiness": "新規ビジネス",
+    "newOrg": "新規{{org}}",
     "loading": "読み込んでいます…",
     "loadingMembers": "{{members}}を読み込んでいます…",
     "errorLoadMembers": "{{members}}を読み込めませんでした。",
@@ -32,6 +43,9 @@
   "newBusinessModal": {
     "title": "新規ビジネス",
     "nameLabel": "ビジネス名",
+    "orgNameLabel": "{{org}}名",
+    "namePlaceholder": "例：Acme Studio",
+    "namePlaceholderFamily": "例：田中家",
     "cancel": "キャンセル",
     "create": "作成",
     "creating": "作成しています…",
@@ -45,6 +59,7 @@
     "shareCredentials": "これらの認証情報を{{member}}に共有してください。デスクトップアプリのログインピッカーからサインインします。",
     "cancel": "キャンセル",
     "adding": "追加しています…",
+    "generate": "生成",
     "errorTaken": "そのメールまたはユーザー名はすでに使用されています。",
     "errorCreate": "{{member}}を作成できませんでした。"
   },
@@ -71,6 +86,8 @@
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット"
-    }
+    },
+    "singleDay": "単日",
+    "dateRange": "期間"
   }
 }

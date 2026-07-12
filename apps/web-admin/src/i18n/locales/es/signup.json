@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "¿Cómo usará BiBoTracking?",
+    "sub": "Puedes cambiar esto más tarde.",
+    "back": "Atrás",
     "justMeTitle": "Solo yo",
     "justMeDesc": "Registrar mi propia actividad y rendimiento. Permanece al 100 % en mi ordenador.",
     "justMeTag": "No se necesita cuenta",
@@ -33,7 +35,7 @@
     "familyTitle": "Mi familia",
     "familyDesc": "Vigila el tiempo de pantalla y la actividad de tus hijos.",
     "familyTag": "Cuenta gratuita",
-    "caption": "ⓘ «Solo yo» descarga la aplicación y funciona sin conexión: no se sube nada."
+    "caption": "El seguimiento personal se realiza en la app de escritorio: sin cuenta de administrador."
   },
   "personal": {
     "back": "← Atrás",
@@ -52,8 +54,10 @@
     "identifierPlaceholder": "usted@ejemplo.com o un nombre de usuario",
     "password": "Contraseña",
     "passwordPlaceholder": "mínimo 8 caracteres",
+    "strength": { "weak": "Débil", "medium": "Media", "strong": "Fuerte" },
     "creating": "Creando…",
-    "continue": "Continuar →"
+    "continue": "Continuar",
+    "available": "Disponible"
   },
   "setup": {
     "title": "Ponle nombre a tu {{noun}}",
@@ -62,7 +66,7 @@
     "placeholderFamily": "Familia Cooper",
     "placeholderTeam": "Cooper Co.",
     "saving": "Guardando…",
-    "continue": "Continuar →"
+    "continue": "Continuar"
   },
   "done": {
     "title": "¡Todo listo!",
@@ -70,27 +74,28 @@
     "orgReady": "{{noun}} lista",
     "membersAdded": "{{count}} {{members}} añadidos",
     "membersLater": "Añadir {{members}} más tarde",
-    "goToDashboard": "Ir al panel →"
+    "goToDashboard": "Ir al panel"
   },
   "clipboard": {
     "text": "Datos de acceso de BiBoTracking\nNombre de usuario o correo: {{login}}\nContraseña: {{password}}"
   },
   "members": {
     "title": "Añade a tus {{members}}",
-    "sub": "Cada {{member}} obtiene un acceso: un nombre de usuario (sin correo) o su correo electrónico. Rellenamos previamente un nombre de usuario y una contraseña temporal; compártelos, y el {{member}} podrá cambiar la contraseña tras iniciar sesión. También puedes hacerlo más tarde desde el panel.",
+    "sub": "Agrégalos ahora u omite — puedes invitar más tarde.",
     "name": "Nombre",
     "namePlaceholder": "Jordan Lee",
     "loginLabel": "Nombre de usuario o correo (su acceso)",
     "tempPassword": "Contraseña temporal",
     "generateTitle": "Generar una contraseña nueva",
-    "newPassword": "↻ Nueva",
+    "newPassword": "Nueva",
+    "suggestion": "Sugerencia",
     "adding": "Añadiendo…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "{{count}} {{members}} añadidos: copia cada acceso y compártelo.",
     "copied": "Copiado ✓",
     "copyLogin": "Copiar acceso",
     "remove": "eliminar",
-    "finish": "Finalizar →",
+    "finish": "Finalizar",
     "doneAdding": "Listo",
     "skip": "Omitir por ahora"
   }

@@ -11,11 +11,22 @@
     "table": {
       "login": "Identifiant",
       "lastSeen": "Vu pour la dernière fois",
-      "activeToday": "Actif aujourd'hui"
-    }
+      "activeToday": "Actif aujourd'hui",
+      "focus": "Concentration",
+      "name": "Nom"
+    },
+    "statRecorded": "Enregistré aujourd'hui",
+    "statActive": "Actifs aujourd'hui",
+    "statFocus": "Concentration moy.",
+    "statScreenshots": "Captures d'écran",
+    "vsYesterday": "vs hier",
+    "ofMembers": "sur {{count}} {{members}}",
+    "todayLabel": "aujourd'hui",
+    "newTeam": "Nouvelle équipe"
   },
   "employees": {
     "newBusiness": "Nouvelle entreprise",
+    "newOrg": "Nouvelle {{org}}",
     "loading": "Chargement…",
     "loadingMembers": "Chargement de {{members}}…",
     "errorLoadMembers": "Impossible de charger {{members}}.",
@@ -32,6 +43,9 @@
   "newBusinessModal": {
     "title": "Nouvelle entreprise",
     "nameLabel": "Nom de l'entreprise",
+    "orgNameLabel": "Nom de {{org}}",
+    "namePlaceholder": "ex. Acme Studio",
+    "namePlaceholderFamily": "ex. Famille Tran",
     "cancel": "Annuler",
     "create": "Créer",
     "creating": "Création…",
@@ -45,6 +59,7 @@
     "shareCredentials": "Partagez ces identifiants avec le {{member}} ; il se connecte depuis le sélecteur de connexion de l'application de bureau.",
     "cancel": "Annuler",
     "adding": "Ajout…",
+    "generate": "Générer",
     "errorTaken": "Cet e-mail ou ce nom d'utilisateur est déjà utilisé.",
     "errorCreate": "Impossible de créer le {{member}}."
   },
@@ -71,6 +86,8 @@
       "keystrokes": "Frappes",
       "browser": "Navigateur",
       "screenshots": "Captures d'écran"
-    }
+    },
+    "singleDay": "Journée",
+    "dateRange": "Période"
   }
 }

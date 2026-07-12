@@ -83,7 +83,5 @@
   },
   "account": {
     "title": "Cuenta"
-  },
-  "groupPolicy": "Política de seguimiento",
-  "groupScreenshots": "Capturas de pantalla"
+  }
 }

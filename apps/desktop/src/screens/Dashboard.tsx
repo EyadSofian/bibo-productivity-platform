@@ -400,8 +400,8 @@ export function Dashboard() {
             </div>
           ) : (
             <div className="bb-byapp">
-              {/* show at most the 10 most-used apps (list is sorted by usage) */}
-              {data.by_app.slice(0, 10).map((a) => (
+              {/* show every app (sorted by usage); the panel scrolls internally */}
+              {data.by_app.map((a) => (
                 <div className="bb-byapp__row" key={a.app_name}>
                   <span className="bb-byapp__name" title={a.app_name}>
                     <span

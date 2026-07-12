@@ -11,11 +11,22 @@
     "table": {
       "login": "Acceso",
       "lastSeen": "Última vez",
-      "activeToday": "Activo hoy"
-    }
+      "activeToday": "Activo hoy",
+      "focus": "Enfoque",
+      "name": "Nombre"
+    },
+    "statRecorded": "Registrado hoy",
+    "statActive": "Activos hoy",
+    "statFocus": "Enfoque medio",
+    "statScreenshots": "Capturas",
+    "vsYesterday": "vs ayer",
+    "ofMembers": "de {{count}} {{members}}",
+    "todayLabel": "hoy",
+    "newTeam": "Nuevo equipo"
   },
   "employees": {
     "newBusiness": "Nueva empresa",
+    "newOrg": "Crear {{org}}",
     "loading": "Cargando…",
     "loadingMembers": "Cargando {{members}}…",
     "errorLoadMembers": "No se pudo cargar {{members}}.",
@@ -32,6 +43,9 @@
   "newBusinessModal": {
     "title": "Nueva empresa",
     "nameLabel": "Nombre de la empresa",
+    "orgNameLabel": "Nombre de {{org}}",
+    "namePlaceholder": "p. ej. Acme Studio",
+    "namePlaceholderFamily": "p. ej. Familia Tran",
     "cancel": "Cancelar",
     "create": "Crear",
     "creating": "Creando…",
@@ -45,6 +59,7 @@
     "shareCredentials": "Comparta estas credenciales con el {{member}}; inicia sesión desde el selector de acceso de la aplicación de escritorio.",
     "cancel": "Cancelar",
     "adding": "Añadiendo…",
+    "generate": "Generar",
     "errorTaken": "Ese correo o nombre de usuario ya está en uso.",
     "errorCreate": "No se pudo crear el {{member}}."
   },
@@ -71,6 +86,8 @@
       "keystrokes": "Pulsaciones",
       "browser": "Navegador",
       "screenshots": "Capturas de pantalla"
-    }
+    },
+    "singleDay": "Un día",
+    "dateRange": "Rango de fechas"
   }
 }

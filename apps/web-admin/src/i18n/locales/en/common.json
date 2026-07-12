@@ -20,7 +20,7 @@
   "theme": {
     "light": "Light",
     "dark": "Dark",
-    "auto": "Auto"
+    "auto": "System"
   },
   "time": {
     "never": "Never",
@@ -30,7 +30,7 @@
     "daysAgo": "{{count}}d ago"
   },
   "terms": {
-    "team": { "one": "Employee", "many": "Employees", "lowerOne": "employee", "lowerMany": "employees", "addCta": "Add employee" },
-    "family": { "one": "Kid", "many": "Kids", "lowerOne": "kid", "lowerMany": "kids", "addCta": "Add kid" }
+    "team": { "one": "Employee", "many": "Employees", "lowerOne": "employee", "lowerMany": "employees", "addCta": "Add employee", "org": "team" },
+    "family": { "one": "Kid", "many": "Kids", "lowerOne": "kid", "lowerMany": "kids", "addCta": "Add kid", "org": "family" }
   }
 }

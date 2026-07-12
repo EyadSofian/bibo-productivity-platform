@@ -1162,6 +1162,38 @@ td {
 }
 
 /* ---------- Time by app (per-app bars, hue matches the timeline) ---------- */
+/* the "Time by app" card is the 2nd (last) panel in bb-row2. Make it a flex
+   column so its list can scroll internally instead of stretching the grid row
+   (which would drag "Today's timeline" taller). */
+.bb-row2 > .card:last-child {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* the bar list scrolls within a bounded height so every app is reachable while
+   the panel — and the timeline beside it — keep their height. overscroll-behavior
+   keeps the wheel from bubbling to the page once the last app is reached. */
+.bb-byapp {
+  flex: 1 1 auto;
+  min-height: 0;
+  /* ~10 rows tall — same footprint the 10-app cap used to occupy, so the grid
+     row (and the timeline beside it) keep the height they had before */
+  max-height: 208px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* room for the thin scrollbar so bars aren't hidden under it */
+  padding-right: 6px;
+}
+.bb-byapp::-webkit-scrollbar {
+  width: 6px;
+}
+.bb-byapp::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+.bb-byapp::-webkit-scrollbar-track {
+  background: transparent;
+}
 .bb-byapp__row {
   display: flex;
   align-items: center;

@@ -8,9 +8,14 @@
   --border: #e3e3e3;
   --text: #1a1a1a;
   --text-muted: #6b6b6b;
+  /* aliases used by components ported from the offline design */
+  --text-primary: var(--text);
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
+    sans-serif;
   --accent: #2d6cdf;
   --accent-weak: #eaf1fe;
   --danger: #c0392b;
+  --negative: #dc2626;
   --success: #2e7d55;
   --warn: #b8860b;
 
@@ -43,6 +48,36 @@
   /* translucent "glass" surfaces over the gradient */
   --surface: color-mix(in srgb, var(--bg) 68%, transparent);
   --surface-strong: color-mix(in srgb, var(--bg) 85%, transparent);
+  --surface-glass-2: rgba(255, 255, 255, 0.07);
+  /* semantic + data-viz palette (dashboard cards, sparklines, status) */
+  --positive: #16a34a;
+  --positive-soft: #dcfce7;
+  --negative: #dc2626;
+  --negative-soft: #fee2e2;
+  --info: #3b82f6;
+  --info-soft: #deeafe;
+  --data-sky: #38bdf8;
+  --data-mint: #10b981;
+  --data-amber: #f59e0b;
+  --data-rose: #f43f5e;
+  --data-lavender: #8b7df6;
+  --data-teal: #14b8a6;
+  /* sunken track/inset surfaces (timeline, app bars, donut ring) */
+  --surface-sunken: #edeff5;
+  --control-track: rgba(20, 22, 27, 0.1);
+  /* brand (lavender-indigo) + focal stat card, per offline design */
+  --brand-tint: #f4f2fe;
+  --brand-400: #8b7df6;
+  --brand-500: #6c5ce7;
+  --brand-600: #5b4bd6;
+  --ring-focus: 0 0 0 3px rgba(108, 92, 231, 0.45);
+  --surface-hover: #f1f3f8;
+  --border-strong: #cbd2e0;
+  --border-subtle: rgba(20, 22, 27, 0.08);
+  --ink: #1b1f2b;
+  --focal-grad: linear-gradient(155deg, #20242e, #111319);
+  --focal-border: rgba(255, 255, 255, 0.08);
+  --focal-muted: rgba(255, 255, 255, 0.58);
 }
 
 :root[data-theme="dark"] {
@@ -55,9 +90,36 @@
   --accent: #5b8def;
   --accent-weak: #1e2a40;
   --danger: #e06a5c;
+  --negative: #f87171;
   --success: #5fb58a;
   --warn: #d6a93b;
-  --app-base: #141420;
+  /* dark background per offline design: near-black navy base + lavender/teal mesh */
+  --app-base: #0c0f16;
+  --app-gradient: radial-gradient(1200px 800px at 12% -8%, #1b1640, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #122033, transparent 50%),
+    linear-gradient(160deg, #11151e, #0b0e15);
+  --positive: #4ade80;
+  --positive-soft: color-mix(in srgb, #4ade80 16%, transparent);
+  --negative-soft: color-mix(in srgb, #f87171 16%, transparent);
+  --info: #93b4ff;
+  --info-soft: color-mix(in srgb, #6c8cff 16%, transparent);
+  --data-sky: #56ccf2;
+  --data-mint: #34d399;
+  --data-amber: #fbbf24;
+  --data-rose: #fb7185;
+  --data-lavender: #a78bfa;
+  --data-teal: #2dd4bf;
+  --surface-sunken: #1b212d;
+  --control-track: rgba(255, 255, 255, 0.1);
+  /* focal stat card — near-black gradient + lavender border per offline dark */
+  --focal-grad: linear-gradient(155deg, #0e1016, #050608);
+  --focal-border: rgba(139, 125, 246, 0.32);
+  --focal-muted: rgba(255, 255, 255, 0.55);
+  --surface-hover: #1f2633;
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --brand-500: #6c5ce7;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --ink: #0b0e16;
 }
 
 * {
@@ -72,8 +134,12 @@ body,
 }
 
 body {
-  background-color: var(--app-base);
-  background-image: var(--app-gradient);
+  /* light theme (default): subtle blue-grey lavender gradient per the offline
+     design; dark keeps its own signature gradient below */
+  background-color: #eaedf6;
+  background-image: radial-gradient(1200px 800px at 12% -8%, #ece9fa, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #e7ecf8, transparent 50%),
+    linear-gradient(160deg, #eef0f8, #e4e8f3);
   background-attachment: fixed;
   background-repeat: no-repeat;
   color: var(--text);
@@ -81,6 +147,9 @@ body {
     sans-serif;
   font-size: var(--fz-sm);
   -webkit-font-smoothing: antialiased;
+}
+:root[data-theme="dark"] body {
+  background: var(--app-gradient), var(--app-base);
 }
 
 .num {
@@ -95,58 +164,527 @@ body {
 /* ---------- layout ---------- */
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 76px 1fr;
   height: 100vh;
 }
 
-.sidebar {
-  background: var(--surface);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+/* ---------- sidebar: icon rail (ad-rail) ---------- */
+.ad-rail {
+  background: rgba(255, 255, 255, 0.72);
   border-right: 1px solid var(--border);
-  padding: var(--sp-4) var(--sp-3);
+  padding: 18px 0 20px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-}
-
-.brand {
-  font-size: var(--fz-md);
-  font-weight: 600;
-  padding: var(--sp-2) var(--sp-3);
-  margin-bottom: var(--sp-3);
-  display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: 8px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+:root[data-theme="dark"] .ad-rail {
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-right-color: rgba(255, 255, 255, 0.06);
 }
 
-.dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--success);
-  display: inline-block;
+.ad-rail__logo {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  margin-bottom: 10px;
+}
+:root[data-theme="dark"] .ad-rail__logo {
+  box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.55);
+}
+.ad-rail__logo svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.nav-item {
+.ad-rail__nav {
+  flex: 1;
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius);
+  gap: 8px;
+}
+
+.ad-railbtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-  font-size: var(--fz-sm);
-  user-select: none;
+  transition: background 0.15s, color 0.15s;
 }
-.nav-item:hover {
+.ad-railbtn:hover {
   background: var(--bg-inset);
   color: var(--text);
 }
-.nav-item.active {
-  background: var(--accent-weak);
-  color: var(--accent);
+.ad-railbtn.on {
+  background: #6c5ce7;
+  color: #fff;
+  box-shadow: 0 8px 18px -4px rgba(108, 92, 231, 0.5);
+}
+:root[data-theme="dark"] .ad-railbtn:not(.on) {
+  color: #6b7488;
+}
+:root[data-theme="dark"] .ad-railbtn:not(.on):hover {
+  color: var(--text);
+}
+.ad-railbtn svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* Hover/focus tooltip revealing the nav label (rail is icon-only). */
+.ad-railbtn__tip {
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap;
+  background: var(--text);
+  color: var(--bg);
+  padding: 5px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 40;
+}
+.ad-railbtn:hover .ad-railbtn__tip,
+.ad-railbtn:focus-visible .ad-railbtn__tip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.ad-rail__foot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ad-rail__foot .bibo-avatar {
+  --_s: 39px;
+}
+/* Avatar monogram + presence dot (rail foot + topbar account). */
+.bibo-avatar {
+  --_s: 40px;
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto; /* never squish into an oval inside a flex row */
+  width: var(--_s);
+  height: var(--_s);
+}
+.bibo-avatar--sm {
+  --_s: 34px;
+}
+.bibo-avatar__img {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid #fff;
   font-weight: 600;
+  font-size: 13px;
+  background: #deeafe;
+  color: #3b82f6;
+}
+:root[data-theme="dark"] .bibo-avatar__img {
+  background: color-mix(in srgb, #6c8cff 16%, transparent);
+  color: #9db4ff;
+  border-color: var(--bg);
+}
+.bibo-avatar__dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: var(--text-muted);
+}
+:root[data-theme="dark"] .bibo-avatar__dot {
+  border-color: var(--bg);
+}
+.bibo-avatar--sm .bibo-avatar__dot {
+  width: 10px;
+  height: 10px;
+}
+/* smaller presence dot on roster-table avatars */
+.ad-name .bibo-avatar__dot {
+  width: 8px;
+  height: 8px;
+  border-width: 1.5px;
+}
+.bibo-avatar__dot--active {
+  background: #10b981;
+}
+.bibo-avatar__dot--idle {
+  background: var(--data-amber);
+}
+.bibo-avatar__dot--offline {
+  background: var(--text-muted);
+}
+
+/* ---------- topbar (ad-topbar) ---------- */
+.ad-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.72);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  /* lift the whole topbar (incl. dropdown menus) above the content cards,
+     which create their own stacking contexts via backdrop-filter */
+  position: relative;
+  z-index: 30;
+}
+:root[data-theme="dark"] .ad-topbar {
+  background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+:root[data-theme="dark"] .ad-bizpick__btn,
+:root[data-theme="dark"] .ad-newbiz {
+  background: #1b212d;
+  color: #f1f3f8;
+  border-color: #363636;
+}
+:root[data-theme="dark"] .ad-bizpick__btn:hover:not(:disabled),
+:root[data-theme="dark"] .ad-newbiz:hover {
+  border-color: #363636;
+  background: #1f2633;
+}
+:root[data-theme="dark"] .ad-topbar .lang-trigger {
+  background: #1b212d;
+  color: #a6adbf;
+  border-color: #363636;
+}
+:root[data-theme="dark"] .ad-topbar .lang-trigger:hover {
+  border-color: #363636;
+  background: #1f2633;
+}
+:root[data-theme="dark"] .ad-topbar .lang-globe,
+:root[data-theme="dark"] .ad-topbar .lang-caret {
+  color: #a6adbf;
+}
+.ad-topbar__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
+.ad-topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* keep the three control pills the same height */
+.ad-topbar .lang-trigger {
+  height: 38px;
+  background: #ffffff;
+}
+.ad-topbar .lang-trigger:hover {
+  border-color: var(--border);
+  background: #f5f7fc;
+}
+/* min-height so the seg still aligns at 38px but can grow with its padding */
+.ad-topbar .bibo-seg {
+  min-height: 38px;
+  background: #f3f4fc;
+}
+
+/* standalone "new business" action on the header — same pill style as the
+   business switcher (.ad-bizpick__btn): neutral inset bg, border, muted icon. */
+.ad-newbiz {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.35);
+}
+.ad-newbiz:hover {
+  border-color: var(--text-muted);
+}
+.ad-newbiz svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+
+/* business switcher pill */
+.ad-bizpick {
+  position: relative;
+  display: inline-flex;
+}
+.ad-bizpick__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.35);
+}
+.ad-bizpick__btn:hover:not(:disabled) {
+  border-color: var(--border);
+  background: #f5f7fc;
+}
+.ad-bizpick__btn:disabled {
+  cursor: default;
+}
+.ad-bizpick__ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #ecebfb;
+  color: #4c3cc9;
+}
+:root[data-theme="dark"] .ad-bizpick__ic {
+  background: color-mix(in srgb, #6c5ce7 26%, transparent);
+  color: #c4bbff;
+}
+.ad-bizpick__name {
+  white-space: nowrap;
+}
+.ad-bizpick__btn svg {
+  width: 15px;
+  height: 15px;
+  color: #9aa1b4;
+}
+/* dropdown menu (business switcher, etc.) */
+.ad-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 240px;
+  width: max-content;
+  max-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+:root[data-theme="dark"] .ad-menu {
+  background: #161b25;
+}
+.ad-menu--left {
+  left: 0;
+}
+.ad-menu--right {
+  right: 0;
+}
+.ad-menu--up {
+  top: auto;
+  bottom: calc(100% + 6px);
+}
+.ad-menu__opt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+}
+.ad-menu__opt:hover {
+  background: var(--bg-inset);
+}
+:root[data-theme="dark"] .ad-menu__opt:hover {
+  background: #1e2632;
+}
+.ad-menu__label {
+  flex: 1;
+}
+.ad-menu__opt > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: currentColor;
+}
+.ad-menu__opt .ck {
+  margin-left: auto;
+  display: inline-flex;
+  line-height: 0;
+}
+.ad-menu__opt .ck svg {
+  width: 16px;
+  height: 16px;
+}
+.ad-menu__opt.on {
+  color: #6c5ce7;
+  background: #ecebfb;
+  font-weight: 600;
+}
+:root[data-theme="dark"] .ad-menu__opt.on {
+  color: #c4bbff;
+  background: color-mix(in srgb, #6c5ce7 22%, transparent);
+}
+.ad-menu__sep {
+  height: 1px;
+  margin: 3px 6px;
+  background: #e3e3e3;
+}
+:root[data-theme="dark"] .ad-menu__sep {
+  background: rgba(255, 255, 255, 0.06);
+}
+.ad-menu__action {
+  color: #3d4351;
+}
+.ad-menu__action .ad-menu__label {
+  font-size: 15px;
+}
+.ad-menu__action:hover {
+  background: #f6f7fc;
+}
+:root[data-theme="dark"] .ad-menu__action:hover {
+  background: #1e2632;
+}
+.ad-menu__plus {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+.ad-menu__plus svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* theme segmented pill */
+.bibo-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 3px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+.bibo-seg--sm {
+  padding: 4px 5px;
+}
+.bibo-seg__opt {
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.bibo-seg__opt--on {
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.25);
+}
+:root[data-theme="dark"] .bibo-seg {
+  background: #11151e;
+}
+:root[data-theme="dark"] .bibo-seg__opt {
+  color: #a6adbf;
+}
+:root[data-theme="dark"] .bibo-seg__opt--on {
+  background: #171a25;
+  border-color: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.45);
+}
+
+/* account button + menu */
+.ad-acct {
+  position: relative;
+  display: inline-flex;
+}
+.ad-acct-btn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  line-height: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.ad-acct-btn:focus-visible {
+  outline: 2px solid #8b7df6;
+  outline-offset: 2px;
+}
+.ad-acctmenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 60;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface-strong);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.ad-acctmenu__name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .main {
@@ -171,6 +709,19 @@ body {
 .content {
   padding: var(--sp-5);
   overflow-y: auto;
+  /* hide the scrollbar chrome (still scrollable via wheel/trackpad) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.content::-webkit-scrollbar {
+  display: none;
+}
+/* Dashboard: flat light backdrop (light theme only; dark keeps the gradient). */
+.content--flat {
+  background: #eaedf6;
+}
+:root[data-theme="dark"] .content--flat {
+  background: transparent;
 }
 
 /* ---------- primitives ---------- */
@@ -241,25 +792,55 @@ body {
   background: color-mix(in srgb, var(--warn) 12%, transparent);
 }
 
+/* segmented control — offline "bibo-seg" pill style (used only in Settings):
+   rounded track with a white/navy raised thumb marking the active option */
 .segmented {
   display: inline-flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-sunken);
+  border-radius: 999px;
+  flex-wrap: wrap;
 }
 .segmented button {
   font: inherit;
-  font-size: var(--fz-sm);
-  border: none;
-  background: var(--bg-inset);
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  background: transparent;
   color: var(--text-muted);
-  padding: 5px var(--sp-3);
+  padding: 6px 14px;
+  border-radius: 999px;
   cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s ease;
+}
+.segmented button:not(.active):not([disabled]):hover {
+  color: var(--text);
 }
 .segmented button.active {
-  background: var(--accent-weak);
-  color: var(--accent);
-  font-weight: 600;
+  background: #fff;
+  color: var(--text);
+  box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.25);
+}
+.segmented button[disabled] {
+  cursor: default;
+}
+:root[data-theme="dark"] .segmented {
+  background: #11151e;
+  border-color: rgba(255, 255, 255, 0.06);
+}
+:root[data-theme="dark"] .segmented button {
+  color: #a6adbf;
+}
+/* active thumb = offline "surface-raised", lifted off the sunken track */
+:root[data-theme="dark"] .segmented button.active {
+  background: #1b212d;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 2px 6px -1px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 /* ---------- data ---------- */
@@ -380,32 +961,73 @@ td {
   min-height: 2px;
 }
 
-/* ---------- settings ---------- */
+/* ---------- settings ----------
+   cards match the offline "bibo-card" language: 18px radius, glass surface in
+   light, solid navy in dark (same surface as the report panels) */
 .set-group {
   background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  box-shadow: 0 8px 24px rgba(24, 32, 64, 0.08), 0 2px 6px rgba(24, 32, 64, 0.04);
   overflow: hidden;
+}
+/* dark: solid offline "surface-card" with shadow-md + a faint top rim-light,
+   matching the offline .card (no glass blur) */
+:root[data-theme="dark"] .set-group {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 .set-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--sp-3) var(--sp-4);
-  border-bottom: 1px solid var(--border);
+  gap: 20px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 .set-row:last-child {
   border-bottom: none;
 }
 .set-title {
-  font-weight: 500;
+  font-weight: 700;
+  font-size: 14.5px;
+  letter-spacing: -0.01em;
 }
 .set-desc {
-  color: var(--text-muted);
-  font-size: var(--fz-xs);
-  margin-top: 2px;
+  color: #9aa1b4;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-top: 3px;
+  max-width: 64ch;
+}
+/* narrow: let the control drop below its label instead of squeezing */
+@media (max-width: 640px) {
+  .set-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+/* read-only value on the right of a settings row (offline .ad-readonly) */
+.ad-readonly {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5b6276;
+}
+/* uppercase section label grouping settings cards (offline .ad-set-sec) */
+.ad-set-sec {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9aa1b4;
+  margin: 22px 4px 10px;
 }
 
 /* ---------- add-members (signup wizard) ---------- */
@@ -635,7 +1257,12 @@ select.input:focus,
   gap: var(--sp-4);
 }
 .auth-wrap.welcome {
-  /* background comes from the app-wide gradient on <body>; keep this transparent */
+  /* light: soft lavender auth gradient (per request); dark keeps the app-wide body gradient */
+  background: radial-gradient(1200px 800px at 12% -8%, #ECE9FA, transparent 55%),
+    radial-gradient(1000px 700px at 100% 0%, #E7ECF8, transparent 50%),
+    linear-gradient(160deg, #EEF0F8, #E4E8F3);
+}
+:root[data-theme="dark"] .auth-wrap.welcome {
   background: transparent;
 }
 .auth-logo {
@@ -680,6 +1307,568 @@ select.input:focus,
   font-size: var(--fz-sm);
   color: var(--text-muted);
   text-align: center;
+}
+
+/* ---------- admin sign-in card (offline design language, violet accent) ----------
+   Self-contained bibo- and ad- prefixed classes ported from the desktop offline
+   design so the admin login matches it. Scoped to the sign-in card; the rest of
+   web-admin keeps the blue --accent tokens until each screen is migrated. */
+.ad-loginbox {
+  width: 400px;
+  max-width: 100%;
+  background: var(--surface-strong);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 32px;
+  box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
+}
+.ad-login__logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 12px 26px -10px rgba(108, 92, 231, 0.75);
+  margin-bottom: 22px;
+}
+.ad-login__logo svg {
+  display: block;
+  width: 52px;
+  height: 52px;
+}
+.ad-login__title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.ad-login__sub {
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+.ad-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.bibo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.bibo-field__lbl {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.bibo-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-inset);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.bibo-input:focus-within {
+  border-color: #8b7df6;
+  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.45);
+}
+.bibo-input__icon {
+  flex: none;
+  display: inline-flex;
+  color: var(--text-muted);
+}
+.bibo-input__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.bibo-input input::placeholder {
+  color: var(--text-muted);
+}
+.bibo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: none;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bibo-btn--sm {
+  height: 34px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  gap: 6px;
+}
+.bibo-btn--sm svg {
+  width: 16px;
+  height: 16px;
+}
+/* dark: settings cleanup button sits on the card surface — matching fill,
+   faint rim, lighter hover (offline surface-card / surface-hover) */
+:root[data-theme="dark"] .set-group .bibo-btn--secondary {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
+}
+:root[data-theme="dark"] .set-group .bibo-btn--secondary:hover:not(:disabled) {
+  background: #1f2633;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
+}
+.bibo-btn--primary {
+  background: #6c5ce7;
+  color: #fff;
+  box-shadow: 0 12px 24px -12px rgba(108, 92, 231, 0.9);
+}
+.bibo-btn--primary:hover:not(:disabled) {
+  background: #5f4dd0;
+}
+.bibo-btn--primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+}
+.bibo-btn--block {
+  width: 100%;
+  margin-top: 4px;
+}
+.bibo-btn svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-btn--ghost {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0 8px;
+}
+.bibo-btn--ghost:hover:not(:disabled) {
+  color: var(--text);
+}
+.bibo-btn--ghost svg {
+  width: 22px;
+  height: 22px;
+}
+.ad-login__links {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  text-align: center;
+}
+.ad-muted {
+  color: var(--text-muted);
+}
+.ad-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6c5ce7;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ad-link:hover {
+  text-decoration: underline;
+}
+
+/* ---------- signup wizard — persona step (offline design, single centered card) ---------- */
+.ad-wizard {
+  width: 560px;
+  max-width: 100%;
+  background: #fcfcfe;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px 36px 28px;
+  box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
+}
+:root[data-theme="dark"] .ad-wizard {
+  background: var(--surface-strong);
+}
+.ad-wiz-rail {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.ad-wiz-pip {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border);
+}
+.ad-wiz-pip.on {
+  background: #6c5ce7;
+}
+.ad-wiz-pip.done {
+  background: color-mix(in srgb, #6c5ce7 50%, var(--border));
+}
+.ad-wiz-step {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #9aa1b4;
+  margin-bottom: 18px;
+}
+.ad-wiz-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.ad-wiz-sub {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+  margin: 0 0 24px;
+}
+.ad-persona-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ad-persona {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #f2f4fb;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+:root[data-theme="dark"] .ad-persona {
+  background: var(--bg-subtle);
+}
+.ad-persona:hover {
+  border-color: #6c5ce7;
+  background: var(--bg-inset);
+  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
+}
+.ad-persona__ic {
+  flex: none;
+  display: inline-flex;
+  color: #6c5ce7;
+}
+.ad-persona__ic svg {
+  width: 24px;
+  height: 24px;
+}
+.ad-persona__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ad-persona__t {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.ad-persona__d {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.ad-persona__go {
+  flex: none;
+  display: inline-flex;
+  color: #9aa1b4;
+}
+.ad-persona__go svg {
+  width: 20px;
+  height: 20px;
+}
+.ad-wiz-foot {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.ad-wiz-foot .sp {
+  flex: 1;
+}
+.ad-pw-meter {
+  height: 8px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: #f2f4fb;
+  overflow: hidden;
+}
+:root[data-theme="dark"] .ad-pw-meter {
+  background: var(--border);
+}
+.ad-pw-meter__fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+.ad-pw-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: 12px;
+}
+.ad-pw-label {
+  font-weight: 700;
+}
+.ad-field-ok {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #10b981;
+}
+.ad-field-ok svg {
+  width: 15px;
+  height: 15px;
+}
+.ad-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.ad-notice svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+.ad-notice--info {
+  background: #deeafe;
+  color: #3b82f6;
+}
+:root[data-theme="dark"] .ad-notice--info {
+  background: color-mix(in srgb, #6c8cff 16%, transparent);
+  color: #9db4ff;
+}
+/* Inline persona notice ("Chỉ có tôi") sits inside the cards column — rely on the
+   list's gap for spacing instead of the notice's default top margin. */
+.ad-persona-cards .ad-notice {
+  margin-top: 0;
+}
+/* Selected/open persona card — mirrors the hover affordance. */
+.ad-persona--open {
+  border-color: #6c5ce7;
+  background: var(--bg-inset);
+  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
+}
+
+/* ---------- signup wizard — members step (add employees / kids) ---------- */
+.ad-addmember {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.ad-addmember__full {
+  grid-column: 1 / -1;
+}
+.ad-addmember .bibo-field__lbl {
+  font-size: 11px;
+}
+.ad-addmember .bibo-btn {
+  height: 42px;
+}
+.ad-memberlist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+.ad-memberitem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #f2f4fb;
+  border: 1px solid var(--border);
+}
+:root[data-theme="dark"] .ad-memberitem {
+  background: var(--bg-subtle);
+}
+.ad-memberitem__ok {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: var(--success);
+  background: #d9f7ec;
+}
+:root[data-theme="dark"] .ad-memberitem__ok {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+}
+.ad-memberitem__ok svg {
+  width: 16px;
+  height: 16px;
+}
+.ad-memberitem__id {
+  flex: 1;
+  min-width: 0;
+}
+.ad-memberitem__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-memberitem__login {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-memberitem__pw {
+  letter-spacing: 0.5px;
+}
+.ad-iconbtn-sm {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ad-iconbtn-sm:hover {
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--text);
+}
+.ad-iconbtn-sm svg {
+  width: 18px;
+  height: 18px;
+}
+.ad-burst {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 18px;
+  border-radius: 18px;
+  background: #2a2438;
+  color: #fff;
+}
+.ad-burst svg {
+  width: 30px;
+  height: 30px;
+}
+.ad-success-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+.ad-success-item {
+  display: flex;
+  width: 340px;
+  max-width: 100%;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #f2f4fb;
+  border: 1px solid var(--border);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+:root[data-theme="dark"] .ad-success-item {
+  background: var(--bg-subtle);
+}
+.ad-success-item__ck {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: #fff;
+  background: #10b981;
+}
+.ad-success-item__ck svg {
+  width: 15px;
+  height: 15px;
+}
+.ad-success-item__ck--todo {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 15%, transparent);
+}
+.bibo-btn--secondary {
+  background: var(--bg-inset);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.bibo-btn--secondary:hover:not(:disabled) {
+  border-color: #6c5ce7;
+  color: #6c5ce7;
+}
+.bibo-btn--secondary svg {
+  width: 20px;
+  height: 20px;
 }
 
 /* ---------- step dots (wizard / onboarding progress) ---------- */
@@ -869,18 +2058,24 @@ select.input:focus,
 .lang-trigger {
   font: inherit;
   font-size: var(--fz-sm);
+  font-weight: 600;
   color: var(--text);
   background: var(--bg-inset);
   border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 5px var(--sp-2);
+  border-radius: 999px;
+  padding: 7px 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.35);
 }
 .lang-trigger:hover {
   border-color: var(--text-muted);
+}
+.lang-globe {
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 .lang-switcher .lang-flag {
   font-size: 15px;
@@ -888,6 +2083,12 @@ select.input:focus,
 }
 .lang-switcher .lang-label {
   white-space: nowrap;
+}
+.ad-topbar .lang-label {
+  color: #5b6276;
+}
+:root[data-theme="dark"] .ad-topbar .lang-label {
+  color: #a6adbf;
 }
 .lang-caret {
   color: var(--text-muted);
@@ -1038,6 +2239,153 @@ select.input:focus,
   font-size: var(--fz-md);
   margin: 0 0 var(--sp-3);
 }
+
+/* ---- bibo-dlg (offline-style dialog): icon + title + close, body, footer ---- */
+/* soften + blur the overlay when it wraps a bibo-dlg (scoped; other modals keep
+   their solid backdrop) */
+.modal-backdrop:has(.bibo-dlg) {
+  background: rgba(20, 24, 40, 0.32);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.bibo-dlg {
+  width: var(--_w, 440px);
+  max-width: 100%;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 30px 70px -18px rgba(20, 22, 40, 0.55), 0 8px 20px -12px rgba(20, 22, 40, 0.4);
+  overflow: hidden;
+  animation: bibo-dlg-fade 0.18s ease;
+}
+:root[data-theme="dark"] .bibo-dlg {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 80px -16px rgba(0, 0, 0, 0.7), 0 8px 24px -12px rgba(0, 0, 0, 0.55);
+}
+@keyframes bibo-dlg-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.bibo-dlg__head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 22px 0;
+}
+.bibo-dlg__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  color: var(--brand-600);
+}
+.bibo-dlg__icon svg {
+  width: 22px;
+  height: 22px;
+}
+.bibo-dlg__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.bibo-dlg__close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.bibo-dlg__close:hover {
+  background: var(--bg-inset);
+  color: var(--text);
+}
+.bibo-dlg__close svg {
+  width: 18px;
+  height: 18px;
+}
+.bibo-dlg__body {
+  padding: 18px 22px 6px;
+}
+.bibo-dlg__foot {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px 20px;
+}
+/* dialog field label: smaller + muted (scoped to the dialog) */
+.bibo-dlg__body .bibo-field__lbl {
+  font-size: 14px;
+  color: #5b6276;
+}
+/* dialog primary (Create) button label colour */
+.bibo-dlg__foot .bibo-btn--primary {
+  color: #f1f3f8;
+}
+/* dialog ghost (Cancel) button label colour */
+.bibo-dlg__foot .bibo-btn--ghost {
+  color: #a6adbf;
+}
+/* dialog secondary (Generate) button */
+.bibo-dlg .bibo-btn--secondary {
+  font-size: 14px;
+}
+.bibo-dlg .bibo-btn--secondary svg {
+  width: 24px;
+  height: 24px;
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-btn--secondary {
+  background: #161b25;
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #f1f3f8;
+}
+.bibo-dlg .bibo-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+/* dialog input in dark theme: solid navy fill + light border, text/hover/focus */
+:root[data-theme="dark"] .bibo-dlg .bibo-input {
+  background: #1b212d;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input:hover:not(:focus-within) {
+  border-color: rgba(255, 255, 255, 0.18);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input:focus-within {
+  border-color: var(--brand-400);
+  box-shadow: var(--ring-focus);
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input input {
+  color: #f4f2fe;
+}
+:root[data-theme="dark"] .bibo-dlg .bibo-input input::placeholder {
+  color: #5b6276;
+}
+:root[data-theme="dark"] .bibo-dlg--org .bibo-input input::placeholder {
+  color: #a6adbf;
+}
+/* password field: larger, more-spaced placeholder dots */
+.bibo-input--dots input::placeholder {
+  font-size: 16px;
+  letter-spacing: 2px;
+}
 .lightbox-img {
   max-width: 90vw;
   max-height: 85vh;
@@ -1170,4 +2518,800 @@ select.input:focus,
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+}
+
+/* ============================================================
+   Dashboard (Overview) — page head, stat cards, roster table
+   ============================================================ */
+.ad-wrap {
+  max-width: 1180px;
+  margin-inline: auto;
+}
+.ad-pagehead {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.ad-pagehead__main {
+  min-width: 0;
+}
+.ad-pagehead__actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+/* "New team" secondary button (scoped to the page header — leaves the wizard's
+   secondary button untouched). Light: white with faint dark border; dark:
+   outline that fills on hover. */
+.ad-pagehead__actions .bibo-btn--secondary {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid rgba(20, 22, 27, 0.11);
+}
+.ad-pagehead__actions .bibo-btn--secondary:hover:not(:disabled) {
+  background: #f5f7fc;
+  color: var(--text);
+  border-color: rgba(20, 22, 27, 0.18);
+}
+:root[data-theme="dark"] .ad-pagehead__actions .bibo-btn--secondary {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+:root[data-theme="dark"] .ad-pagehead__actions .bibo-btn--secondary:hover:not(:disabled) {
+  background: #1f2633;
+  color: #fff;
+  border-color: #1f2633;
+}
+.ad-pagehead__actions .bibo-btn {
+  font-size: 14px;
+}
+.ad-pagehead__actions .bibo-btn--secondary svg {
+  width: 22px;
+  height: 22px;
+}
+.ad-h1 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.ad-sub {
+  margin: 12px 0 0;
+  color: #9aa1b4;
+  font-size: 13px;
+}
+
+/* ---- stat cards grid ---- */
+.ad-stats {
+  display: grid;
+  /* wide screens: all four cards on one row, filling the centered content column */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.ad-cardpad {
+  padding: 19px 23px;
+}
+.ad-stats .bibo-card {
+  box-shadow: 0 6px 18px -8px rgba(20, 22, 40, 0.22);
+}
+.ad-stats .bibo-card--focal {
+  box-shadow: 0 16px 34px -10px rgba(20, 22, 40, 0.45);
+}
+.ad-stats .bibo-card--default {
+  background: #ffffff;
+}
+:root[data-theme="dark"] .ad-stats .bibo-card--default {
+  background: #161b25; /* offline --surface-card (solid, not glass) */
+}
+.bibo-card {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.bibo-card--focal {
+  background: var(--focal-grad);
+  border-color: var(--focal-border);
+}
+/* focal card sits on a dark surface in both themes → force light text */
+.bibo-stat--focal .bibo-stat__value {
+  color: #fff;
+}
+.bibo-stat--focal .bibo-stat__label,
+.bibo-stat--focal .bibo-stat__unit,
+.bibo-stat--focal .bibo-stat__sub {
+  color: var(--focal-muted);
+}
+
+.bibo-stat__top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bibo-stat__icon {
+  display: grid;
+  place-items: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: var(--brand-tint);
+  border: none;
+  color: var(--brand-600);
+}
+.bibo-stat__icon svg {
+  width: 20px;
+  height: 20px;
+}
+:root[data-theme="dark"] .bibo-stat__icon {
+  background: var(--brand-tint);
+  border-color: transparent;
+  color: var(--brand-600);
+}
+.bibo-stat--focal .bibo-stat__icon,
+:root[data-theme="dark"] .bibo-stat--focal .bibo-stat__icon {
+  background: #2c2d32;
+  border-color: transparent;
+  color: #fff;
+}
+.bibo-stat__label {
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+.bibo-stat__value {
+  margin-top: 13px;
+  font-size: 27px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.bibo-stat__unit {
+  margin-left: 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.bibo-stat__foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+.bibo-stat__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.bibo-stat__delta svg {
+  width: 13px;
+  height: 13px;
+}
+.bibo-stat__delta--up {
+  color: var(--positive);
+}
+.bibo-stat__delta--down {
+  color: var(--negative);
+}
+.bibo-stat__sub {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ---- roster table ---- */
+.ad-tablecard {
+  padding: 6px 12px;
+  overflow-x: auto;
+  /* solid so the pinned "View" column can mask content scrolling under it */
+  background: #ffffff;
+  /* hide the horizontal scrollbar chrome (still scrollable via wheel/trackpad) */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.ad-tablecard::-webkit-scrollbar {
+  display: none;
+}
+:root[data-theme="dark"] .ad-tablecard {
+  background: #171a25;
+}
+.ad-table {
+  width: 100%;
+  min-width: 720px; /* keep columns readable; scroll instead of squishing names */
+  border-collapse: collapse;
+}
+/* Employees roster: give the name room (long names clamp within it) and centre
+   the Login column in the remaining space */
+.ad-table--roster th:first-child,
+.ad-table--roster td:first-child {
+  width: 44%;
+}
+.ad-table--roster th:nth-child(2),
+.ad-table--roster td:nth-child(2) {
+  text-align: center;
+}
+.ad-table th {
+  text-align: left;
+  padding: 18px 20px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #9aa1b4;
+}
+.ad-table th.r,
+.ad-table td.r {
+  text-align: right;
+}
+/* pin the actions column so "View" is always visible, however wide the table */
+.ad-table th:last-child,
+.ad-table td:last-child {
+  position: sticky;
+  right: 0;
+  background: #ffffff;
+  box-shadow: -10px 0 12px -10px rgba(20, 22, 40, 0.28);
+}
+:root[data-theme="dark"] .ad-table th:last-child,
+:root[data-theme="dark"] .ad-table td:last-child {
+  background: #171a25;
+}
+/* row hover — recolor every cell (incl. the pinned View cell) */
+.ad-table tbody td {
+  transition: background 0.12s ease;
+}
+.ad-table tbody tr:hover td {
+  background: #f3f4fc;
+}
+:root[data-theme="dark"] .ad-table tbody tr:hover td {
+  background: #1f2633;
+}
+.ad-table td {
+  padding: 16px 20px;
+  border-top: 0.5px solid rgba(20, 22, 27, 0.07);
+  vertical-align: middle;
+}
+:root[data-theme="dark"] .ad-table td {
+  border-top-color: rgba(255, 255, 255, 0.06);
+}
+/* last row: no divider line at the bottom */
+.ad-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.ad-name {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ad-name__txt {
+  font-size: 15px;
+  font-weight: 600;
+  min-width: 0;
+  /* clamp long names to at most 2 lines (ellipsis beyond) */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+}
+.ad-self {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--info);
+  background: var(--info-soft);
+  vertical-align: middle;
+}
+.ad-login,
+.ad-relt {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.ad-dur {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ad-rowprod {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.ad-rowprod__pct {
+  min-width: 40px;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ad-viewlink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #5b4bd6;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+}
+.ad-viewlink svg {
+  width: 14px;
+  height: 14px;
+}
+.ad-viewlink:hover {
+  text-decoration: underline;
+}
+
+/* medium screens: two per row */
+@media (max-width: 1080px) {
+  .ad-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* narrow screens: stacked */
+@media (max-width: 560px) {
+  .ad-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Employee detail — offline-parity redesign ─────────────────────────
+   Breadcrumb, detail header, date mode, pill tabs, activity timeline +
+   app breakdown. Adapted from the offline design (ad-* classes) and reuses
+   the existing bibo-* stat/card/seg/avatar system. UI-only. */
+.ad-crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.ad-crumb a,
+.ad-crumb button {
+  color: var(--text-muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+}
+.ad-crumb a:hover,
+.ad-crumb button:hover {
+  color: var(--brand-600);
+}
+.ad-crumb svg {
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+}
+.ad-crumb__here {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.ad-detailhead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.ad-detailhead__id {
+  min-width: 0;
+}
+.ad-detailhead__name {
+  font-size: 21px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.ad-detailhead__login {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.ad-datemode {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* date-mode segmented control track (light) */
+.ad-datemode .bibo-seg {
+  background: #f2f4fb;
+}
+.ad-datefield {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-strong);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+:root[data-theme="dark"] .ad-datefield {
+  background: #1b212d;
+}
+.ad-datefield svg {
+  width: 15px;
+  height: 15px;
+  color: var(--text-muted);
+}
+.ad-datefield input {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  font-variant-numeric: tabular-nums;
+}
+.ad-datefield__lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: #9aa1b4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* pill tabs */
+.bibo-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.bibo-tab {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  height: 34px;
+  padding: 0 15px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: background 0.12s ease, color 0.12s ease;
+}
+/* hovering an unselected tab only changes the text — no background pill */
+.bibo-tab:hover {
+  color: var(--text);
+}
+.bibo-tab--on,
+.bibo-tab--on:hover {
+  color: var(--brand-600);
+  background: var(--brand-tint);
+}
+:root[data-theme="dark"] .bibo-tab--on,
+:root[data-theme="dark"] .bibo-tab--on:hover {
+  color: #4a3bc0;
+  background: #e9e8f3;
+}
+
+.ad-tabwrap {
+  margin-top: 16px;
+}
+.ad-panel {
+  margin-top: 16px;
+}
+.ad-twocol {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+/* small screens: stack — Today's timeline on top, App & window breakdown below */
+@media (max-width: 1024px) {
+  .ad-twocol {
+    grid-template-columns: 1fr;
+  }
+}
+/* dark: report panels (activity two-col + keystrokes/browser/screenshots)
+   use a solid surface, not the glass default */
+:root[data-theme="dark"] .ad-panel .bibo-card--default {
+  background: #171a25;
+}
+
+.ad-panelhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.ad-paneltitle {
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+/* activity timeline
+   --tl-empty : colour of idle stripes + the two ends (solid)
+   --tl-track : bar background showing through the stripe gaps */
+.ad-timeline {
+  --tl-empty: #f2f4fb;
+  --tl-track: #ffffff;
+  position: relative;
+  height: 54px;
+  border-radius: 12px;
+  background: var(--tl-track);
+  overflow: hidden;
+}
+:root[data-theme="dark"] .ad-timeline {
+  --tl-empty: #11151f;
+  --tl-track: var(--surface-sunken);
+}
+/* wrapper so the hover tooltip can sit above the bar (outside overflow:hidden) */
+.ad-tlbox {
+  position: relative;
+}
+.ad-tltip {
+  position: absolute;
+  top: -8px;
+  transform: translate(-50%, -100%);
+  background: #1b1f2b;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.5);
+}
+.ad-tlseg {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: filter 0.12s ease, background 0.12s ease;
+}
+/* only the coloured (app) blocks react to hover; idle & ends stay put */
+.ad-tlseg:hover {
+  filter: brightness(1.08);
+}
+/* idle = diagonal stripes (no colour change on hover) */
+.ad-tlseg.idle {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--tl-empty) 0 6px,
+    transparent 6px 12px
+  );
+}
+.ad-tlseg.idle:hover {
+  filter: none;
+}
+/* the two ends: solid, no stripes */
+.ad-tlseg.end {
+  background: var(--tl-empty);
+}
+.ad-tlseg.end:hover {
+  filter: none;
+}
+.ad-tlaxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* donut */
+.bibo-donut {
+  flex: none;
+}
+
+/* app & window breakdown bars */
+.ad-appbars {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.ad-appbar {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.ad-appbar__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 0;
+}
+.ad-appbar__name .txt {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-appbar__name .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  flex: none;
+}
+.ad-appbar__track {
+  height: 9px;
+  border-radius: 5px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+.ad-appbar__fill {
+  height: 100%;
+  border-radius: 5px;
+}
+.ad-appbar__val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+  text-align: right;
+}
+
+/* ── Keystrokes-through-the-day bar chart (offline design) ────────────── */
+.ad-act-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.ad-act-num {
+  font-family: var(--font-sans);
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+.ad-act-lbl {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.ad-chartscroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 26px 0 4px;
+}
+.ad-chartscroll::-webkit-scrollbar {
+  height: 8px;
+}
+.ad-chartscroll::-webkit-scrollbar-track {
+  background: var(--surface-sunken);
+  border-radius: 999px;
+}
+.ad-chartscroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.ad-timechips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.ad-timechip {
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--border-subtle);
+  background: #f2f4fb;
+  color: #9aa1b4;
+  border-radius: 8px;
+  padding: 3px 7px;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.ad-timechip:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+.ad-timechip--on,
+.ad-timechip--on:hover {
+  background: var(--brand-500);
+  border-color: var(--brand-500);
+  color: #fff;
+}
+/* dark: unselected chips use a deep surface + readable label */
+:root[data-theme="dark"] .ad-timechip:not(.ad-timechip--on) {
+  background: #11151f;
+  color: #6b7488;
+}
+
+/* ── Captured screenshots gallery (offline design) ───────────────────── */
+.ad-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+  margin-top: 6px;
+}
+.ad-shot {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  padding: 0;
+  appearance: none;
+  background: none;
+  display: block;
+  width: 100%;
+  cursor: default;
+}
+.ad-shot--clickable {
+  cursor: pointer;
+}
+.ad-shot__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.ad-shot__veil {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.3) 100%);
+}
+.ad-shot__app {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(15, 18, 26, 0.82);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.ad-shot__t {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+/* Sites-visited (browser) table: smaller domain cell than the roster */
+.ad-panel .ad-table .ad-name {
+  gap: 10px;
+}
+.ad-panel .ad-table .ad-name__txt {
+  font-size: 13px;
+}
+/* breathing room below the last row of the Sites-visited card */
+.ad-panel .ad-tablecard {
+  padding-bottom: 24px;
 }

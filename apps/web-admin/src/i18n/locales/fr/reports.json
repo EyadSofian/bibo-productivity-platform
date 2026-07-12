@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "Aucune activité enregistrée pour cette période."
+    "empty": "Aucune activité enregistrée pour cette période.",
+    "timeline": "Chronologie du jour",
+    "breakdown": "Détail des applis et fenêtres",
+    "idle": "Inactif"
   },
   "browser": {
     "empty": "Aucune visite de navigateur pour cette période.",
@@ -8,22 +11,27 @@
       "time": "Heure",
       "page": "Page",
       "browser": "Navigateur",
-      "duration": "Durée"
+      "duration": "Durée",
+      "domain": "Domaine"
     },
-    "untitled": "(sans titre)"
+    "untitled": "(sans titre)",
+    "title": "Sites visités"
   },
   "keystrokes": {
     "empty": "Aucune activité de frappe pour cette période.",
     "summary_one": "{{keystrokes}} frappes au clavier réparties sur {{count}} intervalle",
     "summary_other": "{{keystrokes}} frappes au clavier réparties sur {{count}} intervalles",
     "tooltip": "{{time}} — {{count}} frappes au clavier",
-    "privacyNote": "Comptage uniquement. Les touches individuelles ne sont jamais capturées ni stockées — ce graphique indique le volume de frappe, pas le contenu."
+    "privacyNote": "Comptage uniquement. Les touches individuelles ne sont jamais capturées ni stockées — ce graphique indique le volume de frappe, pas le contenu.",
+    "title": "Frappes au fil de la journée",
+    "keypresses": "frappes"
   },
   "screenshots": {
     "empty": "Aucune capture d'écran pour cette période.",
     "unavailable": "indisponible",
     "alt": "Capture d'écran {{time}}",
     "loading": "Chargement…",
-    "display": "écran {{id}}"
+    "display": "écran {{id}}",
+    "title": "Captures d'écran"
   }
 }

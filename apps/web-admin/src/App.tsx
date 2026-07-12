@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
+import { BusinessProvider } from "./useBusinesses";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { Dashboard } from "./pages/Dashboard";
 import { EmployeeDetail } from "./pages/EmployeeDetail";
@@ -19,7 +20,13 @@ export default function App() {
             <Route path="/login" element={<SignIn />} />
             <Route path="/signup" element={<SignupWizard />} />
             <Route element={<ProtectedRoute />}>
-              <Route element={<AppShell />}>
+              <Route
+                element={
+                  <BusinessProvider>
+                    <AppShell />
+                  </BusinessProvider>
+                }
+              >
                 <Route index element={<Dashboard />} />
                 <Route path="employees" element={<Employees />} />
                 <Route path="employees/:id" element={<EmployeeDetail />} />

@@ -24,6 +24,8 @@
   },
   "persona": {
     "heading": "你将如何使用 BiBoTracking？",
+    "sub": "你可以稍后更改。",
+    "back": "返回",
     "justMeTitle": "仅我自己",
     "justMeDesc": "追踪我自己的活动与表现。数据 100% 保留在我的电脑上。",
     "justMeTag": "无需账户",
@@ -33,7 +35,7 @@
     "familyTitle": "我的家庭",
     "familyDesc": "关注孩子的屏幕使用时间与活动。",
     "familyTag": "免费账户",
-    "caption": "ⓘ “仅我自己”会下载应用并离线运行——不会上传任何数据。"
+    "caption": "个人追踪在桌面应用中进行——无需管理员账户。"
   },
   "personal": {
     "back": "← 返回",
@@ -52,8 +54,10 @@
     "identifierPlaceholder": "you@example.com 或用户名",
     "password": "密码",
     "passwordPlaceholder": "至少 8 个字符",
+    "strength": { "weak": "弱", "medium": "中等", "strong": "强" },
     "creating": "创建中…",
-    "continue": "继续 →"
+    "continue": "继续",
+    "available": "可用"
   },
   "setup": {
     "title": "为你的{{noun}}命名",
@@ -62,7 +66,7 @@
     "placeholderFamily": "库珀家庭",
     "placeholderTeam": "库珀公司",
     "saving": "保存中…",
-    "continue": "继续 →"
+    "continue": "继续"
   },
   "done": {
     "title": "全部就绪！",
@@ -70,27 +74,28 @@
     "orgReady": "{{noun}}已就绪",
     "membersAdded": "已添加 {{count}} 个{{members}}",
     "membersLater": "稍后添加{{members}}",
-    "goToDashboard": "前往仪表盘 →"
+    "goToDashboard": "前往仪表盘"
   },
   "clipboard": {
     "text": "BiBoTracking 登录信息\n用户名或邮箱：{{login}}\n密码：{{password}}"
   },
   "members": {
     "title": "添加你的{{members}}",
-    "sub": "每位{{member}}都会获得一个登录方式——用户名（无需邮箱）或邮箱。我们会预填用户名和临时密码；分享给他们，{{member}}登录后即可修改密码。你也可以稍后在仪表盘中完成此操作。",
+    "sub": "现在添加或稍后跳过——你可以之后再邀请。",
     "name": "姓名",
     "namePlaceholder": "张伟",
     "loginLabel": "用户名或邮箱（他们的登录方式）",
     "tempPassword": "临时密码",
     "generateTitle": "生成新密码",
-    "newPassword": "↻ 新建",
+    "newPassword": "新建",
+    "suggestion": "建议",
     "adding": "添加中…",
-    "addCta": "+ {{cta}}",
+    "addCta": "{{cta}}",
     "countAdded": "已添加 {{count}} 个{{members}}——复制每个登录信息并分享。",
     "copied": "已复制 ✓",
     "copyLogin": "复制登录信息",
     "remove": "移除",
-    "finish": "完成 →",
+    "finish": "完成",
     "doneAdding": "添加完成",
     "skip": "暂时跳过"
   }

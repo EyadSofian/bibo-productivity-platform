@@ -82,7 +82,5 @@
   },
   "account": {
     "title": "账户"
-  },
-  "groupPolicy": "跟踪策略",
-  "groupScreenshots": "截图"
+  }
 }

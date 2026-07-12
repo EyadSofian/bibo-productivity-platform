@@ -20,7 +20,7 @@
   "theme": {
     "light": "浅色",
     "dark": "深色",
-    "auto": "自动"
+    "auto": "系统"
   },
   "time": {
     "never": "从未",
@@ -30,7 +30,7 @@
     "daysAgo": "{{count}} 天前"
   },
   "terms": {
-    "team": { "one": "员工", "many": "员工", "lowerOne": "员工", "lowerMany": "员工", "addCta": "添加员工" },
-    "family": { "one": "孩子", "many": "孩子", "lowerOne": "孩子", "lowerMany": "孩子", "addCta": "添加孩子" }
+    "team": { "one": "员工", "many": "员工", "lowerOne": "员工", "lowerMany": "员工", "addCta": "添加员工", "org": "团队" },
+    "family": { "one": "孩子", "many": "孩子", "lowerOne": "孩子", "lowerMany": "孩子", "addCta": "添加孩子", "org": "家庭" }
   }
 }

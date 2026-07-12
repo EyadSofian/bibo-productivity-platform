@@ -1,6 +1,9 @@
 {
   "activity": {
-    "empty": "此时间范围内未记录任何活动。"
+    "empty": "此时间范围内未记录任何活动。",
+    "timeline": "今日时间线",
+    "breakdown": "应用和窗口明细",
+    "idle": "空闲"
   },
   "browser": {
     "empty": "此时间范围内没有浏览记录。",
@@ -8,22 +11,27 @@
       "time": "时间",
       "page": "页面",
       "browser": "浏览器",
-      "duration": "时长"
+      "duration": "时长",
+      "domain": "域名"
     },
-    "untitled": "（无标题）"
+    "untitled": "（无标题）",
+    "title": "访问的网站"
   },
   "keystrokes": {
     "empty": "此时间范围内没有按键活动。",
     "summary_one": "{{count}} 个时间段内共 {{keystrokes}} 次按键",
     "summary_other": "{{count}} 个时间段内共 {{keystrokes}} 次按键",
     "tooltip": "{{time}} — {{count}} 次按键",
-    "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。"
+    "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。",
+    "title": "全天按键次数",
+    "keypresses": "次按键"
   },
   "screenshots": {
     "empty": "此时间范围内没有截图。",
     "unavailable": "无法显示",
     "alt": "截图 {{time}}",
     "loading": "加载中…",
-    "display": "显示器 {{id}}"
+    "display": "显示器 {{id}}",
+    "title": "已捕获的截图"
   }
 }

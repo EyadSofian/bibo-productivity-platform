@@ -2,10 +2,15 @@
   "title": "Settings",
   "loading": "Loading…",
   "noBusinesses": "No businesses to configure yet.",
-  "scope": "These apply to <0>{{name}}</0> and all its {{members}} — not your other businesses. Use the picker (top-right) to configure a different one.",
+  "scope": "Settings for <0>{{name}}</0> {{members}}",
+  "sections": {
+    "capture": "Capture policy",
+    "storage": "Manual cleanup",
+    "account": "Account"
+  },
   "capturePolicy": {
     "title": "Capture policy",
-    "desc": "These apply to every {{member}}'s app on {{name}}. When {{member}} overrides are off, {{members}} can't change them on their machine.",
+    "desc": "Whether {{members}} can change capture settings on their own device.",
     "ariaLabel": "Allow {{member}} override",
     "locked": "Locked",
     "allowOverride": "Allow override",
@@ -61,9 +66,9 @@
     "saved": "Screenshot retention updated."
   },
   "cleanup": {
-    "title": "Clean up screenshots now",
-    "desc": "Immediately delete {{name}}'s screenshots (files and records) older than the chosen age. This cannot be undone.",
-    "button": "Clean up now…",
+    "title": "Manual cleanup",
+    "desc": "Delete old screenshots to free up space.",
+    "button": "Clean up now",
     "modalTitle": "Clean up screenshots",
     "olderThanIntro": "Delete screenshots for <0>{{name}}</0> older than:",
     "olderThanAriaLabel": "Older than",
@@ -82,8 +87,8 @@
     "never": "Never"
   },
   "account": {
-    "title": "Account"
-  },
-  "groupPolicy": "Tracking policy",
-  "groupScreenshots": "Screenshots"
+    "title": "Account",
+    "email": "Email",
+    "displayName": "Display name"
+  }
 }

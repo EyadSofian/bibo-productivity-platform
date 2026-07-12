@@ -1,8 +1,18 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { subscribeLogout } from "../api/client";
 import { tokenStore } from "../api/tokenStore";
+import { isDemo } from "../api/demo";
 import type { User } from "../api/types";
 import { Sentry } from "../sentry";
+
+// Dev demo mode: a signed-in "owner" so the protected pages render without a
+// backend. id matches the roster owner in demo.ts so their row shows "You".
+const DEMO_USER: User = {
+  id: "demo-owner",
+  email: "brian@home.app",
+  display_name: "Brian Nguyen",
+  account_type: "parent",
+};
 
 interface AuthState {
   user: User | null;
@@ -14,8 +24,10 @@ interface AuthState {
 const AuthCtx = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(tokenStore.getUser());
-  const [isAuthed, setIsAuthed] = useState<boolean>(tokenStore.isAuthed());
+  const [user, setUser] = useState<User | null>(
+    () => (isDemo() ? tokenStore.getUser() ?? DEMO_USER : tokenStore.getUser()),
+  );
+  const [isAuthed, setIsAuthed] = useState<boolean>(() => isDemo() || tokenStore.isAuthed());
 
   useEffect(() => {
     // The API client emits a logout when a refresh fails.
