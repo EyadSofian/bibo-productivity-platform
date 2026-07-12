@@ -36,6 +36,10 @@
     "q4": {
       "name": "Bisakah saya men-self-host BiBoTracking?",
       "answer": "Ya. Backend Go, dashboard web, aplikasi desktop (macOS & Windows), dan ekstensi Chrome semuanya open source. Satu binary Go melayani API dan dashboard, didukung oleh Postgres, sehingga Anda bisa menjalankan seluruh stack di mesin Anda sendiri secara gratis."
+    },
+    "q5": {
+      "name": "Apakah BiBoTracking men-screenshot chat pribadi atau aplikasi perbankan?",
+      "answer": "Tidak — mode screenshot privasi aktif secara bawaan. Alih-alih merekam seluruh layar, mode ini hanya menangkap jendela yang aktif, dan tidak pernah menangkap aplikasi sensitif sama sekali: daftar lewati bawaan berisi aplikasi chat, perbankan, dan pengelola kata sandi terkenal (yang dapat diperluas oleh pemilik) memblokir screenshot sepenuhnya saat aplikasi tersebut berada di depan. Pemantau tradisional seperti Hubstaff merekam seluruh layar tanpa memedulikan apa yang terlihat."
     }
   },
   "nav": {
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Screenshot berkala",
-      "p": "Pengambilan otomatis pada interval tertentu, dikompresi di bawah 50&nbsp;KB, dengan jendela retensi hapus-otomatis."
+      "p": "Pengambilan otomatis pada interval tertentu, dikompresi di bawah 50&nbsp;KB, dengan jendela retensi hapus-otomatis. Mode privasi (bawaan) hanya menangkap jendela yang aktif — tidak pernah seluruh layar — dan sepenuhnya melewati aplikasi chat, perbankan, dan pengelola kata sandi."
     },
     "browser": {
       "h": "Halaman &amp; waktu browser",
@@ -195,6 +199,7 @@
       "localThem": "Hanya cloud",
       "appTime": "Waktu aplikasi &amp; jendela",
       "screenshots": "Screenshot otomatis",
+      "privacyShots": "Mode screenshot privasi — melewati aplikasi chat, perbankan &amp; kata sandi",
       "activity": "Tingkat aktivitas / ketukan tombol",
       "activityUs": " — hanya hitungan",
       "browser": "Pelacakan browser / URL",

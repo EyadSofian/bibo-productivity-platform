@@ -36,6 +36,10 @@
     "q4": {
       "name": "Can I self-host BiBoTracking?",
       "answer": "Yes. The Go backend, web dashboard, desktop app (macOS & Windows) and Chrome extension are open source. One Go binary serves the API and dashboard, backed by Postgres, so you can run the whole stack on your own machine for free."
+    },
+    "q5": {
+      "name": "Does BiBoTracking screenshot private chats or banking apps?",
+      "answer": "No — privacy screenshot mode is on by default. Instead of recording the whole screen, it captures only the active window, and it never captures sensitive apps at all: a built-in skip list of well-known chat, banking and password apps (which owners can extend) blocks the screenshot entirely while those apps are in front. Traditional monitors like Hubstaff capture the full screen regardless of what is visible."
     }
   },
   "nav": {
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Periodic screenshots",
-      "p": "Automatic captures on a set interval, compressed under 50&nbsp;KB, with an auto-delete retention window."
+      "p": "Automatic captures on a set interval, compressed under 50&nbsp;KB, with an auto-delete retention window. Privacy mode (the default) captures only the active window — never the whole screen — and skips chat, banking and password apps entirely."
     },
     "browser": {
       "h": "Browser pages &amp; time",
@@ -195,6 +199,7 @@
       "localThem": "Cloud only",
       "appTime": "App &amp; window time",
       "screenshots": "Automatic screenshots",
+      "privacyShots": "Privacy screenshot mode — skips chat, banking &amp; password apps",
       "activity": "Activity / keystroke level",
       "activityUs": " — counts only",
       "browser": "Browser / URL tracking",

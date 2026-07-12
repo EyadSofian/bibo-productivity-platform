@@ -36,6 +36,10 @@
     "q4": {
       "name": "Puis-je auto-héberger BiBoTracking ?",
       "answer": "Oui. Le backend en Go, le tableau de bord web, l'application de bureau (macOS et Windows) et l'extension Chrome sont open source. Un seul binaire Go sert l'API et le tableau de bord, adossé à Postgres, ce qui vous permet d'exécuter toute la stack sur votre propre machine gratuitement."
+    },
+    "q5": {
+      "name": "BiBoTracking capture-t-il les conversations privées ou les applications bancaires ?",
+      "answer": "Non — le mode capture confidentiel est activé par défaut. Au lieu d'enregistrer l'écran entier, il ne capture que la fenêtre active, et il ne capture jamais les applications sensibles : une liste d'exclusion intégrée d'applications connues de messagerie, bancaires et de gestion de mots de passe (que les dirigeants peuvent étendre) bloque entièrement la capture tant que ces applications sont au premier plan. Les outils de surveillance traditionnels comme Hubstaff capturent l'écran entier, quel que soit ce qui est visible."
     }
   },
   "nav": {
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Captures d'écran périodiques",
-      "p": "Des captures automatiques à intervalle défini, compressées sous 50&nbsp;Ko, avec une fenêtre de rétention à suppression automatique."
+      "p": "Des captures automatiques à intervalle défini, compressées sous 50&nbsp;Ko, avec une fenêtre de rétention à suppression automatique. Le mode confidentialité (par défaut) ne capture que la fenêtre active — jamais l'écran entier — et ignore complètement les applications de messagerie, bancaires et de gestion de mots de passe."
     },
     "browser": {
       "h": "Pages &amp; temps de navigation",
@@ -195,6 +199,7 @@
       "localThem": "Cloud uniquement",
       "appTime": "Temps par application &amp; fenêtre",
       "screenshots": "Captures d'écran automatiques",
+      "privacyShots": "Mode capture confidentiel — ignore les applis de messagerie, bancaires &amp; de mots de passe",
       "activity": "Niveau d'activité / de frappes",
       "activityUs": " — comptages uniquement",
       "browser": "Suivi du navigateur / des URL",

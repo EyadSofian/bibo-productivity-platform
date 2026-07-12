@@ -36,6 +36,10 @@
     "q4": {
       "name": "¿Puedo autoalojar BiBoTracking?",
       "answer": "Sí. El backend en Go, el panel web, la aplicación de escritorio (macOS y Windows) y la extensión de Chrome son de código abierto. Un único binario de Go sirve la API y el panel, respaldado por Postgres, de modo que puede ejecutar toda la infraestructura en su propia máquina de forma gratuita."
+    },
+    "q5": {
+      "name": "¿BiBoTracking captura chats privados o aplicaciones bancarias?",
+      "answer": "No — el modo de capturas con privacidad está activado por defecto. En lugar de grabar toda la pantalla, captura únicamente la ventana activa, y nunca captura las aplicaciones sensibles: una lista de exclusión integrada con aplicaciones conocidas de chat, banca y contraseñas (que los propietarios pueden ampliar) bloquea por completo la captura mientras esas aplicaciones están en primer plano. Los monitores tradicionales como Hubstaff capturan la pantalla completa sin importar lo que se muestre."
     }
   },
   "nav": {
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Capturas de pantalla periódicas",
-      "p": "Capturas automáticas en un intervalo fijo, comprimidas a menos de 50&nbsp;KB, con un periodo de retención de borrado automático."
+      "p": "Capturas automáticas en un intervalo fijo, comprimidas a menos de 50&nbsp;KB, con un periodo de retención de borrado automático. El modo privacidad (activado por defecto) captura solo la ventana activa — nunca la pantalla completa — y omite por completo las aplicaciones de chat, banca y contraseñas."
     },
     "browser": {
       "h": "Páginas &amp; tiempo del navegador",
@@ -195,6 +199,7 @@
       "localThem": "Solo en la nube",
       "appTime": "Tiempo por aplicación &amp; ventana",
       "screenshots": "Capturas de pantalla automáticas",
+      "privacyShots": "Modo de capturas con privacidad — omite apps de chat, banca &amp; contraseñas",
       "activity": "Nivel de actividad / pulsaciones",
       "activityUs": " — solo recuentos",
       "browser": "Seguimiento de navegador / URL",

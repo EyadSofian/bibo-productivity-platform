@@ -90,6 +90,11 @@
         "@type": "Question",
         "name": "BiBoTrackingをセルフホストできますか？",
         "acceptedAnswer": { "@type": "Answer", "text": "はい。Goのバックエンド、Webダッシュボード、デスクトップアプリ（macOS と Windows）、Chrome拡張機能はすべてオープンソースです。1つのGoバイナリがAPIとダッシュボードを提供し、Postgresを基盤としているため、スタック全体をご自身のマシンで無料で実行できます。" }
+      },
+      {
+        "@type": "Question",
+        "name": "BiBoTrackingはプライベートなチャットや銀行アプリをスクリーンショットしますか？",
+        "acceptedAnswer": { "@type": "Answer", "text": "いいえ。プライバシー・スクリーンショットモードがデフォルトで有効です。画面全体を記録する代わりにアクティブなウィンドウのみをキャプチャし、機密性の高いアプリは一切撮影しません。よく知られたチャット・銀行・パスワード管理アプリの組み込みスキップリスト（オーナーが拡張可能）により、これらのアプリが前面にある間はスクリーンショット自体がブロックされます。Hubstaffのような従来の監視ツールは、何が表示されていても画面全体をキャプチャします。" }
       }
     ]
   }
@@ -253,7 +258,7 @@
         <div class="lp-card lp-card--hover reveal">
           <div class="lp-ic lp-ic--mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg></div>
           <div class="lp-card__t">定期的なスクリーンショット</div>
-          <div class="lp-card__d">設定した間隔で自動的にキャプチャし、50&nbsp;KB未満に圧縮。自動削除の保持期間付きです。</div>
+          <div class="lp-card__d">設定した間隔で自動的にキャプチャし、50&nbsp;KB未満に圧縮。自動削除の保持期間付きです。プライバシーモード（デフォルト）ではアクティブなウィンドウのみをキャプチャし、画面全体は決して撮影しません。チャット・銀行・パスワード管理アプリは完全にスキップされます。</div>
         </div>
         <div class="lp-card lp-card--hover reveal">
           <div class="lp-ic lp-ic--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
@@ -382,6 +387,7 @@
             <tr><td class="feat">ローカルファーストのストレージ</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-cmp__val lp-cmp__val--muted">クラウドのみ</span></td></tr>
             <tr><td class="feat">アプリ&amp;ウィンドウの時間</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">自動スクリーンショット</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
+            <tr><td class="feat">プライバシー・スクリーンショットモード — チャット・銀行&amp;パスワードアプリをスキップ</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span></td></tr>
             <tr><td class="feat">アクティビティ / キーストロークレベル</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">ブラウザ / URLの追跡</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">オーナー向けWebダッシュボード&amp;レポート</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>

@@ -90,6 +90,11 @@
         "@type": "Question",
         "name": "我可以自托管 BiBoTracking 吗？",
         "acceptedAnswer": { "@type": "Answer", "text": "可以。Go 后端、网页控制台、桌面应用（macOS 和 Windows）和 Chrome 扩展均为开源。一个 Go 二进制文件即可同时提供 API 和控制台，由 Postgres 支撑，因此你可以在自己的机器上免费运行整套系统。" }
+      },
+      {
+        "@type": "Question",
+        "name": "BiBoTracking 会截取私人聊天或银行应用的画面吗？",
+        "acceptedAnswer": { "@type": "Answer", "text": "不会 — 隐私截图模式默认开启。它不会录制整个屏幕，而是只截取当前活动窗口；并且对敏感应用完全不截图：内置的跳过列表涵盖常见的聊天、银行和密码类应用（所有者可自行扩展），当这些应用位于前台时会彻底阻止截图。而 Hubstaff 这类传统监控工具无论屏幕上显示什么，都会截取整个屏幕。" }
       }
     ]
   }
@@ -253,7 +258,7 @@
         <div class="lp-card lp-card--hover reveal">
           <div class="lp-ic lp-ic--mint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z"/><circle cx="12" cy="13" r="3"/></svg></div>
           <div class="lp-card__t">定时屏幕截图</div>
-          <div class="lp-card__d">按设定间隔自动截图，压缩至 50&nbsp;KB 以内，并设有自动删除的保留窗口。</div>
+          <div class="lp-card__d">按设定间隔自动截图，压缩至 50&nbsp;KB 以内，并设有自动删除的保留窗口。隐私模式（默认开启）只截取当前活动窗口 — 绝不截取整个屏幕 — 并完全跳过聊天、银行和密码类应用。</div>
         </div>
         <div class="lp-card lp-card--hover reveal">
           <div class="lp-ic lp-ic--amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg></div>
@@ -382,6 +387,7 @@
             <tr><td class="feat">本地优先存储</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-cmp__val lp-cmp__val--muted">仅云端</span></td></tr>
             <tr><td class="feat">应用 &amp; 窗口时长</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">自动屏幕截图</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
+            <tr><td class="feat">隐私截图模式 — 跳过聊天、银行 &amp; 密码类应用</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg></span></td></tr>
             <tr><td class="feat">活动 / 按键级别</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">浏览器 / URL 追踪</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>
             <tr><td class="feat">所有者网页控制台 &amp; 报表</td><td class="c lp-cmp__us-col"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td><td class="c"><span class="lp-yes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.801 10A10 10 0 1 1 17 3.335"/><path d="m9 11 3 3L22 4"/></svg></span></td></tr>

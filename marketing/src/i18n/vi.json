@@ -36,6 +36,10 @@
     "q4": {
       "name": "Tôi có thể tự lưu trữ BiBoTracking không?",
       "answer": "Có. Phần backend viết bằng Go, bảng điều khiển web, ứng dụng máy tính (macOS & Windows) và tiện ích Chrome đều là mã nguồn mở. Một tệp nhị phân Go duy nhất phục vụ cả API lẫn bảng điều khiển, dùng Postgres làm cơ sở dữ liệu, nên bạn có thể chạy toàn bộ hệ thống trên máy của mình miễn phí."
+    },
+    "q5": {
+      "name": "BiBoTracking có chụp màn hình chat riêng tư hay ứng dụng ngân hàng không?",
+      "answer": "Không — chế độ chụp màn hình riêng tư được bật mặc định. Thay vì ghi lại toàn màn hình, nó chỉ chụp cửa sổ đang dùng, và không bao giờ chụp các ứng dụng nhạy cảm: một danh sách bỏ qua tích hợp sẵn gồm các ứng dụng chat, ngân hàng và quản lý mật khẩu phổ biến (chủ sở hữu có thể mở rộng) sẽ chặn hoàn toàn ảnh chụp khi các ứng dụng đó đang ở phía trước. Các công cụ giám sát truyền thống như Hubstaff chụp toàn màn hình bất kể trên đó hiển thị gì."
     }
   },
   "nav": {
@@ -84,7 +88,7 @@
     },
     "screenshots": {
       "h": "Ảnh chụp màn hình",
-      "p": "Ảnh thu nhỏ làm mờ theo khoảng bạn đặt, dung lượng rất nhỏ."
+      "p": "Tự động chụp theo khoảng thời gian đặt sẵn, nén dưới 50&nbsp;KB, kèm thời hạn lưu tự xóa. Chế độ riêng tư (mặc định) chỉ chụp cửa sổ đang dùng — không bao giờ chụp toàn màn hình — và bỏ qua hoàn toàn các ứng dụng chat, ngân hàng và quản lý mật khẩu."
     },
     "browser": {
       "h": "Lịch sử duyệt web",
@@ -195,6 +199,7 @@
       "localThem": "Chỉ trên đám mây",
       "appTime": "Thời gian ứng dụng &amp; cửa sổ",
       "screenshots": "Ảnh chụp",
+      "privacyShots": "Chế độ chụp riêng tư — bỏ qua ứng dụng chat, ngân hàng &amp; mật khẩu",
       "activity": "Hoạt động bàn phím",
       "activityUs": " — chỉ đếm số lượt",
       "browser": "Lịch sử duyệt",
