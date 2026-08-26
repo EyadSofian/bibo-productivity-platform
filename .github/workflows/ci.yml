@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  # Lets a run be started by hand — useful to re-verify a branch after a flaky
+  # job, or to get a first run on a ref that predates this workflow.
+  workflow_dispatch:
 
 # A new push to the same ref supersedes the previous run.
 concurrency:
