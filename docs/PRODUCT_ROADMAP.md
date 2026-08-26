@@ -34,7 +34,7 @@ keyboard *content* capture, credential capture, password capture.
 
 | # | Feature | Pri | Phase | Depends on | Status |
 |---|---|---|---|---|---|
-| 1 | Baseline stability | P0 | P-1 | — | NOT STARTED |
+| 1 | Baseline stability | P0 | P-1 | — | IN PROGRESS |
 | 2 | Windows production support | P0 | P-1 | 1 | NOT STARTED |
 | 3 | macOS production support | P0 | P-1 | 1 | NOT STARTED |
 | 4 | Browser monitoring | P0 | P-2 | 1 | NOT STARTED |
@@ -104,7 +104,8 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
 - **Dependencies:** none.
 - **Risks:** toolchain install may need admin rights; Postgres port 5432 may be
   occupied by a native install.
-- **Status:** NOT STARTED
+- **Status:** IN PROGRESS — port drift fixed and CI added (2026-08-26); toolchain
+  install and the end-to-end smoke run remain, blocked on B-1.
 
 ### F2 — Windows production support · P0 · Phase P-1
 - **Current State:** Idle (`GetLastInputInfo`), key counting (`WH_KEYBOARD_LL`),

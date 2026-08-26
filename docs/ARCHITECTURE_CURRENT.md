@@ -461,11 +461,16 @@ CI · integration tests · CHANGELOG.
 | D2 | Monorepo is backend/web-admin/desktop/extension | `apps/monitor` (full Go module) and `apps/design` also exist, undocumented |
 | D3 | `windows.rs`: "Keyboard counting (M2) is stubbed" | Fully implemented |
 | D4 | `docs/05-roadmap.md`: all 5 phases "not started" | All 5 phases are implemented and shipped (v1.5.1) |
-| D5 | `README.md`: backend on `:8080` | `dev-backend.sh` and the Vite proxy use `:8090` |
-| **D6** | `.env.example` sets `PORT=8080` | `dev-backend.sh` prints `:8090` and `vite.config.ts` proxies to `:8090`. **A fresh clone following the documented quick start produces a backend on :8080 and a dashboard proxying to :8090 — local dev is broken out of the box.** |
+| D5 | ~~`README.md`: backend on `:8080`~~ | **FIXED 2026-08-26** — README quick start now says `:8090` |
+| **D6** | ~~`.env.example` sets `PORT=8080`~~ | **FIXED 2026-08-26** — `.env.example` → `PORT=8090`; `docker-compose.yml` publishes host `:8090`; `dev-backend.sh` announces the port it actually configured and warns when a stale `.env` disagrees. |
 | D7 | `README.md`: "Platform: macOS · Windows" production-ready | Windows has never been verified against the checklist in Feature 2 |
 | D8 | `CLAUDE.md`: latest migration is `00007_member_username.sql` | Latest is `00009_screenshot_mode.sql` |
 | D9 | `tauri.conf.json` identifier is `com.briannguyen.ctracking` (per CLAUDE.md) | Actually `com.briannguyen.bibotracking` |
 
-D6 is a real bug, not just a doc issue, and is the first task in the implementation
-order.
+D6 was a real bug, not just a doc issue. It was the first task in the implementation
+order and is now fixed (F1). D1–D4 and D7–D9 remain open and are recorded above.
+
+**CI (added 2026-08-26):** the "no CI at all" row in §7 is now out of date —
+`.github/workflows/ci.yml` covers backend (Go), frontend (TypeScript), desktop
+(Rust on macOS **and Windows**) and an advisory dependency audit. Test *counts* in
+§7 are unchanged: CI runs the existing suites, it does not add tests.

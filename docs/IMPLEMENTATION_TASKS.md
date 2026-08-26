@@ -55,7 +55,28 @@ The single source of truth for what is done and what is next. Update this file
 
 ## F1 — Baseline stability
 
-**Status:** NOT STARTED · **Priority:** P0 · **Depends on:** —
+**Status:** IN PROGRESS · **Priority:** P0 · **Depends on:** —
+
+### Progress log
+- **2026-08-26 — port drift fixed (defect D-1).** `.env.example` now sets
+  `PORT=8090`, matching `scripts/dev-backend.sh`, the web-admin Vite proxy and the
+  desktop's local default. `README.md` quick start corrected. `docker-compose.yml`
+  now publishes host `:8090` → container `:8080` so the compose path lines up too.
+  `scripts/dev-backend.sh` now reads the port from `.env` and announces the real
+  value, warning when it disagrees with `:8090` — so an already-cloned repo with a
+  stale `.env` gets told, and this class of drift cannot silently recur. Verified
+  end-to-end against a stubbed `go` for fresh-clone, stale-`.env` and missing-`PORT`
+  cases.
+- **2026-08-26 — CI added.** `.github/workflows/ci.yml` with five jobs: `backend`
+  (Go build/vet/test with a Postgres service), `monitor` (non-blocking, see note in
+  the file), `frontend` (pnpm install/typecheck/build/test + extension manifest
+  validation), `desktop` (Rust check/test on **macOS and Windows**; clippy advisory),
+  `security` (govulncheck / cargo audit / pnpm audit, advisory). Plus
+  `.github/scripts/check-extension-manifest.mjs`, which enforces the extension's
+  privacy posture (MV3, loopback-only hosts, no permission creep, no
+  `content_scripts`) and is negative-tested against 6 regression cases.
+  **Not yet observed running** — no Go/Rust toolchain here, so the first push is its
+  real verification.
 
 ### Goal
 Make the existing platform provably run and stay running, with automation that
@@ -82,8 +103,9 @@ Postgres harness; add Vitest to `web-admin` and `desktop`; add
 `.github/workflows/ci.yml` with four parallel jobs.
 
 ### Backend tasks
-- [ ] Fix `PORT` drift: set `.env.example` to `8090`, or change the script and proxy
-      to `8080`. Pick one and make README, CLAUDE.md, script, proxy and env agree.
+- [x] Fix `PORT` drift: `.env.example` → `8090`. README, script, proxy, desktop
+      default, CLAUDE.md and docker-compose now agree. `dev-backend.sh` reports the
+      port it actually configured and warns on mismatch.
 - [ ] `/healthz` performs `pool.Ping()` and reports DB status + migration version.
 - [ ] Add `internal/testutil` — spin a Postgres (testcontainers or `PGURL` env),
       run migrations, truncate between tests.
@@ -155,8 +177,10 @@ Postgres harness; add Vitest to `web-admin` and `desktop`; add
 
 ### Definition of Done
 - [ ] Local dev works from a clean clone following the README, with no manual fixes.
+      *(port drift resolved; still needs an end-to-end run once Go/Docker are installed)*
 - [ ] CI runs on every push: Go build+test+vet, Rust check+test+clippy,
       web-admin typecheck+build+test, desktop typecheck+build.
+      *(workflow written and locally dry-run where possible; the first push verifies it)*
 - [ ] `BASELINE_TEST_REPORT.md` records every component with pass/fail and evidence.
 - [ ] All documentation drift D1–D9 is either fixed or explicitly recorded.
 

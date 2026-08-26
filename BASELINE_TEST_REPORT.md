@@ -95,7 +95,7 @@ demonstrates it.
 
 | ID | Severity | Finding |
 |---|---|---|
-| **D-1** | HIGH | `.env.example` sets `PORT=8080`, but `scripts/dev-backend.sh` announces `:8090` and `apps/web-admin/vite.config.ts` proxies to `:8090`. **A fresh clone following the README cannot reach its own backend.** |
+| **D-1** | HIGH | ~~`.env.example` sets `PORT=8080`, but `scripts/dev-backend.sh` announces `:8090` and `apps/web-admin/vite.config.ts` proxies to `:8090`. **A fresh clone following the README cannot reach its own backend.**~~ **FIXED 2026-08-26** — `.env.example` → 8090; `dev-backend.sh` now reports the real port and warns on mismatch. |
 | **D-2** | HIGH | Extension writes a visit **only** on transition (`background.js`). One long-lived tab produces **zero rows** — the direct cause of the reported `"browser_visit": []`. |
 | **D-3** | HIGH | Extension has **no retry queue**: `postVisit` returns `false` and the visit is discarded permanently when the desktop app is unreachable. |
 | **D-4** | HIGH | **Idle time is never persisted** anywhere — no table, no rows, on agent or server. `idle_time` and `working_time` are currently underivable. |
@@ -134,8 +134,8 @@ demonstrates it.
 | ID | Blocker | Impact | Unblocked by |
 |---|---|---|---|
 | **B-1** | No Go, Rust, Docker or Postgres on the dev machine | Backend, database and desktop cannot be built or run | Installing the toolchain (needs admin rights / Homebrew) |
-| **B-2** | No Windows machine available | F2 cannot be verified at all | Access to Windows 10 and 11 hosts or VMs |
-| **B-3** | No CI infrastructure in the repository | Every check is manual | F1 adds `.github/workflows/ci.yml` |
+| **B-2** | No Windows machine available | F2 cannot be verified at all. **Partially reduced 2026-08-26:** the CI `desktop` job now compiles and unit-tests the Rust agent on `windows-latest`, so the Windows platform backend at least builds and its tests run. The manual platform matrix still needs real hardware. | Access to Windows 10 and 11 hosts or VMs |
+| **B-3** | ~~No CI infrastructure in the repository~~ **ADDRESSED 2026-08-26** — `.github/workflows/ci.yml` added (5 jobs, incl. a Windows Rust leg). Not yet observed running. | Every check was manual | First push confirms the workflow is green |
 | **B-4** | No test data or seeded environment | Integration and performance testing impossible | F30's synthetic data generator |
 | **B-5** | Extension logic is not extractable for testing | Extension cannot be unit tested at all | F4 refactors the visit state machine into a module |
 
