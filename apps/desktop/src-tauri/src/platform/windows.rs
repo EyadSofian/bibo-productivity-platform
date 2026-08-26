@@ -5,9 +5,13 @@
 //! so the permission API reports `Granted` and the request/open-settings calls are
 //! no-ops; first-run consent + Settings opt-outs are handled in the UI (M3).
 //!
-//! Implemented now (M1): idle detection via `GetLastInputInfo`. Active window and
-//! screenshots are cross-platform (`active-win-pos-rs` / `xcap`) and live elsewhere.
-//! Keyboard counting (M2) is stubbed — see `run_keyboard_tap`.
+//! Implemented here: idle detection via `GetLastInputInfo` (M1) and keyboard
+//! counting via a `WH_KEYBOARD_LL` hook (M2, see `run_keyboard_tap`) — count-only,
+//! `lparam` is never read. Active window and screenshots are cross-platform
+//! (`active-win-pos-rs` / `xcap`) and live elsewhere.
+//!
+//! Not yet implemented: session events (lock/unlock, sleep/resume, user switching)
+//! — see docs/IMPLEMENTATION_TASKS.md F2.
 
 use super::{CapabilityRow, Permission, PermissionState};
 use crate::settings::Settings;
