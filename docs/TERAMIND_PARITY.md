@@ -1,14 +1,20 @@
 # Teramind parity — gap analysis
 
-**Source:** the published Teramind Dashboard API collection at
-<https://apidoc.dev.teramind.co/> (Postman collection `12825404/TW74jRAB`,
-pulled 2026-08-26). 34 folders, ~250 endpoints, 183 distinct capture keys.
+**Sources (reviewed 2026-08-26):** the published Teramind Dashboard API
+collection at <https://apidoc.dev.teramind.co/> (34 folders, ~250 endpoints,
+183 distinct capture keys), the official
+[feature overview](https://kb.teramind.co/en/articles/9220916-overview),
+[package comparison](https://kb.teramind.co/en/articles/8790885-what-is-the-difference-between-teramind-starter-teramind-uam-teramind-dlp-and-teramind-enterprise),
+[employee-monitoring product page](https://www.teramind.co/solutions/employee-monitoring/),
+and [current AI/product inventory](https://www.teramind.co/ai-info/).
 
-**Decision of record (2026-08-26):** the product targets **full Teramind
-parity**, including the content capture the original brief excluded. This
-document supersedes the capture limits in
-[`SECURITY_REVIEW.md`](SECURITY_REVIEW.md) §privacy and FEATURE 33 of the
-original brief; both are updated to match rather than silently contradicted.
+**Decision of record (reconciled 2026-08-26):** the product targets broad
+Teramind **capability parity for transparent employee monitoring**, with three
+non-negotiable safety carve-outs inherited from the original product brief:
+no stealth/hidden agent, no typed-key content capture, and no credential or
+password capture. Keyboard activity remains aggregate counts. This document
+does not supersede [`SECURITY_REVIEW.md`](SECURITY_REVIEW.md); privacy limits
+are acceptance criteria for every F40+ feature.
 
 ---
 
@@ -81,7 +87,7 @@ STARTED — needs an explicit go/no-go`.
 | `screen` | 14 | screenshots (interval, privacy mode, skip apps) | fps, live scale, remote control, record locked sessions, retention, async upload |
 | `websites` | 15 | domain + URL + title + duration | scheduling, IP-only mode, suspend rules, private-mode policy, **password-keystroke toggle** |
 | `applications` | 10 | app + window title + duration | scheduling, suspend rules, run-process capture |
-| `keystrokes` | 3 | **counts only** | content capture, clipboard tracking |
+| `keystrokes` | 3 | **counts only** | typed content is an explicit non-goal; clipboard DLP is metadata/classification only |
 | `files` | 25 | — | all of it: access by type, copy/delete/rename/up/down, external drives, network shares, CD burning |
 | `emails` | 14 | — | all of it: metadata, content, attachments, meetings, ignore lists |
 | `network` | 10 | — | outbound connections, SSL, per-process, IP/port allow+deny |
@@ -135,13 +141,13 @@ it. It should be pulled forward regardless of the parity decision.
 | Instance (tma-state/categories/reset) | **F50** Instance analytics state | P3 |
 | SMTP | **F51** Outbound mail configuration | P2 |
 
-### New — content capture (the parity decision)
+### New — additional activity channels (subject to the safety carve-outs)
 | Area | New feature | Priority | Note |
 |---|---|---|---|
 | `emails__*`, activity/email/* | **F52** Email capture | P1 | metadata and body are separate keys — ship metadata first |
 | `conversations__*`, report/im/* | **F53** IM / conversation capture | P2 | |
 | `voip__*`, `audio__*`, voip-event | **F54** VoIP & audio capture | P2 | largest storage cost of anything here |
-| `keystrokes__*`, report/keystrokes | **F55** Keystroke content capture | P1 | **see §4** |
+| `keystrokes__*`, report/keystrokes | **F55** Keyboard activity & input privacy | P1 | aggregate counts only; **see §4** |
 | `files__*` | **F56** File activity | P1 | 25 keys — the biggest single category |
 | `printed_docs__*` | **F57** Print activity | P2 | |
 | `network__*` | **F58** Network connections | P2 | |
@@ -152,31 +158,38 @@ it. It should be pulled forward regardless of the parity decision.
 | `advanced__*` | **F61** Endpoint restrictions | — | **go/no-go required, see §1.3** |
 | Tasks, Time Tracking Reports | **F64** Tasks & cost reporting | P3 | excluded by the original brief; reinstated by the parity decision |
 
+### Newly surfaced on the current official product site
+| Teramind capability | New feature | Priority | Implementation boundary |
+|---|---|---|---|
+| AI-powered Insights feed | **F65** AI Insights & investigation summaries | P2 | evidence-linked summaries; no autonomous punishment |
+| UEBA, behavioral baselines, risk scoring | **F66** Behavior baselines & risk scoring | P1 | explainable factors and manager review |
+| Shadow AI / AI-agent governance | **F67** AI usage governance | P1 | tool/session/risk telemetry; never passwords or secure-field input |
+| Employee sentiment and burnout trends | **F68** Workforce wellbeing signals | P2 | aggregated trends with minimum cohort sizes |
+| Business-process mapping, in-app field parsing | **F69** Process mining & allowlisted field parsing | P2 | explicit app/field allowlists; sensitive-field masking |
+| Citrix, VMware and RDP session recording | **F70** Virtual-session monitoring | P2 | visible agent and the same schedules/privacy policy |
+| Remote desktop control | **F71** Consent-gated remote support | P2 | employee-visible session and revocable consent |
+| Compliance templates and evidence packages | **F72** Compliance policy packs & evidence export | P1 | builds on F26/F27/F44 |
+| Linux endpoint support | **F73** Linux agent | P2 | feature matrix and signed packages |
+| Sensitive-data discovery, classification, fingerprinting | **F74** Content classification & fingerprinting | P1 | DLP matches/actions, not a credential vault |
+
+Existing roadmap features already cover the rest of the refreshed surface:
+F18/F19 scriptable rules and real-time actions, F22 webhooks/SIEM integration,
+F24/F26 RBAC and audit evidence, F15/F17 live/history playback, and F27
+retention/data-sovereignty controls.
+
 ---
 
-## 4. Keystroke content capture — the one design constraint
+## 4. Keyboard input — hard safety boundary
 
-Teramind ships `websites__monitor_password_keystrokes` as an explicit,
-separately-toggled key, and `applications__suspend_keystrokes` /
-`websites__suspend_keystrokes` for per-app and per-site suspension. That is not
-incidental: **a keylogger that does not mask password fields is a credential
-database**, and a credential database is a breach-severity liability regardless
-of how the monitoring itself is disclosed.
+Teramind exposes typed-content and password-keystroke switches. BiBoTracking
+does not implement either. F55 keeps the existing per-minute **count only**
+model and adds schedule/profile controls, app/domain suspension, anomaly
+signals and explicit proof tests that characters, clipboard payloads and secure
+field values never enter SQLite, requests, Postgres, logs or analytics.
 
-F55 therefore ships with:
-
-- `keystrokes__mask_password_fields` — **default on**. Fields the OS reports as
-  secure-entry (`NSSecureTextField` on macOS, `ES_PASSWORD` on Windows) record
-  a length only, never characters.
-- `keystrokes__suspend_apps` / `keystrokes__suspend_domains` — per-target
-  suspension, prefilled from the existing screenshot skip list (which already
-  ships with password managers and banking apps in it).
-- Reading captured keystroke content is a distinct RBAC permission
-  (`view_keystroke_content`), separate from `view_reports`, and every read is
-  written to the F26 audit log.
-
-Turning masking off is a config change, not a code change. The default is what
-matters.
+There is no configuration flag that can turn content capture on. This prevents
+a future UI or policy mistake from converting the agent into a credential
+database.
 
 ---
 
@@ -186,20 +199,22 @@ The parity list is ~24 new features on top of 37 unstarted ones. The order
 below front-loads the things other features are blocked on:
 
 ```
-1. F41  Monitoring profiles + scheduled capture   ← everything else configures through this
-2. os_states (3 keys, into F5)                    ← unblocks correct idle/away attribution
-3. F40  Devices                                   ← profiles bind to devices
-4. F42  Schedules                                 ← worked-vs-scheduled
-5. F6/F8 Productivity profiles + score            ← already the roadmap's next step
-6. F43  Shared lists                              ← rules reference these
-7. F44  Reports hub + async export
-8. F18/F19 Rules + Alerts
-9. F45  Employee notifications
-10. F52/F56 Email + file capture                  ← the two highest-value capture categories
-11. F55 Keystroke content (with §4 defaults)
-12. everything else by priority
+1. F40  Devices                                   ← implemented; profiles bind to devices
+2. F41  Monitoring profiles + scheduled capture  ← everything else configures through this
+3. F7   Departments + job roles                   ← implemented core; opens scoped policy
+4. os_states (3 keys, into F5)                    ← unblocks correct idle/away attribution
+5. F42  Schedules                                 ← worked-vs-scheduled
+6. F6/F8 Productivity profiles + score            ← already the roadmap's next step
+7. F43  Shared lists                              ← rules reference these
+8. F44  Reports hub + async export
+9. F18/F19 Rules + Alerts
+10. F45  Employee notifications
+11. F52/F56 Email + file capture                  ← the two highest-value capture categories
+12. F55 Keyboard activity/privacy proof tests
+13. F65–F74 by dependency and priority
+14. everything else by priority
 ```
 
-**F41 first is not negotiable.** Every capture feature after it is a set of
-tracking keys inside a profile; building them before the profile system exists
-means building each one twice.
+**F41 precedes every remaining capture channel.** Each later channel is a set
+of tracking keys inside a profile; building one outside that system means
+building its configuration and schedule twice.

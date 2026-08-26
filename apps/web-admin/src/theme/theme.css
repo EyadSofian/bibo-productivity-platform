@@ -1741,7 +1741,7 @@ select.input:focus,
   box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
 }
 
-/* ---------- signup wizard — members step (add employees / kids) ---------- */
+/* ---------- signup wizard — add employees step ---------- */
 .ad-addmember {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2038,6 +2038,120 @@ select.input:focus,
   }
   .show-narrow {
     display: inline-flex;
+  }
+}
+
+/* ---------- organization (F7) ---------- */
+.org-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+.org-card,
+.org-assignments {
+  padding: 20px;
+}
+.org-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.org-card__head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.org-card__head p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.org-list {
+  display: flex;
+  flex-direction: column;
+  margin-block-start: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.org-list__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.org-list__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.org-list__copy span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.org-list__actions {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+.org-assignments {
+  margin-block-start: 14px;
+}
+.org-tablewrap {
+  margin-block-start: 14px;
+  padding-inline: 0;
+}
+.org-table {
+  min-width: 680px;
+}
+.org-table select {
+  width: 100%;
+  min-width: 160px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-inset);
+  color: var(--text);
+  font: inherit;
+  padding: 8px 10px;
+}
+.org-dialog {
+  --_w: 520px;
+}
+.org-rosterfilters {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-block-end: 12px;
+}
+.org-rosterfilters select {
+  min-width: 170px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  padding: 8px 10px;
+}
+@media (max-width: 760px) {
+  .org-grid {
+    grid-template-columns: 1fr;
+  }
+  .org-card__head,
+  .org-list__item {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .org-list__actions {
+    justify-content: flex-end;
+  }
+  .org-rosterfilters {
+    align-items: stretch;
+    flex-direction: column;
   }
 }
 
@@ -3420,4 +3534,321 @@ select.input:focus,
 /* breathing room below the last row of the Sites-visited card */
 .ad-panel .ad-tablecard {
   padding-bottom: 24px;
+}
+
+/* ---------- devices (F40) ---------- */
+/* These additions use logical positioning so the Arabic RTL layout does not
+   need a second mirrored stylesheet. */
+.ad-device {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ad-device__icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: var(--surface-2, var(--accent-weak));
+}
+.ad-device__icon svg {
+  width: 18px;
+  height: 18px;
+}
+.ad-device__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.ad-device__name {
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ad-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.ad-live__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.ad-live--on .ad-live__dot {
+  background: #10b981;
+}
+/* A machine whose monitoring is off is dimmed but still legible — it is still
+   part of the fleet, and hiding it would make the toggle hard to undo. */
+.ad-row--off td {
+  opacity: 0.55;
+}
+.ad-row--off .bibo-switch {
+  opacity: 1;
+}
+.ad-note {
+  font-size: 12px;
+  margin-block-start: 12px;
+}
+
+/* switch */
+.bibo-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2, transparent);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.bibo-switch:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+.bibo-switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.bibo-switch__knob {
+  position: absolute;
+  inset-inline-start: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  /* translate, not an inset change, so the motion mirrors correctly in RTL */
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.bibo-switch--on {
+  background: var(--accent-weak);
+  border-color: var(--accent);
+}
+.bibo-switch--on .bibo-switch__knob {
+  background: var(--accent);
+  transform: translateX(18px);
+}
+:root[dir="rtl"] .bibo-switch--on .bibo-switch__knob {
+  transform: translateX(-18px);
+}
+
+.ad-stats--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.ad-switchstate {
+  display: inline-block;
+  min-width: 52px;
+  margin-inline-start: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-align: start;
+  vertical-align: middle;
+}
+.ad-row--off .ad-switchstate {
+  opacity: 1;
+}
+.ad-deviceaction {
+  white-space: nowrap;
+}
+@media (max-width: 1080px) {
+  .ad-stats--three {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 560px) {
+  .ad-stats--three {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- monitoring profiles (F41) ---------- */
+.mp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+}
+.mp-card {
+  padding: 20px;
+}
+.mp-card__head,
+.mp-card__actions,
+.mp-rule__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mp-card h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.mp-card p {
+  margin: 7px 0 0;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.mp-card .bibo-chip {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--brand-tint);
+  color: var(--brand-600);
+  font-size: 11px;
+  font-weight: 700;
+}
+.mp-meta,
+.mp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-block-start: 15px;
+}
+.mp-meta {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.mp-meta span + span::before {
+  content: "·";
+  margin-inline-end: 7px;
+}
+.mp-tag {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.mp-tag.on {
+  border-color: var(--brand-400);
+  background: var(--brand-tint);
+  color: var(--brand-600);
+}
+.mp-card__actions {
+  justify-content: flex-end;
+  margin-block-start: 18px;
+}
+.mp-dialog {
+  --_w: 920px;
+  max-height: min(90vh, 900px);
+  display: flex;
+  flex-direction: column;
+}
+.mp-dialog .bibo-dlg__body {
+  overflow-y: auto;
+}
+.mp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.mp-form .bibo-field > span,
+.mp-sectiontitle {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.mp-form .bibo-field input,
+.mp-form .bibo-field select,
+.mp-form .bibo-field textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-inset);
+  color: var(--text);
+  font: inherit;
+  padding: 9px 11px;
+}
+.mp-form .bibo-field textarea {
+  resize: vertical;
+}
+.mp-form__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.mp-form__row--three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.mp-checkline {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+.mp-sectiontitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.mp-rules {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.mp-rule {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  opacity: 0.68;
+}
+.mp-rule.active {
+  border-color: var(--brand-400);
+  opacity: 1;
+}
+.mp-rule fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  margin: 13px 0 0;
+  padding: 0;
+  border: 0;
+}
+.mp-rule fieldset:disabled {
+  opacity: 0.45;
+}
+.mp-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.mp-days button {
+  width: 30px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.mp-days button.on {
+  border-color: var(--brand-500);
+  background: var(--brand-tint);
+  color: var(--brand-600);
+}
+@media (max-width: 760px) {
+  .mp-rules,
+  .mp-form__row,
+  .mp-form__row--three {
+    grid-template-columns: 1fr;
+  }
 }

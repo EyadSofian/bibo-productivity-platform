@@ -9,8 +9,8 @@ mod server;
 mod settings;
 mod storage;
 mod sync;
-mod tray;
 mod trackers;
+mod tray;
 
 use std::sync::Arc;
 use tauri::Manager;
@@ -45,6 +45,7 @@ fn apply_dock_policy(_app: &tauri::AppHandle, _hide: bool) {}
 
 /// Fetch the curated sensitive-app list from the backend (skip-list suggestions
 /// + prefill), falling back to the baked-in copy when the backend is
+///
 /// unreachable (offline / personal use).
 pub async fn fetch_privacy_apps_or_baked() -> Vec<sync::client::PrivacyAppCategory> {
     match sync::client::fetch_privacy_apps(&settings::backend_base_url()).await {
@@ -74,7 +75,6 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::ping,
             commands::track_event,
-
             commands::set_paused,
             commands::set_in_setup,
             commands::is_paused,
@@ -136,8 +136,8 @@ pub fn run() {
             app.manage(control.clone());
 
             // Menu bar item (Start/Stop/Open) + Dock visibility per settings.
-            tray::build(&app.handle(), control.clone())?;
-            apply_dock_policy(&app.handle(), hide_dock);
+            tray::build(app.handle(), control.clone())?;
+            apply_dock_policy(app.handle(), hide_dock);
 
             // Keep running when the window is closed — hide to the menu bar instead.
             // Also emit an `app_active` analytics event when the window regains focus. We do
@@ -201,6 +201,7 @@ pub fn run() {
                 auth,
                 status,
                 settings: settings_state,
+                control,
             });
 
             // Manage remaining state so commands can reach the DB.
@@ -209,7 +210,11 @@ pub fn run() {
             // Product analytics: one fire-and-forget event per launch (crash-free,
             // direct Aptabase API — see analytics.rs). Tagged with the per-launch
             // analytics_session; offline launches queue under data_dir for later flush.
-            analytics::track_app_started(loaded_locale, analytics_session.0.clone(), data_dir.join("analytics-queue"));
+            analytics::track_app_started(
+                loaded_locale,
+                analytics_session.0.clone(),
+                data_dir.join("analytics-queue"),
+            );
             Ok(())
         })
         .run(tauri::generate_context!())

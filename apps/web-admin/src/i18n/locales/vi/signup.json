@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "Chọn loại tài khoản",
-    "personaDesc": "Cá nhân, nhóm hoặc gia đình",
+    "personaDesc": "Cá nhân hoặc nhóm",
     "accountTitle": "Tạo tài khoản",
     "accountDesc": "Tên, email hoặc tên đăng nhập, mật khẩu",
     "setupTitle": "Đặt tên cho {{noun}} của bạn",
     "setupDesc": "Tên gọi cho {{noun}} của bạn",
     "membersTitleManager": "Thêm {{members}}",
-    "membersDescParent": "Thiết lập đăng nhập cho các con của bạn",
     "membersDescManager": "Mời những người bạn quản lý",
     "doneTitle": "Hoàn tất",
     "doneDesc": "Không gian làm việc của bạn đã sẵn sàng."
@@ -32,9 +31,6 @@
     "teamTitle": "Nhóm của tôi",
     "teamDesc": "Quản lý nhân viên hoặc freelancer và xem lại hoạt động của họ.",
     "teamTag": "Tài khoản miễn phí",
-    "familyTitle": "Gia đình tôi",
-    "familyDesc": "Theo dõi thời gian sử dụng màn hình và hoạt động của các con tôi.",
-    "familyTag": "Tài khoản miễn phí",
     "caption": "Theo dõi cá nhân nằm trong ứng dụng máy tính — không cần tài khoản quản trị."
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "Đặt tên cho {{noun}} của bạn",
     "sub": "Bạn có thể thêm {{members}} ở bước tiếp theo.",
     "nameLabel": "Tên {{noun}}",
-    "placeholderFamily": "Gia đình Cooper",
     "placeholderTeam": "Công ty Cooper",
     "saving": "Đang lưu…",
     "continue": "Tiếp tục"

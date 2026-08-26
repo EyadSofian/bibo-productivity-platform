@@ -158,7 +158,7 @@ ON CONFLICT (id) DO UPDATE SET
   os = COALESCE(EXCLUDED.os, devices.os),
   agent_version = COALESCE(EXCLUDED.agent_version, devices.agent_version),
   last_seen_at = now()
-RETURNING monitoring_enabled`
+RETURNING monitoring_enabled AND deleted_at IS NULL`
 )
 
 // SyncBatch upserts a batch of activity/keystroke/browser rows for one user+business
@@ -174,7 +174,7 @@ RETURNING monitoring_enabled`
 // that the data was intentionally discarded. Enforcement lives here, at the one
 // choke point every device's data passes through, rather than in the agent,
 // which is the untrusted side.
-func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID string, label *string,
+func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID string, label, os, agentVersion *string,
 	act []ActivityRow, ks []KeystrokeRow, br []BrowserRow) (SyncResult, error) {
 
 	tx, err := s.pool.Begin(ctx)
@@ -183,7 +183,6 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 	}
 	defer tx.Rollback(ctx)
 
-	var os, agentVersion *string // reserved for a later agent that reports them
 	var monitoringEnabled bool
 	if err := tx.QueryRow(ctx, deviceUpsert,
 		deviceID, userID, businessID, label, os, agentVersion,

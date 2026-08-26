@@ -10,7 +10,7 @@ import (
 // on first contact. Returns the device id.
 func registerDevice(t *testing.T, f syncFixture) string {
 	t.Helper()
-	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, nil, nil, nil); err != nil {
+	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("register device: %v", err)
 	}
 	return f.deviceID
@@ -20,7 +20,7 @@ func TestListDevicesReturnsRegistered(t *testing.T) {
 	f := newSyncFixture(t)
 	id := registerDevice(t, f)
 
-	devices, err := f.store.ListDevices(f.ctx, f.userID, f.bizID)
+	devices, err := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -57,7 +57,7 @@ func TestListDevicesIsTenantScoped(t *testing.T) {
 	}
 
 	// Naming the first owner's business as the intruder returns nothing.
-	devices, err := f.store.ListDevices(f.ctx, other.ID, f.bizID)
+	devices, err := f.store.ListDevices(f.ctx, other.ID, f.bizID, false)
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
@@ -67,7 +67,7 @@ func TestListDevicesIsTenantScoped(t *testing.T) {
 
 	// And the intruder's own (empty) business is genuinely empty, proving the
 	// previous assertion was not a false pass from a broken query.
-	devices, err = f.store.ListDevices(f.ctx, other.ID, otherBiz.ID)
+	devices, err = f.store.ListDevices(f.ctx, other.ID, otherBiz.ID, false)
 	if err != nil {
 		t.Fatalf("list own: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestSetDeviceMonitoringIsTenantScoped(t *testing.T) {
 	}
 
 	// The real owner's device is untouched by the failed attempt.
-	devices, _ := f.store.ListDevices(f.ctx, f.userID, f.bizID)
+	devices, _ := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
 	if len(devices) != 1 || !devices[0].MonitoringEnabled {
 		t.Fatal("a cross-tenant attempt must not have changed the device")
 	}
@@ -131,6 +131,71 @@ func TestSetDeviceMonitoringUnknownDevice(t *testing.T) {
 	_, err := f.store.SetDeviceMonitoring(f.ctx, f.userID, uuid.NewString(), false)
 	if err != ErrNotFound {
 		t.Fatalf("err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestArchiveAndRestoreDeviceIsRecoverable(t *testing.T) {
+	f := newSyncFixture(t)
+	id := registerDevice(t, f)
+
+	archived, err := f.store.SetDeviceArchived(f.ctx, f.userID, id, true)
+	if err != nil {
+		t.Fatalf("archive: %v", err)
+	}
+	if archived.DeletedAt == nil || archived.MonitoringEnabled {
+		t.Fatalf("archived device = deleted_at %v, monitoring %v; want timestamp/false",
+			archived.DeletedAt, archived.MonitoringEnabled)
+	}
+	active, err := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
+	if err != nil || len(active) != 0 {
+		t.Fatalf("active list after archive = %d, %v; want 0", len(active), err)
+	}
+	all, err := f.store.ListDevices(f.ctx, f.userID, f.bizID, true)
+	if err != nil || len(all) != 1 || all[0].DeletedAt == nil {
+		t.Fatalf("including archived = %#v, %v; want archived device", all, err)
+	}
+
+	restored, err := f.store.SetDeviceArchived(f.ctx, f.userID, id, false)
+	if err != nil {
+		t.Fatalf("restore: %v", err)
+	}
+	if restored.DeletedAt != nil {
+		t.Fatal("restore should clear deleted_at")
+	}
+	if restored.MonitoringEnabled {
+		t.Fatal("restore must stay paused until the owner explicitly enables monitoring")
+	}
+}
+
+func TestArchiveDeviceIsTenantScoped(t *testing.T) {
+	f := newSyncFixture(t)
+	id := registerDevice(t, f)
+	intruder := mustUser(t, f.ctx, f.store, "archive-intruder@example.com", "")
+
+	if _, err := f.store.SetDeviceArchived(f.ctx, intruder.ID, id, true); err != ErrNotFound {
+		t.Fatalf("cross-tenant archive err = %v, want ErrNotFound", err)
+	}
+	active, _ := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
+	if len(active) != 1 || active[0].DeletedAt != nil {
+		t.Fatal("cross-tenant archive changed the real owner's device")
+	}
+}
+
+func TestSyncPersistsDeviceMetadata(t *testing.T) {
+	f := newSyncFixture(t)
+	label, operatingSystem, version := "Amina's MacBook", "macOS 15.3", "1.5.1"
+	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID,
+		&label, &operatingSystem, &version, nil, nil, nil); err != nil {
+		t.Fatalf("sync metadata: %v", err)
+	}
+	devices, err := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
+	if err != nil || len(devices) != 1 {
+		t.Fatalf("list metadata: %v, len=%d", err, len(devices))
+	}
+	d := devices[0]
+	if d.Label == nil || *d.Label != label || d.OS == nil || *d.OS != operatingSystem ||
+		d.AgentVersion == nil || *d.AgentVersion != version {
+		t.Fatalf("metadata = label %v os %v version %v", d.Label, d.OS, d.AgentVersion)
 	}
 }
 
@@ -145,7 +210,7 @@ func TestSyncDropsDataWhenMonitoringDisabled(t *testing.T) {
 	}
 
 	before := f.count(t, "activity_samples")
-	res, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil,
+	res, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil, nil, nil,
 		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil)
 	if err != nil {
 		t.Fatalf("sync while disabled: %v", err)
@@ -165,7 +230,7 @@ func TestSyncDropsDataWhenMonitoringDisabled(t *testing.T) {
 	if _, err := f.store.SetDeviceMonitoring(f.ctx, f.userID, id, true); err != nil {
 		t.Fatalf("re-enable: %v", err)
 	}
-	res, err = f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil,
+	res, err = f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil, nil, nil,
 		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil)
 	if err != nil {
 		t.Fatalf("sync after re-enable: %v", err)

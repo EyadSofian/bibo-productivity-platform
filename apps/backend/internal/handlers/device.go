@@ -31,7 +31,8 @@ func (h *DeviceHandler) List(c *gin.Context) {
 	ownerID, _ := auth.UserID(c)
 	businessID := c.Param("id")
 
-	devices, err := h.store.ListDevices(c.Request.Context(), ownerID, businessID)
+	includeDeleted := c.Query("include_deleted") == "true"
+	devices, err := h.store.ListDevices(c.Request.Context(), ownerID, businessID, includeDeleted)
 	if err != nil {
 		serverError(c, err)
 		return
@@ -40,6 +41,41 @@ func (h *DeviceHandler) List(c *gin.Context) {
 	// query simply matches no rows. That is deliberate — it does not confirm or
 	// deny the existence of a business they cannot see.
 	c.JSON(http.StatusOK, gin.H{"devices": devices})
+}
+
+// Archive removes a retired device from the active inventory without erasing
+// historical activity. POST /v1/devices/:device_id/archive
+func (h *DeviceHandler) Archive(c *gin.Context) {
+	h.setArchived(c, true)
+}
+
+// Restore returns an archived device to the inventory. Monitoring remains
+// paused until the owner explicitly enables it.
+// POST /v1/devices/:device_id/restore
+func (h *DeviceHandler) Restore(c *gin.Context) {
+	h.setArchived(c, false)
+}
+
+func (h *DeviceHandler) setArchived(c *gin.Context, archived bool) {
+	ownerID, _ := auth.UserID(c)
+	deviceID := c.Param("device_id")
+	if _, err := uuid.Parse(deviceID); err != nil {
+		badRequest(c, "device_id must be a uuid")
+		return
+	}
+
+	device, err := h.store.SetDeviceArchived(c.Request.Context(), ownerID, deviceID, archived)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		c.JSON(http.StatusNotFound, gin.H{"error": "device not found"})
+		return
+	case err != nil:
+		serverError(c, err)
+		return
+	}
+
+	obs.Info("device archive changed", "owner", ownerID, "device", deviceID, "archived", archived)
+	c.JSON(http.StatusOK, gin.H{"device": device})
 }
 
 type setMonitoringReq struct {

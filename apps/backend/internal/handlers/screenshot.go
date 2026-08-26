@@ -96,6 +96,17 @@ func (h *ScreenshotHandler) Upload(c *gin.Context) {
 	if err != nil {
 		return // resolveBusiness already wrote the response
 	}
+	allowed, err := h.store.DeviceMonitoringAllowed(c.Request.Context(), userID, bizID, deviceID)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	if !allowed {
+		// Acknowledge and discard, matching SyncBatch. Older agents that have not
+		// learned the remote pause must not retry the same private image forever.
+		c.JSON(http.StatusOK, gin.H{"accepted": []string{clientUUID}, "monitoring_enabled": false})
+		return
+	}
 
 	// Write the file first, then record metadata (so a row never points at a
 	// missing file). A failed metadata write leaves a blob that a retry overwrites.
@@ -121,7 +132,7 @@ func (h *ScreenshotHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"accepted": []string{clientUUID}})
+	c.JSON(http.StatusOK, gin.H{"accepted": []string{clientUUID}, "monitoring_enabled": true})
 }
 
 // resolveBusiness mirrors the sync handler's resolution, writing the error response

@@ -47,6 +47,8 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
 	deviceH := handlers.NewDeviceHandler(st)
+	monitoringProfileH := handlers.NewMonitoringProfileHandler(st)
+	organizationH := handlers.NewOrganizationHandler(st)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
 	keepaliveH := handlers.NewKeepaliveHandler(cfg.KeepaliveToken)
 
@@ -94,6 +96,23 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Device fleet inventory & per-machine monitoring control (F40).
 	authed.GET("/businesses/:id/devices", deviceH.List)
 	authed.POST("/devices/:device_id/monitoring", deviceH.SetMonitoring)
+	authed.POST("/devices/:device_id/archive", deviceH.Archive)
+	authed.POST("/devices/:device_id/restore", deviceH.Restore)
+	authed.GET("/businesses/:id/monitoring-profiles", monitoringProfileH.List)
+	authed.POST("/monitoring-profiles", monitoringProfileH.Create)
+	authed.PUT("/monitoring-profiles/:profile_id", monitoringProfileH.Update)
+	authed.DELETE("/monitoring-profiles/:profile_id", monitoringProfileH.Delete)
+	authed.GET("/monitoring-profiles/resolved", monitoringProfileH.Resolved)
+
+	// Lightweight departments and job roles (F7).
+	authed.GET("/businesses/:id/organization", organizationH.List)
+	authed.POST("/departments", organizationH.CreateDepartment)
+	authed.PUT("/departments/:item_id", organizationH.UpdateDepartment)
+	authed.DELETE("/departments/:item_id", organizationH.DeleteDepartment)
+	authed.POST("/job-roles", organizationH.CreateJobRole)
+	authed.PUT("/job-roles/:item_id", organizationH.UpdateJobRole)
+	authed.DELETE("/job-roles/:item_id", organizationH.DeleteJobRole)
+	authed.PUT("/businesses/:id/employees/:employee_id/organization", organizationH.AssignEmployee)
 
 	// Capture policy for the desktop (employee's org settings).
 	authed.GET("/policy", ownerH.Policy)

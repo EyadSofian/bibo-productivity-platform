@@ -244,7 +244,11 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
 - **Status:** NOT STARTED
 
 ### F7 — Employee job roles · P1 · Phase P-3
-- **Current State:** Does not exist. `memberships.role` is only `owner|employee`.
+- **Current State:** Core implemented (2026-08-26): tenant-scoped Department and
+  JobRole CRUD, employee assignment, organization management UI, roster columns
+  and filters, eight-language localization, and safe unassignment on delete.
+  F41 can now target departments and resolves company → department → device →
+  employee. Role-specific productivity baselines remain part of F9.
 - **Target State:** Lightweight `Department` and `JobRole` entities, enough to drive
   classification and role-aware scoring. **Not HR** — no salary, no hierarchy, no
   reviews.
@@ -259,7 +263,10 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
   unassigned employees fall back to company rules.
 - **Dependencies:** F1.
 - **Risks:** scope creep into HR features that are explicitly out of scope.
-- **Status:** NOT STARTED
+- **Implemented tests:** tenant-isolated CRUD and assignment, case-insensitive
+  uniqueness, safe delete fallback, and department monitoring-policy precedence.
+- **Remaining:** role baseline configuration consumed by F9 and packaged UI E2E.
+- **Status:** IN PROGRESS (core complete)
 
 ### F8 — Productivity score · P0 · Phase P-3
 - **Current State:** Does not exist. The roster's `focus_pct_today` is a misnomer —
@@ -809,24 +816,26 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
 
 ## Phase P-11 — Teramind parity (added 2026-08-26)
 
-Scope decision of record: the product targets **full Teramind parity**,
-including the content capture the original brief excluded. The gap analysis
-that produced these entries — and the reasoning behind the two carve-outs — is
+Scope decision of record: the product targets broad Teramind capability parity
+for **transparent employee monitoring**, while retaining the original brief's
+hard exclusions: no stealth mode, typed-key content, credentials or passwords.
+The gap analysis that produced these entries and the safety boundaries is
 [TERAMIND_PARITY.md](TERAMIND_PARITY.md). Read it before starting any F40+ item.
 
 Two entries need reading before they are picked up:
 - **F61** (endpoint restrictions) is the only item marked go/no-go rather than a
   priority. It is device control, not monitoring, and needs signed kernel
   drivers on both platforms.
-- **F55** (keystroke content) ships with password-field masking on by default.
-  That default is a design constraint, not a preference — see
-  TERAMIND_PARITY.md §4.
+- **F55** is keyboard activity and privacy proofing, not key content capture.
+  Counts are the maximum retained granularity — see TERAMIND_PARITY.md §4.
 
 ### F41 — Monitoring profiles & scheduled capture · P0 · Phase P-11
-- **Current State:** Capture settings are per-business global booleans with an
-  optional per-device override (`settings` table + desktop `settings/mod.rs`).
-  There is no concept of *when* to capture — capture is always-on whenever the
-  agent runs.
+- **Current State:** The core is implemented: named profiles, parent
+  inheritance, company/department/device/employee assignments, per-channel ISO weekdays,
+  minute windows and IANA timezones. Resolution is company → device → employee;
+  the desktop refreshes it every heartbeat and gates applications, websites,
+  screenshots and aggregate keyboard counts before capture. The web editor uses
+  the original design system and previews explicit vs inherited categories.
 - **Target State:** A named, inheritable profile holds `{tracking_key,
   tracking_val}` pairs and binds to a scope (employees, devices, departments,
   directory groups). Every capture category carries its own `days_of_week` and
@@ -848,15 +857,28 @@ Two entries need reading before they are picked up:
 - **Dependencies:** F1. Blocks every F52–F63 capture feature.
 - **Risks:** getting resolution wrong silently captures more than intended —
   the failure mode is over-collection, so tests come before implementation.
-- **Status:** NOT STARTED
+- **Implemented tests:** inheritance/source attribution, employee-over-device
+  precedence, tenant isolation, midnight wrap, DST spring-forward, agent
+  schedule evaluation and invalid-timezone fail-closed behavior.
+- **Remaining:** directory-group scopes (blocked on F46),
+  persistent encrypted offline profile cache, server-pushed mid-interval refresh
+  instead of the current ≤5-minute heartbeat bound, and packaged-agent E2E.
+- **Status:** IN PROGRESS (core complete; remaining integration scopes above)
 
 ### F40 — Devices & per-machine monitoring control · P1 · Phase P-11
-- **Current State:** `devices` table records a device on sync; nothing manages it.
+- **Current State:** Inventory API and web UI are implemented. The desktop now
+  reports hostname, OS and agent version; the remote switch is enforced in both
+  the agent and backend across activity, key counts, browser data and screenshots.
+  Recoverable archive/restore uses `deleted_at` and never erases history.
 - **Target State:** Device inventory with last-seen, OS, agent version; enable
   and disable monitoring per machine; soft-delete and restore.
 - **API:** `GET /api/v1/devices`, `POST /api/v1/devices/{id}/enable-monitoring`,
   `.../disable-monitoring`, `POST /api/v1/devices/{id}/restore`.
-- **Dependencies:** F1. **Status:** NOT STARTED
+- **Tests:** tenant isolation, metadata persistence, disabled-ingest behavior,
+  archive/restore safety, RTL/localized web UI and optimistic-error recovery.
+- **Remaining validation:** packaged macOS/Windows agent against a real backend,
+  including re-enable propagation within one heartbeat interval.
+- **Dependencies:** F1. **Status:** READY FOR TEST
 
 ### F42 — Work schedules & shifts · P1 · Phase P-11
 - **Current State:** none. Nothing in the system knows an employee's expected hours.
@@ -874,11 +896,30 @@ Two entries need reading before they are picked up:
 ### F51 — Outbound mail configuration · P2
 - Specced in [TERAMIND_PARITY.md](TERAMIND_PARITY.md) §3. **Status:** NOT STARTED
 
-### F52–F64 — Content capture · Phase P-11
-- F52 Email · F53 IM/conversations · F54 VoIP & audio · F55 Keystroke content ·
+### F52–F64 — Additional activity channels · Phase P-11
+- F52 Email · F53 IM/conversations · F54 VoIP & audio · F55 Keyboard activity/privacy ·
   F56 File activity · F57 Print · F58 Network · F59 Social media · F60 SQL ·
   F62 Screen OCR · F63 Location & camera · F64 Tasks & cost reporting.
 - Each is a set of tracking keys inside an F41 profile. Building any of them
   before F41 exists means building it twice.
 - **F61 Endpoint restrictions** — go/no-go, not scheduled. See §1.3.
+- **Status:** NOT STARTED (all)
+
+### F65–F74 — Current Teramind product surface · Phase P-11
+- **F65 AI Insights & investigation summaries** · P2
+- **F66 Behavior baselines, UEBA & explainable risk scoring** · P1
+- **F67 Shadow-AI and AI-agent usage governance** · P1
+- **F68 Aggregated employee sentiment, workload & burnout signals** · P2
+- **F69 Business-process mining and allowlisted in-app field parsing** · P2
+- **F70 Citrix, VMware and RDP virtual-session monitoring** · P2
+- **F71 Employee-visible, consent-gated remote desktop support** · P2
+- **F72 Compliance policy packs and evidence export** · P1
+- **F73 Linux endpoint agent and signed deployment packages** · P2
+- **F74 Sensitive-data classification and document fingerprinting** · P1
+- Each feature inherits F24/F26 access control and audit requirements, F27
+  retention controls and F41 capture schedules. F65/F66 also depend on F18/F19
+  so every score or summary links back to reviewable evidence.
+- **Safety:** none may introduce stealth capture, typed-key content or password /
+  credential storage. F68 enforces cohort thresholds; F69 requires field
+  allowlists and masking; F71 requires an employee-visible consent session.
 - **Status:** NOT STARTED (all)

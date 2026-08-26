@@ -69,14 +69,86 @@ fn tr(locale: &str, key: &str) -> String {
         .to_string()
     };
     match key {
-        "open" => s("Open main UI", "打开主界面", "メイン画面を開く", "Mở giao diện chính", "Buka antarmuka utama", "Ouvrir l'interface", "Abrir la interfaz", "فتح الواجهة الرئيسية"),
-        "start" => s("Start", "开始", "開始", "Bắt đầu", "Mulai", "Démarrer", "Iniciar", "بدء"),
-        "stop" => s("Stop", "停止", "停止", "Dừng", "Hentikan", "Arrêter", "Detener", "إيقاف"),
-        "version" => s("Version", "版本", "バージョン", "Phiên bản", "Versi", "Version", "Versión", "الإصدار"),
-        "quit" => s("Quit BiBoTracking", "退出 BiBoTracking", "BiBoTracking を終了", "Thoát BiBoTracking", "Keluar dari BiBoTracking", "Quitter BiBoTracking", "Salir de BiBoTracking", "إنهاء BiBoTracking"),
-        "tip_tracking" => s("tracking", "正在跟踪", "トラッキング中", "đang theo dõi", "melacak", "suivi en cours", "en seguimiento", "قيد المتابعة"),
-        "tip_idle" => s("idle (not counting)", "空闲（未计数）", "アイドル（カウントなし）", "không hoạt động (không tính)", "diam (tidak menghitung)", "inactif (pas de comptage)", "inactivo (sin contar)", "خامل (لا يتم الاحتساب)"),
-        "tip_paused" => s("paused", "已暂停", "一時停止中", "đã tạm dừng", "dijeda", "en pause", "en pausa", "متوقف مؤقتًا"),
+        "open" => s(
+            "Open main UI",
+            "打开主界面",
+            "メイン画面を開く",
+            "Mở giao diện chính",
+            "Buka antarmuka utama",
+            "Ouvrir l'interface",
+            "Abrir la interfaz",
+            "فتح الواجهة الرئيسية",
+        ),
+        "start" => s(
+            "Start",
+            "开始",
+            "開始",
+            "Bắt đầu",
+            "Mulai",
+            "Démarrer",
+            "Iniciar",
+            "بدء",
+        ),
+        "stop" => s(
+            "Stop",
+            "停止",
+            "停止",
+            "Dừng",
+            "Hentikan",
+            "Arrêter",
+            "Detener",
+            "إيقاف",
+        ),
+        "version" => s(
+            "Version",
+            "版本",
+            "バージョン",
+            "Phiên bản",
+            "Versi",
+            "Version",
+            "Versión",
+            "الإصدار",
+        ),
+        "quit" => s(
+            "Quit BiBoTracking",
+            "退出 BiBoTracking",
+            "BiBoTracking を終了",
+            "Thoát BiBoTracking",
+            "Keluar dari BiBoTracking",
+            "Quitter BiBoTracking",
+            "Salir de BiBoTracking",
+            "إنهاء BiBoTracking",
+        ),
+        "tip_tracking" => s(
+            "tracking",
+            "正在跟踪",
+            "トラッキング中",
+            "đang theo dõi",
+            "melacak",
+            "suivi en cours",
+            "en seguimiento",
+            "قيد المتابعة",
+        ),
+        "tip_idle" => s(
+            "idle (not counting)",
+            "空闲（未计数）",
+            "アイドル（カウントなし）",
+            "không hoạt động (không tính)",
+            "diam (tidak menghitung)",
+            "inactif (pas de comptage)",
+            "inactivo (sin contar)",
+            "خامل (لا يتم الاحتساب)",
+        ),
+        "tip_paused" => s(
+            "paused",
+            "已暂停",
+            "一時停止中",
+            "đã tạm dừng",
+            "dijeda",
+            "en pause",
+            "en pausa",
+            "متوقف مؤقتًا",
+        ),
         _ => key.to_string(),
     }
 }
@@ -213,7 +285,7 @@ pub fn set_paused(app: &AppHandle, paused: bool) {
 pub fn refresh(app: &AppHandle) {
     let (paused, threshold) = match app.try_state::<Arc<TrackerControl>>() {
         Some(c) => (
-            c.paused.load(Ordering::Relaxed),
+            c.is_capture_paused(),
             c.idle_threshold_s.load(Ordering::Relaxed) as f64,
         ),
         None => (false, 60.0),
@@ -253,7 +325,9 @@ fn render(app: &AppHandle, state: State) {
     // paused AND on the dashboard (never from the setup surfaces).
     let paused = state == State::Paused;
     if let Some(items) = app.try_state::<MenuItems>() {
-        let _ = items.start.set_enabled(paused && !IN_SETUP.load(Ordering::Relaxed));
+        let _ = items
+            .start
+            .set_enabled(paused && !IN_SETUP.load(Ordering::Relaxed));
         let _ = items.stop.set_enabled(!paused);
     }
 }

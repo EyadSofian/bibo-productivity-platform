@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "アカウントの種類を選択",
-    "personaDesc": "個人、チーム、または家族",
+    "personaDesc": "個人またはチーム",
     "accountTitle": "アカウント作成",
     "accountDesc": "名前、メールまたはユーザー名、パスワード",
     "setupTitle": "{{noun}}の名前を設定",
     "setupDesc": "{{noun}}の呼び名を決めます",
     "membersTitleManager": "{{members}}を追加",
-    "membersDescParent": "お子様のログインを設定します",
     "membersDescManager": "管理するメンバーを招待します",
     "doneTitle": "準備完了",
     "doneDesc": "トラッキングを開始"
@@ -32,9 +31,6 @@
     "teamTitle": "自分のチーム",
     "teamDesc": "従業員やフリーランサーを管理し、その活動を確認します。",
     "teamTag": "無料アカウント",
-    "familyTitle": "自分の家族",
-    "familyDesc": "お子様のスクリーンタイムと活動を見守ります。",
-    "familyTag": "無料アカウント",
     "caption": "個人トラッキングはデスクトップアプリ内で動作します。管理者アカウントは不要です。"
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "{{noun}}の名前を設定",
     "sub": "次に{{members}}を追加できます。",
     "nameLabel": "{{noun}}名",
-    "placeholderFamily": "クーパー家",
     "placeholderTeam": "クーパー社",
     "saving": "保存中…",
     "continue": "次へ"

@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Trans, useTranslation } from "react-i18next";
 import {
@@ -6,7 +6,7 @@ import {
   createEmployee,
   listBusinessEmployees,
 } from "../api/endpoints";
-import { ApiError, type BusinessKind, type Employee } from "../api/types";
+import { ApiError, type Employee } from "../api/types";
 import { Empty, Modal, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms, type MemberTerms } from "../terms";
@@ -23,7 +23,6 @@ const IconUserPlus = svg(<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /
 const IconArrowRight = svg(<><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>);
 const IconBuilding = svg(<><path d="M10 12h4" /><path d="M10 8h4" /><path d="M14 21v-3a2 2 0 0 0-4 0v3" /><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" /><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /></>);
 const IconClose = svg(<><path d="M18 6 6 18M6 6l12 12" /></>);
-const IconHouse = svg(<><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" /><path d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></>);
 const IconDices = svg(<><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /><path d="M6 18h.01" /><path d="M10 14h.01" /><path d="M15 6h.01" /><path d="M18 9h.01" /></>);
 
 /** Local strong temp-password generator (mirrors the wizard's). */
@@ -72,6 +71,8 @@ export function Employees() {
   const [showBiz, setShowBiz] = useState(false);
   const [showEmp, setShowEmp] = useState(false);
   const [autoCreatedNote, setAutoCreatedNote] = useState<string | null>(null);
+  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
 
   const terms = memberTerms(selected?.kind);
 
@@ -85,6 +86,8 @@ export function Employees() {
   }
 
   useEffect(() => {
+    setDepartmentFilter("");
+    setRoleFilter("");
     if (selectedId) loadEmployees(selectedId);
     else setEmployees([]);
   }, [selectedId]);
@@ -99,6 +102,11 @@ export function Employees() {
   }, [searchParams, setSearchParams]);
 
   const hasBusiness = businesses.length > 0;
+  const departmentNames = useMemo(() => Array.from(new Set(employees.map((employee) => employee.department_name).filter(Boolean))).sort(), [employees]);
+  const roleNames = useMemo(() => Array.from(new Set(employees.map((employee) => employee.job_role_name).filter(Boolean))).sort(), [employees]);
+  const visibleEmployees = employees.filter((employee) =>
+    (!departmentFilter || employee.department_name === departmentFilter) &&
+    (!roleFilter || employee.job_role_name === roleFilter));
 
   return (
     <div className="ad-wrap" style={{ paddingBottom: 32 }}>
@@ -152,17 +160,36 @@ export function Employees() {
       )}
 
       {employees.length > 0 && (
+        <div className="org-rosterfilters" aria-label={t("organization.filters")}>
+          <select aria-label={t("organization.department")} value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
+            <option value="">{t("organization.allDepartments")}</option>
+            {departmentNames.map((name) => <option key={name}>{name}</option>)}
+          </select>
+          <select aria-label={t("organization.role")} value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
+            <option value="">{t("organization.allRoles")}</option>
+            {roleNames.map((name) => <option key={name}>{name}</option>)}
+          </select>
+        </div>
+      )}
+
+      {employees.length > 0 && visibleEmployees.length === 0 && (
+        <Empty>{t("organization.noFilterMatches")}</Empty>
+      )}
+
+      {visibleEmployees.length > 0 && (
         <div className="bibo-card bibo-card--default ad-tablecard">
           <table className="ad-table ad-table--roster">
             <thead>
               <tr>
                 <th>{t("employees.table.name")}</th>
                 <th>{t("employees.table.login")}</th>
+                <th>{t("organization.department")}</th>
+                <th>{t("organization.role")}</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {employees.map((e, i) => {
+              {visibleEmployees.map((e, i) => {
                 const pal = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
                 const isSelf = e.id === user?.id;
                 const status = placeholderStatus(e.id); // PLACEHOLDER pending backend presence
@@ -183,6 +210,8 @@ export function Employees() {
                       </div>
                     </td>
                     <td className="ad-login">{e.email || e.username}</td>
+                    <td>{e.department_name || "—"}</td>
+                    <td>{e.job_role_name || "—"}</td>
                     <td className="r">
                       <Link className="ad-viewlink" to={`/employees/${e.id}?business=${selectedId}`}>
                         {t("employees.viewReports")}
@@ -200,7 +229,6 @@ export function Employees() {
       {showBiz && (
         <NewBusinessModal
           terms={terms}
-          kind={selected?.kind}
           onClose={() => setShowBiz(false)}
           onCreated={async (id) => {
             setShowBiz(false);
@@ -235,17 +263,14 @@ export function Employees() {
 
 function NewBusinessModal({
   terms,
-  kind,
   onClose,
   onCreated,
 }: {
   terms: MemberTerms;
-  kind: BusinessKind | undefined;
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
   const { t } = useTranslation("dashboard");
-  const isFamily = kind === "family";
   const orgCap = terms.org.charAt(0).toUpperCase() + terms.org.slice(1);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -270,7 +295,7 @@ function NewBusinessModal({
       <div className="bibo-dlg bibo-dlg--org" role="dialog" aria-modal="true">
         <div className="bibo-dlg__head">
           <div className="bibo-dlg__icon">
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>{isFamily ? IconHouse : IconBuilding}</span>
+            <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconBuilding}</span>
           </div>
           <div className="bibo-dlg__title">{t("employees.newOrg", { org: terms.org })}</div>
           <button
@@ -293,7 +318,7 @@ function NewBusinessModal({
               <span className="bibo-field__lbl">{t("newBusinessModal.orgNameLabel", { org: orgCap })}</span>
               <span className="bibo-input">
                 <input
-                  placeholder={t(isFamily ? "newBusinessModal.namePlaceholderFamily" : "newBusinessModal.namePlaceholder")}
+                  placeholder={t("newBusinessModal.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required

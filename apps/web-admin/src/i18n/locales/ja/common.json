@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "ダッシュボード",
     "employees": "従業員",
+    "devices": "デバイス",
+    "monitoring": "監視設定",
+    "organization": "組織",
     "settings": "設定"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "{{count}}日前"
   },
   "terms": {
-    "team": { "one": "従業員", "many": "従業員", "lowerOne": "従業員", "lowerMany": "従業員", "addCta": "従業員を追加", "org": "チーム" },
-    "family": { "one": "子ども", "many": "子ども", "lowerOne": "子ども", "lowerMany": "子ども", "addCta": "子どもを追加", "org": "家族" }
+    "team": {
+      "one": "従業員",
+      "many": "従業員",
+      "lowerOne": "従業員",
+      "lowerMany": "従業員",
+      "addCta": "従業員を追加",
+      "org": "チーム"
+    }
   }
 }

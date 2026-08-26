@@ -33,10 +33,27 @@ const businessCols = "id, name, kind, owner_user_id, screenshot_retention_days, 
 
 // Employee is a member with the employee role within a business.
 type Employee struct {
-	ID          string `json:"id"`
-	Email       string `json:"email"`
-	Username    string `json:"username"`
-	DisplayName string `json:"display_name"`
+	ID             string  `json:"id"`
+	Email          string  `json:"email"`
+	Username       string  `json:"username"`
+	DisplayName    string  `json:"display_name"`
+	DepartmentID   *string `json:"department_id"`
+	DepartmentName string  `json:"department_name"`
+	JobRoleID      *string `json:"job_role_id"`
+	JobRoleName    string  `json:"job_role_name"`
+}
+
+const employeeWithOrganizationSQL = `
+	SELECT u.id, COALESCE(u.email, ''), COALESCE(u.username, ''), u.display_name,
+	       m.department_id, COALESCE(d.name, ''), m.job_role_id, COALESCE(r.name, '')
+	  FROM memberships m
+	  JOIN users u ON u.id=m.user_id
+	  LEFT JOIN departments d ON d.id=m.department_id AND d.business_id=m.business_id
+	  LEFT JOIN job_roles r ON r.id=m.job_role_id AND r.business_id=m.business_id`
+
+func employeeOrganizationDest(e *Employee) []any {
+	return []any{&e.ID, &e.Email, &e.Username, &e.DisplayName, &e.DepartmentID,
+		&e.DepartmentName, &e.JobRoleID, &e.JobRoleName}
 }
 
 // CreateBusiness creates a business and the owner membership in one transaction.
@@ -170,11 +187,9 @@ func (s *Store) CreateEmployee(ctx context.Context, ownerID string, businessID *
 // ListEmployees returns the employee members of a business.
 func (s *Store) ListEmployees(ctx context.Context, businessID string) ([]Employee, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT u.id, COALESCE(u.email, ''), COALESCE(u.username, ''), u.display_name
-		   FROM memberships m
-		   JOIN users u ON u.id = m.user_id
-		  WHERE m.business_id = $1 AND m.role = 'employee'
-		  ORDER BY u.display_name`, businessID)
+		employeeWithOrganizationSQL+`
+		 WHERE m.business_id = $1 AND m.role = 'employee'
+		 ORDER BY u.display_name`, businessID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +198,7 @@ func (s *Store) ListEmployees(ctx context.Context, businessID string) ([]Employe
 	out := []Employee{}
 	for rows.Next() {
 		var e Employee
-		if err := rows.Scan(&e.ID, &e.Email, &e.Username, &e.DisplayName); err != nil {
+		if err := rows.Scan(employeeOrganizationDest(&e)...); err != nil {
 			return nil, err
 		}
 		out = append(out, e)

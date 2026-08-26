@@ -9,6 +9,7 @@
 //! Offline / logged-out / no backend → the pass is a no-op and rows stay pending,
 //! which is the whole point of local-first.
 
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicI64, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -18,6 +19,7 @@ use super::auth::AuthState;
 use super::client::BackendClient;
 use super::BATCH_LIMIT;
 use crate::storage::{Db, SyncTable};
+use crate::trackers::MonitoringRule;
 
 /// Base interval between sync passes (5 min). Backoff multiplies this on failure.
 const BASE_INTERVAL: Duration = Duration::from_secs(300);
@@ -60,6 +62,9 @@ pub struct SyncContext {
     /// Backend base URL + device_id are read fresh each pass so settings changes
     /// (and the first-run device_id) take effect without a restart.
     pub settings: Arc<crate::settings::SettingsState>,
+    /// Applies the server-managed per-device monitoring switch immediately to
+    /// every capture loop while keeping the employee's own pause separate.
+    pub control: Arc<crate::trackers::TrackerControl>,
 }
 
 /// Spawn the worker on its own thread with a dedicated single-thread tokio runtime
@@ -126,6 +131,44 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
 
     let client = BackendClient::new(base_url, ctx.auth.clone());
     let mut failed = false;
+    // Register/heartbeat before resolving F41. This makes company/employee
+    // profiles effective on the first real data upload, not five minutes later.
+    match client
+        .sync_batch(&device_id, business_id.as_deref(), &[], &[], &[])
+        .await
+    {
+        Ok(result) => ctx
+            .control
+            .monitoring_enabled
+            .store(result.monitoring_enabled, Ordering::Relaxed),
+        Err(e) => {
+            ctx.status.record_error(e, pending_total(ctx));
+            return PassOutcome::Failed;
+        }
+    }
+
+    match client.fetch_monitoring_profile(&device_id).await {
+        Ok(profile) => {
+            let rules: HashMap<String, MonitoringRule> = profile
+                .details
+                .into_iter()
+                .map(|detail| {
+                    (
+                        detail.tracking_key,
+                        MonitoringRule {
+                            enabled: detail.tracking_val.as_bool().unwrap_or(false),
+                            days_of_week: detail.days_of_week,
+                            start_minute: detail.start_minute,
+                            end_minute: detail.end_minute,
+                            timezone: detail.timezone,
+                        },
+                    )
+                })
+                .collect();
+            ctx.control.replace_monitoring_rules(rules);
+        }
+        Err(e) => crate::log_warn!("sync", "monitoring profile refresh failed: {e}"),
+    }
 
     // --- JSON batch: activity + keystrokes + browser ---
     loop {
@@ -140,7 +183,8 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
         let keystrokes = ctx.db.pending_keystrokes(BATCH_LIMIT).unwrap_or_default();
         let browser = ctx.db.pending_browser(BATCH_LIMIT).unwrap_or_default();
 
-        if activity.is_empty() && keystrokes.is_empty() && browser.is_empty() {
+        let empty = activity.is_empty() && keystrokes.is_empty() && browser.is_empty();
+        if empty {
             break;
         }
 
@@ -154,12 +198,22 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
             )
             .await
         {
-            Ok(accepted) => {
+            Ok(result) => {
+                ctx.control
+                    .monitoring_enabled
+                    .store(result.monitoring_enabled, Ordering::Relaxed);
+                let accepted = result.accepted;
                 let _ = ctx.db.mark_synced(SyncTable::Activity, &accepted.activity);
                 let _ = ctx
                     .db
                     .mark_synced(SyncTable::Keystroke, &accepted.keystrokes);
                 let _ = ctx.db.mark_synced(SyncTable::Browser, &accepted.browser);
+
+                // Even with no data, the request is the device heartbeat and
+                // refreshes the remote monitoring switch.
+                if empty {
+                    break;
+                }
 
                 // If the backend accepted nothing, break to avoid an infinite loop
                 // on a poison row; it'll be retried next pass.
@@ -186,7 +240,7 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
     }
 
     // --- Screenshots: one multipart upload each ---
-    if !failed {
+    if !failed && ctx.control.monitoring_enabled.load(Ordering::Relaxed) {
         match ctx.db.pending_screenshots(BATCH_LIMIT) {
             Ok(shots) => {
                 for shot in shots {
@@ -206,7 +260,11 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
                             break;
                         }
                         Err(e) => {
-                            crate::log_warn!("sync", "screenshot {} skipped: {e}", shot.client_uuid);
+                            crate::log_warn!(
+                                "sync",
+                                "screenshot {} skipped: {e}",
+                                shot.client_uuid
+                            );
                             continue;
                         }
                     }
@@ -216,6 +274,31 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
                 ctx.status
                     .record_error(format!("db: {e}"), pending_total(ctx));
                 failed = true;
+            }
+        }
+    }
+
+    // Match the backend's JSON-batch semantics while remotely paused: retain
+    // local history but acknowledge old screenshot outbox entries so enabling
+    // the device later cannot upload images from the disabled window.
+    if !failed && !ctx.control.monitoring_enabled.load(Ordering::Relaxed) {
+        loop {
+            let shots = match ctx.db.pending_screenshots(BATCH_LIMIT) {
+                Ok(shots) => shots,
+                Err(e) => {
+                    ctx.status
+                        .record_error(format!("db: {e}"), pending_total(ctx));
+                    failed = true;
+                    break;
+                }
+            };
+            if shots.is_empty() {
+                break;
+            }
+            let ids: Vec<String> = shots.into_iter().map(|shot| shot.client_uuid).collect();
+            let _ = ctx.db.mark_synced(SyncTable::Screenshot, &ids);
+            if ids.len() < BATCH_LIMIT as usize {
+                break;
             }
         }
     }

@@ -51,18 +51,24 @@ pub fn track_event(
     let Ok(data_dir) = app.path().app_data_dir() else {
         return;
     };
-    crate::analytics::track_event(name, locale, session.0.clone(), data_dir.join("analytics-queue"), props);
+    crate::analytics::track_event(
+        name,
+        locale,
+        session.0.clone(),
+        data_dir.join("analytics-queue"),
+        props,
+    );
 }
 
 #[tauri::command]
 pub fn is_paused(control: State<Arc<TrackerControl>>) -> bool {
-    control.paused.load(Ordering::Relaxed)
+    control.is_capture_paused()
 }
 
 /// Current tracking state for the UI: "tracking" | "idle" | "paused".
 #[tauri::command]
 pub fn tracking_state(control: State<Arc<TrackerControl>>) -> String {
-    if control.paused.load(Ordering::Relaxed) {
+    if control.is_capture_paused() {
         "paused"
     } else if platform::idle_seconds() >= control.idle_threshold_s.load(Ordering::Relaxed) as f64 {
         "idle"
@@ -250,11 +256,7 @@ pub fn capture_now(
     control: State<Arc<TrackerControl>>,
 ) -> Result<usize, String> {
     use tauri::Manager;
-    let dir = app
-        .path()
-        .app_data_dir()
-        .map_err(err)?
-        .join("screenshots");
+    let dir = app.path().app_data_dir().map_err(err)?.join("screenshots");
     Ok(crate::trackers::capture_once(&db, &dir, &control))
 }
 
@@ -309,7 +311,7 @@ pub fn dashboard_data(
         .into_iter()
         .map(|(app_name, total_s)| AppTotal { app_name, total_s })
         .collect();
-    by_app.sort_by(|a, b| b.total_s.cmp(&a.total_s));
+    by_app.sort_by_key(|app| std::cmp::Reverse(app.total_s));
     let top_app = by_app.first().map(|a| a.app_name.clone());
 
     let keypresses = db
@@ -650,7 +652,8 @@ mod tests {
         })
         .unwrap();
 
-        let dir = std::env::temp_dir().join(format!("ctracking_export_test_{}", std::process::id()));
+        let dir =
+            std::env::temp_dir().join(format!("ctracking_export_test_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let summary = export_to_dir(&db, dir.to_str().unwrap(), 0, i64::MAX).unwrap();
         assert_eq!(summary.files.len(), 4);
@@ -678,8 +681,7 @@ mod tests {
         .unwrap();
         db.add_keystrokes(60, 9).unwrap();
 
-        let dir =
-            std::env::temp_dir().join(format!("ctracking_json_test_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("ctracking_json_test_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         export_json_to_dir(&db, dir.to_str().unwrap(), 0, i64::MAX).unwrap();
 

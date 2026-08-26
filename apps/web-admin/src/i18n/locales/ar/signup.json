@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "اختر نوع الحساب",
-    "personaDesc": "شخصي أو فريق أو عائلة",
+    "personaDesc": "شخصي أو فريق",
     "accountTitle": "أنشئ حسابك",
     "accountDesc": "الاسم، البريد أو اسم المستخدم، كلمة المرور",
     "setupTitle": "سمِّ {{noun}}",
     "setupDesc": "ماذا تسمّي {{noun}}",
     "membersTitleManager": "إضافة {{members}}",
-    "membersDescParent": "جهّز حسابات دخول أطفالك",
     "membersDescManager": "ادعُ الأشخاص الذين تديرهم",
     "doneTitle": "كل شيء جاهز",
     "doneDesc": "ابدأ المتابعة"
@@ -32,9 +31,6 @@
     "teamTitle": "فريقي",
     "teamDesc": "أدِر الموظفين أو المستقلين وراجع نشاطهم.",
     "teamTag": "حساب مجاني",
-    "familyTitle": "عائلتي",
-    "familyDesc": "تابع وقت الشاشة ونشاط أطفالي.",
-    "familyTag": "حساب مجاني",
     "caption": "المتابعة الشخصية تعمل داخل تطبيق سطح المكتب — دون الحاجة إلى حساب إداري."
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "سمِّ {{noun}}",
     "sub": "يمكنك إضافة {{members}} بعد ذلك.",
     "nameLabel": "اسم {{noun}}",
-    "placeholderFamily": "عائلة كوبر",
     "placeholderTeam": "شركة كوبر",
     "saving": "جارٍ الحفظ…",
     "continue": "متابعة"

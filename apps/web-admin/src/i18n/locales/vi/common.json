@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "Bảng điều khiển",
     "employees": "Nhân viên",
+    "devices": "Thiết bị",
+    "monitoring": "Giám sát",
+    "organization": "Tổ chức",
     "settings": "Cài đặt"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "{{count}} ngày trước"
   },
   "terms": {
-    "team": { "one": "Nhân viên", "many": "Nhân viên", "lowerOne": "nhân viên", "lowerMany": "nhân viên", "addCta": "Thêm nhân viên", "org": "nhóm" },
-    "family": { "one": "Con", "many": "Các con", "lowerOne": "con", "lowerMany": "các con", "addCta": "Thêm con", "org": "gia đình" }
+    "team": {
+      "one": "Nhân viên",
+      "many": "Nhân viên",
+      "lowerOne": "nhân viên",
+      "lowerMany": "nhân viên",
+      "addCta": "Thêm nhân viên",
+      "org": "nhóm"
+    }
   }
 }

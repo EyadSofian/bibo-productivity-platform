@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "employees": "Employés",
+    "devices": "Appareils",
+    "monitoring": "Surveillance",
+    "organization": "Organisation",
     "settings": "Paramètres"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "il y a {{count}} j"
   },
   "terms": {
-    "team": { "one": "Employé", "many": "Employés", "lowerOne": "employé", "lowerMany": "employés", "addCta": "Ajouter un employé", "org": "équipe" },
-    "family": { "one": "Enfant", "many": "Enfants", "lowerOne": "enfant", "lowerMany": "enfants", "addCta": "Ajouter un enfant", "org": "famille" }
+    "team": {
+      "one": "Employé",
+      "many": "Employés",
+      "lowerOne": "employé",
+      "lowerMany": "employés",
+      "addCta": "Ajouter un employé",
+      "org": "équipe"
+    }
   }
 }

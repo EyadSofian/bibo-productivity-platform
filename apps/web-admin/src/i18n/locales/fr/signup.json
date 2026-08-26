@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "Choisir le type de compte",
-    "personaDesc": "Personnel, équipe ou famille",
+    "personaDesc": "Personnel ou équipe",
     "accountTitle": "Créer un compte",
     "accountDesc": "Nom, e-mail ou nom d'utilisateur, mot de passe",
     "setupTitle": "Nommez votre {{noun}}",
     "setupDesc": "Comment appeler votre {{noun}}",
     "membersTitleManager": "Ajouter {{members}}",
-    "membersDescParent": "Configurez les identifiants de vos enfants",
     "membersDescManager": "Invitez les personnes que vous gérez",
     "doneTitle": "Tout est prêt",
     "doneDesc": "Commencer le suivi"
@@ -32,9 +31,6 @@
     "teamTitle": "Mon équipe",
     "teamDesc": "Gérez vos employés ou vos freelances et consultez leur activité.",
     "teamTag": "Compte gratuit",
-    "familyTitle": "Ma famille",
-    "familyDesc": "Gardez un œil sur le temps d'écran et l'activité de vos enfants.",
-    "familyTag": "Compte gratuit",
     "caption": "Le suivi personnel se fait dans l'application de bureau — aucun compte administrateur requis."
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "Nommez votre {{noun}}",
     "sub": "Vous pourrez ajouter {{members}} ensuite.",
     "nameLabel": "Nom du {{noun}}",
-    "placeholderFamily": "Famille Cooper",
     "placeholderTeam": "Cooper Co.",
     "saving": "Enregistrement…",
     "continue": "Continuer"

@@ -6,6 +6,9 @@ import { BusinessProvider } from "./useBusinesses";
 import { ThemeProvider } from "./theme/ThemeProvider";
 import { Dashboard } from "./pages/Dashboard";
 import { EmployeeDetail } from "./pages/EmployeeDetail";
+import { Devices } from "./pages/Devices";
+import { MonitoringProfiles } from "./pages/MonitoringProfiles";
+import { Organization } from "./pages/Organization";
 import { Employees } from "./pages/Employees";
 import { SignIn } from "./auth/SignIn";
 import { SignupWizard } from "./auth/SignupWizard";
@@ -30,6 +33,9 @@ export default function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="employees" element={<Employees />} />
                 <Route path="employees/:id" element={<EmployeeDetail />} />
+                <Route path="devices" element={<Devices />} />
+                <Route path="monitoring" element={<MonitoringProfiles />} />
+                <Route path="organization" element={<Organization />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Route>

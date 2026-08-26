@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "Elige el tipo de cuenta",
-    "personaDesc": "Personal, equipo o familia",
+    "personaDesc": "Personal o equipo",
     "accountTitle": "Crear cuenta",
     "accountDesc": "Nombre, correo o nombre de usuario, contraseña",
     "setupTitle": "Ponle nombre a tu {{noun}}",
     "setupDesc": "Cómo llamar a tu {{noun}}",
     "membersTitleManager": "Añadir {{members}}",
-    "membersDescParent": "Configura los accesos de tus hijos",
     "membersDescManager": "Invita a las personas que gestionas",
     "doneTitle": "Todo listo",
     "doneDesc": "Empezar a registrar"
@@ -32,9 +31,6 @@
     "teamTitle": "Mi equipo",
     "teamDesc": "Gestiona a empleados o autónomos y revisa su actividad.",
     "teamTag": "Cuenta gratuita",
-    "familyTitle": "Mi familia",
-    "familyDesc": "Vigila el tiempo de pantalla y la actividad de tus hijos.",
-    "familyTag": "Cuenta gratuita",
     "caption": "El seguimiento personal se realiza en la app de escritorio: sin cuenta de administrador."
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "Ponle nombre a tu {{noun}}",
     "sub": "Podrá añadir {{members}} a continuación.",
     "nameLabel": "Nombre del {{noun}}",
-    "placeholderFamily": "Familia Cooper",
     "placeholderTeam": "Cooper Co.",
     "saving": "Guardando…",
     "continue": "Continuar"

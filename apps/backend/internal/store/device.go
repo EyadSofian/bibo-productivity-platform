@@ -21,6 +21,7 @@ type Device struct {
 	MonitoringEnabled bool       `json:"monitoring_enabled"`
 	LastSeenAt        *time.Time `json:"last_seen_at"`
 	DisabledAt        *time.Time `json:"disabled_at"`
+	DeletedAt         *time.Time `json:"deleted_at"`
 	// The person who owns/uses the device, joined for display. Not a device
 	// column — the inventory is far more legible with a name than a user UUID.
 	UserDisplayName string `json:"user_display_name"`
@@ -28,13 +29,14 @@ type Device struct {
 }
 
 const deviceCols = `d.id, d.business_id, d.user_id, d.label, d.os, d.agent_version,
-	d.monitoring_enabled, d.last_seen_at, d.disabled_at,
+	d.monitoring_enabled, d.last_seen_at, d.disabled_at, d.deleted_at,
 	COALESCE(u.display_name, ''), COALESCE(u.email, u.username, '')`
 
 func scanDevice(row pgx.Row) (Device, error) {
 	var d Device
 	err := row.Scan(&d.ID, &d.BusinessID, &d.UserID, &d.Label, &d.OS, &d.AgentVersion,
-		&d.MonitoringEnabled, &d.LastSeenAt, &d.DisabledAt, &d.UserDisplayName, &d.UserLogin)
+		&d.MonitoringEnabled, &d.LastSeenAt, &d.DisabledAt, &d.DeletedAt,
+		&d.UserDisplayName, &d.UserLogin)
 	return d, err
 }
 
@@ -43,7 +45,7 @@ func scanDevice(row pgx.Row) (Device, error) {
 // only when its business_id names a business whose owner_user_id is the caller,
 // so passing another owner's business id yields an empty list, never their
 // devices.
-func (s *Store) ListDevices(ctx context.Context, ownerID, businessID string) ([]Device, error) {
+func (s *Store) ListDevices(ctx context.Context, ownerID, businessID string, includeDeleted bool) ([]Device, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT `+deviceCols+`
 		  FROM devices d
@@ -51,7 +53,8 @@ func (s *Store) ListDevices(ctx context.Context, ownerID, businessID string) ([]
 		  JOIN users u ON u.id = d.user_id
 		 WHERE d.business_id = $1
 		   AND b.owner_user_id = $2
-		 ORDER BY d.last_seen_at DESC NULLS LAST`, businessID, ownerID)
+		   AND ($3 OR d.deleted_at IS NULL)
+		 ORDER BY d.deleted_at NULLS FIRST, d.last_seen_at DESC NULLS LAST`, businessID, ownerID, includeDeleted)
 	if err != nil {
 		return nil, err
 	}
@@ -96,6 +99,7 @@ func (s *Store) SetDeviceMonitoring(ctx context.Context, ownerID, deviceID strin
 		 WHERE d.id = $1
 		   AND d.business_id = b.id
 		   AND b.owner_user_id = $2
+		   AND d.deleted_at IS NULL
 		RETURNING `+deviceReturnCols, deviceID, ownerID, enabled, disabledAt, disabledBy)
 
 	d, err := scanDeviceReturning(row)
@@ -110,11 +114,60 @@ func (s *Store) SetDeviceMonitoring(ctx context.Context, ownerID, deviceID strin
 // That is enough for the toggle's response, whose caller already has the name
 // from the list it was rendered from; the next List refreshes it.
 const deviceReturnCols = `d.id, d.business_id, d.user_id, d.label, d.os, d.agent_version,
-	d.monitoring_enabled, d.last_seen_at, d.disabled_at`
+	d.monitoring_enabled, d.last_seen_at, d.disabled_at, d.deleted_at`
 
 func scanDeviceReturning(row pgx.Row) (Device, error) {
 	var d Device
 	err := row.Scan(&d.ID, &d.BusinessID, &d.UserID, &d.Label, &d.OS, &d.AgentVersion,
-		&d.MonitoringEnabled, &d.LastSeenAt, &d.DisabledAt)
+		&d.MonitoringEnabled, &d.LastSeenAt, &d.DisabledAt, &d.DeletedAt)
 	return d, err
+}
+
+// SetDeviceArchived retires or restores a device without deleting its history.
+// Archiving also disables future ingestion. Restoration intentionally keeps
+// monitoring paused: the owner must explicitly enable it again, which prevents
+// a restore action from unexpectedly resuming collection.
+func (s *Store) SetDeviceArchived(ctx context.Context, ownerID, deviceID string, archived bool) (Device, error) {
+	var deletedAt any
+	var deletedBy any
+	if archived {
+		deletedAt = time.Now()
+		deletedBy = ownerID
+	}
+
+	row := s.pool.QueryRow(ctx, `
+		UPDATE devices d
+		   SET deleted_at = $3,
+		       deleted_by = $4,
+		       monitoring_enabled = CASE WHEN $5 THEN false ELSE monitoring_enabled END,
+		       disabled_at = CASE WHEN $5 AND disabled_at IS NULL THEN now() ELSE disabled_at END,
+		       disabled_by = CASE WHEN $5 AND disabled_by IS NULL THEN $2::uuid ELSE disabled_by END
+		  FROM businesses b
+		 WHERE d.id = $1
+		   AND d.business_id = b.id
+		   AND b.owner_user_id = $2
+		RETURNING `+deviceReturnCols, deviceID, ownerID, deletedAt, deletedBy, archived)
+
+	d, err := scanDeviceReturning(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return Device{}, ErrNotFound
+	}
+	return d, err
+}
+
+// DeviceMonitoringAllowed is the server-side enforcement check used by capture
+// paths that do not pass through SyncBatch (currently screenshot upload). An
+// unknown device is allowed so a first screenshot cannot deadlock registration;
+// once a device is known, both its identity and business must match.
+func (s *Store) DeviceMonitoringAllowed(ctx context.Context, userID, businessID, deviceID string) (bool, error) {
+	var allowed bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT monitoring_enabled AND deleted_at IS NULL
+		  FROM devices
+		 WHERE id = $1 AND user_id = $2 AND business_id = $3`,
+		deviceID, userID, businessID).Scan(&allowed)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return true, nil
+	}
+	return allowed, err
 }

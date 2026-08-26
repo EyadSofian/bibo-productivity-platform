@@ -2,12 +2,23 @@ import { request } from "./client";
 import { tokenStore } from "./tokenStore";
 import {
   demoActivity,
+  demoAssignEmployeeOrganization,
   demoBrowser,
   demoBusinesses,
+  demoDevices,
+  demoDeleteOrganizationItem,
+  demoCreateMonitoringProfile,
+  demoDeleteMonitoringProfile,
   demoEmployees,
   demoKeystrokes,
   demoRoster,
   demoScreenshots,
+  demoMonitoringProfiles,
+  demoOrganization,
+  demoSaveOrganizationItem,
+  demoSetDeviceMonitoring,
+  demoSetDeviceArchived,
+  demoUpdateMonitoringProfile,
   isDemo,
 } from "./demo";
 import type {
@@ -18,7 +29,10 @@ import type {
   Business,
   BusinessSettingsPatch,
   CreateEmployeeResponse,
+  Device,
+  Department,
   Employee,
+  JobRole,
   KeystrokeBucket,
   PrivacyAppCategory,
   PublicBusiness,
@@ -26,6 +40,10 @@ import type {
   ScreenshotsResponse,
   Tokens,
   User,
+  MonitoringProfile,
+  MonitoringProfileInput,
+  Organization,
+  OrganizationItemInput,
 } from "./types";
 
 // ---------- public ----------
@@ -128,6 +146,44 @@ export function listBusinessEmployees(businessId: string) {
   return request<{ employees: Employee[] }>(`/v1/businesses/${businessId}/employees`);
 }
 
+// ---------- organization (F7) ----------
+export function listOrganization(businessId: string) {
+  if (isDemo()) return Promise.resolve(demoOrganization());
+  return request<Organization>(`/v1/businesses/${businessId}/organization`);
+}
+
+export function saveDepartment(id: string | null, input: OrganizationItemInput) {
+  if (isDemo()) return Promise.resolve({ department: demoSaveOrganizationItem("department", id, input) as Department });
+  return request<{ department: Department }>(id ? `/v1/departments/${id}` : "/v1/departments", {
+    method: id ? "PUT" : "POST",
+    body: input,
+  });
+}
+
+export function saveJobRole(id: string | null, input: OrganizationItemInput) {
+  if (isDemo()) return Promise.resolve({ job_role: demoSaveOrganizationItem("job_role", id, input) as JobRole });
+  return request<{ job_role: JobRole }>(id ? `/v1/job-roles/${id}` : "/v1/job-roles", {
+    method: id ? "PUT" : "POST",
+    body: input,
+  });
+}
+
+export function deleteOrganizationItem(kind: "department" | "job_role", id: string) {
+  if (isDemo()) {
+    demoDeleteOrganizationItem(kind, id);
+    return Promise.resolve(undefined);
+  }
+  return request<void>(`/v1/${kind === "department" ? "departments" : "job-roles"}/${id}`, { method: "DELETE" });
+}
+
+export function assignEmployeeOrganization(businessId: string, employeeId: string, department_id: string | null, job_role_id: string | null) {
+  if (isDemo()) return Promise.resolve({ employee: demoAssignEmployeeOrganization(employeeId, department_id, job_role_id) });
+  return request<{ employee: Employee }>(`/v1/businesses/${businessId}/employees/${employeeId}/organization`, {
+    method: "PUT",
+    body: { department_id, job_role_id },
+  });
+}
+
 // ---------- reports ----------
 export function reportEmployees(businessId: string) {
   if (isDemo()) return Promise.resolve({ employees: demoRoster() });
@@ -168,5 +224,63 @@ export function reportScreenshots(
   if (isDemo()) return Promise.resolve(demoScreenshots(employeeId));
   return request<ScreenshotsResponse>(`/v1/reports/employees/${employeeId}/screenshots`, {
     query: { from, to, limit, offset },
+  });
+}
+
+// ---------- devices (F40) ----------
+// Fleet inventory for one business. The backend scopes by ownership in SQL, so a
+// business the caller does not own yields an empty list rather than an error.
+export function listDevices(businessId: string) {
+  if (isDemo()) return Promise.resolve({ devices: demoDevices() });
+  return request<{ devices: Device[] }>(`/v1/businesses/${businessId}/devices`, {
+    query: { include_deleted: "true" },
+  });
+}
+
+export function setDeviceArchived(deviceId: string, archived: boolean) {
+  if (isDemo()) return Promise.resolve({ device: demoSetDeviceArchived(deviceId, archived) });
+  return request<{ device: Device }>(
+    `/v1/devices/${deviceId}/${archived ? "archive" : "restore"}`,
+    { method: "POST" },
+  );
+}
+
+// ---------- monitoring profiles (F41) ----------
+export function listMonitoringProfiles(businessId: string) {
+  if (isDemo()) return Promise.resolve({ profiles: demoMonitoringProfiles() });
+  return request<{ profiles: MonitoringProfile[] }>(`/v1/businesses/${businessId}/monitoring-profiles`);
+}
+
+export function createMonitoringProfile(input: MonitoringProfileInput) {
+  if (isDemo()) return Promise.resolve({ profile: demoCreateMonitoringProfile(input) });
+  return request<{ profile: MonitoringProfile }>("/v1/monitoring-profiles", {
+    method: "POST",
+    body: input,
+  });
+}
+
+export function updateMonitoringProfile(id: string, input: MonitoringProfileInput) {
+  if (isDemo()) return Promise.resolve({ profile: demoUpdateMonitoringProfile(id, input) });
+  return request<{ profile: MonitoringProfile }>(`/v1/monitoring-profiles/${id}`, {
+    method: "PUT",
+    body: input,
+  });
+}
+
+export function deleteMonitoringProfile(id: string) {
+  if (isDemo()) {
+    demoDeleteMonitoringProfile(id);
+    return Promise.resolve(undefined);
+  }
+  return request<void>(`/v1/monitoring-profiles/${id}`, { method: "DELETE" });
+}
+
+// Turning monitoring off stops the backend ingesting that machine's data; it
+// keeps registering heartbeats, so it stays visible as alive. Nothing is deleted.
+export function setDeviceMonitoring(deviceId: string, enabled: boolean) {
+  if (isDemo()) return Promise.resolve({ device: demoSetDeviceMonitoring(deviceId, enabled) });
+  return request<{ device: Device }>(`/v1/devices/${deviceId}/monitoring`, {
+    method: "POST",
+    body: { enabled },
   });
 }

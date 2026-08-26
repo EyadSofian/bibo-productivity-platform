@@ -28,7 +28,7 @@ func newSyncFixture(t *testing.T) syncFixture {
 
 func (f syncFixture) sync(t *testing.T, act []ActivityRow, ks []KeystrokeRow, br []BrowserRow) {
 	t.Helper()
-	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, act, ks, br); err != nil {
+	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, nil, nil, act, ks, br); err != nil {
 		t.Fatalf("sync batch: %v", err)
 	}
 }
@@ -188,7 +188,7 @@ func TestSyncBatchRegistersDeviceOnEmptyBatch(t *testing.T) {
 func TestSyncBatchKeepsDeviceLabelWhenOmitted(t *testing.T) {
 	f := newSyncFixture(t)
 	label := "Work laptop"
-	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, &label, nil, nil, nil); err != nil {
+	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, &label, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("sync with label: %v", err)
 	}
 

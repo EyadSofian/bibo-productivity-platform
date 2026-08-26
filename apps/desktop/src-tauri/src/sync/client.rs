@@ -131,6 +131,8 @@ struct BatchReq<'a> {
     device_id: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     device_label: Option<&'a str>,
+    device_os: &'a str,
+    agent_version: &'a str,
     #[serde(skip_serializing_if = "Option::is_none")]
     business_id: Option<&'a str>,
     activity: &'a [PendingActivity],
@@ -152,6 +154,32 @@ pub struct BatchAccepted {
 #[derive(Deserialize)]
 struct BatchResp {
     accepted: BatchAccepted,
+    #[serde(default = "default_true")]
+    monitoring_enabled: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+pub struct BatchResult {
+    pub accepted: BatchAccepted,
+    pub monitoring_enabled: bool,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ResolvedMonitoringDetail {
+    pub tracking_key: String,
+    pub tracking_val: serde_json::Value,
+    pub days_of_week: Vec<u8>,
+    pub start_minute: u16,
+    pub end_minute: u16,
+    pub timezone: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct ResolvedMonitoringProfile {
+    pub details: Vec<ResolvedMonitoringDetail>,
 }
 
 #[derive(Deserialize)]
@@ -276,6 +304,34 @@ impl BackendClient {
         Err("fetch_policy: unreachable retry exhaustion".into())
     }
 
+    /// Fetch the F41 profile resolved for this exact installation. The server
+    /// verifies that the signed-in employee owns the device (or is its manager).
+    pub async fn fetch_monitoring_profile(
+        &self,
+        device_id: &str,
+    ) -> Result<ResolvedMonitoringProfile, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url("/v1/monitoring-profiles/resolved"))
+                .query(&[("device_id", device_id)])
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return resp.json().await.map_err(|e| e.to_string());
+        }
+        Err("fetch_monitoring_profile: unreachable retry exhaustion".into())
+    }
+
     /// Current access token, or an error if logged out.
     fn access_token(&self) -> Result<String, String> {
         self.auth
@@ -296,10 +352,17 @@ impl BackendClient {
         activity: &[PendingActivity],
         keystrokes: &[PendingKeystroke],
         browser: &[PendingBrowser],
-    ) -> Result<BatchAccepted, String> {
+    ) -> Result<BatchResult, String> {
+        let label = hostname::get()
+            .ok()
+            .and_then(|name| name.into_string().ok())
+            .filter(|name| !name.trim().is_empty());
+        let os = os_info::get().to_string();
         let body = BatchReq {
             device_id,
-            device_label: None,
+            device_label: label.as_deref(),
+            device_os: &os,
+            agent_version: env!("CARGO_PKG_VERSION"),
             business_id,
             activity,
             keystrokes,
@@ -343,7 +406,10 @@ impl BackendClient {
                 keystrokes.len(),
                 browser.len()
             );
-            return Ok(parsed.accepted);
+            return Ok(BatchResult {
+                accepted: parsed.accepted,
+                monitoring_enabled: parsed.monitoring_enabled,
+            });
         }
         Err("sync_batch: unreachable retry exhaustion".into())
     }

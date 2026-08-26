@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "employees": "الموظفون",
+    "devices": "الأجهزة",
+    "monitoring": "سياسات المراقبة",
+    "organization": "الهيكل التنظيمي",
     "settings": "الإعدادات"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "منذ {{count}} ي"
   },
   "terms": {
-    "team": { "one": "موظف", "many": "الموظفون", "lowerOne": "موظف", "lowerMany": "موظفين", "addCta": "إضافة موظف", "org": "فريق" },
-    "family": { "one": "طفل", "many": "الأطفال", "lowerOne": "طفل", "lowerMany": "أطفال", "addCta": "إضافة طفل", "org": "عائلة" }
+    "team": {
+      "one": "موظف",
+      "many": "الموظفون",
+      "lowerOne": "موظف",
+      "lowerMany": "موظفين",
+      "addCta": "إضافة موظف",
+      "org": "فريق"
+    }
   }
 }

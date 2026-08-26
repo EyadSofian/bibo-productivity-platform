@@ -164,14 +164,17 @@ pub fn save(path: &Path, settings: &Settings) -> std::io::Result<()> {
 pub fn apply(s: &Settings, control: &crate::trackers::TrackerControl) {
     use std::sync::atomic::Ordering::Relaxed;
     control.idle_threshold_s.store(s.idle_threshold_s, Relaxed);
-    control.screenshot_interval_s.store(s.screenshot_interval_s, Relaxed);
+    control
+        .screenshot_interval_s
+        .store(s.screenshot_interval_s, Relaxed);
     control
         .screenshot_retention_days
         .store(s.screenshot_retention_days, Relaxed);
     control.domain_only.store(s.domain_only, Relaxed);
-    control
-        .screenshot_mode
-        .store(crate::trackers::shot_mode_from_str(&s.screenshot_mode), Relaxed);
+    control.screenshot_mode.store(
+        crate::trackers::shot_mode_from_str(&s.screenshot_mode),
+        Relaxed,
+    );
     *control.screenshot_skip_apps.write().unwrap() = s.screenshot_skip_apps.clone();
 
     // Capture opt-outs. On Windows nothing captures until the user has consented
@@ -229,9 +232,11 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("ctracking_settings_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
-        let mut s = Settings::default();
-        s.domain_only = true;
-        s.screenshot_interval_s = 600;
+        let s = Settings {
+            domain_only: true,
+            screenshot_interval_s: 600,
+            ..Settings::default()
+        };
         save(&path, &s).unwrap();
         let loaded = load(&path);
         assert!(loaded.domain_only);
@@ -260,7 +265,11 @@ mod tests {
         std::env::remove_var("CTRACKING_BACKEND_URL");
         assert_eq!(backend_base_url(), DEFAULT_BACKEND_URL);
         // Sanity: the default build targets production.
-        if cfg!(all(feature = "production", not(feature = "local"), not(feature = "staging"))) {
+        if cfg!(all(
+            feature = "production",
+            not(feature = "local"),
+            not(feature = "staging")
+        )) {
             assert_eq!(backend_base_url(), "https://bibotracker.com");
         }
     }

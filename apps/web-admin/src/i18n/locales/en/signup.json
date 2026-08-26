@@ -1,13 +1,12 @@
 {
   "rail": {
     "personaTitle": "Choose account type",
-    "personaDesc": "Personal, team or family",
+    "personaDesc": "Personal or team",
     "accountTitle": "Create your account",
     "accountDesc": "Name, email or username, password",
     "setupTitle": "Name your {{noun}}",
     "setupDesc": "What to call your {{noun}}",
     "membersTitleManager": "Add {{members}}",
-    "membersDescParent": "Set up your kids' logins",
     "membersDescManager": "Invite the people you manage",
     "doneTitle": "All set",
     "doneDesc": "Start tracking"
@@ -32,9 +31,6 @@
     "teamTitle": "My team",
     "teamDesc": "Manage employees or freelancers and review their activity.",
     "teamTag": "Free account",
-    "familyTitle": "My family",
-    "familyDesc": "Keep an eye on my kids' screen time & activity.",
-    "familyTag": "Free account",
     "caption": "Personal tracking lives in the desktop app — no admin account needed."
   },
   "personal": {
@@ -63,7 +59,6 @@
     "title": "Name your {{noun}}",
     "sub": "You can add {{members}} next.",
     "nameLabel": "{{noun}} name",
-    "placeholderFamily": "Cooper Family",
     "placeholderTeam": "Cooper Co.",
     "saving": "Saving…",
     "continue": "Continue"

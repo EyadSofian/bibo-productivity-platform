@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "Dasbor",
     "employees": "Karyawan",
+    "devices": "Perangkat",
+    "monitoring": "Pemantauan",
+    "organization": "Organisasi",
     "settings": "Pengaturan"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "{{count}} hr lalu"
   },
   "terms": {
-    "team": { "one": "Karyawan", "many": "Karyawan", "lowerOne": "karyawan", "lowerMany": "karyawan", "addCta": "Tambah karyawan", "org": "tim" },
-    "family": { "one": "Anak", "many": "Anak", "lowerOne": "anak", "lowerMany": "anak", "addCta": "Tambah anak", "org": "keluarga" }
+    "team": {
+      "one": "Karyawan",
+      "many": "Karyawan",
+      "lowerOne": "karyawan",
+      "lowerMany": "karyawan",
+      "addCta": "Tambah karyawan",
+      "org": "tim"
+    }
   }
 }

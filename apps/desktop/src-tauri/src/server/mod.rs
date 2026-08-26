@@ -164,7 +164,11 @@ async fn whoami(State(s): State<AppState>) -> Json<Value> {
     }))
 }
 
-async fn ingest(State(s): State<AppState>, headers: HeaderMap, Json(body): Json<IngestIn>) -> StatusCode {
+async fn ingest(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Json(body): Json<IngestIn>,
+) -> StatusCode {
     if let Err(code) = check_request(&headers, s.token.as_str()) {
         return code;
     }
@@ -189,7 +193,15 @@ fn record(s: &AppState, v: VisitIn) -> Result<(), StatusCode> {
     // On/off marker events are recorded unconditionally so an "off" transition still
     // lands. Regular page views respect pause + domain-only privacy.
     let marker = is_marker(&v.url);
-    if !marker && s.control.paused.load(Ordering::Relaxed) {
+    if !s.control.monitoring_enabled.load(Ordering::Relaxed) {
+        // The server-owned fleet switch is stricter than the employee's local
+        // pause: no browser telemetry, including marker rows, is persisted.
+        return Ok(());
+    }
+    if !s.control.category_schedule_allows("websites") {
+        return Ok(());
+    }
+    if !marker && s.control.is_capture_paused() {
         // Tracking stopped: accept the request so the extension doesn't retry, but
         // don't record anything (consistent with the keyboard/window trackers).
         return Ok(());
@@ -210,15 +222,18 @@ fn record(s: &AppState, v: VisitIn) -> Result<(), StatusCode> {
         browser: v.browser,
         duration_s: v.duration_s,
     };
-    s.db
-        .insert_browser_visit(&visit, client_uuid.as_deref())
+    s.db.insert_browser_visit(&visit, client_uuid.as_deref())
         .map(|_| ())
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Receive an error report from the browser extension and forward it to Sentry tagged
 /// `source = "extension"`. Rate-limited so a looping extension error can't flood Sentry.
-async fn report_error(State(s): State<AppState>, headers: HeaderMap, Json(e): Json<ErrorIn>) -> StatusCode {
+async fn report_error(
+    State(s): State<AppState>,
+    headers: HeaderMap,
+    Json(e): Json<ErrorIn>,
+) -> StatusCode {
     if let Err(code) = check_request(&headers, s.token.as_str()) {
         return code;
     }
@@ -318,7 +333,10 @@ mod tests {
 
     #[test]
     fn origin_only_strips_path_and_query() {
-        assert_eq!(origin_only("https://github.com/a/b?c=1"), "https://github.com");
+        assert_eq!(
+            origin_only("https://github.com/a/b?c=1"),
+            "https://github.com"
+        );
         assert_eq!(origin_only("http://example.com"), "http://example.com");
         assert_eq!(origin_only("https://sub.host.io/x"), "https://sub.host.io");
         assert_eq!(origin_only("notaurl"), "notaurl");
@@ -362,7 +380,10 @@ mod tests {
     fn rejects_web_origins() {
         for origin in ["http://evil.example", "https://evil.example"] {
             assert_eq!(
-                check_request(&headers(&[(TOKEN_HEADER, TOKEN), ("origin", origin)]), TOKEN),
+                check_request(
+                    &headers(&[(TOKEN_HEADER, TOKEN), ("origin", origin)]),
+                    TOKEN
+                ),
                 Err(StatusCode::FORBIDDEN),
                 "{origin} should be refused"
             );
@@ -371,7 +392,10 @@ mod tests {
 
     #[test]
     fn allows_the_extension_origin() {
-        let h = headers(&[(TOKEN_HEADER, TOKEN), ("origin", "chrome-extension://abcdef")]);
+        let h = headers(&[
+            (TOKEN_HEADER, TOKEN),
+            ("origin", "chrome-extension://abcdef"),
+        ]);
         assert!(check_request(&h, TOKEN).is_ok());
     }
 
@@ -386,7 +410,11 @@ mod tests {
         // blocking every other row queued on this device — so it is dropped and
         // a local one is generated instead.
         for bad in ["", "not-a-uuid", "1234", "'; DROP TABLE browser_visit;--"] {
-            assert_eq!(valid_uuid(&Some(bad.to_string())), None, "{bad:?} should be refused");
+            assert_eq!(
+                valid_uuid(&Some(bad.to_string())),
+                None,
+                "{bad:?} should be refused"
+            );
         }
         assert_eq!(valid_uuid(&None), None);
     }
@@ -427,8 +455,26 @@ mod tests {
         record(&s, visit_in(MARKER_OFF)).unwrap();
 
         let rows = stored(&s);
-        assert_eq!(rows.len(), 1, "only the marker should be recorded while paused");
+        assert_eq!(
+            rows.len(),
+            1,
+            "only the marker should be recorded while paused"
+        );
         assert_eq!(rows[0].url, MARKER_OFF);
+    }
+
+    #[test]
+    fn remote_monitoring_switch_suppresses_all_browser_telemetry() {
+        let s = state();
+        s.control.monitoring_enabled.store(false, Ordering::Relaxed);
+
+        record(&s, visit_in("https://github.com")).unwrap();
+        record(&s, visit_in(MARKER_OFF)).unwrap();
+
+        assert!(
+            stored(&s).is_empty(),
+            "the fleet switch must suppress markers too"
+        );
     }
 
     #[test]
@@ -436,7 +482,11 @@ mod tests {
         let s = state();
         s.control.domain_only.store(true, Ordering::Relaxed);
 
-        record(&s, visit_in("https://github.com/anthropics/claude-code?x=1")).unwrap();
+        record(
+            &s,
+            visit_in("https://github.com/anthropics/claude-code?x=1"),
+        )
+        .unwrap();
 
         let rows = stored(&s);
         assert_eq!(rows[0].url, "https://github.com");
@@ -476,9 +526,12 @@ mod tests {
     #[test]
     fn batches_over_the_cap_are_refused() {
         let body: IngestIn = serde_json::from_str(
-            &serde_json::to_string(&vec![serde_json::json!({
-                "url": "https://a.com", "ts": 1, "duration_s": 1
-            }); MAX_INGEST_BATCH + 1])
+            &serde_json::to_string(&vec![
+                serde_json::json!({
+                    "url": "https://a.com", "ts": 1, "duration_s": 1
+                });
+                MAX_INGEST_BATCH + 1
+            ])
             .unwrap(),
         )
         .unwrap();

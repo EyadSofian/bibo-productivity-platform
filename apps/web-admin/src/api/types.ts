@@ -28,7 +28,7 @@ export interface AuthResponse {
   tokens: Tokens;
 }
 
-/** A business is a team or a family; `kind` drives member wording (employees/kids). */
+/** Legacy storage accepts both values; the management UI always treats members as employees. */
 export type BusinessKind = "team" | "family";
 
 /**
@@ -72,6 +72,32 @@ export interface Employee {
   email: string;
   username?: string;
   display_name: string;
+  department_id: string | null;
+  department_name: string;
+  job_role_id: string | null;
+  job_role_name: string;
+}
+
+export interface Department {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JobRole extends Department {}
+
+export interface Organization {
+  departments: Department[];
+  job_roles: JobRole[];
+}
+
+export interface OrganizationItemInput {
+  business_id: string;
+  name: string;
+  description: string;
 }
 
 export interface CreateEmployeeResponse {
@@ -152,3 +178,53 @@ export class ApiError extends Error {
     this.body = body;
   }
 }
+
+/** One installed agent, as shown in the fleet inventory (F40). Registered as a
+ *  side effect of sync; `monitoring_enabled` is managed by the owner. */
+export type Device = {
+  id: string;
+  business_id: string | null;
+  user_id: string;
+  label: string | null;
+  os: string | null;
+  agent_version: string | null;
+  monitoring_enabled: boolean;
+  last_seen_at: string | null;
+  disabled_at: string | null;
+  deleted_at: string | null;
+  user_display_name: string;
+  user_login: string;
+};
+
+export type MonitoringScopeType = "business" | "department" | "employee" | "device";
+
+export interface MonitoringDetail {
+  tracking_key: string;
+  tracking_val: unknown;
+  days_of_week: number[];
+  start_minute: number;
+  end_minute: number;
+  timezone: string;
+  source_profile_id?: string;
+  source_profile_name?: string;
+}
+
+export interface MonitoringAssignment {
+  scope_type: MonitoringScopeType;
+  scope_id: string;
+}
+
+export interface MonitoringProfile {
+  id: string;
+  business_id: string;
+  name: string;
+  description: string;
+  parent_id: string | null;
+  private: boolean;
+  details: MonitoringDetail[];
+  assignments: MonitoringAssignment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export type MonitoringProfileInput = Omit<MonitoringProfile, "id" | "created_at" | "updated_at">;

@@ -1,31 +1,33 @@
 import type { BusinessKind } from "./api/types";
 import i18n from "./i18n";
 
-/** Member vocabulary for a business kind. A family talks about "kids", a team
- *  about "employees". Drives all member-facing copy in the dashboard + wizard.
- *  Localized via the `common.terms` catalog. */
+/** Workforce vocabulary used throughout the management experience.
+ *
+ * The backend still accepts the historical `family` kind so existing databases
+ * remain readable, but this product is now an employee-monitoring platform. A
+ * legacy workspace must therefore render the same employee terminology as a
+ * new team workspace instead of exposing the legacy personal-workspace copy. */
 export interface MemberTerms {
-  one: string; // "Employee" | "Kid"
-  many: string; // "Employees" | "Kids"
-  lowerOne: string; // "employee" | "kid"
-  lowerMany: string; // "employees" | "kids"
-  addCta: string; // "Add employee" | "Add kid"
-  idAbbrev: string; // "emp" | "kid" — used in generated usernames (e.g. acme_emp1)
-  org: string; // "team" | "family" — the organization's own noun (localized)
+  one: string;
+  many: string;
+  lowerOne: string;
+  lowerMany: string;
+  addCta: string;
+  idAbbrev: string;
+  org: string;
 }
 
-/** Resolve localized member terminology from a business kind. Defaults to team
- *  wording when the kind is missing (e.g. before the business has loaded). */
-export function memberTerms(kind: BusinessKind | undefined | null): MemberTerms {
-  const group = kind === "family" ? "family" : "team";
-  const term = (k: string) => i18n.t(`terms.${group}.${k}`, { ns: "common" });
+/** Resolve localized employee terminology. `kind` is intentionally accepted
+ *  for API compatibility but no longer changes the product vocabulary. */
+export function memberTerms(_kind: BusinessKind | undefined | null): MemberTerms {
+  const term = (k: string) => i18n.t(`terms.team.${k}`, { ns: "common" });
   return {
     one: term("one"),
     many: term("many"),
     lowerOne: term("lowerOne"),
     lowerMany: term("lowerMany"),
     addCta: term("addCta"),
-    idAbbrev: group === "family" ? "kid" : "emp",
+    idAbbrev: "emp",
     org: term("org"),
   };
 }

@@ -71,6 +71,30 @@ const MembersIcon = () => (
   </RailIcon>
 );
 
+const DevicesIcon = () => (
+  <RailIcon>
+    <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" />
+  </RailIcon>
+);
+
+const MonitoringIcon = () => (
+  <RailIcon>
+    <path d="M4 19V5m0 7h4m4 7V5m0 4h4m4 10V5m0 10h-4" />
+    <circle cx="8" cy="12" r="2" />
+    <circle cx="16" cy="9" r="2" />
+    <circle cx="16" cy="15" r="2" />
+  </RailIcon>
+);
+
+const OrganizationIcon = () => (
+  <RailIcon>
+    <circle cx="12" cy="5" r="2" />
+    <circle cx="5" cy="19" r="2" />
+    <circle cx="19" cy="19" r="2" />
+    <path d="M12 7v5M5 17v-3h14v3" />
+  </RailIcon>
+);
+
 const SettingsIcon = () => (
   <RailIcon>
     <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
@@ -272,6 +296,9 @@ export function AppShell() {
   const NAV = [
     { to: "/", label: t("nav.dashboard"), end: true, icon: <DashboardIcon /> },
     { to: "/employees", label: terms.many, end: false, icon: <MembersIcon /> },
+    { to: "/devices", label: t("nav.devices"), end: false, icon: <DevicesIcon /> },
+    { to: "/monitoring", label: t("nav.monitoring"), end: false, icon: <MonitoringIcon /> },
+    { to: "/organization", label: t("nav.organization"), end: false, icon: <OrganizationIcon /> },
     { to: "/settings", label: t("nav.settings"), end: false, icon: <SettingsIcon /> },
   ];
 

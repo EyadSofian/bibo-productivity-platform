@@ -14,6 +14,20 @@ export default defineConfig({
   // Served under /admin in production (the marketing site owns "/").
   base: "/admin/",
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the application shell small and cache slow-moving framework,
+        // localization and telemetry code independently. This also prevents
+        // one monolithic >500 kB entry chunk as the dashboard grows.
+        manualChunks: {
+          react: ["react", "react-dom", "react-router-dom"],
+          i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector"],
+          sentry: ["@sentry/react"],
+        },
+      },
+    },
+  },
   server: {
     port: 5174,
     proxy: {

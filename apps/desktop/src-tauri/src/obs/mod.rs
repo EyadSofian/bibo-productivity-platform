@@ -59,7 +59,8 @@ pub fn set_user(email: &str, business_id: Option<&str>) {
         ..Default::default()
     };
     if let Some(b) = business_id {
-        user.other.insert("business_id".to_string(), b.to_string().into());
+        user.other
+            .insert("business_id".to_string(), b.to_string().into());
     }
     sentry::configure_scope(move |scope| scope.set_user(Some(user)));
 }
@@ -106,7 +107,12 @@ macro_rules! log_err {
 /// Report a message to Sentry at the given level with optional structured extras.
 /// `source`/`extras` are attached as tags so events from the extension, sync, etc. are
 /// filterable. No-op when Sentry is disabled.
-pub fn capture_message(level: sentry::Level, message: &str, source: &str, extras: &[(&str, String)]) {
+pub fn capture_message(
+    level: sentry::Level,
+    message: &str,
+    source: &str,
+    extras: &[(&str, String)],
+) {
     sentry::with_scope(
         |scope| {
             scope.set_tag("source", source);

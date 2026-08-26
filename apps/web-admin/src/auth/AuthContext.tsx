@@ -9,9 +9,9 @@ import { Sentry } from "../sentry";
 // backend. id matches the roster owner in demo.ts so their row shows "You".
 const DEMO_USER: User = {
   id: "demo-owner",
-  email: "brian@home.app",
-  display_name: "Brian Nguyen",
-  account_type: "parent",
+  email: "amina@northstar.co",
+  display_name: "Amina Farouk",
+  account_type: "manager",
 };
 
 interface AuthState {

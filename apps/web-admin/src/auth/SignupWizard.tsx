@@ -49,9 +49,6 @@ function pwStrength(pw: string): { level: PwLevel | null; pct: number; color: st
 
 type Step = "persona" | "personal" | "account" | "setup" | "members" | "done";
 
-// Persona → business kind. The org's own noun (team/family) is localized via memberTerms().org.
-const kindOf = (p: AccountType) => (p === "parent" ? "family" : "team");
-
 // `login` is the identifier the member signs in with — an email or a username.
 type AddedMember = { display_name: string; login: string; password: string };
 
@@ -64,7 +61,7 @@ function orgSlug(orgName: string): string {
   return orgName.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 20) || "team";
 }
 
-// suggestUsername builds e.g. "yojeecorp_emp1" / "namfamily_kid2".
+// suggestUsername builds e.g. "yojeecorp_emp1".
 function suggestUsername(orgName: string, abbrev: string, n: number): string {
   return `${orgSlug(orgName)}_${abbrev}${n}`;
 }
@@ -83,7 +80,9 @@ export function SignupWizard() {
   const { setSession } = useAuth();
 
   const [step, setStep] = useState<Step>("persona");
-  const [persona, setPersona] = useState<AccountType>("manager");
+  // New cloud workspaces are workforce workspaces. `parent` remains in the API
+  // type only so older accounts can still sign in without a breaking migration.
+  const persona: AccountType = "manager";
   // "Chỉ có tôi" reveals an info notice inline instead of navigating (visual only).
   const [soloOpen, setSoloOpen] = useState(false);
 
@@ -96,8 +95,8 @@ export function SignupWizard() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const terms = memberTerms(kindOf(persona));
-  const noun = terms.org; // localized org noun (e.g. "gia đình" / "nhóm")
+  const terms = memberTerms("team");
+  const noun = terms.org;
 
   async function createAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -185,7 +184,6 @@ export function SignupWizard() {
               type="button"
               className="ad-persona"
               onClick={() => {
-                setPersona("manager");
                 setStep("account");
               }}
             >
@@ -209,30 +207,6 @@ export function SignupWizard() {
               </span>
             </button>
 
-            <button
-              type="button"
-              className="ad-persona"
-              onClick={() => {
-                setPersona("parent");
-                setStep("account");
-              }}
-            >
-              <span className="ad-persona__ic">
-                <Ic>
-                  <path d="M19.414 14.414C21 12.828 22 11.5 22 9.5a5.5 5.5 0 0 0-9.591-3.676.6.6 0 0 1-.818.001A5.5 5.5 0 0 0 2 9.5c0 2.3 1.5 4 3 5.5l5.535 5.362a2 2 0 0 0 2.879.052 2.12 2.12 0 0 0-.004-3 2.124 2.124 0 1 0 3-3 2.124 2.124 0 0 0 3.004 0 2 2 0 0 0 0-2.828l-1.881-1.882a2.41 2.41 0 0 0-3.409 0l-1.71 1.71a2 2 0 0 1-2.828 0 2 2 0 0 1 0-2.828l2.823-2.762" />
-                </Ic>
-              </span>
-              <span className="ad-persona__body">
-                <span className="ad-persona__t">{t("persona.familyTitle")}</span>
-                <span className="ad-persona__d">{t("persona.familyDesc")}</span>
-              </span>
-              <span className="ad-persona__go">
-                <Ic>
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </Ic>
-              </span>
-            </button>
           </div>
 
           <div className="ad-wiz-foot">
@@ -443,7 +417,7 @@ export function SignupWizard() {
                   onChange={(e) => setOrgName(e.target.value)}
                   required
                   autoFocus
-                  placeholder={persona === "parent" ? t("setup.placeholderFamily") : t("setup.placeholderTeam")}
+                  placeholder={t("setup.placeholderTeam")}
                 />
               </span>
             </label>
@@ -565,7 +539,7 @@ export function SignupWizard() {
   );
 }
 
-// AddMembers — inline add-employees/add-kids step. Each "Add" creates a real
+// AddMembers — inline add-employees step. Each "Add" creates a real
 // account via createEmployee against the just-created business.
 function AddMembers({
   businessId,

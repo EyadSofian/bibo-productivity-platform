@@ -34,6 +34,7 @@ pub enum PermissionState {
     Denied,
     /// Granted by the OS but a tracker still can't use it — usually needs an app
     /// relaunch (e.g. the event tap). Surfaced by the trackers, not this module.
+    #[allow(dead_code)] // Constructed by platform-specific recovery flows.
     NeedsRestart,
 }
 

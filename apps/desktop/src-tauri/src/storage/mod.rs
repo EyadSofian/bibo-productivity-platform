@@ -282,11 +282,7 @@ impl Db {
     /// `client_uuid` must be a validated UUID or `None`: the backend rejects an
     /// entire sync batch when any key is malformed, so one bad value from the
     /// extension would block every other row queued on this device.
-    pub fn insert_browser_visit(
-        &self,
-        v: &BrowserVisit,
-        client_uuid: Option<&str>,
-    ) -> Result<i64> {
+    pub fn insert_browser_visit(&self, v: &BrowserVisit, client_uuid: Option<&str>) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
         let uuid = client_uuid.map(str::to_owned).unwrap_or_else(new_uuid);
         // RETURNING, not last_insert_rowid(): on the conflict path no insert
@@ -626,8 +622,12 @@ mod tests {
         let db = db();
         let key = "11111111-2222-3333-4444-555555555555";
 
-        let first = db.insert_browser_visit(&visit("https://github.com", 60), Some(key)).unwrap();
-        let second = db.insert_browser_visit(&visit("https://github.com", 95), Some(key)).unwrap();
+        let first = db
+            .insert_browser_visit(&visit("https://github.com", 60), Some(key))
+            .unwrap();
+        let second = db
+            .insert_browser_visit(&visit("https://github.com", 95), Some(key))
+            .unwrap();
 
         assert_eq!(first, second, "resend should update the same row");
         let rows = db.browser_visits_between(0, 1000).unwrap();
@@ -641,11 +641,14 @@ mod tests {
     fn browser_visit_resend_reopens_for_sync() {
         let db = db();
         let key = "11111111-2222-3333-4444-555555555555";
-        db.insert_browser_visit(&visit("https://github.com", 60), Some(key)).unwrap();
-        db.mark_synced(SyncTable::Browser, &[key.to_string()]).unwrap();
+        db.insert_browser_visit(&visit("https://github.com", 60), Some(key))
+            .unwrap();
+        db.mark_synced(SyncTable::Browser, &[key.to_string()])
+            .unwrap();
         assert!(db.pending_browser(10).unwrap().is_empty());
 
-        db.insert_browser_visit(&visit("https://github.com", 95), Some(key)).unwrap();
+        db.insert_browser_visit(&visit("https://github.com", 95), Some(key))
+            .unwrap();
 
         let pending = db.pending_browser(10).unwrap();
         assert_eq!(pending.len(), 1, "an updated visit must re-sync");
@@ -656,8 +659,10 @@ mod tests {
     fn browser_visits_without_a_key_stay_distinct() {
         let db = db();
 
-        db.insert_browser_visit(&visit("https://github.com", 60), None).unwrap();
-        db.insert_browser_visit(&visit("https://github.com", 60), None).unwrap();
+        db.insert_browser_visit(&visit("https://github.com", 60), None)
+            .unwrap();
+        db.insert_browser_visit(&visit("https://github.com", 60), None)
+            .unwrap();
 
         assert_eq!(db.browser_visits_between(0, 1000).unwrap().len(), 2);
     }
@@ -666,8 +671,16 @@ mod tests {
     fn browser_visits_with_different_keys_stay_distinct() {
         let db = db();
 
-        db.insert_browser_visit(&visit("https://a.com", 10), Some("11111111-2222-3333-4444-555555555555")).unwrap();
-        db.insert_browser_visit(&visit("https://b.com", 20), Some("66666666-7777-8888-9999-000000000000")).unwrap();
+        db.insert_browser_visit(
+            &visit("https://a.com", 10),
+            Some("11111111-2222-3333-4444-555555555555"),
+        )
+        .unwrap();
+        db.insert_browser_visit(
+            &visit("https://b.com", 20),
+            Some("66666666-7777-8888-9999-000000000000"),
+        )
+        .unwrap();
 
         assert_eq!(db.browser_visits_between(0, 1000).unwrap().len(), 2);
     }

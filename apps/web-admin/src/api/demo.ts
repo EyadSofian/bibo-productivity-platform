@@ -14,8 +14,15 @@ import type {
   ActivityResponse,
   BrowserVisit,
   Business,
+  Department,
+  Device,
   Employee,
+  JobRole,
   KeystrokeBucket,
+  MonitoringProfile,
+  MonitoringProfileInput,
+  Organization,
+  OrganizationItemInput,
   ReportEmployee,
   ScreenshotMeta,
   ScreenshotsResponse,
@@ -54,13 +61,13 @@ function seeded(s: string): () => number {
   };
 }
 
-export const DEMO_BUSINESS_ID = "demo-family";
+export const DEMO_BUSINESS_ID = "demo-northstar";
 
 export const demoBusinesses: Business[] = [
   {
     id: DEMO_BUSINESS_ID,
-    name: "The Tran Family",
-    kind: "family",
+    name: "Northstar Digital",
+    kind: "team",
     owner_user_id: "demo-owner",
     screenshot_retention_days: 30,
     screenshot_interval_s: 300,
@@ -71,14 +78,128 @@ export const demoBusinesses: Business[] = [
   },
 ];
 
+let demoProfileState: MonitoringProfile[] | null = null;
+
+function ensureDemoProfiles(): MonitoringProfile[] {
+  if (!demoProfileState) {
+    const stamp = new Date().toISOString();
+    demoProfileState = [{
+      id: "demo-profile-standard",
+      business_id: DEMO_BUSINESS_ID,
+      name: "Standard workday",
+      description: "Core activity during the Northstar workweek.",
+      parent_id: null,
+      private: false,
+      details: ["applications", "keystrokes", "screen", "websites"].map((tracking_key) => ({
+        tracking_key,
+        tracking_val: true,
+        days_of_week: [1, 2, 3, 4, 5],
+        start_minute: 9 * 60,
+        end_minute: 17 * 60,
+        timezone: "Africa/Cairo",
+      })),
+      assignments: [{ scope_type: "business", scope_id: DEMO_BUSINESS_ID }],
+      created_at: stamp,
+      updated_at: stamp,
+    }];
+  }
+  return demoProfileState;
+}
+
+const cloneProfile = (profile: MonitoringProfile): MonitoringProfile => ({
+  ...profile,
+  details: profile.details.map((detail) => ({ ...detail, days_of_week: [...detail.days_of_week] })),
+  assignments: profile.assignments.map((assignment) => ({ ...assignment })),
+});
+
+export function demoMonitoringProfiles(): MonitoringProfile[] {
+  return ensureDemoProfiles().map(cloneProfile);
+}
+
+export function demoCreateMonitoringProfile(input: MonitoringProfileInput): MonitoringProfile {
+  const stamp = new Date().toISOString();
+  const profile: MonitoringProfile = {
+    ...input,
+    id: `demo-profile-${Date.now()}`,
+    created_at: stamp,
+    updated_at: stamp,
+  };
+  ensureDemoProfiles().push(profile);
+  return cloneProfile(profile);
+}
+
+export function demoUpdateMonitoringProfile(id: string, input: MonitoringProfileInput): MonitoringProfile {
+  const profiles = ensureDemoProfiles();
+  const index = profiles.findIndex((profile) => profile.id === id);
+  if (index < 0) throw new Error("demo: unknown monitoring profile");
+  profiles[index] = { ...profiles[index], ...input, updated_at: new Date().toISOString() };
+  return cloneProfile(profiles[index]);
+}
+
+export function demoDeleteMonitoringProfile(id: string): void {
+  demoProfileState = ensureDemoProfiles()
+    .filter((profile) => profile.id !== id)
+    .map((profile) => profile.parent_id === id ? { ...profile, parent_id: null } : profile);
+}
+
 // ageMin = minutes since last seen (drives active/idle/offline dot).
 const MEMBERS: { id: string; name: string; login: string; role: "owner" | "employee"; ageMin: number }[] = [
-  { id: "demo-owner", name: "Brian Nguyen", login: "brian@home.app", role: "owner", ageMin: 1 },
-  { id: "demo-hannah", name: "Hannah Tran", login: "hannah@home.app", role: "employee", ageMin: 3 },
-  { id: "demo-leo", name: "Leo Tran", login: "leo_home", role: "employee", ageMin: 18 },
-  { id: "demo-mia", name: "Mia Tran", login: "mia@home.app", role: "employee", ageMin: 120 },
-  { id: "demo-noah", name: "Noah Tran", login: "noah_home", role: "employee", ageMin: 4320 },
+  { id: "demo-owner", name: "Amina Farouk", login: "amina@northstar.co", role: "owner", ageMin: 1 },
+  { id: "demo-daniel", name: "Daniel Kim", login: "daniel.kim@northstar.co", role: "employee", ageMin: 3 },
+  { id: "demo-fatima", name: "Fatima Hassan", login: "fatima.hassan@northstar.co", role: "employee", ageMin: 18 },
+  { id: "demo-mateo", name: "Mateo Ruiz", login: "mateo.ruiz@northstar.co", role: "employee", ageMin: 120 },
+  { id: "demo-priya", name: "Priya Shah", login: "priya.shah@northstar.co", role: "employee", ageMin: 4320 },
 ];
+
+let demoDepartments: Department[] = [
+  { id: "demo-dept-engineering", business_id: DEMO_BUSINESS_ID, name: "Engineering", description: "Product and platform delivery", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "demo-dept-operations", business_id: DEMO_BUSINESS_ID, name: "Operations", description: "Customer and business operations", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+let demoJobRoles: JobRole[] = [
+  { id: "demo-role-developer", business_id: DEMO_BUSINESS_ID, name: "Developer", description: "Software engineering", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+  { id: "demo-role-designer", business_id: DEMO_BUSINESS_ID, name: "Designer", description: "Product design", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+];
+const demoOrganizationAssignments = new Map<string, { department_id: string | null; job_role_id: string | null }>([
+  ["demo-daniel", { department_id: "demo-dept-engineering", job_role_id: "demo-role-developer" }],
+  ["demo-fatima", { department_id: "demo-dept-engineering", job_role_id: "demo-role-designer" }],
+  ["demo-mateo", { department_id: "demo-dept-operations", job_role_id: null }],
+]);
+
+const cloneDepartment = <T extends Department>(item: T): T => ({ ...item });
+
+export function demoOrganization(): Organization {
+  return { departments: demoDepartments.map(cloneDepartment), job_roles: demoJobRoles.map(cloneDepartment) };
+}
+
+export function demoSaveOrganizationItem(kind: "department" | "job_role", id: string | null, input: OrganizationItemInput): Department | JobRole {
+  const list = kind === "department" ? demoDepartments : demoJobRoles;
+  const stamp = new Date().toISOString();
+  if (id) {
+    const index = list.findIndex((item) => item.id === id);
+    if (index < 0) throw new Error("demo: organization item not found");
+    list[index] = { ...list[index], ...input, updated_at: stamp };
+    return cloneDepartment(list[index]);
+  }
+  const item = { ...input, id: `demo-${kind}-${Date.now()}`, created_at: stamp, updated_at: stamp };
+  list.push(item);
+  return cloneDepartment(item);
+}
+
+export function demoDeleteOrganizationItem(kind: "department" | "job_role", id: string): void {
+  if (kind === "department") demoDepartments = demoDepartments.filter((item) => item.id !== id);
+  else demoJobRoles = demoJobRoles.filter((item) => item.id !== id);
+  for (const [employeeId, assignment] of demoOrganizationAssignments) {
+    if (kind === "department" && assignment.department_id === id) demoOrganizationAssignments.set(employeeId, { ...assignment, department_id: null });
+    if (kind === "job_role" && assignment.job_role_id === id) demoOrganizationAssignments.set(employeeId, { ...assignment, job_role_id: null });
+  }
+}
+
+export function demoAssignEmployeeOrganization(employeeId: string, department_id: string | null, job_role_id: string | null): Employee {
+  demoOrganizationAssignments.set(employeeId, { department_id, job_role_id });
+  const employee = demoEmployees().find((item) => item.id === employeeId);
+  if (!employee) throw new Error("demo: employee not found");
+  return employee;
+}
 
 export function demoRoster(): ReportEmployee[] {
   return MEMBERS.map((m) => {
@@ -107,6 +228,10 @@ export function demoEmployees(): Employee[] {
     display_name: m.name,
     email: m.login.includes("@") ? m.login : "",
     username: m.login.includes("@") ? undefined : m.login,
+    department_id: demoOrganizationAssignments.get(m.id)?.department_id ?? null,
+    department_name: demoDepartments.find((item) => item.id === demoOrganizationAssignments.get(m.id)?.department_id)?.name ?? "",
+    job_role_id: demoOrganizationAssignments.get(m.id)?.job_role_id ?? null,
+    job_role_name: demoJobRoles.find((item) => item.id === demoOrganizationAssignments.get(m.id)?.job_role_id)?.name ?? "",
   }));
 }
 
@@ -193,4 +318,49 @@ export function demoScreenshots(employeeId: string): ScreenshotsResponse {
     app: SHOT_APPS[i % SHOT_APPS.length],
   }));
   return { screenshots, limit: 60, offset: 0 };
+}
+
+// ── devices (F40) ────────────────────────────────────────────────────
+// Demo state is module-level and mutable so the monitoring toggle actually
+// flips in demo mode. It resets on reload, which is what a demo wants.
+const DEMO_OS = ["macOS 15.3", "Windows 11 Pro", "macOS 14.7", "Windows 10 Pro", "macOS 15.3"];
+const demoDeviceState = new Map<string, boolean>();
+
+export function demoDevices(): Device[] {
+  return MEMBERS.map((m, i) => {
+    const r = seeded(m.id + ":device");
+    const id = `demo-device-${m.id}`;
+    const enabled = demoDeviceState.get(id) ?? true;
+    return {
+      id,
+      business_id: DEMO_BUSINESS_ID,
+      user_id: m.id,
+      label: `${m.name.split(" ")[0]}'s ${i % 2 === 0 ? "MacBook Pro" : "Desktop"}`,
+      os: DEMO_OS[i % DEMO_OS.length],
+      agent_version: r() > 0.5 ? "0.4.1" : "0.4.0",
+      monitoring_enabled: enabled,
+      last_seen_at: new Date((nowS() - m.ageMin * 60) * 1000).toISOString(),
+      disabled_at: enabled ? null : new Date(nowS() * 1000).toISOString(),
+      deleted_at: demoDeviceArchivedState.get(id) ? new Date(nowS() * 1000).toISOString() : null,
+      user_display_name: m.name,
+      user_login: m.login,
+    };
+  });
+}
+
+const demoDeviceArchivedState = new Map<string, boolean>();
+
+export function demoSetDeviceMonitoring(deviceId: string, enabled: boolean): Device {
+  demoDeviceState.set(deviceId, enabled);
+  const found = demoDevices().find((d) => d.id === deviceId);
+  if (!found) throw new Error("demo: unknown device");
+  return found;
+}
+
+export function demoSetDeviceArchived(deviceId: string, archived: boolean): Device {
+  demoDeviceArchivedState.set(deviceId, archived);
+  if (archived) demoDeviceState.set(deviceId, false);
+  const found = demoDevices().find((d) => d.id === deviceId);
+  if (!found) throw new Error("demo: unknown device");
+  return found;
 }

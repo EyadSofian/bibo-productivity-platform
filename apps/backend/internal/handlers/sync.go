@@ -54,12 +54,14 @@ type browserIn struct {
 }
 
 type syncBatchReq struct {
-	DeviceID    string        `json:"device_id"`
-	DeviceLabel *string       `json:"device_label"`
-	BusinessID  *string       `json:"business_id"`
-	Activity    []activityIn  `json:"activity"`
-	Keystrokes  []keystrokeIn `json:"keystrokes"`
-	Browser     []browserIn   `json:"browser"`
+	DeviceID     string        `json:"device_id"`
+	DeviceLabel  *string       `json:"device_label"`
+	DeviceOS     *string       `json:"device_os"`
+	AgentVersion *string       `json:"agent_version"`
+	BusinessID   *string       `json:"business_id"`
+	Activity     []activityIn  `json:"activity"`
+	Keystrokes   []keystrokeIn `json:"keystrokes"`
+	Browser      []browserIn   `json:"browser"`
 }
 
 // Batch validates and idempotently upserts a sync batch, returning the accepted
@@ -145,7 +147,19 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 		return
 	}
 
-	res, err := h.store.SyncBatch(c.Request.Context(), userID, businessID, req.DeviceID, req.DeviceLabel, act, keys, brs)
+	for name, value := range map[string]*string{
+		"device_label":  req.DeviceLabel,
+		"device_os":     req.DeviceOS,
+		"agent_version": req.AgentVersion,
+	} {
+		if value != nil && len(*value) > 255 {
+			badRequest(c, name+" is too long")
+			return
+		}
+	}
+
+	res, err := h.store.SyncBatch(c.Request.Context(), userID, businessID, req.DeviceID,
+		req.DeviceLabel, req.DeviceOS, req.AgentVersion, act, keys, brs)
 	if err != nil {
 		serverError(c, err)
 		return

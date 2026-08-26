@@ -4,6 +4,9 @@
   "nav": {
     "dashboard": "Dashboard",
     "employees": "Employees",
+    "devices": "Devices",
+    "monitoring": "Monitoring",
+    "organization": "Organization",
     "settings": "Settings"
   },
   "actions": {
@@ -30,7 +33,13 @@
     "daysAgo": "{{count}}d ago"
   },
   "terms": {
-    "team": { "one": "Employee", "many": "Employees", "lowerOne": "employee", "lowerMany": "employees", "addCta": "Add employee", "org": "team" },
-    "family": { "one": "Kid", "many": "Kids", "lowerOne": "kid", "lowerMany": "kids", "addCta": "Add kid", "org": "family" }
+    "team": {
+      "one": "Employee",
+      "many": "Employees",
+      "lowerOne": "employee",
+      "lowerMany": "employees",
+      "addCta": "Add employee",
+      "org": "team"
+    }
   }
 }
