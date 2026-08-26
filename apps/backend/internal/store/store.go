@@ -96,6 +96,22 @@ func (s *Store) GetUserByID(ctx context.Context, id string) (User, error) {
 	return u, nil
 }
 
+// Health pings the database and returns the highest applied goose migration
+// version, so a health check can distinguish "reachable" from "reachable and
+// migrated to the schema this binary expects".
+func (s *Store) Health(ctx context.Context) (int64, error) {
+	if err := s.pool.Ping(ctx); err != nil {
+		return 0, err
+	}
+	var version int64
+	if err := s.pool.QueryRow(ctx,
+		`SELECT COALESCE(MAX(version_id), 0) FROM goose_db_version WHERE is_applied`,
+	).Scan(&version); err != nil {
+		return 0, err
+	}
+	return version, nil
+}
+
 // IsMember reports whether the user belongs to the business.
 func (s *Store) IsMember(ctx context.Context, userID, businessID string) (bool, error) {
 	var exists bool

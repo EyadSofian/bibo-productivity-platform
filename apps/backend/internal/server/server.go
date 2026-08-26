@@ -37,7 +37,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 		r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 	}
 
-	r.GET("/healthz", handlers.Health)
+	r.GET("/healthz", handlers.NewHealthHandler(st).Health)
 
 	tok := auth.NewManager(cfg.JWTSecret)
 	authH := handlers.NewAuthHandler(st, tok)
