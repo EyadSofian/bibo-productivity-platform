@@ -145,14 +145,26 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 		return
 	}
 
-	if err := h.store.SyncBatch(c.Request.Context(), userID, businessID, req.DeviceID, req.DeviceLabel, act, keys, brs); err != nil {
+	res, err := h.store.SyncBatch(c.Request.Context(), userID, businessID, req.DeviceID, req.DeviceLabel, act, keys, brs)
+	if err != nil {
 		serverError(c, err)
 		return
 	}
 
-	obs.Info("sync batch accepted",
-		"user", userID, "device", req.DeviceID,
-		"activity", len(accAct), "keystrokes", len(accKeys), "browser", len(accBrowser))
+	if res.MonitoringEnabled {
+		obs.Info("sync batch accepted",
+			"user", userID, "device", req.DeviceID,
+			"activity", len(accAct), "keystrokes", len(accKeys), "browser", len(accBrowser))
+	} else {
+		// The device is registered and alive, but an owner has turned its
+		// monitoring off, so the data was discarded. We still return the
+		// client_uuids as accepted: the agent must mark them synced or it will
+		// resend the same rows forever against a device that will keep dropping
+		// them. monitoring_enabled:false tells a cooperating agent to stop
+		// capturing; enforcement does not depend on it doing so.
+		obs.Info("sync batch dropped — monitoring disabled",
+			"user", userID, "device", req.DeviceID, "dropped", res.Dropped)
+	}
 
 	c.JSON(http.StatusOK, gin.H{
 		"accepted": gin.H{
@@ -160,6 +172,7 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 			"keystrokes": accKeys,
 			"browser":    accBrowser,
 		},
+		"monitoring_enabled": res.MonitoringEnabled,
 	})
 }
 

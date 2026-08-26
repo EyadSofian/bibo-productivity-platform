@@ -143,30 +143,63 @@ ON CONFLICT (client_uuid) DO UPDATE SET
   browser = EXCLUDED.browser, duration_s = EXCLUDED.duration_s,
   client_updated_at = EXCLUDED.client_updated_at, received_at = now()`
 
+	// business_id/os/agent_version are COALESCEd so a sparse heartbeat (which may
+	// omit os/version) never nulls out what a fuller sync already recorded.
+	// last_seen_at is bumped unconditionally — the device is alive even when its
+	// monitoring is off. RETURNING monitoring_enabled lets the caller decide
+	// whether to ingest this batch's data at all.
 	deviceUpsert = `
-INSERT INTO devices (id, user_id, label, last_seen_at)
-VALUES ($1, $2, $3, now())
+INSERT INTO devices (id, user_id, business_id, label, os, agent_version, last_seen_at)
+VALUES ($1, $2, $3, $4, $5, $6, now())
 ON CONFLICT (id) DO UPDATE SET
   user_id = EXCLUDED.user_id,
+  business_id = COALESCE(EXCLUDED.business_id, devices.business_id),
   label = COALESCE(EXCLUDED.label, devices.label),
-  last_seen_at = now()`
+  os = COALESCE(EXCLUDED.os, devices.os),
+  agent_version = COALESCE(EXCLUDED.agent_version, devices.agent_version),
+  last_seen_at = now()
+RETURNING monitoring_enabled`
 )
 
 // SyncBatch upserts a batch of activity/keystroke/browser rows for one user+business
 // +device, in a single transaction. Idempotent by client_uuid; the client's values
 // always win (respect local). user_id/business_id come from the caller (token +
 // membership), never the payload, so a row can't claim another user.
+//
+// A device whose monitoring has been turned off (F40) still registers and has
+// its last_seen_at bumped — so it stays visible in the inventory as alive — but
+// none of its activity/keystroke/browser rows are ingested. The dropped count
+// is returned so the handler can still acknowledge the client_uuids (the agent
+// must mark them synced and move on, or it would resend forever) while logging
+// that the data was intentionally discarded. Enforcement lives here, at the one
+// choke point every device's data passes through, rather than in the agent,
+// which is the untrusted side.
 func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID string, label *string,
-	act []ActivityRow, ks []KeystrokeRow, br []BrowserRow) error {
+	act []ActivityRow, ks []KeystrokeRow, br []BrowserRow) (SyncResult, error) {
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
-		return err
+		return SyncResult{}, err
 	}
 	defer tx.Rollback(ctx)
 
-	if _, err := tx.Exec(ctx, deviceUpsert, deviceID, userID, label); err != nil {
-		return err
+	var os, agentVersion *string // reserved for a later agent that reports them
+	var monitoringEnabled bool
+	if err := tx.QueryRow(ctx, deviceUpsert,
+		deviceID, userID, businessID, label, os, agentVersion,
+	).Scan(&monitoringEnabled); err != nil {
+		return SyncResult{}, err
+	}
+
+	if !monitoringEnabled {
+		// Commit the heartbeat (device registration + last_seen), drop the data.
+		if err := tx.Commit(ctx); err != nil {
+			return SyncResult{}, err
+		}
+		return SyncResult{
+			MonitoringEnabled: false,
+			Dropped:           len(act) + len(ks) + len(br),
+		}, nil
 	}
 
 	batch := &pgx.Batch{}
@@ -190,13 +223,24 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 		for i := 0; i < batch.Len(); i++ {
 			if _, err := res.Exec(); err != nil {
 				res.Close()
-				return err
+				return SyncResult{}, err
 			}
 		}
 		if err := res.Close(); err != nil {
-			return err
+			return SyncResult{}, err
 		}
 	}
 
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return SyncResult{}, err
+	}
+	return SyncResult{MonitoringEnabled: true}, nil
+}
+
+// SyncResult reports what SyncBatch did with a batch. When MonitoringEnabled is
+// false the device is registered but its data was discarded (Dropped rows); the
+// handler still acknowledges the client_uuids so the agent stops resending.
+type SyncResult struct {
+	MonitoringEnabled bool
+	Dropped           int
 }

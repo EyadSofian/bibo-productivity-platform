@@ -46,6 +46,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	shotH := handlers.NewScreenshotHandler(st, files)
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
+	deviceH := handlers.NewDeviceHandler(st)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
 	keepaliveH := handlers.NewKeepaliveHandler(cfg.KeepaliveToken)
 
@@ -89,6 +90,10 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	authed.PATCH("/businesses/:id/settings", ownerH.UpdateSettings)
 	authed.POST("/businesses/:id/screenshots/cleanup", retentionH.Cleanup)
 	authed.POST("/employees", ownerH.CreateEmployee)
+
+	// Device fleet inventory & per-machine monitoring control (F40).
+	authed.GET("/businesses/:id/devices", deviceH.List)
+	authed.POST("/devices/:device_id/monitoring", deviceH.SetMonitoring)
 
 	// Capture policy for the desktop (employee's org settings).
 	authed.GET("/policy", ownerH.Policy)
