@@ -1,6 +1,13 @@
 {
   "name": "@ctracking/extension",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
-  "description": "employeetrack browser extension (Manifest V3) — reports active tab to the local app."
+  "description": "employeetrack browser extension (Manifest V3) — reports active tab to the local app.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
+  }
 }

@@ -11,8 +11,12 @@ import { readFileSync } from "node:fs";
 const PATH = "apps/extension/manifest.json";
 
 // Exactly what background.js uses: tabs (visit tracking), storage (link +
-// outbox), alarms (re-discovery / checkpoint). Anything else needs review.
-const ALLOWED_PERMISSIONS = new Set(["tabs", "storage", "alarms"]);
+// outbox), alarms (re-discovery / checkpoint), idle (stop accruing browsing
+// time while the machine is unattended — F4/D-7). Anything else needs review.
+//
+// "idle" reports only a coarse active/idle/locked state on a threshold we set.
+// It exposes no input content and no timing detail.
+const ALLOWED_PERMISSIONS = new Set(["tabs", "storage", "alarms", "idle"]);
 
 const errors = [];
 const check = (cond, msg) => { if (!cond) errors.push(msg); };
@@ -29,6 +33,15 @@ check(m.manifest_version === 3, `manifest_version must be 3, got ${m.manifest_ve
 check(typeof m.name === "string" && m.name.length > 0, "name is required");
 check(/^\d+\.\d+(\.\d+)?(\.\d+)?$/.test(m.version ?? ""), `version must be dotted numeric, got ${JSON.stringify(m.version)}`);
 check(typeof m.background?.service_worker === "string", "background.service_worker is required (MV3)");
+
+// background.js imports its logic from ./lib/*. Chrome only honours those
+// imports when the worker is declared as a module, and a missing type fails at
+// browser load time with nothing recorded — exactly the silent breakage this
+// script exists to catch.
+check(
+  m.background?.type === "module",
+  'background.type must be "module" — background.js uses ES imports from ./lib',
+);
 
 // Privacy invariant: loopback only. A non-127.0.0.1 host permission would mean
 // the extension could report browsing activity somewhere other than the local app.
