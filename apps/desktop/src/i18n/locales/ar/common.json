@@ -1,0 +1,35 @@
+{
+  "appName": "BiBoTracking",
+  "language": "اللغة",
+  "loading": "جارٍ التحميل…",
+  "nav": {
+    "Dashboard": "لوحة التحكم",
+    "Activity": "النشاط",
+    "Screenshots": "لقطات الشاشة",
+    "Browser": "المتصفح",
+    "Permissions": "الأذونات",
+    "Settings": "الإعدادات"
+  },
+  "status": {
+    "tracking": "قيد المتابعة",
+    "paused": "متوقف مؤقتًا",
+    "idle": "خامل"
+  },
+  "statusTooltip": {
+    "tracking": "قيد المتابعة — اضغط للإيقاف المؤقت",
+    "paused": "المتابعة متوقفة مؤقتًا — اضغط للاستئناف",
+    "idle": "خامل — لا يوجد إدخال حديث، ولا يتم الاحتساب. اضغط للإيقاف المؤقت."
+  },
+  "theme": {
+    "light": "فاتح",
+    "dark": "داكن",
+    "system": "النظام"
+  },
+  "account": {
+    "local": "الوضع المحلي",
+    "setupAgain": "إعداد حساب",
+    "signOut": "تسجيل الخروج",
+    "localTooltip": "شخصي ومحلي بالكامل — بدون حساب",
+    "setupAgainTooltip": "سجّل الدخول بحساب فريق أو عائلة"
+  }
+}

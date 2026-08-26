@@ -1,3 +1,15 @@
+/*
+ * Writing direction. The stylesheet uses CSS logical properties, so setting
+ * <html dir="rtl"> is enough for layout mirroring. `--dir` handles the few
+ * values that have no logical form — multiply any physical x-offset by it.
+ */
+:root {
+  --dir: 1;
+}
+[dir="rtl"] {
+  --dir: -1;
+}
+
 /* ctracking — semantic design tokens (see docs/07-ui-design.md) */
 
 :root,
@@ -82,6 +94,14 @@ body {
   font-size: var(--fz-sm);
   -webkit-font-smoothing: antialiased;
 }
+/* Manrope carries no Arabic glyphs, so without this the browser substitutes an
+   arbitrary face with mismatched metrics. Keyed on lang, not dir: the two are
+   independent — an Arabic UI can still hold LTR text. */
+:lang(ar) body,
+body:lang(ar) {
+  font-family: "SF Arabic", "Geeza Pro", "Segoe UI", "Noto Sans Arabic", "Dubai",
+    Tahoma, sans-serif;
+}
 
 .num {
   font-variant-numeric: tabular-nums;
@@ -128,7 +148,7 @@ body {
 }
 .app-titlebar-title {
   position: absolute;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   font-size: 13px;
   font-weight: 700;
@@ -186,7 +206,7 @@ body {
   background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   padding: var(--sp-4) var(--sp-3);
   display: flex;
   flex-direction: column;
@@ -441,18 +461,18 @@ body {
   bottom: calc(100% + 5px);
 }
 .lang-menu.right {
-  right: 0;
+  inset-inline-end: 0;
 }
 .lang-menu.left {
-  left: 0;
+  inset-inline-start: 0;
 }
 /* menu options — offline .bb-lang__opt: no flag, active shows a check on the
-   right (margin-left:auto) with a subtle brand tint */
+   right (margin-inline-start:auto) with a subtle brand tint */
 .lang-opt {
   font: inherit;
   font-size: var(--fz-sm);
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -474,7 +494,7 @@ body {
   font-weight: 700;
 }
 .lang-opt .ck {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   color: var(--accent);
 }
@@ -486,21 +506,21 @@ body {
 .welcome-lang {
   position: absolute;
   top: var(--sp-4);
-  right: var(--sp-4);
+  inset-inline-end: var(--sp-4);
   z-index: 3;
 }
 /* welcome: language switcher sits just BELOW the custom title-bar strip */
 .welcome .welcome-lang {
   top: 64px;
-  right: 18px;
+  inset-inline-end: 18px;
 }
 /* custom (Overlay) title bar: full-width draggable strip; native traffic lights
    overlay the left, the tray button sits at the right. */
 .welcome-titlebar {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   height: 40px;
   display: flex;
   align-items: center;
@@ -512,7 +532,7 @@ body {
 /* app name centered in the title bar (native title is hidden via hiddenTitle) */
 .welcome-titlebar-title {
   position: absolute;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   font-size: 13px;
   font-weight: 700;
@@ -694,7 +714,7 @@ body {
 .bibo-tip__bubble {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  inset-inline-end: 0;
   z-index: 50;
   white-space: nowrap;
   padding: 6px 10px;
@@ -815,7 +835,7 @@ body {
 /* stacked delta text ("3h" over "42m"), like the two-line "vs yesterday" sub */
 .bibo-stat__delta-stack {
   line-height: 1.05;
-  text-align: left;
+  text-align: start;
 }
 .bibo-stat__delta--up {
   color: #10b981;
@@ -832,7 +852,7 @@ body {
   color: var(--text-muted);
 }
 .bibo-stat__chart {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: flex-end;
 }
@@ -890,7 +910,7 @@ table {
   font-size: var(--fz-sm);
 }
 th {
-  text-align: left;
+  text-align: start;
   color: var(--text-muted);
   font-weight: 500;
   font-size: var(--fz-xs);
@@ -1063,7 +1083,7 @@ td {
   color: var(--text-muted);
 }
 .bb-act-badge {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1182,7 +1202,7 @@ td {
   overflow-y: auto;
   overscroll-behavior: contain;
   /* room for the thin scrollbar so bars aren't hidden under it */
-  padding-right: 6px;
+  padding-inline-end: 6px;
 }
 .bb-byapp::-webkit-scrollbar {
   width: 6px;
@@ -1238,7 +1258,7 @@ td {
 .bb-byapp__val {
   width: 56px;
   flex: none;
-  text-align: right;
+  text-align: end;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
@@ -1262,7 +1282,7 @@ td {
   margin-top: 2px;
 }
 .bb-tbl th {
-  text-align: left;
+  text-align: start;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-size: 10px;
@@ -1273,7 +1293,7 @@ td {
 }
 .bb-tbl th.r,
 .bb-tbl td.r {
-  text-align: right;
+  text-align: end;
 }
 .bb-tbl td {
   padding: 13px var(--sp-3);
@@ -1441,7 +1461,7 @@ td {
   text-decoration: underline;
 }
 .perm-notice__close {
-  margin-left: auto;
+  margin-inline-start: auto;
   border: none;
   background: none;
   color: var(--text);
@@ -1616,7 +1636,7 @@ td {
 }
 .bb-shot__time {
   position: absolute;
-  left: 10px;
+  inset-inline-start: 10px;
   bottom: 8px;
   font-size: 12px;
   font-weight: 700;
@@ -1830,8 +1850,8 @@ td {
 .bibo-select__menu {
   position: absolute;
   top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   z-index: 30;
   background: var(--surface);
   border: 1px solid var(--border);
@@ -1849,7 +1869,7 @@ td {
 .bibo-select__opt {
   font: inherit;
   font-size: 14px;
-  text-align: left;
+  text-align: start;
   color: var(--text);
   background: transparent;
   border: none;
@@ -1887,7 +1907,7 @@ td {
 .bibo-switch__knob {
   position: absolute;
   top: 2.5px;
-  left: 2.5px;
+  inset-inline-start: 2.5px;
   width: 19px;
   height: 19px;
   border-radius: 50%;
@@ -1940,7 +1960,7 @@ td {
   content: "";
   position: absolute;
   top: 2px;
-  left: 18px;
+  inset-inline-start: 18px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -1950,7 +1970,7 @@ td {
   background: var(--border);
 }
 .switch.off::after {
-  left: 2px;
+  inset-inline-start: 2px;
 }
 
 /* ---- inputs (login + forms) ---- */
@@ -2053,7 +2073,7 @@ td {
 }
 .biz-item.active {
   background: var(--accent-weak);
-  border-left: 2px solid var(--accent);
+  border-inline-start: 2px solid var(--accent);
 }
 .biz-item .owner {
   color: var(--text-muted);
@@ -2213,7 +2233,7 @@ td {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  text-align: left;
+  text-align: start;
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2257,7 +2277,7 @@ td {
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
-  text-align: left;
+  text-align: start;
   font-size: var(--fz-sm);
 }
 .success-burst li.done {
@@ -2331,7 +2351,7 @@ td {
 .rail-step:not(:last-child)::before {
   content: "";
   position: absolute;
-  left: 10px;
+  inset-inline-start: 10px;
   top: 24px;
   bottom: 0;
   width: 2px;
@@ -2507,7 +2527,7 @@ td {
 
 .welcome .persona-grid {
   gap: var(--sp-4);
-  text-align: left;
+  text-align: start;
   /* narrower than the heading: shrink the two cards' width, keep them centered */
   max-width: 520px;
   margin-inline: auto;
@@ -2689,7 +2709,7 @@ td {
 .tray-menu {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  inset-inline-end: 0;
   z-index: 60;
   width: max-content;
   min-width: 240px;
@@ -2745,7 +2765,7 @@ td {
   font-size: 14px;
   font-weight: 500;
   color: var(--text);
-  text-align: left;
+  text-align: start;
 }
 .tray-item svg {
   width: 17px;
@@ -2778,7 +2798,7 @@ td {
   display: flex;
   flex-direction: column;
   gap: 13px;
-  text-align: left;
+  text-align: start;
 }
 .welcome .auth-field {
   display: flex;
@@ -2848,7 +2868,7 @@ td {
   flex: none;
 }
 .welcome .auth-forgot-row {
-  text-align: right;
+  text-align: end;
   margin-top: -4px;
 }
 .welcome .auth-link {
@@ -2924,7 +2944,7 @@ td {
 .welcome-back {
   position: absolute;
   top: 50px;
-  left: 18px;
+  inset-inline-start: 18px;
   z-index: 3;
   display: inline-flex;
   align-items: center;
@@ -2953,7 +2973,7 @@ td {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 14px;
-  text-align: left;
+  text-align: start;
 }
 .welcome .capture-card {
   display: flex;
@@ -3031,7 +3051,7 @@ td {
   gap: 12px;
   padding: 14px 16px;
   border-radius: 16px;
-  text-align: left;
+  text-align: start;
   background: #14161c;
   border: 1px solid #14161c;
   color: #fff;
@@ -3066,7 +3086,7 @@ td {
 .capture-steps {
   position: absolute;
   top: 100px;
-  left: 50%;
+  inset-inline-start: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: column;
@@ -3102,8 +3122,8 @@ td {
 /* bottom action bar: Skip (left) · Next (right) */
 .capture-foot {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: 0;
   display: flex;
   align-items: center;
@@ -3140,7 +3160,7 @@ td {
   width: 560px;
   max-width: 100%;
   margin: var(--sp-3) auto 0;
-  text-align: left;
+  text-align: start;
   display: flex;
   flex-direction: column;
 }
@@ -3216,7 +3236,7 @@ td {
 }
 .welcome .switch::after {
   top: 3px;
-  left: 21px;
+  inset-inline-start: 21px;
   width: 16px;
   height: 16px;
   box-shadow: 0 1px 3px rgba(20, 20, 45, 0.28);
@@ -3226,7 +3246,7 @@ td {
   background: color-mix(in srgb, var(--text) 18%, transparent);
 }
 .welcome .switch.off::after {
-  left: 3px;
+  inset-inline-start: 3px;
 }
 
 /* onboarding step 3: permissions wrapper */
@@ -3234,7 +3254,7 @@ td {
   width: 560px;
   max-width: 100%;
   margin: var(--sp-3) auto 0;
-  text-align: left;
+  text-align: start;
 }
 /* shield tile above the "Grant permissions" title */
 .welcome .perm-shield {

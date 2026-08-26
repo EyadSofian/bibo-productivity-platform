@@ -114,6 +114,13 @@ jobs:
       - name: Validate extension manifest
         run: node .github/scripts/check-extension-manifest.mjs
 
+      # A key missing from a locale does not fail at runtime — i18next falls
+      # back to English and the string ships untranslated. This is the only
+      # place that catches it, and the desktop app's sole locale guard (it has
+      # no test runner yet).
+      - name: Check locale catalog parity
+        run: node .github/scripts/check-locale-parity.mjs
+
   # ---------------------------------------------------------------- desktop --
   # macOS and Windows only: the desktop app targets those two platforms, and
   # Tauri on Linux would need webkit2gtk for no benefit. The Windows leg also
@@ -198,11 +205,17 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           "$(go env GOPATH)/bin/govulncheck" ./...
 
+      # `if: always()` on the two below: steps are sequential, so a govulncheck
+      # failure used to skip them entirely and hide whatever Rust and JS had to
+      # report. An audit job that stops at the first ecosystem is worse than no
+      # audit job, because it looks like coverage.
       - name: cargo audit (Rust)
+        if: always()
         working-directory: apps/desktop/src-tauri
         run: cargo audit
 
       - name: pnpm audit (JS)
+        if: always()
         run: |
           pnpm install --frozen-lockfile
           pnpm audit --audit-level high

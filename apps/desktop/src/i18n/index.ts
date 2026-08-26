@@ -65,7 +65,19 @@ import esPermissions from "./locales/es/permissions.json";
 import esScreens from "./locales/es/screens.json";
 import esMedia from "./locales/es/media.json";
 
-/** Supported locales (en is the source of truth). `zh` = Simplified Chinese. */
+import arCommon from "./locales/ar/common.json";
+import arAuth from "./locales/ar/auth.json";
+import arOnboarding from "./locales/ar/onboarding.json";
+import arWelcome from "./locales/ar/welcome.json";
+import arSettings from "./locales/ar/settings.json";
+import arPermissions from "./locales/ar/permissions.json";
+import arScreens from "./locales/ar/screens.json";
+import arMedia from "./locales/ar/media.json";
+
+/**
+ * Supported locales (en is the source of truth). `zh` = Simplified Chinese.
+ * `ar` is the only right-to-left locale — see RTL_LOCALES below.
+ */
 export const LOCALES = [
   { code: "en", label: "English", flag: "🇺🇸" },
   { code: "zh", label: "中文（简体）", flag: "🇨🇳" },
@@ -74,6 +86,7 @@ export const LOCALES = [
   { code: "id", label: "Bahasa Indonesia", flag: "🇮🇩" },
   { code: "fr", label: "Français", flag: "🇫🇷" },
   { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "ar", label: "العربية", flag: "🇸🇦" },
 ] as const;
 
 export type LocaleCode = (typeof LOCALES)[number]["code"];
@@ -86,6 +99,7 @@ const resources = {
   id: { common: idCommon, auth: idAuth, onboarding: idOnboarding, welcome: idWelcome, settings: idSettings, permissions: idPermissions, screens: idScreens, media: idMedia },
   fr: { common: frCommon, auth: frAuth, onboarding: frOnboarding, welcome: frWelcome, settings: frSettings, permissions: frPermissions, screens: frScreens, media: frMedia },
   es: { common: esCommon, auth: esAuth, onboarding: esOnboarding, welcome: esWelcome, settings: esSettings, permissions: esPermissions, screens: esScreens, media: esMedia },
+  ar: { common: arCommon, auth: arAuth, onboarding: arOnboarding, welcome: arWelcome, settings: arSettings, permissions: arPermissions, screens: arScreens, media: arMedia },
 };
 
 i18n
@@ -111,5 +125,39 @@ i18n
 export function activeLocale(): string {
   return i18n.resolvedLanguage || i18n.language || "en";
 }
+
+/**
+ * Locales written right-to-left. Arabic is the first; Hebrew/Farsi/Urdu would
+ * join this set rather than needing any new plumbing.
+ */
+export const RTL_LOCALES: ReadonlySet<string> = new Set(["ar", "he", "fa", "ur"]);
+
+/** Whether `code` is written right-to-left. Accepts "ar" or "ar-EG". */
+export function isRtl(code: string | undefined | null): boolean {
+  if (!code) return false;
+  return RTL_LOCALES.has(code.toLowerCase().split("-")[0]);
+}
+
+/** The writing direction of `code`, for a `dir` attribute. */
+export function directionOf(code: string | undefined | null): "rtl" | "ltr" {
+  return isRtl(code) ? "rtl" : "ltr";
+}
+
+/**
+ * Mirror the active locale onto <html dir> and <html lang>. `dir` flips the
+ * layout (the stylesheet uses logical properties, so the browser does the
+ * mirroring); `lang` drives font selection and screen-reader pronunciation.
+ *
+ * Exported for tests; called on load and on every language change.
+ */
+export function applyDocumentDirection(code: string = activeLocale()): void {
+  if (typeof document === "undefined") return;
+  const el = document.documentElement;
+  el.setAttribute("dir", directionOf(code));
+  el.setAttribute("lang", code);
+}
+
+applyDocumentDirection();
+i18n.on("languageChanged", (lng) => applyDocumentDirection(lng));
 
 export default i18n;

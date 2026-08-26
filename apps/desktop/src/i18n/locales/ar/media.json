@@ -1,0 +1,49 @@
+{
+  "screenshots": {
+    "title": "لقطات الشاشة الملتقطة اليوم",
+    "intro": "تُلتقط تلقائيًا كل 5 دقائق.",
+    "captureNow": "التقط الآن",
+    "capturing": "جارٍ الالتقاط…",
+    "captured_zero": "لم يتم التقاط أي شاشة.",
+    "captured": "تم التقاط شاشة واحدة.",
+    "captured_two": "تم التقاط شاشتين.",
+    "captured_few": "تم التقاط {{count}} شاشات.",
+    "captured_many": "تم التقاط {{count}} شاشة.",
+    "captured_other": "تم التقاط {{count}} شاشة.",
+    "capturedZero": "تم التقاط 0 — هل تم منح إذن تسجيل الشاشة؟ (تبويب الأذونات)",
+    "captureFailed": "فشل الالتقاط: {{error}}",
+    "empty": "لا توجد لقطات شاشة اليوم بعد. امنح إذن تسجيل الشاشة من تبويب الأذونات، ثم اضغط “التقط الآن”.",
+    "shotTitle": "{{time}} · شاشة {{display}}",
+    "shotAlt": "لقطة شاشة {{time}}"
+  },
+  "browser": {
+    "visitedTitle": "الأماكن التي زرتها اليوم",
+    "visitedSub": "مجمّعة حسب النطاق، الأكثر زيارةً أولًا.",
+    "live": "مباشر · يُحدَّث كل 3 ثوانٍ",
+    "colDomain": "النطاق",
+    "colStart": "الوقت",
+    "colDuration": "المدة",
+    "colBrowser": "المتصفح",
+    "title": "تتبّع صفحات الويب",
+    "subtitle": "ثبّت إضافة BiBoTracking لترى الصفحات التي تزورها هنا.",
+    "gifPlaceholder": "[ GIF: تثبيت إضافة Chrome ]",
+    "step1": "افتح Google Chrome",
+    "step2Prefix": "اذهب إلى متجر Chrome الإلكتروني — ",
+    "getExtension": "احصل على الإضافة ←",
+    "step3": "اضغط \"إضافة إلى Chrome\"",
+    "step4": "ارجع إلى هنا — سنتصل تلقائيًا",
+    "waiting": "▲ في انتظار الإضافة…",
+    "waitingPort": " (يستمع على المنفذ {{port}})",
+    "support": "المدعوم الآن: ✓ Chrome  ·  قريبًا: Edge · Firefox · Safari",
+    "topSites": "أكثر المواقع من حيث الوقت",
+    "pageVisits": "زيارات الصفحات",
+    "colPage": "الصفحة",
+    "colSite": "الموقع",
+    "colTime": "الوقت",
+    "colWhen": "متى"
+  },
+  "ui": {
+    "brandAlt": "BiBoTracking",
+    "stepOf": "الخطوة {{current}} من {{total}}"
+  }
+}
