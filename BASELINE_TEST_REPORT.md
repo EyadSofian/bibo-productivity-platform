@@ -140,8 +140,8 @@ demonstrates it.
 | D5 | README says backend `:8080`; scripts and proxy use `:8090` |
 | D6 | *(same as D-1 above — a real bug, not only documentation)* |
 | D7 | README advertises Windows as production-ready; nothing substantiates it |
-| D8 | CLAUDE.md says the latest migration is `00007`; it is `00009` |
-| D9 | CLAUDE.md gives the bundle id as `com.briannguyen.ctracking`; it is `com.briannguyen.bibotracking` |
+| D8 | ~~CLAUDE.md says the latest migration is `00007`; it is `00009`~~ **FIXED 2026-08-26** — now `00010_browser_domain.sql` |
+| D9 | ~~CLAUDE.md gives the bundle id as `com.briannguyen.ctracking`~~ **FIXED 2026-08-26** — corrected to `com.briannguyen.bibotracking` |
 
 ---
 

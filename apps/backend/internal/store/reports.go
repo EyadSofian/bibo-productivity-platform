@@ -195,6 +195,7 @@ func (s *Store) KeystrokesReport(ctx context.Context, employeeID, ownerID string
 type BrowserVisit struct {
 	Ts        int64   `json:"ts"`
 	URL       string  `json:"url"`
+	Domain    *string `json:"domain"`
 	PageTitle *string `json:"page_title"`
 	Browser   *string `json:"browser"`
 	DurationS int     `json:"duration_s"`
@@ -203,7 +204,7 @@ type BrowserVisit struct {
 // BrowserReport returns page visits in range, most recent first.
 func (s *Store) BrowserReport(ctx context.Context, employeeID, ownerID string, from, to int64) ([]BrowserVisit, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT ts, url, page_title, browser, duration_s FROM browser_visits
+		`SELECT ts, url, domain, page_title, browser, duration_s FROM browser_visits
 		  WHERE user_id = $1 AND `+ownedFilter+` AND ts >= $3 AND ts < $4
 		  ORDER BY ts DESC`, employeeID, ownerID, from, to)
 	if err != nil {
@@ -214,7 +215,7 @@ func (s *Store) BrowserReport(ctx context.Context, employeeID, ownerID string, f
 	out := []BrowserVisit{}
 	for rows.Next() {
 		var v BrowserVisit
-		if err := rows.Scan(&v.Ts, &v.URL, &v.PageTitle, &v.Browser, &v.DurationS); err != nil {
+		if err := rows.Scan(&v.Ts, &v.URL, &v.Domain, &v.PageTitle, &v.Browser, &v.DurationS); err != nil {
 			return nil, err
 		}
 		out = append(out, v)

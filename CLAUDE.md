@@ -6,7 +6,7 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
 
 > **Brand:** display name is **BiBoTracking** (renamed from "BiBoEmployeeTracking", ticket
 > 111 — display only). Build/infra identifiers still use older names: Tauri
-> `productName=employeetrack`, bundle id `com.briannguyen.ctracking`, Go module
+> `productName=employeetrack`, bundle id `com.briannguyen.bibotracking`, Go module
 > `ctracking/backend`, DMG `EmployeeTracker-macOS.dmg`, Chrome ext slug `employee-tracker`.
 > Don't "fix" those unless doing an infra rebrand.
 
@@ -33,7 +33,7 @@ dashboard. Open-source, self-hostable, positioned as a Hubstaff alternative.
 
 ## Auth & data model (backend)
 - Postgres; migrations in `apps/backend/internal/db/migrations` (goose, embedded, run on
-  startup). Latest = `00007_member_username.sql`.
+  startup). Latest = `00010_browser_domain.sql`.
 - `users` (email **and/or** username — either is a login identifier; ≥1 required),
   `businesses` (kind `team|family`), `memberships` (role `owner|employee`, unique per
   user+business), `devices`, activity/screenshot/browser tables.

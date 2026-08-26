@@ -135,6 +135,44 @@ func TestSyncBatchIngestsEveryRowKind(t *testing.T) {
 	}
 }
 
+// The domain is derived from the URL during ingest, never sent by the client,
+// so a visit cannot be filed under a domain other than the one it came from.
+func TestSyncBatchDerivesDomain(t *testing.T) {
+	f := newSyncFixture(t)
+	visits := []BrowserRow{
+		{ClientUUID: uuid.NewString(), Ts: 1, URL: "https://GitHub.com/a/b?c=1", DurationS: 10, ClientUpdatedAt: 1},
+		{ClientUUID: uuid.NewString(), Ts: 2, URL: "https://docs.google.com/d/x", DurationS: 10, ClientUpdatedAt: 1},
+		{ClientUUID: uuid.NewString(), Ts: 3, URL: "user_turn_off_in_browser", DurationS: 0, ClientUpdatedAt: 1},
+	}
+
+	f.sync(t, nil, nil, visits)
+
+	for _, tc := range []struct {
+		clientUUID string
+		want       string // "" means NULL
+	}{
+		{visits[0].ClientUUID, "github.com"},
+		{visits[1].ClientUUID, "docs.google.com"},
+		{visits[2].ClientUUID, ""},
+	} {
+		var got *string
+		if err := f.store.pool.QueryRow(f.ctx,
+			`SELECT domain FROM browser_visits WHERE client_uuid = $1`, tc.clientUUID,
+		).Scan(&got); err != nil {
+			t.Fatalf("read back: %v", err)
+		}
+		if tc.want == "" {
+			if got != nil {
+				t.Fatalf("domain = %q, want NULL for a non-URL marker", *got)
+			}
+			continue
+		}
+		if got == nil || *got != tc.want {
+			t.Fatalf("domain = %v, want %q", got, tc.want)
+		}
+	}
+}
+
 // A heartbeat with nothing to report still registers the device, which is what
 // the roster's last-seen column reads.
 func TestSyncBatchRegistersDeviceOnEmptyBatch(t *testing.T) {

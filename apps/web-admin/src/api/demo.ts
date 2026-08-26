@@ -162,9 +162,10 @@ export function demoBrowser(employeeId: string): { visits: BrowserVisit[] } {
   const r = seeded(employeeId + ":web");
   const browsers = ["Chrome", "Arc"];
   // one visit per distinct domain
-  const visits: BrowserVisit[] = SITES.map(([url, title]) => ({
+  const visits: BrowserVisit[] = SITES.map(([host, title]) => ({
     ts: dayStart() + (8 + Math.floor(r() * 9)) * HOUR + Math.floor(r() * HOUR),
-    url: `https://${url}`,
+    url: `https://${host}`,
+    domain: host,
     page_title: title,
     browser: browsers[Math.floor(r() * browsers.length)],
     duration_s: Math.round((8 + r() * 60) * 60),

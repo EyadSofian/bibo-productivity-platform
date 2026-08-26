@@ -119,6 +119,8 @@ export interface KeystrokeBucket {
 export interface BrowserVisit {
   ts: number;
   url: string;
+  /** Derived by the backend from `url`. Null for the on/off marker rows. */
+  domain: string | null;
   page_title: string;
   browser: string;
   duration_s: number;

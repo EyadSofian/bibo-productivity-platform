@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 )
@@ -33,6 +35,10 @@ type KeystrokeRow struct {
 }
 
 // BrowserRow is one page visit reported by the extension.
+//
+// There is deliberately no Domain field: the domain is derived from URL during
+// ingest (see DomainOf), so a client cannot report a URL under one domain and
+// have it grouped, classified or alerted on as another.
 type BrowserRow struct {
 	ClientUUID      string
 	Ts              int64
@@ -41,6 +47,29 @@ type BrowserRow struct {
 	Browser         *string
 	DurationS       int
 	ClientUpdatedAt int64
+}
+
+// DomainOf extracts the hostname a visit belongs to, or nil when the URL has
+// none — which includes the reserved on/off marker values, that are not URLs.
+//
+// The full hostname is kept rather than a registrable domain: reducing
+// "docs.google.com" to "google.com" needs a public-suffix list, and the
+// distinction matters for classification. Narrowing later is always possible;
+// recovering detail that was discarded is not.
+func DomainOf(rawURL string) *string {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.Hostname() == "" {
+		return nil
+	}
+	// Parse accepts a lot that is not a web URL ("mailto:", bare paths). Only
+	// http(s) visits are page views.
+	switch strings.ToLower(u.Scheme) {
+	case "http", "https":
+	default:
+		return nil
+	}
+	host := strings.ToLower(u.Hostname())
+	return &host
 }
 
 // ResolveBusinessForUser determines which business synced data belongs to. If
@@ -106,10 +135,11 @@ ON CONFLICT (client_uuid) DO UPDATE SET
 
 	browserUpsert = `
 INSERT INTO browser_visits
-  (client_uuid, user_id, business_id, device_id, ts, url, page_title, browser, duration_s, client_updated_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+  (client_uuid, user_id, business_id, device_id, ts, url, domain, page_title, browser, duration_s, client_updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 ON CONFLICT (client_uuid) DO UPDATE SET
-  ts = EXCLUDED.ts, url = EXCLUDED.url, page_title = EXCLUDED.page_title,
+  ts = EXCLUDED.ts, url = EXCLUDED.url, domain = EXCLUDED.domain,
+  page_title = EXCLUDED.page_title,
   browser = EXCLUDED.browser, duration_s = EXCLUDED.duration_s,
   client_updated_at = EXCLUDED.client_updated_at, received_at = now()`
 
@@ -149,8 +179,10 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 			k.TsBucket, k.Count, k.ClientUpdatedAt)
 	}
 	for _, b := range br {
+		// Derived here, not taken from the payload, so the stored domain always
+		// matches the stored URL.
 		batch.Queue(browserUpsert, b.ClientUUID, userID, businessID, deviceID,
-			b.Ts, b.URL, b.PageTitle, b.Browser, b.DurationS, b.ClientUpdatedAt)
+			b.Ts, b.URL, DomainOf(b.URL), b.PageTitle, b.Browser, b.DurationS, b.ClientUpdatedAt)
 	}
 
 	if batch.Len() > 0 {
