@@ -27,7 +27,9 @@ services:
       STORAGE_DIR: /app/storage
       WEB_ADMIN_ORIGIN: http://localhost:5174
     ports:
-      - "8080:8080"
+      # Host :8090 → container :8080. The host port matches what the web-admin
+      # Vite proxy and the desktop's local default target (see .env.example).
+      - "8090:8080"
     volumes:
       - screenshots:/app/storage/screenshots
 

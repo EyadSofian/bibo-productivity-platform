@@ -93,7 +93,7 @@ pnpm install
 # 1. Postgres in Docker (role/db `ctracking`, :5432)
 scripts/dev-db.sh
 
-# 2. Go backend on :8080 (auto-copies .env, runs migrations)
+# 2. Go backend on :8090 (auto-copies .env, runs migrations)
 scripts/dev-backend.sh
 
 # 3. Web dashboard on http://localhost:5174/admin/
