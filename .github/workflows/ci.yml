@@ -1,0 +1,205 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# A new push to the same ref supersedes the previous run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------- backend --
+  backend:
+    name: Backend (Go)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/backend
+
+    # Postgres for store/handler integration tests. The current test suite
+    # (auth, obs) does not need it yet; it is here so the tests added in F1
+    # have a database to talk to without touching this workflow again.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ctracking
+          POSTGRES_PASSWORD: ctracking
+          POSTGRES_DB: ctracking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ctracking"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Consumed by internal/testutil once store tests land (F1).
+      TEST_DATABASE_URL: postgres://ctracking:ctracking@localhost:5432/ctracking_test?sslmode=disable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+
+      - name: go build
+        run: go build ./...
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test -race ./...
+
+  # apps/monitor is a SEPARATE Go module (infrastructure/uptime monitoring for the
+  # project's own VPS) and is not part of the productivity platform. It is built
+  # here for visibility only — non-blocking, so unrelated code cannot redden CI.
+  monitor:
+    name: Monitor module (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: apps/monitor
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/monitor/go.mod
+          cache-dependency-path: apps/monitor/go.sum
+      - run: go build ./...
+      - run: go test ./...
+
+  # --------------------------------------------------------------- frontend --
+  frontend:
+    name: Frontend (TypeScript)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # action-setup must precede setup-node so the pnpm store cache resolves.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck all workspaces
+        run: pnpm -r --if-present typecheck
+
+      - name: Build all workspaces
+        run: pnpm -r --if-present build
+
+      # No workspace defines a `test` script yet; this is a no-op that starts
+      # exercising suites the moment Vitest lands (F1 web-admin, F4 extension).
+      - name: Test all workspaces
+        run: pnpm -r --if-present test
+
+      - name: Validate extension manifest
+        run: node .github/scripts/check-extension-manifest.mjs
+
+  # ---------------------------------------------------------------- desktop --
+  # macOS and Windows only: the desktop app targets those two platforms, and
+  # Tauri on Linux would need webkit2gtk for no benefit. The Windows leg also
+  # gives the Windows-only platform backend real compile + unit-test coverage,
+  # which no developer machine on this project currently provides.
+  desktop:
+    name: Desktop (Rust · ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      # tauri::generate_context!() resolves `frontendDist` (../dist) at COMPILE
+      # time, so the web assets must exist before cargo runs — even for tests.
+      - name: Build desktop web assets
+        run: pnpm --filter @ctracking/desktop build
+
+      - name: cargo check
+        working-directory: apps/desktop/src-tauri
+        run: cargo check --all-targets
+
+      - name: cargo test
+        working-directory: apps/desktop/src-tauri
+        run: cargo test
+
+      # Non-blocking for now: the existing code has never been linted, so an
+      # unreviewed backlog of warnings must not gate every push. Triage the
+      # output, then tighten to `-D warnings` (tracked in F1).
+      - name: cargo clippy (advisory)
+        working-directory: apps/desktop/src-tauri
+        continue-on-error: true
+        run: cargo clippy --all-targets
+
+  # ---------------------------------------------------------------- security --
+  # Advisory only until F32 triages the findings and makes them blocking.
+  security:
+    name: Dependency audit (advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/backend/go.mod
+          cache-dependency-path: apps/backend/go.sum
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@cargo-audit
+
+      - name: govulncheck (Go)
+        working-directory: apps/backend
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+      - name: cargo audit (Rust)
+        working-directory: apps/desktop/src-tauri
+        run: cargo audit
+
+      - name: pnpm audit (JS)
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm audit --audit-level high
