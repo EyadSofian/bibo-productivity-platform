@@ -413,8 +413,15 @@ Subscribe to `NSWorkspace` `willSleep`/`didWake` and the distributed notificatio
     bug during development: the tab-close path queued a visit but never flushed it.
   - Manifest is now a module service worker (required by the `lib/` imports); the CI
     guard enforces both that and the narrow `idle` permission.
-  - **Not yet done:** desktop/backend `domain` + `active_tab` columns, batch ingest,
-    the websites panel, and the full manual browser matrix. See the unticked boxes.
+  - **Not yet done:** batch ingest, the local `client_uuid` upsert, the websites
+    panel, and the full manual browser matrix. See the unticked boxes.
+- **2026-08-26 — `domain` stored, derived server-side.** Migration `00010` adds
+  `browser_visits.domain` with a backfill and a `(business_id, domain, ts)` index;
+  `store.DomainOf` computes it during ingest. `BrowserRow` has no Domain field on
+  purpose, so a client cannot file a visit under a domain other than its URL's —
+  which is why the planned "accept `domain` in the sync batch" task was dropped
+  rather than implemented. The desktop needs no change. `domain` is now returned by
+  the browser report. *Go written, not compiled (B-1); TypeScript verified.*
 
 ### Goal
 Make browser data trustworthy. Eliminate the confirmed causes of `"browser_visit": []`.
@@ -461,14 +468,23 @@ focus change, tab close, idle start, checkpoint alarm, and worker suspend. Segme
 are appended to the outbox first, then flushed — so a failed POST never loses data.
 
 ### Backend tasks
-- [ ] Add `browser_visits.domain` (+ backfill from `url`) and
-      `browser_visits.active_tab`.
-- [ ] Index `(business_id, domain, ts)`.
-- [ ] Accept `domain` and `active_tab` in `POST /v1/sync/batch`.
+- [x] Add `browser_visits.domain` (+ backfill from `url`). Migration `00010`.
+      `active_tab` deliberately not added — see Missing pieces.
+- [x] Index `(business_id, domain, ts)`.
+- [x] ~~Accept `domain` … in `POST /v1/sync/batch`~~ — **derived instead.**
+      `store.DomainOf` computes it during ingest and `BrowserRow` has no Domain
+      field, so a client cannot file a visit under a domain other than its URL's.
+      This is strictly better than accepting the field, and needs no agent change.
+- [x] Expose `domain` on the existing browser report.
 
 ### Desktop tasks
 - [ ] `POST /ingest` accepts an **array** of visits (keep single-object support).
-- [ ] Derive and store `domain` server-side too (never trust the client alone).
+      *(now a throughput optimization: the outbox already flushes in bounded passes)*
+- [x] ~~Derive and store `domain` server-side too (never trust the client alone).~~
+      Done in the backend, which is the authoritative store. The desktop passes the
+      URL through unchanged and needs no schema change for this.
+- [ ] Local `ON CONFLICT(client_uuid)` upsert (SQLite v3) so a resend after a lost
+      response cannot duplicate a row. The extension already sends `client_uuid`.
 - [ ] Reconcile browser visits against activity samples — browser data is a
       *refinement* of an ACTIVE segment, never additional time (see F5 rule).
 - [ ] Rotate the ingest token on app start and expose it only over loopback
@@ -478,8 +494,9 @@ are appended to the outbox first, then flushed — so a failed POST never loses 
 - [ ] Websites panel grouped by domain with durations and category (post-F6).
 
 ### Database tasks
-- [ ] Migration: `domain`, `active_tab`, index.
-- [ ] SQLite v3: same columns locally.
+- [x] Migration `00010`: `domain` + backfill + `(business_id, domain, ts)` index.
+      `active_tab` omitted on purpose.
+- [ ] SQLite v3: unique index on `client_uuid`, for the local upsert above.
 
 ### API tasks
 - [ ] `GET /api/v1/employees/{id}/websites` with domain rollup and pagination.
