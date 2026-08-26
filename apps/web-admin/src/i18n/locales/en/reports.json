@@ -12,7 +12,8 @@
       "page": "Page",
       "browser": "Browser",
       "duration": "Duration",
-      "domain": "Domain"
+      "domain": "Domain",
+      "visits": "Visits"
     },
     "untitled": "(untitled)",
     "title": "Sites visited"

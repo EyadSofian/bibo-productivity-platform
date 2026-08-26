@@ -12,7 +12,8 @@
       "page": "Trang",
       "browser": "Trình duyệt",
       "duration": "Thời lượng",
-      "domain": "Tên miền"
+      "domain": "Tên miền",
+      "visits": "Lượt truy cập"
     },
     "untitled": "(không có tiêu đề)",
     "title": "Trang đã truy cập"

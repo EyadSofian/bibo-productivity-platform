@@ -12,7 +12,8 @@
       "page": "页面",
       "browser": "浏览器",
       "duration": "时长",
-      "domain": "域名"
+      "domain": "域名",
+      "visits": "访问次数"
     },
     "untitled": "（无标题）",
     "title": "访问的网站"

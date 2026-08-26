@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { BrowserVisit } from "../../api/types";
 import { fmtDuration } from "../../format";
 import { Empty } from "../ui";
+import { rollupByDomain } from "./rollup";
 
 // Hour:minute only (local) for the Time column.
 const hhmm = (ts: number) => {
@@ -23,20 +24,15 @@ function colorForDomain(d: string): string {
   for (let i = 0; i < d.length; i++) h = (h * 31 + d.charCodeAt(i)) >>> 0;
   return DOMAIN_COLORS[h % DOMAIN_COLORS.length];
 }
-function domainOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
 
 export function BrowserPanel({ visits }: { visits: BrowserVisit[] }) {
   const { t } = useTranslation("reports");
-  if (visits.length === 0) return <Empty>{t("browser.empty")}</Empty>;
 
-  // Most time spent first.
-  const rows = [...visits].sort((a, b) => b.duration_s - a.duration_s);
+  // One row per site, not per visit. The extension checkpoints an open tab every
+  // 60 seconds, so an hour on one page arrives as ~60 rows — listing them raw
+  // buries the answer instead of showing it.
+  const rows = rollupByDomain(visits);
+  if (rows.length === 0) return <Empty>{t("browser.empty")}</Empty>;
 
   return (
     <div className="bibo-card bibo-card--default ad-tablecard">
@@ -48,47 +44,46 @@ export function BrowserPanel({ visits }: { visits: BrowserVisit[] }) {
           <tr>
             <th>{t("browser.table.domain")}</th>
             <th>{t("browser.table.time")}</th>
+            <th className="r">{t("browser.table.visits")}</th>
             <th className="r">{t("browser.table.duration")}</th>
             <th>{t("browser.table.browser")}</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((v, i) => {
-            const domain = domainOf(v.url);
-            return (
-              <tr key={`${v.ts}-${i}`}>
-                <td>
-                  <div className="ad-name">
-                    <span
-                      style={{
-                        width: 20,
-                        height: 20,
-                        borderRadius: 6,
-                        background: colorForDomain(domain),
-                        color: "#fff",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 10,
-                        fontWeight: 800,
-                        flex: "none",
-                      }}
-                    >
-                      {domain.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="ad-name__txt" title={v.page_title || v.url}>
-                      {domain}
-                    </span>
-                  </div>
-                </td>
-                <td className="ad-relt">{hhmm(v.ts)}</td>
-                <td className="r ad-dur">{fmtDuration(v.duration_s)}</td>
-                <td className="ad-muted" style={{ fontWeight: 600 }}>
-                  {v.browser}
-                </td>
-              </tr>
-            );
-          })}
+          {rows.map((r) => (
+            <tr key={r.domain}>
+              <td>
+                <div className="ad-name">
+                  <span
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 6,
+                      background: colorForDomain(r.domain),
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      flex: "none",
+                    }}
+                  >
+                    {r.domain.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="ad-name__txt" title={r.title || r.domain}>
+                    {r.domain}
+                  </span>
+                </div>
+              </td>
+              <td className="ad-relt">{hhmm(r.firstTs)}</td>
+              <td className="r ad-dur">{r.visits}</td>
+              <td className="r ad-dur">{fmtDuration(r.totalS)}</td>
+              <td className="ad-muted" style={{ fontWeight: 600 }}>
+                {r.browsers.join(", ")}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>

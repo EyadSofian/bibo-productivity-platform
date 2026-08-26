@@ -12,7 +12,8 @@
       "page": "ページ",
       "browser": "ブラウザ",
       "duration": "時間",
-      "domain": "ドメイン"
+      "domain": "ドメイン",
+      "visits": "訪問回数"
     },
     "untitled": "（無題）",
     "title": "訪問したサイト"
