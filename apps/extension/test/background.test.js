@@ -119,6 +119,28 @@ describe("when the desktop app is unreachable", () => {
     expect(await env.stored("local", "outbox")).toHaveLength(0);
   });
 
+  // After an outage the queue can hold hundreds of segments. Sending them one
+  // request at a time would mean hundreds of round trips to drain it.
+  it("drains a backlog in batches, not one request per visit", async () => {
+    const env = await boot({ appUp: false });
+    env.setActiveTab(GITHUB);
+    await env.fire("tabs.onActivated", { tabId: GITHUB.id });
+    for (let i = 0; i < 12; i++) {
+      advance(60);
+      await checkpoint(env);
+    }
+    expect(await env.stored("local", "outbox")).toHaveLength(12);
+
+    env.app.up = true;
+    advance(60);
+    await checkpoint(env);
+
+    expect(env.app.visits).toHaveLength(13);
+    expect(env.app.requests).toHaveLength(1);
+    expect(Array.isArray(env.app.requests[0])).toBe(true);
+    expect(await env.stored("local", "outbox")).toHaveLength(0);
+  });
+
   it("queues the segment before attempting to send it", async () => {
     const env = await boot({ appUp: false });
     env.setActiveTab(GITHUB);

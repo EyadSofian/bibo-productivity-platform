@@ -90,7 +90,10 @@ export function makeChrome() {
 export function makeApp({ up = true, port = 47615, token = "tok" } = {}) {
   const app = {
     up,
+    /** Every visit received, flattened out of whatever shape it arrived in. */
     visits: [],
+    /** Raw request bodies, so a test can check batching rather than just totals. */
+    requests: [],
     /** Requests that never reached a listening port. */
     refused: 0,
     fetch: async (url, init) => {
@@ -102,7 +105,11 @@ export function makeApp({ up = true, port = 47615, token = "tok" } = {}) {
         return jsonResponse({ app: "employeetrack", version: "test", token });
       }
       if (url === `http://127.0.0.1:${port}/ingest`) {
-        app.visits.push(JSON.parse(init.body));
+        // The real endpoint takes a single visit or an array; record what
+        // arrived either way, and remember the shape so a test can assert it.
+        const body = JSON.parse(init.body);
+        app.requests.push(body);
+        app.visits.push(...(Array.isArray(body) ? body : [body]));
         return new Response("", { status: 200 });
       }
       if (url === `http://127.0.0.1:${port}/report-error`) {

@@ -270,23 +270,52 @@ impl Db {
         Ok(conn.last_insert_rowid())
     }
 
-    pub fn insert_browser_visit(&self, v: &BrowserVisit) -> Result<i64> {
+    /// Record a page visit, keyed on `client_uuid`. Upsert makes a resend
+    /// idempotent: the extension writes each segment to a durable outbox and
+    /// retries until the app confirms it, so a response lost in flight would
+    /// otherwise land the same visit twice.
+    ///
+    /// A resend is a mutation, so it resets `synced = 0` and bumps `updated_at`
+    /// — an already-synced visit re-syncs with its corrected duration, the same
+    /// rule `add_keystrokes` follows (see docs/11).
+    ///
+    /// `client_uuid` must be a validated UUID or `None`: the backend rejects an
+    /// entire sync batch when any key is malformed, so one bad value from the
+    /// extension would block every other row queued on this device.
+    pub fn insert_browser_visit(
+        &self,
+        v: &BrowserVisit,
+        client_uuid: Option<&str>,
+    ) -> Result<i64> {
         let conn = self.conn.lock().unwrap();
-        conn.execute(
+        let uuid = client_uuid.map(str::to_owned).unwrap_or_else(new_uuid);
+        // RETURNING, not last_insert_rowid(): on the conflict path no insert
+        // happens, so last_insert_rowid() would report an unrelated earlier row.
+        let id = conn.query_row(
             "INSERT INTO browser_visit
                (ts, url, page_title, browser, duration_s, client_uuid, synced, updated_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7)",
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7)
+             ON CONFLICT(client_uuid) DO UPDATE SET
+                 ts = excluded.ts,
+                 url = excluded.url,
+                 page_title = excluded.page_title,
+                 browser = excluded.browser,
+                 duration_s = excluded.duration_s,
+                 synced = 0,
+                 updated_at = excluded.updated_at
+             RETURNING id",
             params![
                 v.ts,
                 v.url,
                 v.page_title,
                 v.browser,
                 v.duration_s,
-                new_uuid(),
+                uuid,
                 now_secs()
             ],
+            |r| r.get(0),
         )?;
-        Ok(conn.last_insert_rowid())
+        Ok(id)
     }
 
     // ---------- queries (time-range; used by the UI in later tasks) ----------
@@ -579,6 +608,70 @@ mod tests {
         Db::open_in_memory().expect("open in-memory db")
     }
 
+    fn visit(url: &str, duration_s: i64) -> BrowserVisit {
+        BrowserVisit {
+            ts: 100,
+            url: url.into(),
+            page_title: Some("T".into()),
+            browser: Some("chrome".into()),
+            duration_s,
+        }
+    }
+
+    // The extension retries from a durable outbox until the app confirms a
+    // visit, so a response lost in flight replays the same segment. Without the
+    // upsert that landed a second row and double-counted the time.
+    #[test]
+    fn browser_visit_resend_updates_instead_of_duplicating() {
+        let db = db();
+        let key = "11111111-2222-3333-4444-555555555555";
+
+        let first = db.insert_browser_visit(&visit("https://github.com", 60), Some(key)).unwrap();
+        let second = db.insert_browser_visit(&visit("https://github.com", 95), Some(key)).unwrap();
+
+        assert_eq!(first, second, "resend should update the same row");
+        let rows = db.browser_visits_between(0, 1000).unwrap();
+        assert_eq!(rows.len(), 1, "resend created a duplicate row");
+        assert_eq!(rows[0].duration_s, 95, "the corrected duration should win");
+    }
+
+    // A visit whose duration changed must go back to the backend, or the server
+    // keeps the stale value forever. Same rule add_keystrokes follows.
+    #[test]
+    fn browser_visit_resend_reopens_for_sync() {
+        let db = db();
+        let key = "11111111-2222-3333-4444-555555555555";
+        db.insert_browser_visit(&visit("https://github.com", 60), Some(key)).unwrap();
+        db.mark_synced(SyncTable::Browser, &[key.to_string()]).unwrap();
+        assert!(db.pending_browser(10).unwrap().is_empty());
+
+        db.insert_browser_visit(&visit("https://github.com", 95), Some(key)).unwrap();
+
+        let pending = db.pending_browser(10).unwrap();
+        assert_eq!(pending.len(), 1, "an updated visit must re-sync");
+        assert_eq!(pending[0].duration_s, 95);
+    }
+
+    #[test]
+    fn browser_visits_without_a_key_stay_distinct() {
+        let db = db();
+
+        db.insert_browser_visit(&visit("https://github.com", 60), None).unwrap();
+        db.insert_browser_visit(&visit("https://github.com", 60), None).unwrap();
+
+        assert_eq!(db.browser_visits_between(0, 1000).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn browser_visits_with_different_keys_stay_distinct() {
+        let db = db();
+
+        db.insert_browser_visit(&visit("https://a.com", 10), Some("11111111-2222-3333-4444-555555555555")).unwrap();
+        db.insert_browser_visit(&visit("https://b.com", 20), Some("66666666-7777-8888-9999-000000000000")).unwrap();
+
+        assert_eq!(db.browser_visits_between(0, 1000).unwrap().len(), 2);
+    }
+
     #[test]
     fn migrations_set_version() {
         let db = db();
@@ -627,13 +720,16 @@ mod tests {
             height: Some(1440),
         })
         .unwrap();
-        db.insert_browser_visit(&BrowserVisit {
-            ts: 600,
-            url: "https://github.com".into(),
-            page_title: Some("GitHub".into()),
-            browser: Some("chrome".into()),
-            duration_s: 42,
-        })
+        db.insert_browser_visit(
+            &BrowserVisit {
+                ts: 600,
+                url: "https://github.com".into(),
+                page_title: Some("GitHub".into()),
+                browser: Some("chrome".into()),
+                duration_s: 42,
+            },
+            None,
+        )
         .unwrap();
         assert_eq!(db.screenshots_between(0, 1000).unwrap().len(), 1);
         let visits = db.browser_visits_between(0, 1000).unwrap();
@@ -718,13 +814,16 @@ mod tests {
     #[test]
     fn mark_synced_clears_pending() {
         let db = db();
-        db.insert_browser_visit(&BrowserVisit {
-            ts: 1,
-            url: "https://x.com".into(),
-            page_title: None,
-            browser: None,
-            duration_s: 1,
-        })
+        db.insert_browser_visit(
+            &BrowserVisit {
+                ts: 1,
+                url: "https://x.com".into(),
+                page_title: None,
+                browser: None,
+                duration_s: 1,
+            },
+            None,
+        )
         .unwrap();
         let pend = db.pending_browser(100).unwrap();
         assert_eq!(pend.len(), 1);

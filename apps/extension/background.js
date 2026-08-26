@@ -33,7 +33,11 @@ const CHECKPOINT_MINUTES = 1;
 /** Seconds without input before browsing time stops accruing. */
 const IDLE_THRESHOLD_S = 60;
 
-/** Segments attempted per flush. Bounded so one pass cannot run unboundedly long. */
+/**
+ * Segments per request. Must stay at or below the desktop app's own ingest cap
+ * (MAX_INGEST_BATCH in src-tauri/src/server/mod.rs), or a flush after a long
+ * outage is refused wholesale and the queue never drains.
+ */
 const FLUSH_BATCH = 50;
 
 // Reserved URL markers emitted when the user flips the popup toggle. The desktop app
@@ -154,6 +158,13 @@ async function ensureLink() {
   return (await getLink()) || (await discover());
 }
 
+/**
+ * Post one visit, or an array of them.
+ *
+ * A batch is all-or-nothing from here: if the app stores some and then fails,
+ * the retry re-sends the whole batch and the already-stored ones are recognised
+ * by their `client_uuid` and updated in place rather than duplicated.
+ */
 async function postVisit(visit) {
   let link = await ensureLink();
   if (!link) return false;
@@ -199,13 +210,9 @@ async function flush() {
       const batch = head(queue, FLUSH_BATCH);
       if (batch.length === 0) return;
 
-      let accepted = 0;
-      for (const segment of batch) {
-        // Stop at the first refusal: the app is unreachable, and the rest stay
-        // queued in order for the next attempt.
-        if (!(await postVisit(segment))) break;
-        accepted++;
-      }
+      // One request per batch rather than one per visit: after an outage the
+      // queue can hold hundreds, and the app caps a batch at its own limit.
+      const accepted = (await postVisit(batch)) ? batch.length : 0;
 
       if (accepted > 0) {
         await serialize(async () =>

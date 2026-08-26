@@ -90,6 +90,11 @@ fn origin_only(url: &str) -> String {
     }
 }
 
+/// Most visits a single `/ingest` call may carry. The extension flushes its
+/// outbox in bounded batches; this caps what any local process can push in one
+/// request, independently of that.
+const MAX_INGEST_BATCH: usize = 200;
+
 #[derive(Deserialize)]
 struct VisitIn {
     url: String,
@@ -99,6 +104,33 @@ struct VisitIn {
     #[serde(default)]
     browser: Option<String>,
     duration_s: i64,
+    /// Extension-supplied key, so a resend after a lost response updates the
+    /// visit rather than duplicating it. Absent or malformed values are dropped
+    /// and a local key is generated instead — see `valid_uuid`.
+    #[serde(default)]
+    client_uuid: Option<String>,
+    /// Sent by the extension and deliberately ignored: the backend derives the
+    /// domain from the URL so the two can never disagree. Accepted here only so
+    /// an older desktop build does not reject a newer extension's payload.
+    #[serde(default, rename = "domain")]
+    _domain: Option<String>,
+}
+
+/// One visit, or a batch of them. The extension posts batches; older builds and
+/// manual calls post a single object, and both must keep working.
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum IngestIn {
+    One(Box<VisitIn>),
+    Many(Vec<VisitIn>),
+}
+
+/// Accept a client key only when it really is a UUID. The backend rejects a
+/// whole sync batch if any `client_uuid` is malformed, so letting a bad value
+/// through here would block every other row queued on this device.
+fn valid_uuid(s: &Option<String>) -> Option<&str> {
+    let s = s.as_deref()?;
+    uuid::Uuid::parse_str(s).ok().map(|_| s)
 }
 
 /// An error caught in the browser extension, forwarded here so the desktop app can
@@ -132,21 +164,40 @@ async fn whoami(State(s): State<AppState>) -> Json<Value> {
     }))
 }
 
-async fn ingest(State(s): State<AppState>, headers: HeaderMap, Json(v): Json<VisitIn>) -> StatusCode {
+async fn ingest(State(s): State<AppState>, headers: HeaderMap, Json(body): Json<IngestIn>) -> StatusCode {
     if let Err(code) = check_request(&headers, s.token.as_str()) {
         return code;
     }
+    let visits = match body {
+        IngestIn::One(v) => vec![*v],
+        IngestIn::Many(v) => v,
+    };
+    if visits.len() > MAX_INGEST_BATCH {
+        return StatusCode::PAYLOAD_TOO_LARGE;
+    }
+
+    for v in visits {
+        if let Err(code) = record(&s, v) {
+            return code;
+        }
+    }
+    StatusCode::OK
+}
+
+/// Apply pause and privacy policy to one visit and store it.
+fn record(s: &AppState, v: VisitIn) -> Result<(), StatusCode> {
     // On/off marker events are recorded unconditionally so an "off" transition still
     // lands. Regular page views respect pause + domain-only privacy.
     let marker = is_marker(&v.url);
     if !marker && s.control.paused.load(Ordering::Relaxed) {
         // Tracking stopped: accept the request so the extension doesn't retry, but
         // don't record anything (consistent with the keyboard/window trackers).
-        return StatusCode::OK;
+        return Ok(());
     }
     // Domain-only privacy mode: store just the origin, and drop the page title.
     // Markers are left intact (they carry no browsing data).
     let domain_only = !marker && s.control.domain_only.load(Ordering::Relaxed);
+    let client_uuid = valid_uuid(&v.client_uuid).map(str::to_owned);
     let (url, page_title) = if domain_only {
         (origin_only(&v.url), None)
     } else {
@@ -159,10 +210,10 @@ async fn ingest(State(s): State<AppState>, headers: HeaderMap, Json(v): Json<Vis
         browser: v.browser,
         duration_s: v.duration_s,
     };
-    match s.db.insert_browser_visit(&visit) {
-        Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-    }
+    s.db
+        .insert_browser_visit(&visit, client_uuid.as_deref())
+        .map(|_| ())
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
 /// Receive an error report from the browser extension and forward it to Sentry tagged
@@ -262,7 +313,8 @@ pub fn start(db: Arc<Db>, control: Arc<TrackerControl>) -> BrowserLink {
 
 #[cfg(test)]
 mod tests {
-    use super::origin_only;
+    use super::*;
+    use axum::http::{HeaderName, HeaderValue};
 
     #[test]
     fn origin_only_strips_path_and_query() {
@@ -270,5 +322,198 @@ mod tests {
         assert_eq!(origin_only("http://example.com"), "http://example.com");
         assert_eq!(origin_only("https://sub.host.io/x"), "https://sub.host.io");
         assert_eq!(origin_only("notaurl"), "notaurl");
+    }
+
+    // ---------- request guard ----------
+
+    const TOKEN: &str = "secret-token";
+
+    fn headers(pairs: &[(&str, &str)]) -> HeaderMap {
+        let mut h = HeaderMap::new();
+        for (k, v) in pairs {
+            h.insert(
+                HeaderName::from_bytes(k.as_bytes()).unwrap(),
+                HeaderValue::from_str(v).unwrap(),
+            );
+        }
+        h
+    }
+
+    #[test]
+    fn accepts_the_right_token() {
+        assert!(check_request(&headers(&[(TOKEN_HEADER, TOKEN)]), TOKEN).is_ok());
+    }
+
+    #[test]
+    fn rejects_a_wrong_or_missing_token() {
+        assert_eq!(
+            check_request(&headers(&[(TOKEN_HEADER, "nope")]), TOKEN),
+            Err(StatusCode::UNAUTHORIZED)
+        );
+        assert_eq!(
+            check_request(&headers(&[]), TOKEN),
+            Err(StatusCode::UNAUTHORIZED)
+        );
+    }
+
+    // A page in the browser must never be able to post visits, even if it
+    // somehow learned the token.
+    #[test]
+    fn rejects_web_origins() {
+        for origin in ["http://evil.example", "https://evil.example"] {
+            assert_eq!(
+                check_request(&headers(&[(TOKEN_HEADER, TOKEN), ("origin", origin)]), TOKEN),
+                Err(StatusCode::FORBIDDEN),
+                "{origin} should be refused"
+            );
+        }
+    }
+
+    #[test]
+    fn allows_the_extension_origin() {
+        let h = headers(&[(TOKEN_HEADER, TOKEN), ("origin", "chrome-extension://abcdef")]);
+        assert!(check_request(&h, TOKEN).is_ok());
+    }
+
+    // ---------- client key validation ----------
+
+    #[test]
+    fn accepts_only_real_uuids_as_client_keys() {
+        let good = "11111111-2222-3333-4444-555555555555".to_string();
+        assert_eq!(valid_uuid(&Some(good.clone())), Some(good.as_str()));
+
+        // A malformed key would make the backend reject the entire sync batch,
+        // blocking every other row queued on this device — so it is dropped and
+        // a local one is generated instead.
+        for bad in ["", "not-a-uuid", "1234", "'; DROP TABLE browser_visit;--"] {
+            assert_eq!(valid_uuid(&Some(bad.to_string())), None, "{bad:?} should be refused");
+        }
+        assert_eq!(valid_uuid(&None), None);
+    }
+
+    // ---------- ingest policy ----------
+
+    fn state() -> AppState {
+        AppState {
+            db: Arc::new(crate::storage::Db::open_in_memory().unwrap()),
+            token: Arc::new(TOKEN.to_string()),
+            control: Arc::new(TrackerControl::new()),
+            err_limit: Arc::new(Mutex::new(ErrLimit::default())),
+        }
+    }
+
+    fn visit_in(url: &str) -> VisitIn {
+        VisitIn {
+            url: url.into(),
+            page_title: Some("Title".into()),
+            ts: 100,
+            browser: Some("chrome".into()),
+            duration_s: 30,
+            client_uuid: None,
+            _domain: None,
+        }
+    }
+
+    fn stored(s: &AppState) -> Vec<crate::storage::BrowserVisit> {
+        s.db.browser_visits_between(0, 100_000).unwrap()
+    }
+
+    #[test]
+    fn pause_suppresses_page_views_but_not_markers() {
+        let s = state();
+        s.control.paused.store(true, Ordering::Relaxed);
+
+        record(&s, visit_in("https://github.com")).unwrap();
+        record(&s, visit_in(MARKER_OFF)).unwrap();
+
+        let rows = stored(&s);
+        assert_eq!(rows.len(), 1, "only the marker should be recorded while paused");
+        assert_eq!(rows[0].url, MARKER_OFF);
+    }
+
+    #[test]
+    fn domain_only_mode_drops_the_path_and_title() {
+        let s = state();
+        s.control.domain_only.store(true, Ordering::Relaxed);
+
+        record(&s, visit_in("https://github.com/anthropics/claude-code?x=1")).unwrap();
+
+        let rows = stored(&s);
+        assert_eq!(rows[0].url, "https://github.com");
+        assert_eq!(rows[0].page_title, None, "the title can leak the path");
+    }
+
+    // Markers carry no browsing data, so privacy mode must leave them intact —
+    // rewriting them would break the on/off signal they exist to carry.
+    #[test]
+    fn domain_only_mode_leaves_markers_intact() {
+        let s = state();
+        s.control.domain_only.store(true, Ordering::Relaxed);
+
+        record(&s, visit_in(MARKER_ON)).unwrap();
+
+        assert_eq!(stored(&s)[0].url, MARKER_ON);
+    }
+
+    #[test]
+    fn a_resent_visit_updates_rather_than_duplicating() {
+        let s = state();
+        let key = "11111111-2222-3333-4444-555555555555";
+        let mut first = visit_in("https://github.com");
+        first.client_uuid = Some(key.into());
+        let mut again = visit_in("https://github.com");
+        again.client_uuid = Some(key.into());
+        again.duration_s = 90;
+
+        record(&s, first).unwrap();
+        record(&s, again).unwrap();
+
+        let rows = stored(&s);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].duration_s, 90);
+    }
+
+    #[test]
+    fn batches_over_the_cap_are_refused() {
+        let body: IngestIn = serde_json::from_str(
+            &serde_json::to_string(&vec![serde_json::json!({
+                "url": "https://a.com", "ts": 1, "duration_s": 1
+            }); MAX_INGEST_BATCH + 1])
+            .unwrap(),
+        )
+        .unwrap();
+        match body {
+            IngestIn::Many(v) => assert!(v.len() > MAX_INGEST_BATCH),
+            IngestIn::One(_) => panic!("an array must parse as a batch"),
+        }
+    }
+
+    // Older extension builds post a bare object; both shapes must keep working.
+    #[test]
+    fn accepts_a_single_object_or_an_array() {
+        let one: IngestIn =
+            serde_json::from_str(r#"{"url":"https://a.com","ts":1,"duration_s":5}"#).unwrap();
+        assert!(matches!(one, IngestIn::One(_)));
+
+        let many: IngestIn =
+            serde_json::from_str(r#"[{"url":"https://a.com","ts":1,"duration_s":5}]"#).unwrap();
+        assert!(matches!(many, IngestIn::Many(v) if v.len() == 1));
+    }
+
+    // The extension sends `domain`; the backend derives its own from the URL, so
+    // this build accepts the field and ignores it rather than failing to parse.
+    #[test]
+    fn an_unknown_domain_field_does_not_break_parsing() {
+        let v: IngestIn = serde_json::from_str(
+            r#"{"url":"https://a.com","ts":1,"duration_s":5,"domain":"a.com","client_uuid":"11111111-2222-3333-4444-555555555555"}"#,
+        )
+        .unwrap();
+        match v {
+            IngestIn::One(v) => {
+                assert_eq!(v.url, "https://a.com");
+                assert!(valid_uuid(&v.client_uuid).is_some());
+            }
+            IngestIn::Many(_) => panic!("expected a single object"),
+        }
     }
 }
