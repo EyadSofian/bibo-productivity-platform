@@ -20,6 +20,17 @@ function one(files, matcher, label) {
   return matches[0];
 }
 
+async function walk(directory) {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const paths = await Promise.all(
+    entries.map((entry) => {
+      const entryPath = path.join(directory, entry.name);
+      return entry.isDirectory() ? walk(entryPath) : [entryPath];
+    }),
+  );
+  return paths.flat();
+}
+
 function macArch(filename) {
   if (filename.includes("aarch64")) return "aarch64";
   if (filename.includes("x86_64")) return "x86_64";
@@ -31,17 +42,21 @@ const baseUrl = option("--base-url").replace(/\/$/, "");
 const output = path.resolve(option("--output"));
 const configPath = new URL("../apps/desktop/src-tauri/tauri.conf.json", import.meta.url);
 const config = JSON.parse(await readFile(configPath, "utf8"));
-const files = await readdir(assetsDir);
+const files = await walk(assetsDir);
 
 const macBundle = one(files, (name) => name.endsWith(".app.tar.gz"), "macOS updater bundle");
-const windowsBundle = one(files, (name) => name.endsWith(".nsis.zip"), "Windows updater bundle");
+const windowsBundle = one(
+  files,
+  (name) => name.endsWith("-setup.exe"),
+  "Windows NSIS updater bundle",
+);
 
 async function platformEntry(bundle) {
-  const signature = await readFile(path.join(assetsDir, `${bundle}.sig`), "utf8");
+  const signature = await readFile(`${bundle}.sig`, "utf8");
   if (!signature.trim()) throw new Error(`Empty signature for ${bundle}`);
   return {
     signature: signature.trim(),
-    url: `${baseUrl}/${encodeURIComponent(bundle)}`,
+    url: `${baseUrl}/${encodeURIComponent(path.basename(bundle))}`,
   };
 }
 
@@ -50,7 +65,7 @@ const manifest = {
   notes: `BiBoTracking ${config.version}`,
   pub_date: new Date().toISOString(),
   platforms: {
-    [`darwin-${macArch(macBundle)}`]: await platformEntry(macBundle),
+    [`darwin-${macArch(path.basename(macBundle))}`]: await platformEntry(macBundle),
     "windows-x86_64": await platformEntry(windowsBundle),
   },
 };

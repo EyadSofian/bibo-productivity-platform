@@ -59,7 +59,7 @@ referenced by `latest.json` to the web volume:
 railway volume files upload <macOS.dmg> /download/EmployeeTracker-macOS.dmg
 railway volume files upload <Windows.msi> /download/EmployeeTracker-Windows-x64.msi
 railway volume files upload <macOS.app.tar.gz> /download/<macOS.app.tar.gz>
-railway volume files upload <Windows.nsis.zip> /download/<Windows.nsis.zip>
+railway volume files upload <Windows-setup.exe> /download/<Windows-setup.exe>
 railway volume files upload latest.json /download/latest.json
 ```
 
