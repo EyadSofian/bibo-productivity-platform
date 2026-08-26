@@ -1,0 +1,58 @@
+name: Build desktop installers
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS DMG
+            os: macos-latest
+            bundle: dmg
+            artifact: macos-installer
+            artifact_path: apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          - name: Windows MSI
+            os: windows-latest
+            bundle: msi
+            artifact: windows-installer
+            artifact_path: apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build installer
+        run: >-
+          pnpm --filter @ctracking/desktop tauri build
+          --bundles ${{ matrix.bundle }}
+          --config src-tauri/tauri.railway.conf.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 7

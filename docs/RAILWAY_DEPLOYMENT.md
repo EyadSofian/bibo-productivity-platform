@@ -7,8 +7,11 @@ The production image is a single public service:
 - `/v1` — Go API
 - `/healthz` — application and PostgreSQL health check
 
-PostgreSQL is a separate private Railway service. Screenshots and application
-logs are kept on a volume mounted at `/app/storage`.
+PostgreSQL is a separate private Railway service. Screenshots, installer
+artifacts and application logs are kept on a volume mounted at `/app/storage`.
+The container exposes `/app/storage/download` as the public `/download/*`
+directory, so installer binaries survive application redeploys without being
+committed to Git.
 
 ## Railway service variables
 
@@ -38,3 +41,15 @@ canonical URLs and the sitemap. Railway injects service variables during builds.
 
 Migrations run automatically at application startup. Enable scheduled Postgres
 and volume backups before storing production employee data.
+
+## Installer artifacts
+
+Build installers with `apps/desktop/src-tauri/tauri.railway.conf.json`, then
+upload the stable public filenames to the web volume:
+
+```bash
+railway volume files upload <macOS.dmg> /download/EmployeeTracker-macOS.dmg
+railway volume files upload <Windows.msi> /download/EmployeeTracker-Windows-x64.msi
+```
+
+The backend serves and counts these downloads at `/download/:file`.

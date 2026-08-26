@@ -88,7 +88,7 @@ const DEFAULT_BACKEND_URL: &str = if cfg!(feature = "local") {
     "https://staging.example.com"
 } else {
     // production (default)
-    "https://bibotracker.com"
+    "https://web-production-25e92.up.railway.app"
 };
 
 /// Compile-time environment label (matches the backend-URL feature resolution).
@@ -270,7 +270,10 @@ mod tests {
             not(feature = "local"),
             not(feature = "staging")
         )) {
-            assert_eq!(backend_base_url(), "https://bibotracker.com");
+            assert_eq!(
+                backend_base_url(),
+                "https://web-production-25e92.up.railway.app"
+            );
         }
     }
 }

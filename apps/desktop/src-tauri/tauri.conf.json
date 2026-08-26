@@ -34,7 +34,7 @@
   "plugins": {
     "updater": {
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRENjMyQjQxRDA2ODc4NzQKUldSMGVHalFRU3RqVFFsNHk1OEFXZWZwekRONTRORVEvaVdaWDZrWlIwbEFCcEJxYXhZdWJFOWsK",
-      "endpoints": ["https://bibotracker.com/download/latest.json"],
+      "endpoints": ["https://web-production-25e92.up.railway.app/download/latest.json"],
       "windows": {
         "installMode": "quiet"
       }

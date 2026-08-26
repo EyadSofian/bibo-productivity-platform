@@ -1,5 +1,5 @@
 // Auto-update via Tauri's updater plugin. Checks our signed manifest
-// (https://bibotracker.com/download/latest.json); on a newer version it downloads the
+// (our production server's /download/latest.json); on a newer version it downloads the
 // signed artifact and then PROMPTS the user to restart — we never relaunch without
 // confirmation. Signature is verified against the public key baked into tauri.conf.json —
 // an unsigned/tampered artifact is rejected.
