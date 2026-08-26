@@ -180,7 +180,14 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
 - **Risks:** MV3 service-worker eviction limits how well any timer can be trusted —
   design must assume the worker dies at any moment and recover from
   `chrome.storage`. Chrome Web Store review needed for a new extension version.
-- **Status:** NOT STARTED
+- **Status:** IN PROGRESS — extension half done and tested (2026-08-26).
+  Checkpoint, durable outbox, tab-close flush, idle awareness and browser
+  identification all landed; logic extracted to `apps/extension/lib/` and covered by
+  62 passing tests. All state is recovered from `chrome.storage`, so worker eviction
+  costs at most one checkpoint interval. Remaining: desktop/backend `domain` +
+  `active_tab` columns, batch ingest, local `ON CONFLICT(client_uuid)` upsert, the
+  websites panel, and the full manual browser matrix. Incognito policy still
+  unaddressed. Arc remains undetectable and reports as Chrome.
 
 ### F5 — Activity engine · P0 · Phase P-2
 - **Current State:** Only **active** intervals are stored. **Idle time is never

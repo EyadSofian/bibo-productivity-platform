@@ -1,6 +1,6 @@
 # Privacy Policy — BiBoTracking (Browser Extension)
 
-**Last updated: June 14, 2026**
+**Last updated: August 26, 2026**
 
 This Privacy Policy explains how the **BiBoTracking** browser extension ("the Extension") handles information. It applies to the extension published on the Chrome Web Store and to the equivalent build for Microsoft Edge.
 
@@ -16,10 +16,14 @@ This Privacy Policy explains how the **BiBoTracking** browser extension ("the Ex
 The Extension observes the **active browser tab** and records, for each completed page visit:
 
 - the page URL,
+- the page's domain name,
 - the page title,
 - the time the visit started, and
 - how long the tab stayed active (time on page),
-- the browser name (Chrome or Edge).
+- the browser name (for example Chrome, Edge, Firefox, Brave, Opera or Vivaldi).
+
+Time on page is recorded while the browser window is focused and the computer is
+in use. When the computer is left unattended, the Extension stops counting.
 
 This information is sent **only** to the BiBoTracking desktop application running on the **same computer**, over the local loopback address `http://127.0.0.1` (also called "localhost"). The loopback address never leaves the device — it is not reachable from the network or the internet.
 
@@ -36,13 +40,16 @@ This information is sent **only** to the BiBoTracking desktop application runnin
 
 All browsing-activity data is stored **locally on the user's device** within the BiBoTracking desktop application. The Extension itself keeps only small operational values in the browser's local storage (e.g. the local app's port number and a per-device pairing token, a paused/active flag, and a daily counter). None of this is transmitted off the device.
 
+The Extension also holds a short local queue of visits that have not yet been handed to the desktop application — for example while that application is restarting. The queue is capped, is stored only on the device, and is emptied as soon as the visits are delivered.
+
 The organization that deploys BiBoTracking controls the desktop application and the data it holds. Data retention, access, and deletion are governed by that organization's own policies and by the desktop application — not by the browser extension or by the publisher.
 
 ## Permissions and why they are needed
 
 - **`tabs`** — to read the active tab's URL and title in order to record the current page visit.
 - **`storage`** — to store the local pairing details and small settings described above, on the device.
-- **`alarms`** — to periodically re-establish the connection to the local desktop app if it restarts or changes port.
+- **`alarms`** — to periodically re-establish the connection to the local desktop app if it restarts or changes port, and to record the time spent on a page that is left open.
+- **`idle`** — to know when the computer has been left unattended, so that time in front of an untouched browser is **not** counted as browsing time. This reports only a coarse active / idle / locked state on a threshold the Extension sets. It reveals nothing about what is typed or clicked.
 - **`host_permissions: http://127.0.0.1/*`** — to deliver visit data to the BiBoTracking desktop app running locally on the same machine. This host is the device's own loopback interface and is not accessible from the network.
 
 ## Consent and intended use

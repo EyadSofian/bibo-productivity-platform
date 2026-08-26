@@ -46,7 +46,7 @@ desktop agent cannot be built or run here. All backend/desktop items below are
 | 11 | Rust tests | `cargo test` | ⛔ BLOCKED — cargo not installed |
 | 12 | Postgres up | `scripts/dev-db.sh` | ⛔ BLOCKED — Docker not installed |
 | 13 | Migrations | backend startup | ⛔ BLOCKED |
-| 14 | Extension tests | — | ⛔ BLOCKED — no test runner exists |
+| 14 | Extension tests | — | ⛔ BLOCKED — no test runner exists *(resolved 2026-08-26, see §2 re-run)* |
 
 **4 passed · 0 failed · 10 blocked.** No defect was found in anything that could
 actually be executed.
@@ -59,6 +59,8 @@ actually be executed.
 | 16 | Workspace typecheck | `pnpm -r --if-present typecheck` | ✅ PASS — design, desktop, web-admin |
 | 17 | Workspace build | `pnpm -r --if-present build` | ✅ PASS |
 | 18 | Workspace tests | `pnpm -r --if-present test` | ✅ PASS — no longer a no-op |
+| 19 | Extension unit + integration tests | `pnpm --filter @ctracking/extension test` | ✅ PASS — **62/62**, 4 files, 228 ms |
+| 20 | Extension manifest guard | `node .github/scripts/check-extension-manifest.mjs` | ✅ PASS — MV3, loopback-only, module worker, permissions [tabs, storage, alarms, idle] |
 
 The Go and Rust legs remain blocked by B-1. The new backend tests
 (`internal/testutil`, `store_db_test.go`, `sync_db_test.go`,
@@ -82,7 +84,7 @@ real execution, and they should be treated as unverified until it reports.
 | Activity collection works | ⛔ BLOCKED | Decision core reviewed and covered by 10 Rust unit tests |
 | Screenshot collection works | ⛔ BLOCKED | Capture + compression reviewed; 2 unit tests exist |
 | Keystroke counts work | ⛔ BLOCKED | Both platform implementations reviewed — count-only confirmed |
-| Browser extension connects | ⛔ BLOCKED | Discovery protocol reviewed; **defects found by inspection, see §5** |
+| Browser extension connects | ⚠ PARTIAL | Discovery protocol reviewed. Visit tracking, outbox, idle and browser identification are now covered by 62 automated tests against a fake app; connecting to the **real** desktop app is still blocked by B-1 |
 | Sync works | ⛔ BLOCKED | Worker + client reviewed; idempotent upsert by `client_uuid` |
 | Offline collection works | ⛔ BLOCKED | Design verified: `synced = 0` rows persist; sound by construction |
 | Offline→online sync works | ⛔ BLOCKED | Design verified: backoff 300 s → 960 s, marks only echoed uuids |
@@ -110,19 +112,19 @@ demonstrates it.
 | ID | Severity | Finding |
 |---|---|---|
 | **D-1** | HIGH | ~~`.env.example` sets `PORT=8080`, but `scripts/dev-backend.sh` announces `:8090` and `apps/web-admin/vite.config.ts` proxies to `:8090`. **A fresh clone following the README cannot reach its own backend.**~~ **FIXED 2026-08-26** — `.env.example` → 8090; `dev-backend.sh` now reports the real port and warns on mismatch. |
-| **D-2** | HIGH | Extension writes a visit **only** on transition (`background.js`). One long-lived tab produces **zero rows** — the direct cause of the reported `"browser_visit": []`. |
-| **D-3** | HIGH | Extension has **no retry queue**: `postVisit` returns `false` and the visit is discarded permanently when the desktop app is unreachable. |
+| **D-2** | HIGH | ~~Extension writes a visit **only** on transition. One long-lived tab produces **zero rows**.~~ **FIXED 2026-08-26** — 60 s checkpoint alarm closes and reopens the running visit. Proven in test: 30 min single tab → 30 segments, 1800 s, no gaps. |
+| **D-3** | HIGH | ~~Extension has **no retry queue**; a visit is discarded permanently when the desktop app is unreachable.~~ **FIXED 2026-08-26** — durable capped outbox in `storage.local`, written before any send and drained only on acceptance. |
 | **D-4** | HIGH | **Idle time is never persisted** anywhere — no table, no rows, on agent or server. `idle_time` and `working_time` are currently underivable. |
 | **D-5** | MEDIUM | `WindowTracker::close_idle` subtracts the entire idle threshold from accumulated active time on every idle transition — a systematic undercount of up to 60 s per transition. |
-| **D-6** | MEDIUM | No tab-close or browser-close flush in the extension; the last visit of every session is lost. |
-| **D-7** | MEDIUM | Extension has no `chrome.idle` integration — browsing time accrues while the machine is idle, contradicting the desktop tracker and double-counting. |
+| **D-6** | MEDIUM | ~~No tab-close or browser-close flush; the last visit of every session is lost.~~ **FIXED 2026-08-26** — `tabs.onRemoved` closes and flushes the visit. |
+| **D-7** | MEDIUM | ~~No `chrome.idle` integration — browsing time accrues while the machine is idle.~~ **FIXED 2026-08-26** — clock stops after 60 s without input; resumes on the active tab. |
 | **D-8** | MEDIUM | `store.Roster` runs five correlated subqueries per employee against raw `activity_samples`; will not scale. |
 | **D-9** | MEDIUM | Refresh tokens are non-revocable for 30 days; refreshing does not invalidate the old token (SECURITY_REVIEW S-1). |
 | **D-10** | MEDIUM | `GET /whoami` hands the loopback ingest token to any local process (SECURITY_REVIEW S-4). |
 | **D-11** | LOW | ~~`/healthz` returns OK without checking the database.~~ **FIXED 2026-08-26** — pings the pool, reports the applied schema version, returns 503 when unreachable; bounded probe, no driver detail in the body. |
 | **D-12** | LOW | `Roster` computes "today" in UTC regardless of the team's timezone. |
 | **D-13** | LOW | Sensitive-app skip-list suppresses screenshots but **not** window titles. |
-| **D-14** | LOW | Brave, Opera, Vivaldi and Arc are all reported as `chrome` by the extension. |
+| **D-14** | LOW | ~~Brave, Opera, Vivaldi and Arc are all reported as `chrome`.~~ **FIXED 2026-08-26** for Edge, Opera, Vivaldi, Brave, Firefox and Safari. **Arc still reports as Chrome** — it ships Chrome's user agent with no distinguishing marker, so it is not detectable. |
 | **D-15** | INFO | `RosterEntry.FocusPctToday` is a misnomer — it is keyboard-bucket coverage, not focus. |
 
 ---
@@ -151,7 +153,7 @@ demonstrates it.
 | **B-2** | No Windows machine available | F2 cannot be verified at all. **Partially reduced 2026-08-26:** the CI `desktop` job now compiles and unit-tests the Rust agent on `windows-latest`, so the Windows platform backend at least builds and its tests run. The manual platform matrix still needs real hardware. | Access to Windows 10 and 11 hosts or VMs |
 | **B-3** | ~~No CI infrastructure in the repository~~ **ADDRESSED 2026-08-26** — `.github/workflows/ci.yml` added (5 jobs, incl. a Windows Rust leg). Not yet observed running. | Every check was manual | First push confirms the workflow is green |
 | **B-4** | No test data or seeded environment | Integration and performance testing impossible | F30's synthetic data generator |
-| **B-5** | Extension logic is not extractable for testing | Extension cannot be unit tested at all | F4 refactors the visit state machine into a module |
+| **B-5** | ~~Extension logic is not extractable for testing~~ **RESOLVED 2026-08-26** — logic moved to `apps/extension/lib/` (pure), Vitest added, **62 tests passing** including an integration suite driving the real service worker against a fake Chrome. | Extension had no test coverage at all | F4 |
 
 ---
 

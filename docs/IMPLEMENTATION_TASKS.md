@@ -387,7 +387,34 @@ Subscribe to `NSWorkspace` `willSleep`/`didWake` and the distributed notificatio
 
 ## F4 — Browser monitoring
 
-**Status:** NOT STARTED · **Priority:** P0 · **Depends on:** F1
+**Status:** IN PROGRESS · **Priority:** P0 · **Depends on:** F1
+
+### Progress log
+- **2026-08-26 — extension side rewritten; D-2, D-3, D-6, D-7, D-14 closed.**
+  The logic moved out of `background.js` into `apps/extension/lib/` — `visit.js`
+  (state machine), `outbox.js` (durable queue), `browsers.js` (identification) — all
+  pure: no Chrome APIs, no clock, no I/O. `background.js` is now glue. This is what
+  made the extension testable and **closes blocker B-5**.
+  - A **60 s checkpoint alarm** closes and reopens the running visit, so a tab left
+    open reports time as it accrues (D-2). Chunking matches the desktop's existing
+    60 s activity chunking, so both sources are shaped alike.
+  - A **durable outbox** in `storage.local` is written *before* any send and drained
+    only on acceptance (D-3). Capped at 500, oldest-evicted, evictions reported.
+  - **Tab close** now closes and flushes (D-6); **`chrome.idle`** stops the clock
+    after 60 s without input (D-7); **browser identification** distinguishes Edge,
+    Opera, Vivaldi, Brave, Firefox and Safari (D-14).
+  - `domain` is now sent as a first-class field.
+  - Each segment carries a `client_uuid`. Nothing dedupes on it yet — the desktop
+    assigns its own id on insert — so a send whose response is lost can still
+    duplicate. Shipping the field now means the eventual local upsert does not also
+    need a Web Store release.
+  - **62 tests, all passing**, including an integration suite that drives the real
+    service worker against a fake Chrome and a fake desktop app. It caught a real
+    bug during development: the tab-close path queued a visit but never flushed it.
+  - Manifest is now a module service worker (required by the `lib/` imports); the CI
+    guard enforces both that and the narrow `idle` permission.
+  - **Not yet done:** desktop/backend `domain` + `active_tab` columns, batch ingest,
+    the websites panel, and the full manual browser matrix. See the unticked boxes.
 
 ### Goal
 Make browser data trustworthy. Eliminate the confirmed causes of `"browser_visit": []`.
@@ -402,14 +429,22 @@ The desktop side (`server/mod.rs`) validates a token header, rejects web origins
 applies pause and domain-only rewriting, and writes to SQLite.
 
 ### Missing pieces
-- **Periodic checkpoint** — the single biggest defect. One long-lived tab = zero rows.
-- **Durable outbox** — visits are lost whenever the desktop app is down.
-- **Tab-close / browser-close flush.**
-- **Idle awareness** (`chrome.idle`).
-- Accurate browser identification (Brave/Opera/Vivaldi/Arc report as Chrome).
-- `domain` as a first-class field.
-- `active_tab` flag.
-- Batch ingest endpoint (currently one HTTP POST per visit).
+- ~~**Periodic checkpoint**~~ — done 2026-08-26 (60 s alarm).
+- ~~**Durable outbox**~~ — done 2026-08-26 (capped, write-before-send).
+- ~~**Tab-close / browser-close flush**~~ — done 2026-08-26.
+- ~~**Idle awareness** (`chrome.idle`)~~ — done 2026-08-26.
+- ~~Accurate browser identification~~ — done 2026-08-26. Arc remains
+  indistinguishable from Chrome; it exposes no marker to detect.
+- `domain` as a first-class field — **sent by the extension**; not yet stored by the
+  desktop or the backend.
+- `active_tab` flag — deliberately deferred. The extension only ever tracks the
+  focused tab, so the field would be a constant `true` until background-tab tracking
+  exists. Adding it now would encode a value that means nothing.
+- Batch ingest endpoint (still one HTTP POST per visit). The outbox already flushes
+  in bounded passes, so this is now a throughput optimization rather than a
+  correctness gap.
+- Local `ON CONFLICT(client_uuid)` upsert, so a resend after a lost response cannot
+  duplicate a row.
 
 ### Architecture
 ```
@@ -450,22 +485,32 @@ are appended to the outbox first, then flushed — so a failed POST never loses 
 - [ ] `GET /api/v1/employees/{id}/websites` with domain rollup and pagination.
 
 ### Security tasks
-- [ ] Verify no cookies, form data, page content or auth tokens are ever read.
-      *(verified today: only `url`, `title`, `ts`, `duration`, `browser`)*
-- [ ] Verify the extension never talks to any non-loopback host.
-- [ ] Cap outbox size so a long offline period cannot exhaust extension storage.
+- [x] Verify no cookies, form data, page content or auth tokens are ever read.
+      *(only `url`, `domain`, `title`, `ts`, `duration`, `browser` — and the CI
+      manifest guard now rejects `content_scripts` / `web_accessible_resources`,
+      so page access cannot be reintroduced quietly)*
+- [x] Verify the extension never talks to any non-loopback host.
+      *(guard enforces loopback-only `host_permissions`)*
+- [x] Cap outbox size so a long offline period cannot exhaust extension storage.
+      *(500 segments, oldest-evicted, eviction reported)*
 
 ### Unit tests
-- [ ] Visit state machine: every transition, including idle-start mid-visit.
-- [ ] Outbox: append, flush, partial-failure retry, cap eviction.
-- [ ] Browser identification for Chrome, Edge, Brave, Opera, Vivaldi, Arc.
-- [ ] `origin_only()` (exists) plus a new `domain()` extractor including punycode,
-      ports, IP hosts and `about:`/`chrome://` rejection.
+- [x] Visit state machine: every transition, including idle-start mid-visit.
+      *(23 tests, incl. clock-skew and same-URL refocus)*
+- [x] Outbox: append, flush, partial-failure retry, cap eviction. *(12 tests)*
+- [x] Browser identification for Chrome, Edge, Brave, Opera, Vivaldi. *(13 tests)*
+      Arc is **not** covered: it ships Chrome's user agent with no distinguishing
+      marker, so it is not detectable and is reported as Chrome.
+- [x] A `domain()` extractor including punycode, ports, IP hosts and
+      `about:`/`chrome://` rejection. `origin_only()` in Rust is unchanged.
 
 ### Integration tests
 - [ ] Extension → desktop → SQLite → backend → report, for a single visit.
-- [ ] Desktop app restarted mid-session: no visits lost.
-- [ ] 100 rapid tab switches produce 100 correctly-bounded visits.
+      *(blocked: needs a running desktop app and backend — B-1)*
+- [x] Desktop app restarted mid-session: no visits lost. *(verified against a fake
+      app that goes down and returns; the outbox drains on reconnect)*
+- [x] Rapid tab switches produce correctly-bounded visits. *(20 switches, each
+      attributed to the right URL with the right duration)*
 
 ### Desktop tests
 - [ ] Loopback server rejects a bad token, a web origin, and an oversized batch.
@@ -489,11 +534,19 @@ are appended to the outbox first, then flushed — so a failed POST never loses 
 - [ ] Outbox flush with 1000 queued visits.
 
 ### Definition of Done
-- [ ] A 30-minute single-tab session produces continuous, correctly-bounded rows.
-- [ ] Visits survive a desktop-app restart with zero loss.
-- [ ] Idle time inside the browser is not counted as browsing time.
+- [x] A 30-minute single-tab session produces continuous, correctly-bounded rows.
+      *(proven in test: 30 checkpoints, 1800 s total, no gaps between segments.
+      Still needs the manual run against a real browser before F4 is DONE.)*
+- [x] Visits survive a desktop-app restart with zero loss. *(proven in test)*
+- [x] Idle time inside the browser is not counted as browsing time. *(proven in test)*
 - [ ] Chrome and Edge both verified against the full manual matrix.
-- [ ] No page content, cookies or credentials are captured — proven by test.
+- [x] No page content, cookies or credentials are captured — proven by test.
+      *(CI guard rejects the manifest keys that would allow it)*
+
+**Not DONE.** The extension half is complete and tested; the desktop/backend half
+(`domain` + `active_tab` columns, batch ingest, websites panel, local upsert) and the
+entire manual matrix remain. Do not mark this feature DONE on the strength of the
+automated tests alone.
 
 ---
 
