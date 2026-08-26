@@ -44,12 +44,25 @@ and volume backups before storing production employee data.
 
 ## Installer artifacts
 
-Build installers with `apps/desktop/src-tauri/tauri.railway.conf.json`, then
-upload the stable public filenames to the web volume:
+The updater signing key is deliberately kept outside the repository. On the
+release Mac it lives at `~/.config/bibo-signing/bibo-updater.key`; its password
+is stored in macOS Keychain under the service `bibo-tauri-updater`. GitHub
+Actions receives the same values through the encrypted secrets
+`TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+
+Run the **Build desktop installers** workflow. Its `signed-release` artifact
+contains the public installers, the signed macOS/Windows updater archives and
+the generated `latest.json`. Upload the stable public filenames and every file
+referenced by `latest.json` to the web volume:
 
 ```bash
 railway volume files upload <macOS.dmg> /download/EmployeeTracker-macOS.dmg
 railway volume files upload <Windows.msi> /download/EmployeeTracker-Windows-x64.msi
+railway volume files upload <macOS.app.tar.gz> /download/<macOS.app.tar.gz>
+railway volume files upload <Windows.nsis.zip> /download/<Windows.nsis.zip>
+railway volume files upload latest.json /download/latest.json
 ```
 
-The backend serves and counts these downloads at `/download/:file`.
+The backend serves and counts these downloads at `/download/:file`. Keep the
+private updater key backed up securely: losing it prevents publishing updates
+to already-installed copies.

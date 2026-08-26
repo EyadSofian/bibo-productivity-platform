@@ -33,7 +33,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRENjMyQjQxRDA2ODc4NzQKUldSMGVHalFRU3RqVFFsNHk1OEFXZWZwekRONTRORVEvaVdaWDZrWlIwbEFCcEJxYXhZdWJFOWsK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYzQTI3MUNERThERDM2MTYKUldRV050M296WEdpWStqdm5zK25zd1QvaldjMDJVMmx2YnJ2cFVHRzgzaTlVTnN1ay95UHFEYXMK",
       "endpoints": ["https://web-production-25e92.up.railway.app/download/latest.json"],
       "windows": {
         "installMode": "quiet"
