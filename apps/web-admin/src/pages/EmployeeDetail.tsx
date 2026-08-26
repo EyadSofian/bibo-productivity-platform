@@ -76,12 +76,14 @@ function StatCard(props: {
           <div className="bibo-stat__icon">{icon}</div>
           <div className="bibo-stat__label">{label}</div>
         </div>
-        <div className="bibo-stat__value">{value}</div>
+        <div className="bibo-stat__value">
+          <bdi dir="ltr">{value}</bdi>
+        </div>
         <div className="bibo-stat__foot">
           {delta && (
             <span className="bibo-stat__delta bibo-stat__delta--up">
               {TrendUp}
-              {delta}
+              <bdi dir="ltr">{delta}</bdi>
             </span>
           )}
           {sub && <span className="bibo-stat__sub">{sub}</span>}

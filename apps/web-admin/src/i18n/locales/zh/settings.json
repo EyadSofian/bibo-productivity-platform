@@ -3,6 +3,11 @@
   "loading": "加载中…",
   "noBusinesses": "暂无可配置的企业。",
   "scope": "以下设置适用于 <0>{{name}}</0> 及其所有{{members}}，不影响您的其他企业。使用右上角的选择器可配置其他企业。",
+  "sections": {
+    "capture": "采集策略",
+    "storage": "手动清理",
+    "account": "账户"
+  },
   "capturePolicy": {
     "title": "采集策略",
     "desc": "以下设置适用于 {{name}} 上每位{{member}}的应用。关闭{{member}}覆盖后，{{members}}无法在自己的设备上更改这些设置。",
@@ -81,6 +86,8 @@
     "never": "永不"
   },
   "account": {
-    "title": "账户"
+    "title": "账户",
+    "email": "邮箱",
+    "displayName": "显示名称"
   }
 }

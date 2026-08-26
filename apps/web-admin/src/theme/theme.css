@@ -1,5 +1,22 @@
 /* ctracking — semantic design tokens (see docs/07-ui-design.md) */
 
+/*
+ * Writing direction.
+ *
+ * Layout mirroring is done by the browser: the stylesheet uses CSS logical
+ * properties (inset-inline-*, margin-inline-*, text-align: start/end), so
+ * setting <html dir="rtl"> is enough for almost everything. `--dir` covers the
+ * handful of values that have no logical form — a translateX and a box-shadow
+ * offset — by flipping their sign. Multiply any future physical x-offset by it.
+ */
+:root {
+  --dir: 1;
+}
+[dir="rtl"] {
+  --dir: -1;
+}
+
+
 :root,
 :root[data-theme="light"] {
   --bg: #ffffff;
@@ -12,6 +29,10 @@
   --text-primary: var(--text);
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui,
     sans-serif;
+  /* Arabic glyphs are absent from the Latin stack above; without these the
+     browser picks an arbitrary fallback with mismatched metrics. */
+  --font-arabic: "SF Arabic", "Geeza Pro", "Segoe UI", "Noto Sans Arabic",
+    "Dubai", "Tahoma", var(--font-sans);
   --accent: #2d6cdf;
   --accent-weak: #eaf1fe;
   --danger: #c0392b;
@@ -148,6 +169,13 @@ body {
   font-size: var(--fz-sm);
   -webkit-font-smoothing: antialiased;
 }
+/* Arabic: switch to a face that actually has the glyphs. Keyed on lang rather
+   than dir, because the two are independent — an Arabic UI can hold LTR text. */
+:lang(ar) body,
+[lang="ar"] body,
+body:lang(ar) {
+  font-family: var(--font-arabic);
+}
 :root[data-theme="dark"] body {
   background: var(--app-gradient), var(--app-base);
 }
@@ -171,7 +199,7 @@ body {
 /* ---------- sidebar: icon rail (ad-rail) ---------- */
 .ad-rail {
   background: rgba(255, 255, 255, 0.72);
-  border-right: 1px solid var(--border);
+  border-inline-end: 1px solid var(--border);
   padding: 18px 0 20px;
   display: flex;
   flex-direction: column;
@@ -182,7 +210,7 @@ body {
 }
 :root[data-theme="dark"] .ad-rail {
   background: rgba(255, 255, 255, 0.07); /* frosted glass over the dark gradient (offline --surface-glass-2) */
-  border-right-color: rgba(255, 255, 255, 0.06);
+  border-inline-end-color: rgba(255, 255, 255, 0.06);
 }
 
 .ad-rail__logo {
@@ -247,9 +275,9 @@ body {
 /* Hover/focus tooltip revealing the nav label (rail is icon-only). */
 .ad-railbtn__tip {
   position: absolute;
-  left: calc(100% + 10px);
+  inset-inline-start: calc(100% + 10px);
   top: 50%;
-  transform: translateY(-50%) translateX(-4px);
+  transform: translateY(-50%) translateX(calc(-4px * var(--dir, 1)));
   white-space: nowrap;
   background: var(--text);
   color: var(--bg);
@@ -309,7 +337,7 @@ body {
 }
 .bibo-avatar__dot {
   position: absolute;
-  right: 0;
+  inset-inline-end: 0;
   bottom: 0;
   width: 14px;
   height: 14px;
@@ -512,10 +540,10 @@ body {
   background: #161b25;
 }
 .ad-menu--left {
-  left: 0;
+  inset-inline-start: 0;
 }
 .ad-menu--right {
-  right: 0;
+  inset-inline-end: 0;
 }
 .ad-menu--up {
   top: auto;
@@ -528,7 +556,7 @@ body {
   padding: 9px 10px;
   font: inherit;
   font-size: 13px;
-  text-align: left;
+  text-align: start;
   white-space: nowrap;
   color: var(--text);
   background: none;
@@ -552,7 +580,7 @@ body {
   color: currentColor;
 }
 .ad-menu__opt .ck {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: inline-flex;
   line-height: 0;
 }
@@ -664,7 +692,7 @@ body {
 .ad-acctmenu {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  inset-inline-end: 0;
   z-index: 60;
   min-width: 180px;
   display: flex;
@@ -885,7 +913,7 @@ table {
   font-size: var(--fz-sm);
 }
 th {
-  text-align: left;
+  text-align: start;
   color: var(--text-muted);
   font-weight: 500;
   font-size: var(--fz-xs);
@@ -1140,7 +1168,7 @@ td {
   content: "";
   position: absolute;
   top: 2px;
-  left: 18px;
+  inset-inline-start: 18px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -1150,7 +1178,7 @@ td {
   background: var(--border);
 }
 .switch.off::after {
-  left: 2px;
+  inset-inline-start: 2px;
 }
 
 /* ============================================================
@@ -1576,7 +1604,7 @@ select.input:focus,
   align-items: center;
   gap: 14px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 16px 18px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -1950,7 +1978,7 @@ select.input:focus,
 .rail-step:not(:last-child)::before {
   content: "";
   position: absolute;
-  left: 10px;
+  inset-inline-start: 10px;
   top: 24px;
   bottom: 0;
   width: 2px;
@@ -2028,7 +2056,7 @@ select.input:focus,
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  text-align: left;
+  text-align: start;
   background: var(--bg-inset);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2127,15 +2155,15 @@ select.input:focus,
   bottom: calc(100% + 5px);
 }
 .lang-menu.right {
-  right: 0;
+  inset-inline-end: 0;
 }
 .lang-menu.left {
-  left: 0;
+  inset-inline-start: 0;
 }
 .lang-opt {
   font: inherit;
   font-size: var(--fz-sm);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2158,14 +2186,14 @@ select.input:focus,
 .auth-lang {
   position: absolute;
   top: var(--sp-4);
-  right: var(--sp-4);
+  inset-inline-end: var(--sp-4);
   z-index: 2;
 }
 
 /* "You" badge on the owner's own roster row */
 .self-badge {
   display: inline-block;
-  margin-left: var(--sp-2);
+  margin-inline-start: var(--sp-2);
   font-size: var(--fz-xs);
   font-weight: 600;
   color: var(--accent);
@@ -2195,7 +2223,7 @@ select.input:focus,
   display: inline-flex;
   flex-direction: column;
   gap: 4px;
-  text-align: left;
+  text-align: start;
   font-size: var(--fz-sm);
 }
 .success-burst li.done {
@@ -2449,7 +2477,7 @@ select.input:focus,
 .ad-lightbox__close {
   position: fixed;
   top: 16px;
-  right: 16px;
+  inset-inline-end: 16px;
 }
 .ad-lightbox__nav {
   position: fixed;
@@ -2457,10 +2485,10 @@ select.input:focus,
   transform: translateY(-50%);
 }
 .ad-lightbox__nav--prev {
-  left: 16px;
+  inset-inline-start: 16px;
 }
 .ad-lightbox__nav--next {
-  right: 16px;
+  inset-inline-end: 16px;
 }
 @media (max-width: 640px) {
   .ad-lightbox {
@@ -2612,7 +2640,7 @@ select.input:focus,
   min-width: 0;
 }
 .ad-pagehead__actions {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -2747,7 +2775,7 @@ select.input:focus,
   font-variant-numeric: tabular-nums;
 }
 .bibo-stat__unit {
-  margin-left: 2px;
+  margin-inline-start: 2px;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-muted);
@@ -2812,7 +2840,7 @@ select.input:focus,
   text-align: center;
 }
 .ad-table th {
-  text-align: left;
+  text-align: start;
   padding: 18px 20px;
   font-size: 12.5px;
   font-weight: 600;
@@ -2823,15 +2851,15 @@ select.input:focus,
 }
 .ad-table th.r,
 .ad-table td.r {
-  text-align: right;
+  text-align: end;
 }
 /* pin the actions column so "View" is always visible, however wide the table */
 .ad-table th:last-child,
 .ad-table td:last-child {
   position: sticky;
-  right: 0;
+  inset-inline-end: 0;
   background: #ffffff;
-  box-shadow: -10px 0 12px -10px rgba(20, 22, 40, 0.28);
+  box-shadow: calc(-10px * var(--dir, 1)) 0 12px -10px rgba(20, 22, 40, 0.28);
 }
 :root[data-theme="dark"] .ad-table th:last-child,
 :root[data-theme="dark"] .ad-table td:last-child {
@@ -2877,7 +2905,7 @@ select.input:focus,
   line-height: 1.3;
 }
 .ad-self {
-  margin-left: 8px;
+  margin-inline-start: 8px;
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 11px;
@@ -2902,7 +2930,7 @@ select.input:focus,
 }
 .ad-rowprod__pct {
   min-width: 40px;
-  text-align: right;
+  text-align: end;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -2924,6 +2952,8 @@ select.input:focus,
 .ad-viewlink svg {
   width: 14px;
   height: 14px;
+  /* "go forward" arrow — points toward the reading direction, so it mirrors */
+  transform: scaleX(var(--dir, 1));
 }
 .ad-viewlink:hover {
   text-decoration: underline;
@@ -2973,6 +3003,8 @@ select.input:focus,
   width: 14px;
   height: 14px;
   color: var(--text-muted);
+  /* breadcrumb chevron points the way the trail runs */
+  transform: scaleX(var(--dir, 1));
 }
 .ad-crumb__here {
   color: var(--text);
@@ -3003,7 +3035,7 @@ select.input:focus,
 }
 
 .ad-datemode {
-  margin-left: auto;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -3245,7 +3277,7 @@ select.input:focus,
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
   min-width: 52px;
-  text-align: right;
+  text-align: end;
 }
 
 /* ── Keystrokes-through-the-day bar chart (offline design) ────────────── */
@@ -3357,7 +3389,7 @@ select.input:focus,
 .ad-shot__app {
   position: absolute;
   top: 10px;
-  right: 10px;
+  inset-inline-end: 10px;
   background: rgba(15, 18, 26, 0.82);
   color: #fff;
   font-size: 11px;
@@ -3369,7 +3401,7 @@ select.input:focus,
 }
 .ad-shot__t {
   position: absolute;
-  left: 12px;
+  inset-inline-start: 12px;
   bottom: 10px;
   color: #fff;
   font-size: 12.5px;

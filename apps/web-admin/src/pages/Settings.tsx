@@ -53,7 +53,7 @@ function ModeOption({
         display: "flex",
         gap: 10,
         alignItems: "flex-start",
-        textAlign: "left",
+        textAlign: "start",
         width: "100%",
         font: "inherit",
         color: "inherit",
@@ -424,7 +424,7 @@ export function Settings() {
                         cursor: "pointer",
                         color: "inherit",
                         padding: "0 2px",
-                        marginLeft: 4,
+                        marginInlineStart: 4,
                         lineHeight: 1,
                       }}
                     >

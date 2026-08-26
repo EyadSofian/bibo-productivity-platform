@@ -123,7 +123,7 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
         </div>
         {hasTimeline ? (
           <>
-            <div className="ad-tlbox">
+            <div className="ad-tlbox" dir="ltr">
               <div className="ad-timeline">
                 {segs.map((s, i) => {
                   const center = Math.min(96, Math.max(4, s.left + s.width / 2));
@@ -163,7 +163,7 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
                 </div>
               )}
             </div>
-            <div className="ad-tlaxis">
+            <div className="ad-tlaxis" dir="ltr">
               {ticks.map((h) => (
                 <span key={h}>{hourLabel(h)}</span>
               ))}

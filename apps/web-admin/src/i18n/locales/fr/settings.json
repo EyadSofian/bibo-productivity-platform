@@ -3,6 +3,11 @@
   "loading": "Chargement…",
   "noBusinesses": "Aucune entreprise à configurer pour le moment.",
   "scope": "Ces paramètres s'appliquent à <0>{{name}}</0> et à tous ses {{members}} — pas à vos autres entreprises. Utilisez le sélecteur (en haut à droite) pour en configurer une autre.",
+  "sections": {
+    "capture": "Politique de capture",
+    "storage": "Nettoyage manuel",
+    "account": "Compte"
+  },
   "capturePolicy": {
     "title": "Politique de capture",
     "desc": "Ces paramètres s'appliquent à l'application de chaque {{member}} sur {{name}}. Lorsque les dérogations des {{member}} sont désactivées, les {{members}} ne peuvent pas les modifier sur leur machine.",
@@ -82,6 +87,8 @@
     "never": "Jamais"
   },
   "account": {
-    "title": "Compte"
+    "title": "Compte",
+    "email": "E-mail",
+    "displayName": "Nom affiché"
   }
 }

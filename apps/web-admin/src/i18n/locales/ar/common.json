@@ -1,0 +1,36 @@
+{
+  "appName": "BiBoTracking",
+  "language": "اللغة",
+  "nav": {
+    "dashboard": "لوحة التحكم",
+    "employees": "الموظفون",
+    "settings": "الإعدادات"
+  },
+  "actions": {
+    "signIn": "تسجيل الدخول",
+    "signOut": "تسجيل الخروج",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "remove": "إزالة",
+    "continue": "متابعة",
+    "finish": "إنهاء",
+    "back": "رجوع",
+    "skip": "تخطٍّ الآن"
+  },
+  "theme": {
+    "light": "فاتح",
+    "dark": "داكن",
+    "auto": "النظام"
+  },
+  "time": {
+    "never": "أبدًا",
+    "justNow": "الآن",
+    "minutesAgo": "منذ {{count}} د",
+    "hoursAgo": "منذ {{count}} س",
+    "daysAgo": "منذ {{count}} ي"
+  },
+  "terms": {
+    "team": { "one": "موظف", "many": "الموظفون", "lowerOne": "موظف", "lowerMany": "موظفين", "addCta": "إضافة موظف", "org": "فريق" },
+    "family": { "one": "طفل", "many": "الأطفال", "lowerOne": "طفل", "lowerMany": "أطفال", "addCta": "إضافة طفل", "org": "عائلة" }
+  }
+}

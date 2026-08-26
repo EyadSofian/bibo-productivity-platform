@@ -3,6 +3,11 @@
   "loading": "Đang tải…",
   "noBusinesses": "Chưa có doanh nghiệp nào để cấu hình.",
   "scope": "Các cài đặt này áp dụng cho <0>{{name}}</0> và tất cả {{members}} của doanh nghiệp đó — không áp dụng cho các doanh nghiệp khác của bạn. Dùng bộ chọn (góc trên bên phải) để cấu hình doanh nghiệp khác.",
+  "sections": {
+    "capture": "Chính sách thu thập",
+    "storage": "Dọn dẹp thủ công",
+    "account": "Tài khoản"
+  },
   "capturePolicy": {
     "title": "Chính sách thu thập",
     "desc": "Các cài đặt này áp dụng cho ứng dụng của mọi {{member}} trên {{name}}. Khi tắt quyền ghi đè của {{member}}, {{members}} không thể thay đổi chúng trên máy của họ.",
@@ -81,6 +86,8 @@
     "never": "Không bao giờ"
   },
   "account": {
-    "title": "Tài khoản"
+    "title": "Tài khoản",
+    "email": "Email",
+    "displayName": "Tên hiển thị"
   }
 }

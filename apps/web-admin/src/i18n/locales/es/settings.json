@@ -3,6 +3,11 @@
   "loading": "Cargando…",
   "noBusinesses": "Aún no hay empresas para configurar.",
   "scope": "Estos ajustes se aplican a <0>{{name}}</0> y a todos sus {{members}} — no a sus otras empresas. Use el selector (arriba a la derecha) para configurar otra.",
+  "sections": {
+    "capture": "Política de captura",
+    "storage": "Limpieza manual",
+    "account": "Cuenta"
+  },
   "capturePolicy": {
     "title": "Política de captura",
     "desc": "Estos ajustes se aplican a la aplicación de cada {{member}} en {{name}}. Cuando las anulaciones de {{member}} están desactivadas, los {{members}} no pueden cambiarlas en su equipo.",
@@ -82,6 +87,8 @@
     "never": "Nunca"
   },
   "account": {
-    "title": "Cuenta"
+    "title": "Cuenta",
+    "email": "Correo electrónico",
+    "displayName": "Nombre visible"
   }
 }

@@ -1,0 +1,93 @@
+{
+  "dashboard": {
+    "title": "لوحة التحكم",
+    "loadingBusinesses": "جارٍ تحميل المؤسسات…",
+    "loadingRoster": "جارٍ تحميل القائمة…",
+    "errorRoster": "تعذّر تحميل القائمة.",
+    "noBusinesses": "لا توجد مؤسسات بعد. اذهب إلى <0>{{members}}</0> لإضافة أول {{member}} — سيتم إنشاء مؤسسة تلقائيًا.",
+    "noActivity": "لم يقم أي من {{members}} بمزامنة نشاطه بعد.",
+    "selfBadge": "أنت",
+    "view": "عرض",
+    "table": {
+      "login": "الدخول",
+      "lastSeen": "آخر ظهور",
+      "activeToday": "نشط اليوم",
+      "focus": "التركيز",
+      "name": "الاسم"
+    },
+    "statRecorded": "المسجَّل اليوم",
+    "statActive": "النشط اليوم",
+    "statFocus": "متوسط التركيز",
+    "statScreenshots": "لقطات الشاشة",
+    "vsYesterday": "مقارنةً بالأمس",
+    "ofMembers": "من {{count}} {{members}}",
+    "todayLabel": "اليوم",
+    "newTeam": "فريق جديد"
+  },
+  "employees": {
+    "newBusiness": "مؤسسة جديدة",
+    "newOrg": "{{org}} جديد",
+    "loading": "جارٍ التحميل…",
+    "loadingMembers": "جارٍ تحميل {{members}}…",
+    "errorLoadMembers": "تعذّر تحميل {{members}}.",
+    "noBusinessNotice": "لا تملك مؤسسة بعد. إضافة أول {{member}} ستنشئ واحدة تلقائيًا (<1>\"فريق &lt;اسمك&gt;\"</1>). يمكنك أيضًا إنشاؤها صراحةً عبر \"مؤسسة جديدة\".",
+    "rosterFor": "قائمة <0>{{name}}</0>",
+    "noMembersYet": "لا يوجد {{members}} في هذه المؤسسة بعد.",
+    "autoCreatedNote": "لم تكن هناك مؤسسة، فتم إنشاء واحدة افتراضية تلقائيًا وأُضيف {{member}} إليها.",
+    "viewReports": "عرض التقارير",
+    "table": {
+      "name": "الاسم",
+      "login": "الدخول"
+    }
+  },
+  "newBusinessModal": {
+    "title": "مؤسسة جديدة",
+    "nameLabel": "اسم المؤسسة",
+    "orgNameLabel": "اسم {{org}}",
+    "namePlaceholder": "مثال: أكمي ستوديو",
+    "namePlaceholderFamily": "مثال: عائلة تران",
+    "cancel": "إلغاء",
+    "create": "إنشاء",
+    "creating": "جارٍ الإنشاء…",
+    "errorCreate": "تعذّر إنشاء المؤسسة."
+  },
+  "newEmployeeModal": {
+    "noBusinessSelected": "لم يتم اختيار مؤسسة — سيتم إنشاء واحدة افتراضية تلقائيًا لهذا {{member}}.",
+    "displayName": "الاسم المعروض",
+    "usernameOrEmail": "اسم المستخدم أو البريد الإلكتروني",
+    "temporaryPassword": "كلمة مرور مؤقتة",
+    "shareCredentials": "شارك بيانات الدخول هذه مع {{member}}؛ سيسجّل الدخول من قائمة تطبيق سطح المكتب.",
+    "cancel": "إلغاء",
+    "adding": "جارٍ الإضافة…",
+    "generate": "توليد",
+    "errorTaken": "هذا البريد أو اسم المستخدم مُستخدَم بالفعل.",
+    "errorCreate": "تعذّر إنشاء {{member}}."
+  },
+  "detail": {
+    "breadcrumbDashboard": "لوحة التحكم",
+    "dateMode": "نمط التاريخ",
+    "day": "يوم",
+    "range": "فترة",
+    "from": "من",
+    "to": "إلى",
+    "noBusinessContext": "افتح هذه الصفحة من لوحة التحكم أو قائمة الموظفين حتى يكون سياق المؤسسة معروفًا.",
+    "errorRange": "تعذّر تحميل التقارير لهذه الفترة.",
+    "errorStartAfterEnd": "تاريخ البداية بعد تاريخ النهاية.",
+    "loadingReports": "جارٍ تحميل التقارير…",
+    "summary": {
+      "activeTime": "وقت النشاط",
+      "activeTimeRange": "وقت النشاط (الفترة)",
+      "topApp": "أكثر تطبيق",
+      "keypresses": "ضغطات المفاتيح",
+      "screenshots": "لقطات الشاشة"
+    },
+    "tabs": {
+      "activity": "النشاط",
+      "keystrokes": "ضغطات المفاتيح",
+      "browser": "المتصفح",
+      "screenshots": "لقطات الشاشة"
+    },
+    "singleDay": "يوم واحد",
+    "dateRange": "نطاق زمني"
+  }
+}

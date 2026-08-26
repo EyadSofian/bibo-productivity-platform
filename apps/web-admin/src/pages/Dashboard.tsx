@@ -118,16 +118,18 @@ function StatCard(props: {
           <div className="bibo-stat__icon">{icon}</div>
           <div className="bibo-stat__label">{label}</div>
         </div>
-        <div className="bibo-stat__value">{value}</div>
+        <div className="bibo-stat__value">
+          <bdi dir="ltr">{value}</bdi>
+        </div>
         <div className="bibo-stat__foot">
           {delta && (
             <span className={`bibo-stat__delta bibo-stat__delta--${delta.up ? "up" : "down"}`}>
               {delta.up ? TrendUp : TrendDown}
-              {delta.text}
+              <bdi dir="ltr">{delta.text}</bdi>
             </span>
           )}
           {sub && <span className="bibo-stat__sub">{sub}</span>}
-          <span style={{ marginLeft: "auto" }}>
+          <span style={{ marginInlineStart: "auto" }}>
             <Sparkline data={spark.data} color={spark.color} />
           </span>
         </div>

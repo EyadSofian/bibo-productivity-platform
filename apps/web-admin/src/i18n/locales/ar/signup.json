@@ -1,0 +1,102 @@
+{
+  "rail": {
+    "personaTitle": "اختر نوع الحساب",
+    "personaDesc": "شخصي أو فريق أو عائلة",
+    "accountTitle": "أنشئ حسابك",
+    "accountDesc": "الاسم، البريد أو اسم المستخدم، كلمة المرور",
+    "setupTitle": "سمِّ {{noun}}",
+    "setupDesc": "ماذا تسمّي {{noun}}",
+    "membersTitleManager": "إضافة {{members}}",
+    "membersDescParent": "جهّز حسابات دخول أطفالك",
+    "membersDescManager": "ادعُ الأشخاص الذين تديرهم",
+    "doneTitle": "كل شيء جاهز",
+    "doneDesc": "ابدأ المتابعة"
+  },
+  "footer": {
+    "haveAccount": "لديك حساب بالفعل؟",
+    "haveOne": "لديك واحد بالفعل؟",
+    "signIn": "تسجيل الدخول ←"
+  },
+  "errors": {
+    "server": "تعذّر الوصول إلى الخادم.",
+    "taken": "هذا البريد أو اسم المستخدم مُستخدَم بالفعل.",
+    "addMember": "تعذّرت إضافة {{member}}."
+  },
+  "persona": {
+    "heading": "كيف ستستخدم BiBoTracking؟",
+    "sub": "يمكنك تغيير هذا لاحقًا.",
+    "back": "رجوع",
+    "justMeTitle": "أنا فقط",
+    "justMeDesc": "تابع نشاطي وأدائي الشخصي. يبقى كل شيء 100% على جهازي.",
+    "justMeTag": "لا حاجة لحساب",
+    "teamTitle": "فريقي",
+    "teamDesc": "أدِر الموظفين أو المستقلين وراجع نشاطهم.",
+    "teamTag": "حساب مجاني",
+    "familyTitle": "عائلتي",
+    "familyDesc": "تابع وقت الشاشة ونشاط أطفالي.",
+    "familyTag": "حساب مجاني",
+    "caption": "المتابعة الشخصية تعمل داخل تطبيق سطح المكتب — دون الحاجة إلى حساب إداري."
+  },
+  "personal": {
+    "back": "→ رجوع",
+    "heading": "المتابعة الشخصية محلية بالكامل",
+    "sub": "لا حاجة للتسجيل. نزّل التطبيق ويبقى كل شيء على جهازك — بلا حساب وبلا سحابة.",
+    "downloadMac": "التنزيل لنظام macOS",
+    "downloadWindows": "التنزيل لنظام Windows",
+    "caption": "مثبّت بالفعل؟ افتح التطبيق واختر \"أنا فقط\"."
+  },
+  "account": {
+    "back": "→ رجوع",
+    "title": "أنشئ حسابك",
+    "sub": "استفد من BiBoTracking إلى أقصى حد.",
+    "name": "اسمك",
+    "identifier": "البريد الإلكتروني أو اسم المستخدم",
+    "identifierPlaceholder": "you@example.com أو اسم مستخدم",
+    "password": "كلمة المرور",
+    "passwordPlaceholder": "8 أحرف على الأقل",
+    "strength": { "weak": "ضعيفة", "medium": "متوسطة", "strong": "قوية" },
+    "creating": "جارٍ الإنشاء…",
+    "continue": "متابعة",
+    "available": "متاح"
+  },
+  "setup": {
+    "title": "سمِّ {{noun}}",
+    "sub": "يمكنك إضافة {{members}} بعد ذلك.",
+    "nameLabel": "اسم {{noun}}",
+    "placeholderFamily": "عائلة كوبر",
+    "placeholderTeam": "شركة كوبر",
+    "saving": "جارٍ الحفظ…",
+    "continue": "متابعة"
+  },
+  "done": {
+    "title": "كل شيء جاهز!",
+    "accountCreated": "تم إنشاء الحساب",
+    "orgReady": "{{noun}} جاهز",
+    "membersAdded": "تمت إضافة {{count}} {{members}}",
+    "membersLater": "أضف {{members}} لاحقًا",
+    "goToDashboard": "اذهب إلى لوحة التحكم"
+  },
+  "clipboard": {
+    "text": "بيانات دخول BiBoTracking\nاسم المستخدم أو البريد: {{login}}\nكلمة المرور: {{password}}"
+  },
+  "members": {
+    "title": "أضف {{members}}",
+    "sub": "أضفهم الآن أو تخطَّ — يمكنك الدعوة لاحقًا.",
+    "name": "الاسم",
+    "namePlaceholder": "أحمد سامي",
+    "loginLabel": "اسم المستخدم أو البريد (بيانات دخولهم)",
+    "tempPassword": "كلمة مرور مؤقتة",
+    "generateTitle": "توليد كلمة مرور جديدة",
+    "newPassword": "جديدة",
+    "suggestion": "اقتراح",
+    "adding": "جارٍ الإضافة…",
+    "addCta": "{{cta}}",
+    "countAdded": "تمت إضافة {{count}} {{members}} — انسخ بيانات كل واحد وشاركها.",
+    "copied": "تم النسخ ✓",
+    "copyLogin": "نسخ بيانات الدخول",
+    "remove": "إزالة",
+    "finish": "إنهاء",
+    "doneAdding": "انتهيت من الإضافة",
+    "skip": "تخطٍّ الآن"
+  }
+}
