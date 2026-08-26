@@ -1,9 +1,10 @@
 # BASELINE_TEST_REPORT.md
 
-Verification record for the baseline. This report is **partial**: the dev machine
-has no Go, Rust, Docker, Homebrew or Postgres, so the backend and desktop agent
-could not be built or run. Everything that could be verified was; everything that
-could not is recorded as a blocker rather than assumed to work.
+Verification record for the baseline.
+
+**Superseded in part on 2026-08-26:** the toolchain was installed and blocker B-1
+is resolved. The backend and desktop agent have now been built, tested and run.
+Sections 1–4 below are kept as the original record; §2.1 carries the real results.
 
 - **Date:** 2026-08-26
 - **Commit:** `a1a49da` · **Branch:** `productivity-platform`
@@ -23,9 +24,12 @@ could not is recorded as a blocker rather than assumed to work.
 | Homebrew | installing the above | ❌ **not installed** |
 | psql | database inspection | ❌ **not installed** |
 
-**Blocker B-1:** without Go, Rust, Docker and Postgres, the backend, database and
-desktop agent cannot be built or run here. All backend/desktop items below are
-`BLOCKED`, not `FAILED` — no defect is implied.
+**Blocker B-1 — RESOLVED 2026-08-26.** Go 1.27.0 and Rust 1.98.0 were installed
+into the home directory (no admin needed; Xcode was already present for linking).
+Docker and Homebrew are still absent and were not needed: a PostgreSQL 16.9 server
+was already running from `~/.local/toolchains/pg16` with the `ctracking`,
+`ctracking_test`, `ctracking_staging` and `ctracking_prod` databases in place.
+Everything below that says BLOCKED has now been executed — see §2.1.
 
 ---
 
@@ -69,25 +73,72 @@ real execution, and they should be treated as unverified until it reports.
 
 ---
 
+### 2.1 Full verification 2026-08-26 (toolchain installed, B-1 resolved)
+
+Toolchain: Go 1.27.0 · Rust 1.98.0 / cargo 1.98.0 · PostgreSQL 16.9 · Node 22 · pnpm 10.30.1.
+
+| # | Check | Command | Result |
+|---|---|---|---|
+| 21 | Backend build | `go build ./...` | ✅ PASS — clean |
+| 22 | Backend vet | `go vet ./...` | ✅ PASS — zero findings |
+| 23 | Backend tests, no DB | `go test ./...` | ✅ PASS — DB tests correctly SKIP |
+| 24 | Backend tests, live DB + race | `TEST_DATABASE_URL=… go test -race ./...` | ✅ PASS — **all suites green** |
+| 25 | Health handler tests | `go test ./internal/handlers -run TestHealth` | ✅ PASS — 4/4 incl. no-leak + timeout |
+| 26 | Domain extractor | `go test ./internal/store -run TestDomainOf` | ✅ PASS — 18 sub-cases |
+| 27 | Store + sync DB tests | `go test ./internal/store` with `TEST_DATABASE_URL` | ✅ PASS — 13/13 |
+| 28 | Migrations apply | goose on startup | ✅ PASS — schema version **10** |
+| 29 | Rust check | `cargo check --all-targets` | ✅ PASS — 1 pre-existing dead-code warning |
+| 30 | Rust tests | `cargo test` | ✅ PASS — **27/27** |
+| 31 | Backend starts + connects | `go run ./cmd/server` | ✅ PASS — listening, migrations ran |
+| 32 | `/healthz` against a live DB | `curl :8099/healthz` | ✅ PASS — `{"database":"ok","schema_version":10,"status":"ok"}` 200 |
+| 33 | Owner registration | `POST /v1/auth/register` | ✅ PASS — user + tokens issued |
+| 34 | Business creation | `POST /v1/businesses` | ✅ PASS |
+| 35 | Sync ingest | `POST /v1/sync/batch` | ✅ PASS — 3 browser rows accepted |
+| 36 | **Domain derived on ingest** | `GET /v1/reports/employees/{id}/browser` | ✅ PASS — see below |
+
+Test 36 is the end-to-end proof of the F4 domain work:
+
+```
+domain=github.com        browser=brave   url=https://GitHub.com/anthropics/...
+domain=docs.google.com   browser=edge    url=https://docs.google.com/document/d/x
+domain=None              browser=brave   url=user_turn_off_in_browser
+```
+
+Host lowercased, subdomain preserved, and the non-URL marker stored as NULL rather
+than a placeholder — exactly as designed, against a real database.
+
+**16 checks executed, 16 passed, 0 failed.** Every line of Go and Rust written on
+this branch without a compiler has now been compiled, vetted and tested.
+
+Two notes for whoever runs this next:
+
+- A `go run` backend from an earlier session was already listening on `:8090`
+  serving a pre-change build (its `/healthz` returns the old two-field response).
+  It was left running; verification used `PORT=8099` instead of disturbing it.
+- Postgres here has no `psql` binary — the package at `~/.local/toolchains/pg16`
+  ships only `initdb`, `pg_ctl` and `postgres`. Use any pgx-based client for SQL.
+
+---
+
 ## 3. Feature 1 baseline checklist
 
 | Component | Status | Evidence / note |
 |---|---|---|
-| Backend starts | ⛔ BLOCKED | B-1 |
-| PostgreSQL connects | ⛔ BLOCKED | B-1 |
-| Migrations execute | ⛔ BLOCKED | 9 migration files reviewed; goose, embedded, run from `main.go` before the pool opens |
+| Backend starts | ✅ VERIFIED | `go run ./cmd/server` listens; migrations ran to v10 |
+| PostgreSQL connects | ✅ VERIFIED | `/healthz` reports `database: ok`, schema 10 |
+| Migrations execute | ✅ VERIFIED | all 10 applied to an empty database; `domain` column + index present |
 | Admin dashboard loads | ⚠ PARTIAL | Builds and typechecks clean; not served against a live API |
-| Desktop app launches | ⛔ BLOCKED | B-1. UI half builds clean |
-| Authentication works | ⛔ BLOCKED | Code reviewed: argon2id + JWT access/refresh, kinds enforced |
-| Employee creation works | ⛔ BLOCKED | Handler reviewed; validation present |
-| Employee login works | ⛔ BLOCKED | Handler reviewed; identifier = email or username |
-| Activity collection works | ⛔ BLOCKED | Decision core reviewed and covered by 10 Rust unit tests |
-| Screenshot collection works | ⛔ BLOCKED | Capture + compression reviewed; 2 unit tests exist |
-| Keystroke counts work | ⛔ BLOCKED | Both platform implementations reviewed — count-only confirmed |
+| Desktop app launches | ⚠ PARTIAL | `cargo check` and 27 tests pass; the app itself has not been launched |
+| Authentication works | ✅ VERIFIED | register issued a user + access/refresh pair; bearer accepted on protected routes |
+| Employee creation works | ⚠ PARTIAL | owner registration and business creation verified; the employee-invite path not yet exercised |
+| Employee login works | ⚠ PARTIAL | store-level lookup by email **or** username covered by tests; the HTTP login flow not yet exercised |
+| Activity collection works | ⚠ PARTIAL | decision core passes its Rust tests on this machine; no live agent run |
+| Screenshot collection works | ⚠ PARTIAL | compression tests pass; no live capture run |
+| Keystroke counts work | ⚠ PARTIAL | count-only confirmed by review; 27 Rust tests pass, but no live capture run |
 | Browser extension connects | ⚠ PARTIAL | Discovery protocol reviewed. Visit tracking, outbox, idle and browser identification are now covered by 62 automated tests against a fake app; connecting to the **real** desktop app is still blocked by B-1 |
-| Sync works | ⛔ BLOCKED | Worker + client reviewed; idempotent upsert by `client_uuid` |
-| Offline collection works | ⛔ BLOCKED | Design verified: `synced = 0` rows persist; sound by construction |
-| Offline→online sync works | ⛔ BLOCKED | Design verified: backoff 300 s → 960 s, marks only echoed uuids |
+| Sync works | ✅ VERIFIED | `POST /v1/sync/batch` accepted 3 rows and echoed their uuids; idempotency and caller-stamped ownership covered by tests |
+| Offline collection works | ⚠ PARTIAL | SQLite round-trip and pending-flag tests pass; not exercised against a stopped backend |
+| Offline→online sync works | ⚠ PARTIAL | backend echoes accepted uuids as designed; the agent's drain loop not yet run live |
 
 ---
 
@@ -149,7 +200,7 @@ demonstrates it.
 
 | ID | Blocker | Impact | Unblocked by |
 |---|---|---|---|
-| **B-1** | No Go, Rust, Docker or Postgres on the dev machine | Backend, database and desktop cannot be built or run | Installing the toolchain (needs admin rights / Homebrew) |
+| **B-1** | ~~No Go, Rust, Docker or Postgres on the dev machine~~ **RESOLVED 2026-08-26** — Go 1.27.0 + Rust 1.98.0 installed to `~/.local` with no admin; Postgres 16.9 already present at `~/.local/toolchains/pg16`. Docker and Homebrew remain absent and proved unnecessary. | Backend, database and desktop could not be built or run | Done — see §2.1 |
 | **B-2** | No Windows machine available | F2 cannot be verified at all. **Partially reduced 2026-08-26:** the CI `desktop` job now compiles and unit-tests the Rust agent on `windows-latest`, so the Windows platform backend at least builds and its tests run. The manual platform matrix still needs real hardware. | Access to Windows 10 and 11 hosts or VMs |
 | **B-3** | ~~No CI infrastructure in the repository~~ **ADDRESSED 2026-08-26** — `.github/workflows/ci.yml` added (5 jobs, incl. a Windows Rust leg). Not yet observed running. | Every check was manual | First push confirms the workflow is green |
 | **B-4** | No test data or seeded environment | Integration and performance testing impossible | F30's synthetic data generator |
@@ -179,6 +230,20 @@ result and evidence.
 ---
 
 ## 9. Conclusion
+
+**Updated 2026-08-26 (post-verification).** The original conclusion below was written
+when nothing server-side could be executed. It no longer applies: the toolchain is
+installed, and every Go and Rust line written on this branch has been compiled,
+vetted and tested — 16 checks, 16 passed. `go vet` is clean, `go test -race` is green
+against a live PostgreSQL, `cargo test` is 27/27, the backend boots and serves, and
+the F4 domain derivation was confirmed end-to-end through the real HTTP API.
+
+What remains unverified is the **desktop agent at runtime**: it compiles and its unit
+tests pass, but it has not been launched, granted macOS permissions, or observed
+capturing activity, and the browser extension has not been loaded into a real Chrome.
+Those are live-behaviour checks, not build checks, and they are still open.
+
+### Original conclusion (2026-08-26, pre-toolchain)
 
 Everything that could be executed passed. The four TypeScript checks — typecheck and
 build for both frontends — are clean with zero errors.
