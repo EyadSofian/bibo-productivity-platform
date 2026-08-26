@@ -1,0 +1,17 @@
+.git
+.github
+.claude
+.playwright-mcp
+node_modules
+**/node_modules
+**/dist
+**/target
+**/*.log
+apps/backend/.env*
+apps/backend/storage*
+apps/backend/logs
+marketing/site-prod
+marketing/site-staging
+deploy
+app.crediential.txt
+certificate
