@@ -51,6 +51,20 @@ desktop agent cannot be built or run here. All backend/desktop items below are
 **4 passed · 0 failed · 10 blocked.** No defect was found in anything that could
 actually be executed.
 
+### Re-run 2026-08-26 (after the F1 work)
+
+| # | Check | Command | Result |
+|---|---|---|---|
+| 15 | web-admin unit tests | `pnpm --filter @ctracking/web-admin test` | ✅ PASS — **13/13**, 3 files, 586 ms |
+| 16 | Workspace typecheck | `pnpm -r --if-present typecheck` | ✅ PASS — design, desktop, web-admin |
+| 17 | Workspace build | `pnpm -r --if-present build` | ✅ PASS |
+| 18 | Workspace tests | `pnpm -r --if-present test` | ✅ PASS — no longer a no-op |
+
+The Go and Rust legs remain blocked by B-1. The new backend tests
+(`internal/testutil`, `store_db_test.go`, `sync_db_test.go`,
+`handlers/health_test.go`) are **written but never compiled** — CI is their first
+real execution, and they should be treated as unverified until it reports.
+
 ---
 
 ## 3. Feature 1 baseline checklist
@@ -105,7 +119,7 @@ demonstrates it.
 | **D-8** | MEDIUM | `store.Roster` runs five correlated subqueries per employee against raw `activity_samples`; will not scale. |
 | **D-9** | MEDIUM | Refresh tokens are non-revocable for 30 days; refreshing does not invalidate the old token (SECURITY_REVIEW S-1). |
 | **D-10** | MEDIUM | `GET /whoami` hands the loopback ingest token to any local process (SECURITY_REVIEW S-4). |
-| **D-11** | LOW | `/healthz` returns OK without checking the database. |
+| **D-11** | LOW | ~~`/healthz` returns OK without checking the database.~~ **FIXED 2026-08-26** — pings the pool, reports the applied schema version, returns 503 when unreachable; bounded probe, no driver detail in the body. |
 | **D-12** | LOW | `Roster` computes "today" in UTC regardless of the team's timezone. |
 | **D-13** | LOW | Sensitive-app skip-list suppresses screenshots but **not** window titles. |
 | **D-14** | LOW | Brave, Opera, Vivaldi and Arc are all reported as `chrome` by the extension. |
@@ -119,7 +133,7 @@ demonstrates it.
 |---|---|
 | D1 | `packages/` is declared in `pnpm-workspace.yaml` and described in README/CLAUDE.md but **does not exist** |
 | D2 | `apps/monitor` — a complete, undocumented second Go module (infrastructure monitoring, unrelated to employee monitoring) |
-| D3 | `platform/windows.rs` header says keyboard counting is "stubbed"; it is fully implemented |
+| D3 | ~~`platform/windows.rs` header says keyboard counting is "stubbed"; it is fully implemented~~ **FIXED 2026-08-26** — header now describes what the file implements and names the session-event gap (F2) that genuinely remains |
 | D4 | `docs/05-roadmap.md` marks all five phases "not started"; all five are shipped (v1.5.1) |
 | D5 | README says backend `:8080`; scripts and proxy use `:8090` |
 | D6 | *(same as D-1 above — a real bug, not only documentation)* |

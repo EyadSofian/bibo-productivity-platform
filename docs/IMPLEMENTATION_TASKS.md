@@ -77,6 +77,33 @@ The single source of truth for what is done and what is next. Update this file
   `content_scripts`) and is negative-tested against 6 regression cases.
   **Not yet observed running** — no Go/Rust toolchain here, so the first push is its
   real verification.
+- **2026-08-26 — `/healthz` now checks the database (defect D-11).** Pings the pool
+  and reports the highest applied goose version, returning 503 when the database is
+  unreachable so an orchestrator stops routing to a backend that cannot serve a
+  query. The probe is bounded at 2 s, and the response carries no error detail —
+  the endpoint is unauthenticated and pgx errors embed the DSN. 4 handler tests
+  cover it, including the no-leak guarantee. *Written, not compiled (B-1).*
+- **2026-08-26 — Go database test harness added.** `internal/testutil` hands tests a
+  migrated, empty database from `TEST_DATABASE_URL` (already provisioned by the CI
+  `backend` job); tests skip themselves when it is unset, so `go test ./...` still
+  passes with no Postgres. Each test holds a session advisory lock, because package
+  test binaries run concurrently against one database and would otherwise truncate
+  each other's rows mid-assertion. The lock wait is bounded so the
+  `Pool`-twice-in-one-test case fails with a readable message instead of hanging.
+  First store tests landed: identifier normalization, duplicate rejection, login by
+  email **or** username, business resolution (including that naming a business you
+  do not belong to is refused), and the sync ingest path — idempotent resend,
+  respect-local overwrite, caller-stamped ownership, device registration on an empty
+  batch. *Written, not compiled (B-1).*
+- **2026-08-26 — web-admin has a test runner.** Vitest + jsdom + Testing Library, and
+  the three smoke suites this feature asks for. **13 tests, all passing locally** —
+  the first executed test signal on this branch. `pnpm -r typecheck` and
+  `pnpm -r build` remain clean. The CI `pnpm -r --if-present test` step is no longer
+  a no-op.
+- **2026-08-26 — drift D3 and a security-guidance gap closed.** `windows.rs` no longer
+  claims keyboard counting is stubbed (it has been implemented for some time) and now
+  names the session-event gap that genuinely remains, pointing at F2. `.env.example`
+  says what a production `JWT_SECRET` must be and how to generate one.
 
 ### Goal
 Make the existing platform provably run and stay running, with automation that
@@ -106,25 +133,26 @@ Postgres harness; add Vitest to `web-admin` and `desktop`; add
 - [x] Fix `PORT` drift: `.env.example` → `8090`. README, script, proxy, desktop
       default, CLAUDE.md and docker-compose now agree. `dev-backend.sh` reports the
       port it actually configured and warns on mismatch.
-- [ ] `/healthz` performs `pool.Ping()` and reports DB status + migration version.
-- [ ] Add `internal/testutil` — spin a Postgres (testcontainers or `PGURL` env),
-      run migrations, truncate between tests.
-- [ ] First store tests: `CreateUser`, `GetUserByIdentifier`, `ResolveBusinessForUser`,
-      `SyncBatch` idempotency.
+- [x] `/healthz` pings the pool and reports database status + applied schema version,
+      returning 503 when unreachable. Bounded probe, no error detail in the body.
+- [x] Add `internal/testutil` — migrated database from `TEST_DATABASE_URL`, truncated
+      per test, serialized across packages by advisory lock, skipped when unset.
+- [x] First store tests: `CreateUser`, `GetUserByIdentifier`, `ResolveBusinessForUser`,
+      `SyncBatch` idempotency. *(written; CI runs them first)*
 - [ ] First handler tests: register → login → `/v1/me`.
-- [ ] `go vet ./...` clean.
+- [ ] `go vet ./...` clean. *(in CI; not yet observed)*
 
 ### Desktop tasks
 - [ ] `cargo check` and `cargo test` clean on macOS.
 - [ ] `cargo clippy -- -D warnings` clean (or record an agreed allowlist).
 - [ ] Verify the app launches, requests permissions, and writes to `data.db`.
-- [ ] Fix the stale "M2 is stubbed" comment in `platform/windows.rs`.
+- [x] Fix the stale "M2 is stubbed" comment in `platform/windows.rs`.
 
 ### Web dashboard tasks
-- [ ] Add Vitest + Testing Library to `apps/web-admin`.
-- [ ] Smoke tests: `tokenStore` persistence, `client.ts` refresh single-flight,
-      `ProtectedRoute` redirect.
-- [ ] `pnpm typecheck` and `vite build` wired into CI.
+- [x] Add Vitest + Testing Library to `apps/web-admin`.
+- [x] Smoke tests: `tokenStore` persistence, `client.ts` refresh single-flight,
+      `ProtectedRoute` redirect. **13 tests passing.**
+- [x] `pnpm typecheck` and `vite build` wired into CI.
 
 ### Database tasks
 - [ ] Confirm all 9 migrations apply cleanly to an empty database.
@@ -134,14 +162,15 @@ Postgres harness; add Vitest to `web-admin` and `desktop`; add
 - [ ] Document the current 24 routes in `docs/API_CURRENT.md` (input, output, auth).
 
 ### Security tasks
-- [ ] Confirm `JWT_SECRET` has no default and boot fails without it. *(verified: it does)*
-- [ ] Confirm no secrets are committed. *(verified: `.env` is gitignored)*
-- [ ] Add a `.env.example` comment requiring a ≥32-byte random `JWT_SECRET` in prod.
+- [x] Confirm `JWT_SECRET` has no default and boot fails without it. *(verified: it does)*
+- [x] Confirm no secrets are committed. *(verified: `.env` is gitignored)*
+- [x] Add a `.env.example` comment requiring a ≥32-byte random `JWT_SECRET` in prod,
+      with the command to generate one.
 
 ### Unit tests
-- [ ] Existing 6 Go + 27 Rust tests pass.
-- [ ] New store/handler tests pass.
-- [ ] New frontend smoke tests pass.
+- [ ] Existing 6 Go + 27 Rust tests pass. *(cannot run here — B-1)*
+- [ ] New store/handler tests pass. *(written; CI is the first run)*
+- [x] New frontend smoke tests pass. **13/13 locally.**
 
 ### Integration tests
 - [ ] register → create business → create employee → employee login →
