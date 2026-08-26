@@ -804,3 +804,81 @@ Database / API changes · Tests Required · Dependencies · Risks · Status.
 - **Risks:** Windows EV certificates require purchase and identity verification —
   start the procurement lead time early.
 - **Status:** NOT STARTED (macOS partially done)
+
+---
+
+## Phase P-11 — Teramind parity (added 2026-08-26)
+
+Scope decision of record: the product targets **full Teramind parity**,
+including the content capture the original brief excluded. The gap analysis
+that produced these entries — and the reasoning behind the two carve-outs — is
+[TERAMIND_PARITY.md](TERAMIND_PARITY.md). Read it before starting any F40+ item.
+
+Two entries need reading before they are picked up:
+- **F61** (endpoint restrictions) is the only item marked go/no-go rather than a
+  priority. It is device control, not monitoring, and needs signed kernel
+  drivers on both platforms.
+- **F55** (keystroke content) ships with password-field masking on by default.
+  That default is a design constraint, not a preference — see
+  TERAMIND_PARITY.md §4.
+
+### F41 — Monitoring profiles & scheduled capture · P0 · Phase P-11
+- **Current State:** Capture settings are per-business global booleans with an
+  optional per-device override (`settings` table + desktop `settings/mod.rs`).
+  There is no concept of *when* to capture — capture is always-on whenever the
+  agent runs.
+- **Target State:** A named, inheritable profile holds `{tracking_key,
+  tracking_val}` pairs and binds to a scope (employees, devices, departments,
+  directory groups). Every capture category carries its own `days_of_week` and
+  `time_range`, so a profile can capture websites 09:00–17:00 Mon–Fri and never
+  capture audio. Profiles inherit via `parent_id`.
+- **Backend:** `monitoring_profiles`, `monitoring_profile_details`,
+  `monitoring_profile_assignments`; resolution walks the inheritance chain and
+  the assignment scope, most-specific wins.
+- **Desktop:** agent fetches its resolved profile on start and on change; every
+  capture loop consults its own schedule window before firing.
+- **Frontend:** profile editor — categories, keys, schedule per category, scope
+  picker, inheritance preview showing which parent each value came from.
+- **Database:** three new tables + a resolution index on (scope_type, scope_id).
+- **API:** `GET/POST/PUT/DELETE /api/v1/monitoring-profiles`, plus
+  `GET /api/v1/monitoring-profiles/resolved?device_id=` for the agent.
+- **Tests Required:** resolution order (employee > device > department > company
+  > global), schedule-window boundary cases (midnight wrap, DST, day-of-week
+  edges), agent honours a mid-shift profile change.
+- **Dependencies:** F1. Blocks every F52–F63 capture feature.
+- **Risks:** getting resolution wrong silently captures more than intended —
+  the failure mode is over-collection, so tests come before implementation.
+- **Status:** NOT STARTED
+
+### F40 — Devices & per-machine monitoring control · P1 · Phase P-11
+- **Current State:** `devices` table records a device on sync; nothing manages it.
+- **Target State:** Device inventory with last-seen, OS, agent version; enable
+  and disable monitoring per machine; soft-delete and restore.
+- **API:** `GET /api/v1/devices`, `POST /api/v1/devices/{id}/enable-monitoring`,
+  `.../disable-monitoring`, `POST /api/v1/devices/{id}/restore`.
+- **Dependencies:** F1. **Status:** NOT STARTED
+
+### F42 — Work schedules & shifts · P1 · Phase P-11
+- **Current State:** none. Nothing in the system knows an employee's expected hours.
+- **Target State:** Shift templates, positions, and per-employee modifications
+  (exceptions). Unlocks worked-vs-scheduled reporting, late/early detection, and
+  makes "unproductive time" meaningful by excluding off-shift activity.
+- **Note:** a *shift* and a *capture window* (F41) are different objects.
+  Conflating them would prevent capturing an employee who works unscheduled hours.
+- **Dependencies:** F7. **Status:** NOT STARTED
+
+### F43 — Shared lists · P2 · F44 — Reports hub & async export · P1
+### F45 — Employee notifications · P1 · F46 — Directory sync · P2
+### F47 — License & seat usage · P2 · F48 — Timeline tags · P2
+### F49 — Attendance & clock-in · P1 · F50 — Instance analytics state · P3
+### F51 — Outbound mail configuration · P2
+- Specced in [TERAMIND_PARITY.md](TERAMIND_PARITY.md) §3. **Status:** NOT STARTED
+
+### F52–F64 — Content capture · Phase P-11
+- F52 Email · F53 IM/conversations · F54 VoIP & audio · F55 Keystroke content ·
+  F56 File activity · F57 Print · F58 Network · F59 Social media · F60 SQL ·
+  F62 Screen OCR · F63 Location & camera · F64 Tasks & cost reporting.
+- Each is a set of tracking keys inside an F41 profile. Building any of them
+  before F41 exists means building it twice.
+- **F61 Endpoint restrictions** — go/no-go, not scheduled. See §1.3.
+- **Status:** NOT STARTED (all)
