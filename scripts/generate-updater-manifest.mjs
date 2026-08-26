@@ -45,6 +45,7 @@ const config = JSON.parse(await readFile(configPath, "utf8"));
 const files = await walk(assetsDir);
 
 const macBundle = one(files, (name) => name.endsWith(".app.tar.gz"), "macOS updater bundle");
+const macInstaller = one(files, (name) => name.endsWith(".dmg"), "macOS installer");
 const windowsBundle = one(
   files,
   (name) => name.endsWith("-setup.exe"),
@@ -65,7 +66,7 @@ const manifest = {
   notes: `BiBoTracking ${config.version}`,
   pub_date: new Date().toISOString(),
   platforms: {
-    [`darwin-${macArch(path.basename(macBundle))}`]: await platformEntry(macBundle),
+    [`darwin-${macArch(path.basename(macInstaller))}`]: await platformEntry(macBundle),
     "windows-x86_64": await platformEntry(windowsBundle),
   },
 };
