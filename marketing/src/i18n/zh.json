@@ -325,7 +325,7 @@
     "body": "BiBoTracking 是一款免费的开源独立应用。我们没有购买昂贵的 Windows 代码签名证书，因此首次运行安装程序时，Windows 可能会显示“Windows 已保护你的电脑”提示。这对独立应用来说很正常——应用是安全的，其每一行代码都在 GitHub 上公开。",
     "dlgTitle": "Windows 已保护你的电脑",
     "dlgBody": "Microsoft Defender SmartScreen 阻止了一个无法识别的应用启动。运行此应用可能会使你的电脑面临风险。",
-    "dlgApp": "应用：EmployeeTracker-Windows-x64.msi",
+    "dlgApp": "应用：BiBoTracking-Windows-x64-Setup.exe",
     "dlgPublisher": "发布者：未知发布者",
     "dlgMoreInfo": "更多信息",
     "dlgRun": "仍要运行",

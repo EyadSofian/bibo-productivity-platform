@@ -325,7 +325,7 @@
     "body": "BiBoTracking là ứng dụng độc lập, mã nguồn mở và miễn phí. Chúng tôi chưa mua chứng chỉ ký mã Windows đắt tiền, nên lần đầu chạy trình cài đặt Windows có thể hiện màn hình “Windows đã bảo vệ PC của bạn”. Điều này là bình thường với ứng dụng độc lập — ứng dụng an toàn và toàn bộ mã nguồn đều công khai trên GitHub.",
     "dlgTitle": "Windows đã bảo vệ PC của bạn",
     "dlgBody": "Microsoft Defender SmartScreen đã ngăn một ứng dụng không xác định khởi động. Chạy ứng dụng này có thể khiến PC của bạn gặp rủi ro.",
-    "dlgApp": "Ứng dụng: EmployeeTracker-Windows-x64.msi",
+    "dlgApp": "Ứng dụng: BiBoTracking-Windows-x64-Setup.exe",
     "dlgPublisher": "Nhà phát hành: Nhà phát hành không xác định",
     "dlgMoreInfo": "Thông tin thêm",
     "dlgRun": "Vẫn chạy",

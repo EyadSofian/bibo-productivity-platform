@@ -325,7 +325,7 @@
     "body": "BiBoTracking adalah aplikasi indie sumber terbuka yang gratis. Kami belum membeli sertifikat penandatanganan kode Windows yang mahal, jadi saat pertama kali menjalankan penginstal, Windows mungkin menampilkan layar “Windows melindungi PC Anda”. Ini normal untuk aplikasi indie — aplikasinya aman dan setiap baris kodenya publik di GitHub.",
     "dlgTitle": "Windows melindungi PC Anda",
     "dlgBody": "Microsoft Defender SmartScreen mencegah aplikasi yang tidak dikenal untuk dijalankan. Menjalankan aplikasi ini mungkin berisiko bagi PC Anda.",
-    "dlgApp": "Aplikasi: EmployeeTracker-Windows-x64.msi",
+    "dlgApp": "Aplikasi: BiBoTracking-Windows-x64-Setup.exe",
     "dlgPublisher": "Penerbit: Penerbit tidak dikenal",
     "dlgMoreInfo": "Info selengkapnya",
     "dlgRun": "Tetap jalankan",

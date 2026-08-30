@@ -24,10 +24,12 @@ func NewDownloadsHandler(st *store.Store, staticDir string) *DownloadsHandler {
 }
 
 // platformFor maps a public installer filename to a platform label, or "" if it's not
-// a counted acquisition. Only the canonical downloads count — the NSIS .exe and
-// .app.tar.gz are auto-update artifacts (re-fetched by existing installs) and the
-// latest.json manifest is metadata, so none of those inflate the download totals.
+// a counted acquisition. Only canonical downloads count. Versioned NSIS executables
+// and .app.tar.gz files are updater artifacts, so they do not inflate acquisition totals.
 func platformFor(name string) string {
+	if strings.EqualFold(name, "BiBoTracking-Windows-x64-Setup.exe") {
+		return "windows"
+	}
 	switch strings.ToLower(filepath.Ext(name)) {
 	case ".dmg":
 		return "macos"

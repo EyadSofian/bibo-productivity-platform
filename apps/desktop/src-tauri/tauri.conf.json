@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "employeetrack",
-  "version": "1.5.1",
+  "productName": "BiBoTracking",
+  "version": "1.5.2",
   "identifier": "com.briannguyen.bibotracking",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -44,6 +44,9 @@
     "active": true,
     "targets": "all",
     "createUpdaterArtifacts": true,
+    "publisher": "BiBoTracking",
+    "category": "Productivity",
+    "shortDescription": "Transparent employee time and activity tracking",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -51,6 +54,18 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "allowDowngrades": false,
+      "wix": {
+        "upgradeCode": "635fe27b-2dc2-59e0-8f23-ea5df009ea99"
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "startMenuFolder": "BiBoTracking"
+      }
+    },
     "macOS": {
       "minimumSystemVersion": "13.0",
       "signingIdentity": "Developer ID Application: Nguyen Giang Nam (MVT95X368D)"

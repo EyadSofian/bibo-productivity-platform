@@ -8,7 +8,9 @@ import { Notice } from "../components/ui";
 import { memberTerms } from "../terms";
 import { AuthLayout } from "./AuthLayout";
 
-const DOWNLOAD_URL = import.meta.env.VITE_DOWNLOAD_URL || "/";
+const MAC_DOWNLOAD_URL = import.meta.env.VITE_MAC_DOWNLOAD_URL || "/download/EmployeeTracker-macOS.dmg";
+const WINDOWS_DOWNLOAD_URL =
+  import.meta.env.VITE_WINDOWS_DOWNLOAD_URL || "/download/BiBoTracking-Windows-x64-Setup.exe";
 
 /** Ic — inline lucide-style icon wrapper (persona cards + wizard footer). */
 function Ic({ children }: { children: ReactNode }) {
@@ -237,8 +239,8 @@ export function SignupWizard() {
           {t("personal.sub")}
         </div>
         <div className="row" style={{ gap: 8 }}>
-          <a className="btn btn-primary" href={DOWNLOAD_URL}>{t("personal.downloadMac")}</a>
-          <a className="btn" href={DOWNLOAD_URL}>{t("personal.downloadWindows")}</a>
+          <a className="btn btn-primary" href={MAC_DOWNLOAD_URL} download>{t("personal.downloadMac")}</a>
+          <a className="btn" href={WINDOWS_DOWNLOAD_URL} download>{t("personal.downloadWindows")}</a>
         </div>
         <div className="caption" style={{ marginTop: 16 }}>
           {t("personal.caption")}

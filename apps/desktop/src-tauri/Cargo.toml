@@ -1,8 +1,8 @@
 [package]
 name = "ctracking"
-version = "1.5.1"
-description = "Local-only macOS employee activity tracker"
-authors = ["Brian Nguyen"]
+version = "1.5.2"
+description = "Transparent employee time and activity tracker"
+authors = ["BiBoTracking"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

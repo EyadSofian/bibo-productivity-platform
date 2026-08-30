@@ -100,7 +100,7 @@
   }
   </script>
 
-  <link rel="stylesheet" href="/styles.css?v=1783874938303" />
+  <link rel="stylesheet" href="/styles.css?v=1787746710593" />
 
 </head>
 <body>
@@ -161,7 +161,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
             Download for macOS
           </a>
-          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/EmployeeTracker-Windows-x64.msi" download>
+          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             Download for Windows
           </a>
@@ -446,7 +446,7 @@
           </ul>
           <div class="lp-price__ctas">
             <a class="lp-btn lp-btn--primary" href="/download/EmployeeTracker-macOS.dmg" download>Download for macOS</a>
-            <a class="lp-btn lp-btn--secondary" href="/download/EmployeeTracker-Windows-x64.msi" download>Download for Windows</a>
+            <a class="lp-btn lp-btn--secondary" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>Download for Windows</a>
           </div>
         </div>
         <div class="lp-card lp-price reveal">
@@ -513,7 +513,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
             Download for macOS
           </a>
-          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/EmployeeTracker-Windows-x64.msi" download>
+          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             Download for Windows
           </a>
@@ -537,7 +537,7 @@
         <div class="lp-footer__col">
           <h4>Downloads</h4>
           <a href="/download/EmployeeTracker-macOS.dmg" download>macOS</a>
-          <a href="/download/EmployeeTracker-Windows-x64.msi" download>Windows</a>
+          <a href="/download/BiBoTracking-Windows-x64-Setup.exe" download>Windows</a>
           <a href="https://chromewebstore.google.com/detail/employee-tracker/meoifmgllkafmaeckbdambfnoolnilme" target="_blank" rel="noopener">Chrome extension</a>
         </div>
         <div class="lp-footer__col">
@@ -579,7 +579,7 @@
         <div class="ss-title">Windows protected your PC</div>
         <p class="ss-body">Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.</p>
         <div class="ss-meta">
-          <div>App: EmployeeTracker-Windows-x64.msi</div>
+          <div>App: BiBoTracking-Windows-x64-Setup.exe</div>
           <div>Publisher: Unknown publisher</div>
         </div>
         <span class="ss-moreinfo">More info</span>
@@ -595,7 +595,7 @@
       </ol>
 
       <div class="winmodal-cta">
-        <a class="btn btn-primary btn-lg" id="winmodal-download" href="/download/EmployeeTracker-Windows-x64.msi" download>Got it — download now</a>
+        <a class="btn btn-primary btn-lg" id="winmodal-download" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>Got it — download now</a>
         <button class="btn btn-ghost" id="winmodal-cancel" type="button">Cancel</button>
       </div>
       <p class="winmodal-foot">Prefer to verify first? Browse the full source on <a href="https://github.com/ngnclht1102/bibo-emplooyee-tracking" target="_blank" rel="noopener">GitHub</a>.</p>
@@ -654,12 +654,12 @@
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-    // Windows install notice — intercept .msi downloads to explain the SmartScreen prompt
+    // Windows install notice — explain SmartScreen before downloading the unsigned installer.
     const winModal = document.getElementById('winmodal');
     if (winModal) {
       const dl = document.getElementById('winmodal-download');
       const closeWin = () => winModal.classList.remove('open');
-      document.querySelectorAll('a[href$=".msi"]:not(#winmodal-download)').forEach(a => {
+      document.querySelectorAll('a[href$=".exe"]:not(#winmodal-download)').forEach(a => {
         a.addEventListener('click', (e) => {
           e.preventDefault();
           dl.href = a.getAttribute('href');

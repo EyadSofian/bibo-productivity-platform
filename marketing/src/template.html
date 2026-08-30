@@ -152,7 +152,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
             {{hero.downloadMac}}
           </a>
-          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/EmployeeTracker-Windows-x64.msi" download>
+          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             {{hero.downloadWin}}
           </a>
@@ -437,7 +437,7 @@
           </ul>
           <div class="lp-price__ctas">
             <a class="lp-btn lp-btn--primary" href="/download/EmployeeTracker-macOS.dmg" download>{{pricing.free.btn}}</a>
-            <a class="lp-btn lp-btn--secondary" href="/download/EmployeeTracker-Windows-x64.msi" download>{{pricing.free.btnWin}}</a>
+            <a class="lp-btn lp-btn--secondary" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>{{pricing.free.btnWin}}</a>
           </div>
         </div>
         <div class="lp-card lp-price reveal">
@@ -502,7 +502,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
             {{cta.downloadMac}}
           </a>
-          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/EmployeeTracker-Windows-x64.msi" download>
+          <a class="lp-btn lp-btn--secondary lp-btn--lg" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             {{cta.downloadWin}}
           </a>
@@ -526,7 +526,7 @@
         <div class="lp-footer__col">
           <h4>{{footer.colDownloads}}</h4>
           <a href="/download/EmployeeTracker-macOS.dmg" download>{{footer.download}}</a>
-          <a href="/download/EmployeeTracker-Windows-x64.msi" download>{{footer.downloadWin}}</a>
+          <a href="/download/BiBoTracking-Windows-x64-Setup.exe" download>{{footer.downloadWin}}</a>
           <a href="https://chromewebstore.google.com/detail/employee-tracker/meoifmgllkafmaeckbdambfnoolnilme" target="_blank" rel="noopener">{{footer.chrome}}</a>
         </div>
         <div class="lp-footer__col">
@@ -584,7 +584,7 @@
       </ol>
 
       <div class="winmodal-cta">
-        <a class="btn btn-primary btn-lg" id="winmodal-download" href="/download/EmployeeTracker-Windows-x64.msi" download>{{win.cont}}</a>
+        <a class="btn btn-primary btn-lg" id="winmodal-download" href="/download/BiBoTracking-Windows-x64-Setup.exe" download>{{win.cont}}</a>
         <button class="btn btn-ghost" id="winmodal-cancel" type="button">{{win.close}}</button>
       </div>
       <p class="winmodal-foot">{{win.foot}}</p>
@@ -643,12 +643,12 @@
     }, { threshold: 0.12 });
     document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-    // Windows install notice — intercept .msi downloads to explain the SmartScreen prompt
+    // Windows install notice — explain SmartScreen before downloading the unsigned installer.
     const winModal = document.getElementById('winmodal');
     if (winModal) {
       const dl = document.getElementById('winmodal-download');
       const closeWin = () => winModal.classList.remove('open');
-      document.querySelectorAll('a[href$=".msi"]:not(#winmodal-download)').forEach(a => {
+      document.querySelectorAll('a[href$=".exe"]:not(#winmodal-download)').forEach(a => {
         a.addEventListener('click', (e) => {
           e.preventDefault();
           dl.href = a.getAttribute('href');

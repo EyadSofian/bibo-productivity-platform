@@ -325,7 +325,7 @@
     "body": "BiBoTracking is a free, open-source indie app. We haven't paid for an expensive Windows code-signing certificate, so the first time you run the installer Windows may show a “Windows protected your PC” screen. This is normal for indie apps — the app is safe and every line of its code is public on GitHub.",
     "dlgTitle": "Windows protected your PC",
     "dlgBody": "Microsoft Defender SmartScreen prevented an unrecognized app from starting. Running this app might put your PC at risk.",
-    "dlgApp": "App: EmployeeTracker-Windows-x64.msi",
+    "dlgApp": "App: BiBoTracking-Windows-x64-Setup.exe",
     "dlgPublisher": "Publisher: Unknown publisher",
     "dlgMoreInfo": "More info",
     "dlgRun": "Run anyway",
