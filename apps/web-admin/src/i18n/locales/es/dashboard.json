@@ -73,6 +73,11 @@
     "errorRange": "No se pudieron cargar los informes de este intervalo.",
     "errorStartAfterEnd": "La fecha de inicio es posterior a la fecha de fin.",
     "loadingReports": "Cargando informes…",
+    "presence": {
+      "states": { "active": "Activo ahora", "idle": "Inactivo ahora", "online": "En línea — supervisión pausada", "offline": "Sin conexión" },
+      "openNow": "Abierto ahora", "noCurrentApp": "Sin señal de aplicación actual", "since": "Desde",
+      "updated": "Señal en vivo actualizada a las {{time}}", "waiting": "Esperando el pulso de la aplicación de Windows"
+    },
     "summary": {
       "activeTime": "Tiempo activo",
       "activeTimeRange": "Tiempo activo (intervalo)",
@@ -84,7 +89,8 @@
       "activity": "Actividad",
       "keystrokes": "Pulsaciones",
       "browser": "Navegador",
-      "screenshots": "Capturas de pantalla"
+      "screenshots": "Capturas de pantalla",
+      "playback": "Reproducción"
     },
     "singleDay": "Un día",
     "dateRange": "Rango de fechas"

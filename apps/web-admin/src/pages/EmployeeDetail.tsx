@@ -6,11 +6,13 @@ import {
   reportBrowser,
   reportEmployees,
   reportKeystrokes,
+  reportPresence,
   reportScreenshots,
 } from "../api/endpoints";
 import type {
   ActivityResponse,
   BrowserVisit,
+  EmployeePresence,
   KeystrokeBucket,
   ReportEmployee,
   ScreenshotMeta,
@@ -18,6 +20,7 @@ import type {
 import { ActivityPanel } from "../components/reports/ActivityPanel";
 import { BrowserPanel } from "../components/reports/BrowserPanel";
 import { KeystrokePanel } from "../components/reports/KeystrokePanel";
+import { PlaybackPanel } from "../components/reports/PlaybackPanel";
 import { ScreenshotGallery } from "../components/reports/ScreenshotGallery";
 import { Notice, Spinner } from "../components/ui";
 import { dayRangeToUnix, fmtDuration, isoDate } from "../format";
@@ -26,8 +29,8 @@ import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
 import { useDetailHeader } from "../detailHeader";
 
-type Tab = "activity" | "keystrokes" | "browser" | "screenshots";
-const TABS: Tab[] = ["activity", "keystrokes", "browser", "screenshots"];
+type Tab = "activity" | "keystrokes" | "browser" | "screenshots" | "playback";
+const TABS: Tab[] = ["activity", "keystrokes", "browser", "screenshots", "playback"];
 
 // ── inline icons (no icon dependency in web-admin) ───────────────────
 const svg = (children: ReactNode) => (
@@ -57,6 +60,53 @@ function memberStatus(lastSeen: number | null): Status {
   if (ageS < 5 * 60) return "active";
   if (ageS < 30 * 60) return "idle";
   return "offline";
+}
+
+function LivePresence({ presence }: { presence: EmployeePresence | null }) {
+  const { t, i18n } = useTranslation("dashboard");
+  const state = presence?.state ?? "offline";
+  const seen = presence?.seen_at
+    ? new Date(presence.seen_at * 1000).toLocaleTimeString(i18n.language, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : null;
+  const since = presence?.since
+    ? new Date(presence.since * 1000).toLocaleTimeString(i18n.language, {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+
+  return (
+    <section className={`ad-live-presence ad-live-presence--${state}`} aria-live="polite">
+      <span className="ad-live-presence__dot" aria-hidden="true" />
+      <div className="ad-live-presence__state">
+        <strong>{t(`detail.presence.states.${state}`)}</strong>
+        <span>
+          {seen
+            ? t("detail.presence.updated", { time: seen })
+            : t("detail.presence.waiting")}
+        </span>
+      </div>
+      <div className="ad-live-presence__now">
+        <span>{t("detail.presence.openNow")}</span>
+        <strong>{presence?.app || t("detail.presence.noCurrentApp")}</strong>
+        {presence?.window_title ? (
+          <small title={presence.window_title}>{presence.window_title}</small>
+        ) : null}
+      </div>
+      {since ? (
+        <div className="ad-live-presence__since">
+          <span>{t("detail.presence.since")}</span>
+          <strong>
+            <bdi dir="ltr">{since}</bdi>
+          </strong>
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 // ── detail stat card (no sparkline — matches the detail layout) ──────
@@ -112,6 +162,7 @@ export function EmployeeDetail() {
   const [tab, setTab] = useState<Tab>("activity");
 
   const [employee, setEmployee] = useState<ReportEmployee | null>(null);
+  const [presence, setPresence] = useState<EmployeePresence | null>(null);
   const [activity, setActivity] = useState<ActivityResponse | null>(null);
   const [keystrokes, setKeystrokes] = useState<KeystrokeBucket[] | null>(null);
   const [visits, setVisits] = useState<BrowserVisit[] | null>(null);
@@ -166,6 +217,28 @@ export function EmployeeDetail() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Presence is independent of historical reports. The desktop posts every
+  // 30 seconds; this small poll refreshes only one lightweight JSON object.
+  useEffect(() => {
+    if (!id) return;
+    let live = true;
+    const refresh = () => {
+      reportPresence(id)
+        .then((result) => {
+          if (live) setPresence(result.presence);
+        })
+        .catch(() => {
+          if (live) setPresence(null);
+        });
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 15_000);
+    return () => {
+      live = false;
+      window.clearInterval(timer);
+    };
+  }, [id]);
 
   const today = isoDate(new Date());
 
@@ -258,6 +331,8 @@ export function EmployeeDetail() {
         </div>
       </div>
 
+      <LivePresence presence={presence} />
+
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}
 
@@ -328,6 +403,14 @@ export function EmployeeDetail() {
                       (shots ? <ScreenshotGallery shots={shots} /> : <Spinner />)}
                   </div>
                 )}
+                {tab === "playback" && activity && keystrokes && visits && shots ? (
+                  <PlaybackPanel
+                    shots={shots}
+                    activity={activity}
+                    visits={visits}
+                    buckets={keystrokes}
+                  />
+                ) : null}
               </>
             )
           )}

@@ -196,13 +196,15 @@ pub fn run() {
             // background. No-op while logged out / offline.
             let status = Arc::new(sync::worker::SyncStatus::default());
             app.manage(status.clone());
-            sync::worker::start(sync::worker::SyncContext {
+            let sync_context = sync::worker::SyncContext {
                 db: db.clone(),
                 auth,
                 status,
                 settings: settings_state,
                 control,
-            });
+            };
+            sync::presence::start(sync_context.clone());
+            sync::worker::start(sync_context);
 
             // Manage remaining state so commands can reach the DB.
             app.manage(db);

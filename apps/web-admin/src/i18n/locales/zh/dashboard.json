@@ -73,6 +73,11 @@
     "errorRange": "无法加载此区间的报告。",
     "errorStartAfterEnd": "起始日期晚于结束日期。",
     "loadingReports": "正在加载报告…",
+    "presence": {
+      "states": { "active": "当前活跃", "idle": "当前空闲", "online": "在线 — 监控已暂停", "offline": "离线" },
+      "openNow": "当前打开", "noCurrentApp": "暂无当前应用信号", "since": "开始于",
+      "updated": "实时信号更新于 {{time}}", "waiting": "正在等待 Windows 应用心跳"
+    },
     "summary": {
       "activeTime": "活跃时间",
       "activeTimeRange": "活跃时间（区间）",
@@ -84,7 +89,8 @@
       "activity": "活动",
       "keystrokes": "按键",
       "browser": "浏览器",
-      "screenshots": "截图"
+      "screenshots": "截图",
+      "playback": "回放"
     },
     "singleDay": "单日",
     "dateRange": "日期范围"

@@ -187,6 +187,29 @@ struct ScreenshotResp {
     accepted: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct PresenceSignal {
+    pub state: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub app: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_title: Option<String>,
+    pub since: i64,
+}
+
+#[derive(Serialize)]
+struct PresenceReq<'a> {
+    device_id: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    business_id: Option<&'a str>,
+    state: &'a str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    app: Option<&'a str>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_title: Option<&'a str>,
+    since: i64,
+}
+
 impl BackendClient {
     pub fn new(base_url: String, auth: Arc<AuthState>) -> Self {
         let http = reqwest::Client::builder()
@@ -412,6 +435,43 @@ impl BackendClient {
             });
         }
         Err("sync_batch: unreachable retry exhaustion".into())
+    }
+
+    /// Cheap 30-second presence signal, independent of the five-minute batch.
+    pub async fn presence_heartbeat(
+        &self,
+        device_id: &str,
+        business_id: Option<&str>,
+        signal: &PresenceSignal,
+    ) -> Result<(), String> {
+        let body = PresenceReq {
+            device_id,
+            business_id,
+            state: &signal.state,
+            app: signal.app.as_deref(),
+            window_title: signal.window_title.as_deref(),
+            since: signal.since,
+        };
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url("/v1/presence/heartbeat"))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return Ok(());
+        }
+        Err("presence_heartbeat: unreachable retry exhaustion".into())
     }
 
     /// `POST /v1/sync/screenshots` (multipart) for a single screenshot, with the

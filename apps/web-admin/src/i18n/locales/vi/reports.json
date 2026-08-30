@@ -46,5 +46,23 @@
     "prev": "Ảnh chụp trước",
     "next": "Ảnh chụp sau",
     "close": "Đóng"
+  },
+  "playback": {
+    "empty": "Không có ảnh chụp màn hình để phát lại trong khoảng này.",
+    "frameAlt": "Khung phát lại lúc {{time}}",
+    "loadingFrame": "Đang tải khung…",
+    "gap": "Không có ảnh chụp trong {{duration}} trước khung này",
+    "pause": "Tạm dừng",
+    "play": "Phát",
+    "scrub": "Dòng thời gian phát lại",
+    "speed": "Tốc độ phát lại",
+    "screenshotNotice": "Phát lại ảnh chụp — không phải video liên tục",
+    "details": "Chi tiết khung",
+    "app": "Ứng dụng",
+    "window": "Cửa sổ",
+    "website": "Trang web",
+    "url": "URL đầy đủ",
+    "keys": "Lần gõ phím trong phút này",
+    "resolution": "Độ phân giải"
   }
 }

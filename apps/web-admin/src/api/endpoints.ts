@@ -31,6 +31,7 @@ import type {
   CreateEmployeeResponse,
   Device,
   Department,
+  EmployeePresence,
   Employee,
   JobRole,
   KeystrokeBucket,
@@ -197,6 +198,23 @@ export function reportActivity(employeeId: string, from: number, to: number) {
   return request<ActivityResponse>(`/v1/reports/employees/${employeeId}/activity`, {
     query: { from, to },
   });
+}
+
+export function reportPresence(employeeId: string) {
+  if (isDemo()) {
+    const now = Math.floor(Date.now() / 1000);
+    return Promise.resolve({
+      presence: {
+        device_id: "demo-device",
+        state: "active" as const,
+        app: "Google Chrome",
+        window_title: "BiBoTracking — Dashboard",
+        since: now - 12 * 60,
+        seen_at: now,
+      },
+    });
+  }
+  return request<{ presence: EmployeePresence }>(`/v1/reports/employees/${employeeId}/presence`);
 }
 
 export function reportKeystrokes(employeeId: string, from: number, to: number) {

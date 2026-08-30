@@ -73,6 +73,11 @@
     "errorRange": "Không thể tải báo cáo cho khoảng này.",
     "errorStartAfterEnd": "Ngày bắt đầu sau ngày kết thúc.",
     "loadingReports": "Đang tải báo cáo…",
+    "presence": {
+      "states": { "active": "Đang hoạt động", "idle": "Đang nhàn rỗi", "online": "Trực tuyến — tạm dừng giám sát", "offline": "Ngoại tuyến" },
+      "openNow": "Đang mở", "noCurrentApp": "Không có tín hiệu ứng dụng hiện tại", "since": "Từ",
+      "updated": "Tín hiệu trực tiếp cập nhật lúc {{time}}", "waiting": "Đang chờ nhịp tim từ ứng dụng Windows"
+    },
     "summary": {
       "activeTime": "Thời gian hoạt động",
       "activeTimeRange": "Thời gian hoạt động (khoảng)",
@@ -84,7 +89,8 @@
       "activity": "Hoạt động",
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
-      "screenshots": "Ảnh chụp màn hình"
+      "screenshots": "Ảnh chụp màn hình",
+      "playback": "Phát lại"
     },
     "singleDay": "Một ngày",
     "dateRange": "Khoảng ngày"

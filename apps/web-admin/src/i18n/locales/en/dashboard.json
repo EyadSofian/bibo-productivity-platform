@@ -73,6 +73,11 @@
     "errorRange": "Could not load reports for this range.",
     "errorStartAfterEnd": "The start date is after the end date.",
     "loadingReports": "Loading reports…",
+    "presence": {
+      "states": { "active": "Active now", "idle": "Idle now", "online": "Online — monitoring paused", "offline": "Offline" },
+      "openNow": "Open now", "noCurrentApp": "No current app signal", "since": "Since",
+      "updated": "Live signal updated at {{time}}", "waiting": "Waiting for the Windows app heartbeat"
+    },
     "summary": {
       "activeTime": "Active time",
       "activeTimeRange": "Active time (range)",
@@ -84,7 +89,8 @@
       "activity": "Activity",
       "keystrokes": "Keystrokes",
       "browser": "Browser",
-      "screenshots": "Screenshots"
+      "screenshots": "Screenshots",
+      "playback": "Playback"
     },
     "singleDay": "Single day",
     "dateRange": "Date range"

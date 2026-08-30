@@ -46,5 +46,23 @@
     "prev": "Capture précédente",
     "next": "Capture suivante",
     "close": "Fermer"
+  },
+  "playback": {
+    "empty": "Aucune capture n’est disponible pour la lecture sur cette période.",
+    "frameAlt": "Image de lecture à {{time}}",
+    "loadingFrame": "Chargement de l’image…",
+    "gap": "Aucune capture pendant {{duration}} avant cette image",
+    "pause": "Pause",
+    "play": "Lire",
+    "scrub": "Chronologie de lecture",
+    "speed": "Vitesse de lecture",
+    "screenshotNotice": "Lecture de captures — pas une vidéo continue",
+    "details": "Détails de l’image",
+    "app": "Application",
+    "window": "Fenêtre",
+    "website": "Site web",
+    "url": "URL complète",
+    "keys": "Frappes pendant cette minute",
+    "resolution": "Résolution"
   }
 }

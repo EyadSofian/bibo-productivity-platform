@@ -137,6 +137,17 @@ export interface ActivityResponse {
   breakdown: AppBreakdown[];
 }
 
+export type PresenceState = "online" | "active" | "idle" | "offline";
+
+export interface EmployeePresence {
+  device_id: string | null;
+  state: PresenceState;
+  app: string | null;
+  window_title: string | null;
+  since: number | null;
+  seen_at: number | null;
+}
+
 export interface KeystrokeBucket {
   ts_bucket: number;
   count: number;

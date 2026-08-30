@@ -73,6 +73,11 @@
     "errorRange": "この範囲のレポートを読み込めませんでした。",
     "errorStartAfterEnd": "開始日が終了日より後になっています。",
     "loadingReports": "レポートを読み込んでいます…",
+    "presence": {
+      "states": { "active": "現在アクティブ", "idle": "現在アイドル", "online": "オンライン — 監視一時停止", "offline": "オフライン" },
+      "openNow": "現在開いているアプリ", "noCurrentApp": "現在のアプリ信号はありません", "since": "開始時刻",
+      "updated": "ライブ信号更新 {{time}}", "waiting": "Windows アプリのハートビートを待っています"
+    },
     "summary": {
       "activeTime": "アクティブ時間",
       "activeTimeRange": "アクティブ時間（範囲）",
@@ -84,7 +89,8 @@
       "activity": "アクティビティ",
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
-      "screenshots": "スクリーンショット"
+      "screenshots": "スクリーンショット",
+      "playback": "再生"
     },
     "singleDay": "単日",
     "dateRange": "期間"

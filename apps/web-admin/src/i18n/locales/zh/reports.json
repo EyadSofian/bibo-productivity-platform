@@ -46,5 +46,23 @@
     "prev": "上一张截图",
     "next": "下一张截图",
     "close": "关闭"
+  },
+  "playback": {
+    "empty": "此时间范围内没有可回放的截图。",
+    "frameAlt": "{{time}} 的回放画面",
+    "loadingFrame": "正在加载画面…",
+    "gap": "此画面前有 {{duration}} 未采集截图",
+    "pause": "暂停",
+    "play": "播放",
+    "scrub": "回放时间线",
+    "speed": "回放速度",
+    "screenshotNotice": "截图回放 — 不是连续视频",
+    "details": "画面详情",
+    "app": "应用程序",
+    "window": "窗口",
+    "website": "网站",
+    "url": "完整网址",
+    "keys": "本分钟按键次数",
+    "resolution": "分辨率"
   }
 }

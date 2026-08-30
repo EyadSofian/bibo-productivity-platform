@@ -46,5 +46,23 @@
     "prev": "Previous screenshot",
     "next": "Next screenshot",
     "close": "Close"
+  },
+  "playback": {
+    "empty": "No screenshots are available for playback in this range.",
+    "frameAlt": "Playback frame at {{time}}",
+    "loadingFrame": "Loading frame…",
+    "gap": "No captures for {{duration}} before this frame",
+    "pause": "Pause",
+    "play": "Play",
+    "scrub": "Playback timeline",
+    "speed": "Playback speed",
+    "screenshotNotice": "Screenshot playback — not continuous video",
+    "details": "Frame details",
+    "app": "Application",
+    "window": "Window",
+    "website": "Website",
+    "url": "Full URL",
+    "keys": "Keypresses this minute",
+    "resolution": "Resolution"
   }
 }

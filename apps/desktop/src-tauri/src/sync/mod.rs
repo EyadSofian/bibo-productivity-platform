@@ -11,6 +11,7 @@
 
 pub mod auth;
 pub mod client;
+pub mod presence;
 pub mod worker;
 
 pub use auth::AuthState;

@@ -47,6 +47,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
 	deviceH := handlers.NewDeviceHandler(st)
+	presenceH := handlers.NewPresenceHandler(st)
 	monitoringProfileH := handlers.NewMonitoringProfileHandler(st)
 	organizationH := handlers.NewOrganizationHandler(st)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
@@ -120,6 +121,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Sync ingest (desktop → backend, one-directional).
 	authed.POST("/sync/batch", syncH.Batch)
 	authed.POST("/sync/screenshots", shotH.Upload)
+	authed.POST("/presence/heartbeat", presenceH.Heartbeat)
 
 	// Owner read path (reporting).
 	authed.GET("/reports/employees", reportsH.Roster)
@@ -127,6 +129,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	authed.GET("/reports/employees/:id/keystrokes", reportsH.Keystrokes)
 	authed.GET("/reports/employees/:id/browser", reportsH.Browser)
 	authed.GET("/reports/employees/:id/screenshots", reportsH.Screenshots)
+	authed.GET("/reports/employees/:id/presence", presenceH.Employee)
 	authed.GET("/screenshots/:client_uuid", reportsH.ScreenshotImage)
 
 	// Serve static content (same origin as the API) when configured:

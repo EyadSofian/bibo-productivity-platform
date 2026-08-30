@@ -46,5 +46,23 @@
     "prev": "Captura anterior",
     "next": "Captura siguiente",
     "close": "Cerrar"
+  },
+  "playback": {
+    "empty": "No hay capturas disponibles para reproducir en este intervalo.",
+    "frameAlt": "Fotograma de reproducción a las {{time}}",
+    "loadingFrame": "Cargando fotograma…",
+    "gap": "Sin capturas durante {{duration}} antes de este fotograma",
+    "pause": "Pausar",
+    "play": "Reproducir",
+    "scrub": "Línea de tiempo de reproducción",
+    "speed": "Velocidad de reproducción",
+    "screenshotNotice": "Reproducción de capturas — no es vídeo continuo",
+    "details": "Detalles del fotograma",
+    "app": "Aplicación",
+    "window": "Ventana",
+    "website": "Sitio web",
+    "url": "URL completa",
+    "keys": "Pulsaciones en este minuto",
+    "resolution": "Resolución"
   }
 }

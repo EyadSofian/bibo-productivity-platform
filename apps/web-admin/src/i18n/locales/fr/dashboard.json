@@ -73,6 +73,11 @@
     "errorRange": "Impossible de charger les rapports pour cette plage.",
     "errorStartAfterEnd": "La date de début est postérieure à la date de fin.",
     "loadingReports": "Chargement des rapports…",
+    "presence": {
+      "states": { "active": "Actif maintenant", "idle": "Inactif maintenant", "online": "En ligne — suivi en pause", "offline": "Hors ligne" },
+      "openNow": "Ouvert maintenant", "noCurrentApp": "Aucun signal d’application actuel", "since": "Depuis",
+      "updated": "Signal en direct mis à jour à {{time}}", "waiting": "En attente du signal de l’application Windows"
+    },
     "summary": {
       "activeTime": "Temps actif",
       "activeTimeRange": "Temps actif (plage)",
@@ -84,7 +89,8 @@
       "activity": "Activité",
       "keystrokes": "Frappes",
       "browser": "Navigateur",
-      "screenshots": "Captures d'écran"
+      "screenshots": "Captures d'écran",
+      "playback": "Lecture"
     },
     "singleDay": "Journée",
     "dateRange": "Période"

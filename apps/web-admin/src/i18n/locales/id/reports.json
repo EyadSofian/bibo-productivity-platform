@@ -46,5 +46,23 @@
     "prev": "Screenshot sebelumnya",
     "next": "Screenshot berikutnya",
     "close": "Tutup"
+  },
+  "playback": {
+    "empty": "Tidak ada tangkapan layar untuk diputar dalam rentang ini.",
+    "frameAlt": "Bingkai pemutaran pada {{time}}",
+    "loadingFrame": "Memuat bingkai…",
+    "gap": "Tidak ada tangkapan selama {{duration}} sebelum bingkai ini",
+    "pause": "Jeda",
+    "play": "Putar",
+    "scrub": "Linimasa pemutaran",
+    "speed": "Kecepatan pemutaran",
+    "screenshotNotice": "Pemutaran tangkapan layar — bukan video berkelanjutan",
+    "details": "Detail bingkai",
+    "app": "Aplikasi",
+    "window": "Jendela",
+    "website": "Situs web",
+    "url": "URL lengkap",
+    "keys": "Ketikan pada menit ini",
+    "resolution": "Resolusi"
   }
 }

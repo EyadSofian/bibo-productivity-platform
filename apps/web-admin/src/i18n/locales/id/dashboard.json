@@ -73,6 +73,11 @@
     "errorRange": "Tidak dapat memuat laporan untuk rentang ini.",
     "errorStartAfterEnd": "Tanggal mulai berada setelah tanggal akhir.",
     "loadingReports": "Memuat laporan…",
+    "presence": {
+      "states": { "active": "Aktif sekarang", "idle": "Idle sekarang", "online": "Online — pemantauan dijeda", "offline": "Offline" },
+      "openNow": "Terbuka sekarang", "noCurrentApp": "Tidak ada sinyal aplikasi saat ini", "since": "Sejak",
+      "updated": "Sinyal langsung diperbarui pukul {{time}}", "waiting": "Menunggu heartbeat aplikasi Windows"
+    },
     "summary": {
       "activeTime": "Waktu aktif",
       "activeTimeRange": "Waktu aktif (rentang)",
@@ -84,7 +89,8 @@
       "activity": "Aktivitas",
       "keystrokes": "Ketikan",
       "browser": "Peramban",
-      "screenshots": "Tangkapan layar"
+      "screenshots": "Tangkapan layar",
+      "playback": "Pemutaran"
     },
     "singleDay": "Satu hari",
     "dateRange": "Rentang tanggal"
