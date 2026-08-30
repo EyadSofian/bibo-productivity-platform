@@ -121,6 +121,12 @@ export function KeystrokePanel({ buckets }: { buckets: KeystrokeBucket[] }) {
           </button>
         ))}
       </div>
+
+      <div className="ad-signal-note">
+        <strong>{t("keystrokes.minuteBuckets")}</strong>
+        <span>{t("keystrokes.activityMeaning")}</span>
+        <small>{t("keystrokes.privacyNote")}</small>
+      </div>
     </div>
   );
 }

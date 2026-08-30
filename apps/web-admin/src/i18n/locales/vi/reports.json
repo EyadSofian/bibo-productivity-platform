@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "Không có lượt truy cập trình duyệt nào trong khoảng thời gian này.",
+    "extensionRequired": "URL trình duyệt cần tiện ích BiBo Tracker trên Chrome hoặc Edge của nhân viên.",
+    "installExtension": "Cài tiện ích trình duyệt",
+    "expandHint": "Mở một tên miền để xem trang, URL và thời gian truy cập chính xác.",
+    "details": "Xem URL",
+    "hideDetails": "Ẩn URL",
+    "pagesOn": "Trang trên {{domain}}",
+    "fullUrlNotice": "URL chính xác do tiện ích trình duyệt báo cáo",
     "table": {
       "time": "Thời gian",
       "page": "Trang",
@@ -24,6 +31,8 @@
     "summary_other": "{{keystrokes}} lần gõ phím trong {{count}} nhóm",
     "tooltip": "{{time}} — {{count}} lần gõ phím",
     "privacyNote": "Chỉ đếm số lần. Các phím riêng lẻ không bao giờ được thu thập hay lưu trữ — biểu đồ này hiển thị khối lượng gõ phím, không phải nội dung.",
+    "minuteBuckets": "Mỗi cột đại diện cho một phút hoạt động bàn phím.",
+    "activityMeaning": "Chuyển động chuột được tính vào thời gian Hoạt động/Nhàn rỗi nhưng chưa có bộ đếm riêng.",
     "title": "Số phím gõ trong ngày",
     "keypresses": "lượt gõ phím"
   },

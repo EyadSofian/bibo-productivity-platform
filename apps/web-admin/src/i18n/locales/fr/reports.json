@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "Aucune visite de navigateur pour cette période.",
+    "extensionRequired": "Les URL nécessitent l’extension BiBo Tracker dans Chrome ou Edge de l’employé.",
+    "installExtension": "Installer l’extension",
+    "expandHint": "Ouvrez un domaine pour voir les pages, URL et heures exactes.",
+    "details": "Voir les URL",
+    "hideDetails": "Masquer les URL",
+    "pagesOn": "Pages sur {{domain}}",
+    "fullUrlNotice": "URL exactes transmises par l’extension du navigateur",
     "table": {
       "time": "Heure",
       "page": "Page",
@@ -24,6 +31,8 @@
     "summary_other": "{{keystrokes}} frappes au clavier réparties sur {{count}} intervalles",
     "tooltip": "{{time}} — {{count}} frappes au clavier",
     "privacyNote": "Comptage uniquement. Les touches individuelles ne sont jamais capturées ni stockées — ce graphique indique le volume de frappe, pas le contenu.",
+    "minuteBuckets": "Chaque colonne représente une minute d’activité clavier.",
+    "activityMeaning": "Les mouvements de souris contribuent au temps actif/inactif, sans compteur de souris distinct pour le moment.",
     "title": "Frappes au fil de la journée",
     "keypresses": "frappes"
   },

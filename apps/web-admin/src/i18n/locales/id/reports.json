@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "Tidak ada kunjungan browser untuk rentang ini.",
+    "extensionRequired": "URL browser memerlukan ekstensi BiBo Tracker di Chrome atau Edge karyawan.",
+    "installExtension": "Pasang ekstensi browser",
+    "expandHint": "Buka domain untuk melihat halaman, URL, dan waktu kunjungan yang tepat.",
+    "details": "Lihat URL",
+    "hideDetails": "Sembunyikan URL",
+    "pagesOn": "Halaman di {{domain}}",
+    "fullUrlNotice": "URL tepat yang dilaporkan ekstensi browser",
     "table": {
       "time": "Waktu",
       "page": "Halaman",
@@ -24,6 +31,8 @@
     "summary_other": "{{keystrokes}} ketikan dalam {{count}} keranjang",
     "tooltip": "{{time}} — {{count}} ketikan",
     "privacyNote": "Hanya jumlah. Tombol individual tidak pernah direkam atau disimpan — grafik ini menunjukkan volume ketikan, bukan isinya.",
+    "minuteBuckets": "Setiap kolom mewakili satu menit aktivitas keyboard.",
+    "activityMeaning": "Gerakan mouse dihitung dalam waktu Aktif/Idle, tetapi belum memiliki penghitung terpisah.",
     "title": "Ketikan sepanjang hari",
     "keypresses": "ketikan"
   },

@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "此时间范围内没有浏览记录。",
+    "extensionRequired": "浏览器 URL 需要在员工的 Chrome 或 Edge 中安装 BiBo Tracker 扩展程序。",
+    "installExtension": "安装浏览器扩展",
+    "expandHint": "展开域名即可查看准确的页面、URL 和访问时间。",
+    "details": "查看 URL",
+    "hideDetails": "隐藏 URL",
+    "pagesOn": "{{domain}} 上的页面",
+    "fullUrlNotice": "浏览器扩展报告的准确 URL",
     "table": {
       "time": "时间",
       "page": "页面",
@@ -24,6 +31,8 @@
     "summary_other": "{{count}} 个时间段内共 {{keystrokes}} 次按键",
     "tooltip": "{{time}} — {{count}} 次按键",
     "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。",
+    "minuteBuckets": "每一列代表一分钟的键盘活动。",
+    "activityMeaning": "鼠标移动会计入活动/空闲时间，但目前不会单独计数。",
     "title": "全天按键次数",
     "keypresses": "次按键"
   },

@@ -3465,6 +3465,29 @@ select.input:focus,
   background: #11151f;
   color: #6b7488;
 }
+.ad-signal-note {
+  display: grid;
+  gap: 5px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-subtle);
+  border-inline-start: 3px solid var(--brand-500);
+  border-radius: 12px;
+  background: var(--brand-tint);
+}
+.ad-signal-note strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.ad-signal-note span,
+.ad-signal-note small {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.ad-signal-note small {
+  opacity: 0.82;
+}
 
 /* ── Captured screenshots gallery (offline design) ───────────────────── */
 .ad-gallery {
@@ -3524,16 +3547,154 @@ select.input:focus,
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
 }
 
-/* Sites-visited (browser) table: smaller domain cell than the roster */
+/* Sites-visited report: domain summary with an exact-URL drill-down. */
+.ad-browser-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 34px 20px 38px;
+  text-align: center;
+}
+.ad-browser-empty p {
+  max-width: 570px;
+  margin: -2px 0 2px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ad-browser-hint {
+  margin-top: 5px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .ad-panel .ad-table .ad-name {
   gap: 10px;
 }
 .ad-panel .ad-table .ad-name__txt {
   font-size: 13px;
 }
+.ad-browser-domain td {
+  transition: background 0.15s ease;
+}
+.ad-browser-domain--open td {
+  background: var(--brand-tint);
+}
+.ad-browser-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 94px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--brand-600);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ad-browser-toggle:hover {
+  border-color: var(--brand-400);
+  background: var(--brand-tint);
+}
+.ad-browser-toggle:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 2px;
+}
+.ad-browser-detailrow > td {
+  padding: 0 20px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--brand-tint);
+}
+.ad-browser-drilldown {
+  padding: 15px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 13px;
+  background: var(--surface);
+}
+.ad-browser-drilldown__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+.ad-browser-drilldown__head strong {
+  color: var(--text);
+  font-size: 13px;
+}
+.ad-browser-drilldown__head span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.ad-browser-pages {
+  display: grid;
+  gap: 7px;
+}
+.ad-browser-page {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  align-items: center;
+  gap: 22px;
+  padding: 11px 12px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-inset);
+}
+.ad-browser-page__main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.ad-browser-page__main strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-browser-page__main code {
+  overflow: hidden;
+  color: var(--brand-600);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ad-browser-page__metric {
+  display: grid;
+  gap: 3px;
+  min-width: 68px;
+}
+.ad-browser-page__metric span {
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.ad-browser-page__metric strong {
+  color: var(--text);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
 /* breathing room below the last row of the Sites-visited card */
 .ad-panel .ad-tablecard {
   padding-bottom: 24px;
+}
+
+@media (max-width: 760px) {
+  .ad-browser-drilldown__head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .ad-browser-page {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 12px;
+  }
 }
 
 /* ---------- devices (F40) ---------- */

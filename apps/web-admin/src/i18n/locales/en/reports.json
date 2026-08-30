@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "No browser visits for this range.",
+    "extensionRequired": "Browser URLs require the BiBo Tracker extension on this employee's Chrome or Edge browser.",
+    "installExtension": "Install browser extension",
+    "expandHint": "Open a domain to inspect the exact pages, URLs and visit times.",
+    "details": "View URLs",
+    "hideDetails": "Hide URLs",
+    "pagesOn": "Pages on {{domain}}",
+    "fullUrlNotice": "Exact URLs reported by the employee's browser extension",
     "table": {
       "time": "Time",
       "page": "Page",
@@ -24,6 +31,8 @@
     "summary_other": "{{keystrokes}} keystrokes across {{count}} buckets",
     "tooltip": "{{time}} — {{count}} keystrokes",
     "privacyNote": "Counts only. Individual keys are never captured or stored — this chart shows typing volume, not content.",
+    "minuteBuckets": "Each column represents one minute of keyboard activity.",
+    "activityMeaning": "Mouse movement contributes to Active/Idle time in the Activity tab; it is not counted as a separate mouse total yet.",
     "title": "Keystrokes through the day",
     "keypresses": "keypresses"
   },

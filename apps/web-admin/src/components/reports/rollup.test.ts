@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowserVisit } from "../../api/types";
-import { domainOf, rollupByDomain } from "./rollup";
+import { domainOf, rollupByDomain, rollupByPage } from "./rollup";
 
 function visit(over: Partial<BrowserVisit> = {}): BrowserVisit {
   return {
@@ -127,5 +127,45 @@ describe("rollupByDomain", () => {
     const rows = rollupByDomain([visit({ duration_s: 60 }), visit({ duration_s: -100 })]);
 
     expect(rows[0].totalS).toBe(60);
+  });
+});
+
+describe("rollupByPage", () => {
+  it("keeps exact URLs while collapsing minute checkpoints", () => {
+    const rows = rollupByPage(
+      [
+        visit({ ts: 1000, url: "https://github.com/org/repo?tab=readme", duration_s: 60 }),
+        visit({ ts: 1060, url: "https://github.com/org/repo?tab=readme", duration_s: 60 }),
+        visit({
+          ts: 1120,
+          url: "https://github.com/org/issues",
+          page_title: "Issues",
+          duration_s: 30,
+        }),
+      ],
+      "github.com",
+    );
+
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      url: "https://github.com/org/repo?tab=readme",
+      totalS: 120,
+      checkpoints: 2,
+      firstTs: 1000,
+      lastTs: 1120,
+    });
+    expect(rows[1].title).toBe("Issues");
+  });
+
+  it("returns only the selected domain", () => {
+    const rows = rollupByPage(
+      [
+        visit(),
+        visit({ url: "https://docs.google.com/document/1", domain: "docs.google.com" }),
+      ],
+      "github.com",
+    );
+
+    expect(rows.map((row) => row.url)).toEqual(["https://github.com/a"]);
   });
 });

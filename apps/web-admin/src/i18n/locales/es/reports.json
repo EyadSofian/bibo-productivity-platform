@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "No hay visitas del navegador para este intervalo.",
+    "extensionRequired": "Las URL requieren la extensión BiBo Tracker en Chrome o Edge del empleado.",
+    "installExtension": "Instalar extensión",
+    "expandHint": "Abre un dominio para ver páginas, URL y horas exactas.",
+    "details": "Ver URL",
+    "hideDetails": "Ocultar URL",
+    "pagesOn": "Páginas en {{domain}}",
+    "fullUrlNotice": "URL exactas informadas por la extensión del navegador",
     "table": {
       "time": "Hora",
       "page": "Página",
@@ -24,6 +31,8 @@
     "summary_other": "{{keystrokes}} pulsaciones de teclas en {{count}} segmentos",
     "tooltip": "{{time}} — {{count}} pulsaciones de teclas",
     "privacyNote": "Solo recuentos. Las teclas individuales nunca se capturan ni se almacenan: este gráfico muestra el volumen de escritura, no el contenido.",
+    "minuteBuckets": "Cada columna representa un minuto de actividad del teclado.",
+    "activityMeaning": "El movimiento del ratón contribuye al tiempo activo/inactivo; aún no tiene un contador separado.",
     "title": "Pulsaciones durante el día",
     "keypresses": "pulsaciones"
   },

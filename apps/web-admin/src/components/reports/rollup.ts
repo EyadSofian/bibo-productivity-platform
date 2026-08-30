@@ -28,6 +28,16 @@ export interface DomainRollup {
   title: string | null;
 }
 
+export interface PageRollup {
+  url: string;
+  title: string | null;
+  totalS: number;
+  checkpoints: number;
+  firstTs: number;
+  lastTs: number;
+  browsers: string[];
+}
+
 /**
  * The domain a visit belongs to.
  *
@@ -89,4 +99,37 @@ export function rollupByDomain(visits: BrowserVisit[]): DomainRollup[] {
     .map(({ longestS: _longestS, ...row }) => ({ ...row, browsers: row.browsers.sort() }))
     // Ties broken by name so the order is stable across renders of equal rows.
     .sort((a, b) => b.totalS - a.totalS || a.domain.localeCompare(b.domain));
+}
+
+/** Group extension checkpoints by exact URL for the drill-down report. */
+export function rollupByPage(visits: BrowserVisit[], domain: string): PageRollup[] {
+  const byUrl = new Map<string, PageRollup>();
+
+  for (const visit of visits) {
+    if (domainOf(visit) !== domain) continue;
+    const duration = Math.max(0, visit.duration_s ?? 0);
+    const current = byUrl.get(visit.url);
+    if (current) {
+      current.totalS += duration;
+      current.checkpoints += 1;
+      current.firstTs = Math.min(current.firstTs, visit.ts);
+      current.lastTs = Math.max(current.lastTs, visit.ts + duration);
+      if (visit.page_title) current.title = visit.page_title;
+      if (visit.browser && !current.browsers.includes(visit.browser)) current.browsers.push(visit.browser);
+    } else {
+      byUrl.set(visit.url, {
+        url: visit.url,
+        title: visit.page_title || null,
+        totalS: duration,
+        checkpoints: 1,
+        firstTs: visit.ts,
+        lastTs: visit.ts + duration,
+        browsers: visit.browser ? [visit.browser] : [],
+      });
+    }
+  }
+
+  return [...byUrl.values()]
+    .map((row) => ({ ...row, browsers: row.browsers.sort() }))
+    .sort((a, b) => a.firstTs - b.firstTs || b.totalS - a.totalS);
 }

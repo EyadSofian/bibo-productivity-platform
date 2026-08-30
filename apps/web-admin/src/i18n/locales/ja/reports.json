@@ -7,6 +7,13 @@
   },
   "browser": {
     "empty": "この期間のブラウザ閲覧履歴はありません。",
+    "extensionRequired": "URL の表示には従業員の Chrome または Edge に BiBo Tracker 拡張機能が必要です。",
+    "installExtension": "拡張機能をインストール",
+    "expandHint": "ドメインを開くと、正確なページ、URL、訪問時刻を確認できます。",
+    "details": "URL を表示",
+    "hideDetails": "URL を隠す",
+    "pagesOn": "{{domain}} のページ",
+    "fullUrlNotice": "ブラウザ拡張機能から報告された正確な URL",
     "table": {
       "time": "時刻",
       "page": "ページ",
@@ -24,6 +31,8 @@
     "summary_other": "{{count}} 個のバケットで合計 {{keystrokes}} 回のキー入力",
     "tooltip": "{{time}} — {{count}} 回のキー入力",
     "privacyNote": "回数のみを記録します。個々のキーが取得・保存されることはありません。このチャートは入力内容ではなく入力量を示しています。",
+    "minuteBuckets": "各列は1分間のキーボード操作を表します。",
+    "activityMeaning": "マウス移動はアクティブ/アイドル時間に反映されますが、個別の回数はまだ表示されません。",
     "title": "1日のキー入力",
     "keypresses": "キー入力"
   },
