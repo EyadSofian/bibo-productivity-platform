@@ -11,10 +11,14 @@
     "table": {
       "login": "登录账号",
       "lastSeen": "最后在线",
+      "currentNow": "当前活动",
+      "onlineFor": "在线时长",
       "activeToday": "今日活跃",
       "focus": "专注度",
       "name": "姓名"
     },
+    "states": { "active": "活跃", "idle": "空闲", "offline": "离线" },
+    "noCurrentApp": "无当前应用",
     "statRecorded": "今日已记录",
     "statActive": "今日活跃",
     "statFocus": "平均专注度",
@@ -82,6 +86,16 @@
         "cpu": "CPU", "memory": "内存", "disk": "磁盘", "network": "网络",
         "download": "下载", "upload": "上传", "current": "当前使用率",
         "of": "已用 {{used}}，共 {{total}}"
+      },
+      "onlineFor": "在线时长",
+      "liveView": {
+        "title": "实时屏幕预览", "description": "约每20秒请求一帧符合策略的最新画面。",
+        "ready": "就绪", "live": "实时预览", "start": "开始预览", "stop": "停止预览",
+        "waiting": "正在等待 Windows 设备…", "startHint": "开始预览以请求当前画面。",
+        "offline": "设备必须在线。", "refreshing": "正在刷新…", "lastFrame": "最新画面 {{time}}",
+        "noFrame": "暂无实时画面", "readOnly": "仅查看 · 策略和隐私排除仍然适用",
+        "frameAlt": "最新实时屏幕画面", "requestError": "设备离线或未接受请求。",
+        "imageError": "无法加载最新画面。"
       }
     },
     "summary": {

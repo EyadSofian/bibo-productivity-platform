@@ -29,17 +29,14 @@ pub fn init() -> Option<sentry::ClientInitGuard> {
     if dsn.is_empty() {
         return None;
     }
-    let guard = sentry::init((
-        dsn,
-        sentry::ClientOptions {
-            release: sentry::release_name!(),
-            environment: Some(crate::settings::env_label().into()),
-            // Capture user IPs / request headers (per the provided config). Acceptable
-            // here since this is the owner's own desktop app.
-            send_default_pii: true,
-            ..Default::default()
-        },
-    ));
+    let mut options = sentry::ClientOptions::default();
+    options.release = sentry::release_name!();
+    options.environment = Some(crate::settings::env_label().into());
+    // Capture user IPs / request headers (per the provided config). Acceptable
+    // here since this is the owner's own desktop app.
+    options.send_default_pii = true;
+
+    let guard = sentry::init((dsn, options));
     Some(guard)
 }
 

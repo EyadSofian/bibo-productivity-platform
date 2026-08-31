@@ -14,13 +14,14 @@ const PresenceOfflineAfter = 90 * time.Second
 // because a paused device still reports that it is online without reporting
 // foreground-work metadata.
 type Presence struct {
-	DeviceID    *string           `json:"device_id"`
-	State       string            `json:"state"`
-	App         *string           `json:"app"`
-	WindowTitle *string           `json:"window_title"`
-	Since       *int64            `json:"since"`
-	SeenAt      *int64            `json:"seen_at"`
-	Resources   *ResourceSnapshot `json:"resources"`
+	DeviceID         *string           `json:"device_id"`
+	State            string            `json:"state"`
+	App              *string           `json:"app"`
+	WindowTitle      *string           `json:"window_title"`
+	Since            *int64            `json:"since"`
+	SeenAt           *int64            `json:"seen_at"`
+	SessionStartedAt *int64            `json:"session_started_at"`
+	Resources        *ResourceSnapshot `json:"resources"`
 }
 
 // ResourceSnapshot is a current whole-device health sample. Network values are
@@ -64,11 +65,11 @@ func (s *Store) UpdatePresence(
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO devices
 		  (id, user_id, business_id, last_seen_at, presence_state, current_app,
-		   current_window_title, presence_since, presence_seen_at,
+		   current_window_title, presence_since, presence_seen_at, session_started_at,
 		   resource_cpu_pct, resource_memory_used_bytes, resource_memory_total_bytes,
 		   resource_disk_used_bytes, resource_disk_total_bytes,
 		   resource_network_rx_bps, resource_network_tx_bps, resource_seen_at)
-		VALUES ($1, $2, $3, now(), $4, $5, $6, $7, now(),
+		VALUES ($1, $2, $3, now(), $4, $5, $6, $7, now(), now(),
 		        $8, $9, $10, $11, $12, $13, $14,
 		        CASE WHEN $8::real IS NULL THEN NULL ELSE now() END)
 		ON CONFLICT (id) DO UPDATE SET
@@ -93,6 +94,11 @@ func (s *Store) UpdatePresence(
 		      THEN EXCLUDED.presence_since
 		    ELSE devices.presence_since END,
 		  presence_seen_at = now(),
+		  session_started_at = CASE
+		    WHEN devices.presence_seen_at IS NULL
+		      OR devices.presence_seen_at < now() - interval '90 seconds'
+		      THEN now()
+		    ELSE COALESCE(devices.session_started_at, devices.presence_seen_at, now()) END,
 		  resource_cpu_pct = CASE
 		    WHEN devices.monitoring_enabled AND devices.deleted_at IS NULL
 		      THEN EXCLUDED.resource_cpu_pct ELSE NULL END,
@@ -146,9 +152,10 @@ func (s *Store) PresenceForOwner(ctx context.Context, ownerID, employeeID string
 	var cpuPct *float32
 	var memoryUsed, memoryTotal, diskUsed, diskTotal, networkRx, networkTx *int64
 	var resourceSeen *time.Time
+	var sessionStarted *time.Time
 	err = s.pool.QueryRow(ctx, `
 		SELECT d.id, d.presence_state, d.current_app, d.current_window_title,
-		       d.presence_since, d.presence_seen_at,
+		       d.presence_since, d.presence_seen_at, d.session_started_at,
 		       d.resource_cpu_pct, d.resource_memory_used_bytes,
 		       d.resource_memory_total_bytes, d.resource_disk_used_bytes,
 		       d.resource_disk_total_bytes, d.resource_network_rx_bps,
@@ -162,7 +169,7 @@ func (s *Store) PresenceForOwner(ctx context.Context, ownerID, employeeID string
 		 ORDER BY d.presence_seen_at DESC
 		 LIMIT 1`, employeeID, ownerID,
 	).Scan(
-		&p.DeviceID, &p.State, &p.App, &p.WindowTitle, &p.Since, &seen,
+		&p.DeviceID, &p.State, &p.App, &p.WindowTitle, &p.Since, &seen, &sessionStarted,
 		&cpuPct, &memoryUsed, &memoryTotal, &diskUsed, &diskTotal,
 		&networkRx, &networkTx, &resourceSeen,
 	)
@@ -174,6 +181,10 @@ func (s *Store) PresenceForOwner(ctx context.Context, ownerID, employeeID string
 	}
 	seenUnix := seen.Unix()
 	p.SeenAt = &seenUnix
+	if sessionStarted != nil {
+		sessionUnix := sessionStarted.Unix()
+		p.SessionStartedAt = &sessionUnix
+	}
 	if resourceSeen != nil && cpuPct != nil && memoryUsed != nil && memoryTotal != nil &&
 		diskUsed != nil && diskTotal != nil && networkRx != nil && networkTx != nil {
 		resourceUnix := resourceSeen.Unix()

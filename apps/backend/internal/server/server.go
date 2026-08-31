@@ -97,6 +97,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Device fleet inventory & per-machine monitoring control (F40).
 	authed.GET("/businesses/:id/devices", deviceH.List)
 	authed.POST("/devices/:device_id/monitoring", deviceH.SetMonitoring)
+	authed.POST("/devices/:device_id/live-capture", deviceH.RequestLiveCapture)
 	authed.POST("/devices/:device_id/archive", deviceH.Archive)
 	authed.POST("/devices/:device_id/restore", deviceH.Restore)
 	authed.GET("/businesses/:id/monitoring-profiles", monitoringProfileH.List)

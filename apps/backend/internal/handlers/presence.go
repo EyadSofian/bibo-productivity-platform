@@ -88,7 +88,17 @@ func (h *PresenceHandler) Heartbeat(c *gin.Context) {
 		serverError(c, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"status": "ok", "monitoring_enabled": enabled})
+	captureRequested, err := h.store.ConsumeLiveCaptureRequest(
+		c.Request.Context(), userID, businessID, req.DeviceID,
+	)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"status": "ok", "monitoring_enabled": enabled,
+		"capture_requested": captureRequested,
+	})
 }
 
 func validResourceSnapshot(value *store.ResourceSnapshot) bool {

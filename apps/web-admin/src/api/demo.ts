@@ -202,7 +202,8 @@ export function demoAssignEmployeeOrganization(employeeId: string, department_id
 }
 
 export function demoRoster(): ReportEmployee[] {
-  return MEMBERS.map((m) => {
+  const liveApps = ["Visual Studio Code", "Google Chrome", "Figma", "Microsoft Excel", "Slack"];
+  return MEMBERS.map((m, index) => {
     const r = seeded(m.id);
     const active = Math.round((2.5 + r() * 6) * HOUR); // 2.5–8.5h
     const isEmail = m.login.includes("@");
@@ -213,6 +214,13 @@ export function demoRoster(): ReportEmployee[] {
       username: isEmail ? undefined : m.login,
       role: m.role,
       last_seen: nowS() - m.ageMin * 60,
+      device_id: m.ageMin < 30 ? `demo-device-${m.id}` : null,
+      presence_state: m.ageMin < 5 ? "active" : m.ageMin < 30 ? "idle" : "offline",
+      current_app: m.ageMin < 30 ? liveApps[index % liveApps.length] : null,
+      current_window_title: m.ageMin < 30 ? `${liveApps[index % liveApps.length]} — current work` : null,
+      presence_since: m.ageMin < 30 ? nowS() - (8 + index * 3) * 60 : null,
+      presence_seen_at: m.ageMin < 30 ? nowS() - Math.min(15, m.ageMin * 60) : null,
+      session_started_at: m.ageMin < 30 ? nowS() - (45 + index * 24) * 60 : null,
       active_today_s: active,
       active_yesterday_s: Math.round(active * (0.7 + r() * 0.6)),
       screenshots_today: 8 + Math.round(r() * 20),

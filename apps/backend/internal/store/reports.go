@@ -31,16 +31,23 @@ func (s *Store) OwnsEmployee(ctx context.Context, ownerID, employeeID string) (b
 
 // RosterEntry is one employee row with rollups for the dashboard roster.
 type RosterEntry struct {
-	ID               string `json:"id"`
-	Email            string `json:"email"`
-	Username         string `json:"username"`
-	DisplayName      string `json:"display_name"`
-	Role             string `json:"role"` // 'owner' (self) | 'employee'
-	LastSeen         *int64 `json:"last_seen"` // unix seconds (the web UI expects a number)
-	ActiveTodayS     int64  `json:"active_today_s"`
-	ActiveYesterdayS int64  `json:"active_yesterday_s"`
-	ScreenshotsToday int64  `json:"screenshots_today"`
-	ScreenshotsYday  int64  `json:"screenshots_yesterday"`
+	ID               string  `json:"id"`
+	Email            string  `json:"email"`
+	Username         string  `json:"username"`
+	DisplayName      string  `json:"display_name"`
+	Role             string  `json:"role"`      // 'owner' (self) | 'employee'
+	LastSeen         *int64  `json:"last_seen"` // unix seconds (the web UI expects a number)
+	DeviceID         *string `json:"device_id"`
+	PresenceState    string  `json:"presence_state"`
+	CurrentApp       *string `json:"current_app"`
+	CurrentWindow    *string `json:"current_window_title"`
+	PresenceSince    *int64  `json:"presence_since"`
+	PresenceSeenAt   *int64  `json:"presence_seen_at"`
+	SessionStartedAt *int64  `json:"session_started_at"`
+	ActiveTodayS     int64   `json:"active_today_s"`
+	ActiveYesterdayS int64   `json:"active_yesterday_s"`
+	ScreenshotsToday int64   `json:"screenshots_today"`
+	ScreenshotsYday  int64   `json:"screenshots_yesterday"`
 	// Share of today's active time with keyboard input (0–100); null when no
 	// activity today. Keystrokes come in 60s buckets, so this is
 	// 60s × buckets-with-input ÷ active seconds, capped at 100.
@@ -56,6 +63,9 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 		SELECT u.id, COALESCE(u.email, ''), COALESCE(u.username, ''), u.display_name, m.role,
 		       (SELECT extract(epoch FROM max(last_seen_at))::bigint
 		          FROM devices d WHERE d.user_id = u.id) AS last_seen,
+		       live.device_id, COALESCE(live.presence_state, 'offline'),
+		       live.current_app, live.current_window_title, live.presence_since,
+		       live.presence_seen_at, live.session_started_at,
 		       COALESCE((SELECT sum(duration_s) FROM activity_samples a
 		                  WHERE a.user_id = u.id AND a.business_id = $1
 		                    AND a.ts >= $2 AND a.ts < $3), 0) AS active_today,
@@ -73,6 +83,18 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 		           AND k.ts_bucket >= $2 AND k.ts_bucket < $3 AND k.count > 0) AS key_minutes
 		  FROM memberships m
 		  JOIN users u ON u.id = m.user_id
+		  LEFT JOIN LATERAL (
+		    SELECT d.id AS device_id, d.presence_state, d.current_app,
+		           d.current_window_title, d.presence_since,
+		           extract(epoch FROM d.presence_seen_at)::bigint AS presence_seen_at,
+		           extract(epoch FROM d.session_started_at)::bigint AS session_started_at
+		      FROM devices d
+		     WHERE d.user_id = u.id AND d.business_id = $1
+		       AND d.deleted_at IS NULL
+		       AND d.presence_seen_at > now() - interval '90 seconds'
+		     ORDER BY d.presence_seen_at DESC
+		     LIMIT 1
+		  ) live ON true
 		 WHERE m.business_id = $1 AND m.role IN ('owner','employee')
 		 ORDER BY (m.role = 'owner') DESC, u.display_name`, businessID, dayStart, dayEnd, ydayStart)
 	if err != nil {
@@ -85,6 +107,8 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 		var e RosterEntry
 		var keyMinutes int64
 		if err := rows.Scan(&e.ID, &e.Email, &e.Username, &e.DisplayName, &e.Role, &e.LastSeen,
+			&e.DeviceID, &e.PresenceState, &e.CurrentApp, &e.CurrentWindow,
+			&e.PresenceSince, &e.PresenceSeenAt, &e.SessionStartedAt,
 			&e.ActiveTodayS, &e.ActiveYesterdayS, &e.ScreenshotsToday, &e.ScreenshotsYday, &keyMinutes); err != nil {
 			return nil, err
 		}
@@ -226,7 +250,9 @@ func (s *Store) BrowserReport(ctx context.Context, employeeID, ownerID string, f
 // ScreenshotMeta is screenshot metadata in a report (no bytes).
 type ScreenshotMeta struct {
 	ClientUUID string `json:"client_uuid"`
+	DeviceID   string `json:"device_id"`
 	Ts         int64  `json:"ts"`
+	ReceivedAt int64  `json:"received_at"`
 	ByteSize   int    `json:"byte_size"`
 	Width      *int   `json:"width"`
 	Height     *int   `json:"height"`
@@ -236,7 +262,8 @@ type ScreenshotMeta struct {
 // ScreenshotsReport returns paginated screenshot metadata, most recent first.
 func (s *Store) ScreenshotsReport(ctx context.Context, employeeID, ownerID string, from, to int64, limit, offset int) ([]ScreenshotMeta, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT client_uuid, ts, byte_size, width, height, display_id FROM screenshots
+		`SELECT client_uuid, device_id, ts, extract(epoch FROM received_at)::bigint,
+		        byte_size, width, height, display_id FROM screenshots
 		  WHERE user_id = $1 AND `+ownedFilter+` AND ts >= $3 AND ts < $4
 		  ORDER BY ts DESC LIMIT $5 OFFSET $6`, employeeID, ownerID, from, to, limit, offset)
 	if err != nil {
@@ -247,7 +274,8 @@ func (s *Store) ScreenshotsReport(ctx context.Context, employeeID, ownerID strin
 	out := []ScreenshotMeta{}
 	for rows.Next() {
 		var m ScreenshotMeta
-		if err := rows.Scan(&m.ClientUUID, &m.Ts, &m.ByteSize, &m.Width, &m.Height, &m.DisplayID); err != nil {
+		if err := rows.Scan(&m.ClientUUID, &m.DeviceID, &m.Ts, &m.ReceivedAt,
+			&m.ByteSize, &m.Width, &m.Height, &m.DisplayID); err != nil {
 			return nil, err
 		}
 		out = append(out, m)

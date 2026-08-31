@@ -120,3 +120,29 @@ func (h *DeviceHandler) SetMonitoring(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"device": device})
 }
+
+// RequestLiveCapture asks an online managed device for one policy-compliant
+// frame. The next authenticated heartbeat consumes the request.
+func (h *DeviceHandler) RequestLiveCapture(c *gin.Context) {
+	ownerID, _ := auth.UserID(c)
+	deviceID := c.Param("device_id")
+	if _, err := uuid.Parse(deviceID); err != nil {
+		badRequest(c, "device_id must be a uuid")
+		return
+	}
+
+	request, err := h.store.RequestLiveCapture(c.Request.Context(), ownerID, deviceID)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		c.JSON(http.StatusConflict, gin.H{"error": "device is offline or unavailable for live capture"})
+		return
+	case err != nil:
+		serverError(c, err)
+		return
+	}
+
+	obs.Info("live capture requested", "owner", ownerID, "device", deviceID)
+	c.JSON(http.StatusAccepted, gin.H{
+		"device_id": request.DeviceID, "requested_at": request.RequestedAt.Unix(),
+	})
+}

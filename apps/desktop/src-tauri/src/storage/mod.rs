@@ -497,6 +497,37 @@ impl Db {
         Ok(rows)
     }
 
+    /// Pending screenshots captured at or after `since`. Live preview uses this
+    /// so a large offline backlog cannot delay the frame the owner just asked
+    /// for; the regular sync worker still uploads the backlog independently.
+    pub fn pending_screenshots_since(
+        &self,
+        since: i64,
+        limit: i64,
+    ) -> Result<Vec<PendingScreenshot>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT client_uuid, ts, file_path, display_id, width, height, updated_at
+             FROM screenshot
+             WHERE synced = 0 AND ts >= ?1
+             ORDER BY id LIMIT ?2",
+        )?;
+        let rows = stmt
+            .query_map(params![since, limit], |r| {
+                Ok(PendingScreenshot {
+                    client_uuid: r.get(0)?,
+                    ts: r.get(1)?,
+                    file_path: r.get(2)?,
+                    display_id: r.get(3)?,
+                    width: r.get(4)?,
+                    height: r.get(5)?,
+                    updated_at: r.get(6)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(rows)
+    }
+
     /// Mark the given rows in `table` as synced (`synced = 1`) by `client_uuid`.
     /// Idempotent: re-marking an already-synced row is a harmless no-op.
     pub fn mark_synced(&self, table: SyncTable, client_uuids: &[String]) -> Result<()> {
@@ -747,6 +778,24 @@ mod tests {
         assert_eq!(db.screenshots_between(0, 1000).unwrap().len(), 1);
         let visits = db.browser_visits_between(0, 1000).unwrap();
         assert_eq!(visits[0].url, "https://github.com");
+    }
+
+    #[test]
+    fn pending_screenshots_since_skips_an_offline_backlog() {
+        let db = db();
+        for ts in [100, 200, 500] {
+            db.insert_screenshot(&Screenshot {
+                ts,
+                file_path: format!("/tmp/{ts}.webp"),
+                display_id: Some(0),
+                width: Some(10),
+                height: Some(10),
+            })
+            .unwrap();
+        }
+        let pending = db.pending_screenshots_since(500, 8).unwrap();
+        assert_eq!(pending.len(), 1);
+        assert_eq!(pending[0].ts, 500);
     }
 
     #[test]

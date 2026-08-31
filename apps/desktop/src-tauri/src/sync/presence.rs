@@ -1,10 +1,11 @@
 //! Near-real-time presence heartbeat (F16 foundation).
 //!
 //! This is deliberately independent of the five-minute telemetry uploader. It
-//! sends only the current state/app/window every 30 seconds so the owner can see
+//! sends only the current state/app/window every 15 seconds so the owner can see
 //! what is open now. When monitoring is paused or disallowed, the heartbeat
 //! continues as `online` without foreground metadata.
 
+use std::sync::atomic::Ordering;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -13,7 +14,7 @@ use super::worker::SyncContext;
 use sysinfo::{Disks, Networks, System};
 
 const STARTUP_DELAY: Duration = Duration::from_secs(3);
-const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
+const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(15);
 
 pub fn start(ctx: SyncContext) {
     thread::spawn(move || {
@@ -64,15 +65,80 @@ async fn run(ctx: SyncContext) {
                     since,
                     resources: resource_snapshot,
                 };
-                if let Err(error) = client
+                match client
                     .presence_heartbeat(&device_id, session.business_id.as_deref(), &signal)
                     .await
                 {
-                    crate::log_warn!("presence", "heartbeat failed: {error}");
+                    Ok(result) => {
+                        ctx.control
+                            .monitoring_enabled
+                            .store(result.monitoring_enabled, Ordering::Relaxed);
+                        if result.capture_requested {
+                            capture_requested_frame(
+                                &ctx,
+                                &client,
+                                &device_id,
+                                session.business_id.as_deref(),
+                            )
+                            .await;
+                        }
+                    }
+                    Err(error) => crate::log_warn!("presence", "heartbeat failed: {error}"),
                 }
             }
         }
         tokio::time::sleep(HEARTBEAT_INTERVAL).await;
+    }
+}
+
+async fn capture_requested_frame(
+    ctx: &SyncContext,
+    client: &BackendClient,
+    device_id: &str,
+    business_id: Option<&str>,
+) {
+    use crate::platform::{permission_status, Permission, PermissionState};
+    use crate::storage::SyncTable;
+
+    if !ctx.control.category_allowed("screen")
+        || !ctx.control.capture_screenshots.load(Ordering::Relaxed)
+        || permission_status(Permission::ScreenRecording) != PermissionState::Granted
+    {
+        crate::log_info!(
+            "presence",
+            "live frame skipped by capture policy or permission"
+        );
+        return;
+    }
+
+    let Some(data_dir) = ctx.settings.path.parent() else {
+        return;
+    };
+    let shots_dir = data_dir.join("screenshots");
+    let capture_started_at = crate::now_unix();
+    if crate::trackers::capture_once(&ctx.db, &shots_dir, &ctx.control) == 0 {
+        return;
+    }
+
+    // Upload only the frame(s) created for this request. Older unsynced images
+    // remain in the normal worker queue and cannot block the live preview.
+    let shots = match ctx.db.pending_screenshots_since(capture_started_at, 16) {
+        Ok(shots) => shots,
+        Err(error) => {
+            crate::log_warn!("presence", "live frame query failed: {error}");
+            return;
+        }
+    };
+    for shot in shots {
+        match client.sync_screenshot(device_id, business_id, &shot).await {
+            Ok(accepted) => {
+                let _ = ctx.db.mark_synced(SyncTable::Screenshot, &accepted);
+            }
+            Err(error) => {
+                crate::log_warn!("presence", "live frame upload failed: {error}");
+                break;
+            }
+        }
     }
 }
 

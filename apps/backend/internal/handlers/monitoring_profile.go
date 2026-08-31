@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	_ "time/tzdata"
 
 	"ctracking/backend/internal/auth"
 	"ctracking/backend/internal/store"

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../i18n";
 import type { MonitoringProfile } from "../api/types";
 import { MonitoringProfiles } from "./MonitoringProfiles";
+import { normalizeTimeZone } from "../timeZone";
 
 const endpointMocks = vi.hoisted(() => ({
   listMonitoringProfiles: vi.fn(),
@@ -49,6 +50,12 @@ beforeEach(async () => {
 });
 
 describe("MonitoringProfiles", () => {
+  it("keeps valid IANA zones and falls back safely for invalid browser values", () => {
+    expect(normalizeTimeZone("Africa/Cairo")).toBe("Africa/Cairo");
+    expect(normalizeTimeZone("Mars/Olympus")).toBe("UTC");
+    expect(normalizeTimeZone(" ")).toBe("UTC");
+  });
+
   it("renders the assigned capture channels", async () => {
     render(<MonitoringProfiles />);
     expect(await screen.findByText("Standard workday")).toBeDefined();

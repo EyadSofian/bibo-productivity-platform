@@ -29,21 +29,11 @@ function memberStatus(lastSeen: number | null): Status {
   return "offline";
 }
 
-/** Deterministic pseudo-random series in [0,1] from a string seed (stable across
- *  renders, no flicker). Used only for PLACEHOLDER sparklines until the backend
- *  exposes real trend data. */
-function seededSeries(seed: string, n = 8): number[] {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+function rosterStatus(employee: ReportEmployee): Status {
+  if (employee.presence_state === "active" || employee.presence_state === "idle") {
+    return employee.presence_state;
   }
-  const out: number[] = [];
-  for (let i = 0; i < n; i++) {
-    h = Math.imul(h ^ (h >>> 15), 2246822519);
-    out.push(((h >>> 0) % 1000) / 1000);
-  }
-  return out;
+  return memberStatus(employee.last_seen);
 }
 
 const AVATAR_PALETTE = [
@@ -108,7 +98,7 @@ function StatCard(props: {
   focal?: boolean;
   delta?: Delta;
   sub?: string;
-  spark: { data: number[]; color: string };
+  spark?: { data: number[]; color: string };
 }) {
   const { icon, label, value, focal, delta, sub, spark } = props;
   return (
@@ -129,9 +119,11 @@ function StatCard(props: {
             </span>
           )}
           {sub && <span className="bibo-stat__sub">{sub}</span>}
-          <span style={{ marginInlineStart: "auto" }}>
-            <Sparkline data={spark.data} color={spark.color} />
-          </span>
+          {spark ? (
+            <span style={{ marginInlineStart: "auto" }}>
+              <Sparkline data={spark.data} color={spark.color} />
+            </span>
+          ) : null}
         </div>
       </div>
     </div>
@@ -147,6 +139,7 @@ export function Dashboard() {
   const [rows, setRows] = useState<ReportEmployee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
     if (!selectedId) {
@@ -154,21 +147,31 @@ export function Dashboard() {
       return;
     }
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-    reportEmployees(selectedId)
-      .then((r) => !cancelled && setRows(r.employees))
-      .catch(() => !cancelled && setError(t("dashboard.errorRoster")))
-      .finally(() => !cancelled && setLoading(false));
+    const refresh = (initial = false) => {
+      if (initial) setLoading(true);
+      setError(null);
+      reportEmployees(selectedId)
+        .then((r) => !cancelled && setRows(r.employees))
+        .catch(() => !cancelled && setError(t("dashboard.errorRoster")))
+        .finally(() => initial && !cancelled && setLoading(false));
+    };
+    refresh(true);
+    const timer = window.setInterval(() => refresh(), 15_000);
     return () => {
       cancelled = true;
+      window.clearInterval(timer);
     };
-  }, [selectedId]);
+  }, [selectedId, t]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   // ── derived metrics for the stat cards ──
   const totalRecordedS = rows.reduce((s, e) => s + (e.active_today_s || 0), 0);
   const totalYesterdayS = rows.reduce((s, e) => s + (e.active_yesterday_s || 0), 0);
-  const activeCount = rows.filter((e) => memberStatus(e.last_seen) !== "offline").length;
+  const activeCount = rows.filter((e) => rosterStatus(e) !== "offline").length;
   const focusVals = rows.map((e) => e.focus_pct_today).filter((v): v is number => v != null);
   const avgFocus = focusVals.length
     ? Math.round(focusVals.reduce((a, b) => a + b, 0) / focusVals.length)
@@ -219,21 +222,19 @@ export function Dashboard() {
               value={fmtClock(totalRecordedS)}
               delta={pctDelta(totalRecordedS, totalYesterdayS)}
               sub={totalYesterdayS > 0 ? t("dashboard.vsYesterday") : t("dashboard.todayLabel")}
-              spark={{ data: seededSeries("recorded"), color: "var(--violet)" }}
+              spark={{ data: [totalYesterdayS, totalRecordedS], color: "var(--violet)" }}
             />
             <StatCard
               icon={IconUsers}
               label={t("dashboard.statActive")}
               value={`${activeCount} / ${rows.length}`}
               sub={t("dashboard.ofMembers", { count: rows.length, members: terms.many })}
-              spark={{ data: seededSeries("active"), color: "var(--data-sky)" }}
             />
             <StatCard
               icon={IconTarget}
               label={t("dashboard.statFocus")}
               value={avgFocus == null ? "—" : <>{avgFocus}<span className="bibo-stat__unit">%</span></>}
               sub={t("dashboard.todayLabel")}
-              spark={{ data: seededSeries("focus"), color: "var(--positive)" }}
             />
             <StatCard
               icon={IconCamera}
@@ -241,7 +242,7 @@ export function Dashboard() {
               value={screenshotCount}
               delta={countDelta(screenshotCount, screenshotsYday)}
               sub={t("dashboard.todayLabel")}
-              spark={{ data: seededSeries("shots"), color: "var(--data-mint)" }}
+              spark={{ data: [screenshotsYday, screenshotCount], color: "var(--data-mint)" }}
             />
           </div>
 
@@ -250,8 +251,8 @@ export function Dashboard() {
               <thead>
                 <tr>
                   <th>{t("dashboard.table.name")}</th>
-                  <th>{t("dashboard.table.login")}</th>
-                  <th>{t("dashboard.table.lastSeen")}</th>
+                  <th>{t("dashboard.table.currentNow")}</th>
+                  <th>{t("dashboard.table.onlineFor")}</th>
                   <th className="r">{t("dashboard.table.activeToday")}</th>
                   <th className="r">{t("dashboard.table.focus")}</th>
                   <th></th>
@@ -260,7 +261,7 @@ export function Dashboard() {
               <tbody>
                 {rows.map((e, i) => {
                   const isSelf = e.role === "owner" || e.id === user?.id;
-                  const status = memberStatus(e.last_seen);
+                  const status = rosterStatus(e);
                   const pal = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
                   const focus = e.focus_pct_today;
                   const col = focus == null ? "var(--text-muted)" : focusColor(focus);
@@ -277,15 +278,29 @@ export function Dashboard() {
                           <span className="ad-name__txt">
                             {e.display_name}
                             {isSelf && <span className="ad-self">{t("dashboard.selfBadge")}</span>}
+                            <small>{e.email || e.username}</small>
                           </span>
                         </div>
                       </td>
-                      <td className="ad-login">{e.email || e.username}</td>
-                      <td className="ad-relt">{fmtRelative(e.last_seen)}</td>
+                      <td className="ad-current">
+                        <span className={`ad-current__state ad-current__state--${status}`}>
+                          <i aria-hidden />
+                          {t(`dashboard.states.${status}`)}
+                        </span>
+                        <strong title={e.current_window_title ?? undefined}>
+                          {e.current_app || t("dashboard.noCurrentApp")}
+                        </strong>
+                        {e.current_window_title && <small title={e.current_window_title}>{e.current_window_title}</small>}
+                      </td>
+                      <td className="ad-relt">
+                        {e.session_started_at && status !== "offline"
+                          ? <bdi dir="ltr">{fmtClock(now - e.session_started_at)}</bdi>
+                          : fmtRelative(e.last_seen)}
+                      </td>
                       <td className="r ad-dur">{fmtClock(e.active_today_s)}</td>
                       <td className="r">
                         <span className="ad-rowprod">
-                          <Sparkline data={seededSeries(e.id)} color={col} width={56} height={20} />
+                          <Sparkline data={[e.active_yesterday_s, e.active_today_s]} color={col} width={56} height={20} />
                           <span className="ad-rowprod__pct">{focus == null ? "—" : `${focus}%`}</span>
                         </span>
                       </td>

@@ -211,6 +211,7 @@ export function reportPresence(employeeId: string) {
         window_title: "BiBoTracking — Dashboard",
         since: now - 12 * 60,
         seen_at: now,
+        session_started_at: now - 2 * 60 * 60,
         resources: {
           cpu_pct: 34.6,
           memory_used_bytes: 9_230_000_000,
@@ -311,4 +312,14 @@ export function setDeviceMonitoring(deviceId: string, enabled: boolean) {
     method: "POST",
     body: { enabled },
   });
+}
+
+export function requestLiveCapture(deviceId: string) {
+  if (isDemo()) {
+    return Promise.resolve({ device_id: deviceId, requested_at: Math.floor(Date.now() / 1000) });
+  }
+  return request<{ device_id: string; requested_at: number }>(
+    `/v1/devices/${deviceId}/live-capture`,
+    { method: "POST" },
+  );
 }

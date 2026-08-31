@@ -28,6 +28,13 @@ type Device struct {
 	UserLogin       string `json:"user_login"`
 }
 
+// LiveCaptureRequest is a one-shot request for the managed agent to take and
+// immediately upload a policy-compliant screenshot.
+type LiveCaptureRequest struct {
+	DeviceID    string    `json:"device_id"`
+	RequestedAt time.Time `json:"requested_at"`
+}
+
 const deviceCols = `d.id, d.business_id, d.user_id, d.label, d.os, d.agent_version,
 	d.monitoring_enabled, d.last_seen_at, d.disabled_at, d.deleted_at,
 	COALESCE(u.display_name, ''), COALESCE(u.email, u.username, '')`
@@ -194,4 +201,49 @@ func (s *Store) DeviceMonitoringAllowed(ctx context.Context, userID, businessID,
 		return true, nil
 	}
 	return allowed, err
+}
+
+// RequestLiveCapture queues one frame for an online, monitored device owned by
+// ownerID. Repeated web polling inside ten seconds coalesces into one request.
+func (s *Store) RequestLiveCapture(ctx context.Context, ownerID, deviceID string) (LiveCaptureRequest, error) {
+	var request LiveCaptureRequest
+	err := s.pool.QueryRow(ctx, `
+		UPDATE devices d
+		   SET live_capture_requested_at = CASE
+		     WHEN d.live_capture_requested_at IS NULL
+		       OR d.live_capture_requested_at < now() - interval '10 seconds'
+		       THEN now() ELSE d.live_capture_requested_at END
+		  FROM businesses b
+		 WHERE d.id = $1
+		   AND d.business_id = b.id
+		   AND b.owner_user_id = $2
+		   AND d.deleted_at IS NULL
+		   AND d.monitoring_enabled
+		   AND d.presence_seen_at > now() - interval '90 seconds'
+		RETURNING d.id, d.live_capture_requested_at`, deviceID, ownerID,
+	).Scan(&request.DeviceID, &request.RequestedAt)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return LiveCaptureRequest{}, ErrNotFound
+	}
+	return request, err
+}
+
+// ConsumeLiveCaptureRequest atomically acknowledges at most one fresh request.
+// It is called after the same heartbeat authenticated this user/device pair.
+func (s *Store) ConsumeLiveCaptureRequest(ctx context.Context, userID, businessID, deviceID string) (bool, error) {
+	var served time.Time
+	err := s.pool.QueryRow(ctx, `
+		UPDATE devices
+		   SET live_capture_served_at = now()
+		 WHERE id = $1 AND user_id = $2 AND business_id = $3
+		   AND deleted_at IS NULL AND monitoring_enabled
+		   AND live_capture_requested_at > now() - interval '2 minutes'
+		   AND (live_capture_served_at IS NULL
+		        OR live_capture_served_at < live_capture_requested_at)
+		RETURNING live_capture_served_at`, deviceID, userID, businessID,
+	).Scan(&served)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return false, nil
+	}
+	return err == nil, err
 }

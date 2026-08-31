@@ -11,10 +11,14 @@
     "table": {
       "login": "Identifiant",
       "lastSeen": "Vu pour la dernière fois",
+      "currentNow": "Activité actuelle",
+      "onlineFor": "Connecté depuis",
       "activeToday": "Actif aujourd'hui",
       "focus": "Concentration",
       "name": "Nom"
     },
+    "states": { "active": "Actif", "idle": "Inactif", "offline": "Hors ligne" },
+    "noCurrentApp": "Aucune application actuelle",
     "statRecorded": "Enregistré aujourd'hui",
     "statActive": "Actifs aujourd'hui",
     "statFocus": "Concentration moy.",
@@ -82,6 +86,16 @@
         "cpu": "CPU", "memory": "Mémoire", "disk": "Disque", "network": "Réseau",
         "download": "Réception", "upload": "Envoi", "current": "utilisation actuelle",
         "of": "{{used}} sur {{total}}"
+      },
+      "onlineFor": "Durée de connexion",
+      "liveView": {
+        "title": "Aperçu d’écran en direct", "description": "Demande une image récente conforme à la politique environ toutes les 20 secondes.",
+        "ready": "Prêt", "live": "Aperçu en direct", "start": "Démarrer l’aperçu", "stop": "Arrêter l’aperçu",
+        "waiting": "En attente de l’appareil Windows…", "startHint": "Démarrez l’aperçu pour demander une image actuelle.",
+        "offline": "L’appareil doit être en ligne.", "refreshing": "Actualisation…", "lastFrame": "Dernière image {{time}}",
+        "noFrame": "Aucune image en direct", "readOnly": "Lecture seule · la politique et les exclusions de confidentialité restent actives",
+        "frameAlt": "Dernière image d’écran en direct", "requestError": "L’appareil est hors ligne ou n’a pas accepté la demande.",
+        "imageError": "Impossible de charger la dernière image."
       }
     },
     "summary": {

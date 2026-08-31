@@ -112,6 +112,13 @@ export interface ReportEmployee {
   display_name: string;
   role?: "owner" | "employee";
   last_seen: number | null;
+  device_id: string | null;
+  presence_state: PresenceState;
+  current_app: string | null;
+  current_window_title: string | null;
+  presence_since: number | null;
+  presence_seen_at: number | null;
+  session_started_at: number | null;
   active_today_s: number;
   active_yesterday_s: number;
   screenshots_today: number;
@@ -157,6 +164,7 @@ export interface EmployeePresence {
   window_title: string | null;
   since: number | null;
   seen_at: number | null;
+  session_started_at: number | null;
   resources: DeviceResourceSnapshot | null;
 }
 
@@ -177,7 +185,11 @@ export interface BrowserVisit {
 
 export interface ScreenshotMeta {
   client_uuid: string;
+  /** Device that produced the frame; absent only on older/demo payloads. */
+  device_id?: string;
   ts: number;
+  /** Server receipt time, used to distinguish a requested live frame. */
+  received_at?: number;
   byte_size: number;
   width: number;
   height: number;

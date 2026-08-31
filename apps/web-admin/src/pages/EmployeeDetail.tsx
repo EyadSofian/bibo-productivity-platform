@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -8,7 +8,9 @@ import {
   reportKeystrokes,
   reportPresence,
   reportScreenshots,
+  requestLiveCapture,
 } from "../api/endpoints";
+import { fetchImageObjectUrl } from "../api/client";
 import type {
   ActivityResponse,
   BrowserVisit,
@@ -72,6 +74,7 @@ function memberStatus(lastSeen: number | null): Status {
 
 function LivePresence({ presence }: { presence: EmployeePresence | null }) {
   const { t, i18n } = useTranslation("dashboard");
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
   const state = presence?.state ?? "offline";
   const seen = presence?.seen_at
     ? new Date(presence.seen_at * 1000).toLocaleTimeString(i18n.language, {
@@ -80,12 +83,14 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
         second: "2-digit",
       })
     : null;
-  const since = presence?.since
-    ? new Date(presence.since * 1000).toLocaleTimeString(i18n.language, {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+  const onlineFor = presence?.session_started_at && state !== "offline"
+    ? fmtDuration(Math.max(0, now - presence.session_started_at))
     : null;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <section className={`ad-live-presence ad-live-presence--${state}`} aria-live="polite">
@@ -105,14 +110,171 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
           <small title={presence.window_title}>{presence.window_title}</small>
         ) : null}
       </div>
-      {since ? (
+      {onlineFor ? (
         <div className="ad-live-presence__since">
-          <span>{t("detail.presence.since")}</span>
+          <span>{t("detail.presence.onlineFor")}</span>
           <strong>
-            <bdi dir="ltr">{since}</bdi>
+            <bdi dir="ltr">{onlineFor}</bdi>
           </strong>
         </div>
       ) : null}
+    </section>
+  );
+}
+
+function LiveScreen({
+  employeeId,
+  presence,
+}: {
+  employeeId: string;
+  presence: EmployeePresence | null;
+}) {
+  const { t, i18n } = useTranslation("dashboard");
+  const [enabled, setEnabled] = useState(false);
+  const [frame, setFrame] = useState<ScreenshotMeta | null>(null);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const imageRef = useRef<string | null>(null);
+  const deviceId = presence?.device_id ?? null;
+  const online = Boolean(deviceId && presence && presence.state !== "offline");
+
+  useEffect(() => {
+    let alive = true;
+    setImageUrl(null);
+    if (!frame) return () => {};
+
+    fetchImageObjectUrl(frame.client_uuid)
+      .then((url) => {
+        if (imageRef.current) URL.revokeObjectURL(imageRef.current);
+        imageRef.current = url;
+        if (alive) setImageUrl(url);
+        else URL.revokeObjectURL(url);
+      })
+      .catch(() => {
+        if (alive) setError(t("detail.presence.liveView.imageError"));
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [frame, t]);
+
+  useEffect(() => () => {
+    if (imageRef.current) URL.revokeObjectURL(imageRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (!enabled || !deviceId || !online) return;
+    let alive = true;
+    let requestedAt = 0;
+
+    const requestFrame = async () => {
+      try {
+        const result = await requestLiveCapture(deviceId);
+        if (!alive) return;
+        requestedAt = result.requested_at;
+        setWaiting(true);
+        setError(null);
+      } catch {
+        if (alive) {
+          setWaiting(false);
+          setError(t("detail.presence.liveView.requestError"));
+        }
+      }
+    };
+
+    const pollFrame = async () => {
+      // Do not label an older periodic screenshot as a live frame while the
+      // one-shot request is still in flight.
+      if (!requestedAt) return;
+      try {
+        const today = isoDate(new Date());
+        const range = dayRangeToUnix(today, today);
+        const result = await reportScreenshots(employeeId, range.from, range.to, 10);
+        if (!alive || result.screenshots.length === 0) return;
+        const fresh = result.screenshots.filter((shot) =>
+          (!shot.device_id || shot.device_id === deviceId)
+          && (shot.received_at ?? shot.ts) >= requestedAt - 5,
+        );
+        if (fresh.length === 0) return;
+        const latest = fresh.reduce((a, b) =>
+          (a.received_at ?? a.ts) >= (b.received_at ?? b.ts) ? a : b,
+        );
+        setFrame((current) => current?.client_uuid === latest.client_uuid ? current : latest);
+        setWaiting(false);
+        setError(null);
+      } catch {
+        if (alive) setError(t("detail.presence.liveView.imageError"));
+      }
+    };
+
+    void requestFrame();
+    void pollFrame();
+    const requestTimer = window.setInterval(requestFrame, 20_000);
+    const pollTimer = window.setInterval(pollFrame, 3_000);
+    return () => {
+      alive = false;
+      window.clearInterval(requestTimer);
+      window.clearInterval(pollTimer);
+    };
+  }, [deviceId, employeeId, enabled, online, t]);
+
+  useEffect(() => {
+    if (!online) {
+      setEnabled(false);
+      setWaiting(false);
+    }
+  }, [online]);
+
+  const frameTime = frame
+    ? new Date(frame.ts * 1000).toLocaleTimeString(i18n.language, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : null;
+
+  return (
+    <section className={`ad-live-screen${enabled ? " ad-live-screen--on" : ""}`}>
+      <div className="ad-live-screen__head">
+        <div>
+          <span className="ad-live-screen__eyebrow">
+            <i aria-hidden />
+            {enabled ? t("detail.presence.liveView.live") : t("detail.presence.liveView.ready")}
+          </span>
+          <h2>{t("detail.presence.liveView.title")}</h2>
+          <p>{t("detail.presence.liveView.description")}</p>
+        </div>
+        <button
+          type="button"
+          className={`bibo-btn ${enabled ? "bibo-btn--ghost" : "bibo-btn--primary"}`}
+          disabled={!online}
+          onClick={() => {
+            setError(null);
+            setEnabled((value) => !value);
+          }}
+        >
+          {enabled ? t("detail.presence.liveView.stop") : t("detail.presence.liveView.start")}
+        </button>
+      </div>
+
+      <div className="ad-live-screen__stage">
+        {imageUrl ? (
+          <img src={imageUrl} alt={t("detail.presence.liveView.frameAlt")} />
+        ) : (
+          <div className="ad-live-screen__empty">
+            {waiting ? <Spinner label={t("detail.presence.liveView.waiting")} /> : <span>{online ? t("detail.presence.liveView.startHint") : t("detail.presence.liveView.offline")}</span>}
+          </div>
+        )}
+        {enabled && imageUrl ? <span className="ad-live-screen__badge">{waiting ? t("detail.presence.liveView.refreshing") : t("detail.presence.liveView.live")}</span> : null}
+      </div>
+
+      <div className="ad-live-screen__foot">
+        <span>{frameTime ? t("detail.presence.liveView.lastFrame", { time: frameTime }) : t("detail.presence.liveView.noFrame")}</span>
+        <span>{t("detail.presence.liveView.readOnly")}</span>
+      </div>
+      {error ? <Notice kind="danger">{error}</Notice> : null}
     </section>
   );
 }
@@ -318,7 +480,7 @@ export function EmployeeDetail() {
   }, [load]);
 
   // Presence is independent of historical reports. The desktop posts every
-  // 30 seconds; this small poll refreshes only one lightweight JSON object.
+  // 15 seconds; this small poll refreshes only one lightweight JSON object.
   useEffect(() => {
     if (!id) return;
     let live = true;
@@ -351,7 +513,9 @@ export function EmployeeDetail() {
 
   const name = employee?.display_name ?? terms.one;
   const isSelf = employee?.role === "owner" || (!!employee && employee.id === user?.id);
-  const status = memberStatus(employee?.last_seen ?? null);
+  const status: Status = presence?.state === "active" || presence?.state === "idle"
+    ? presence.state
+    : memberStatus(employee?.last_seen ?? null);
 
   const dateInput = (value: string, onChange: (v: string) => void, min?: string, max?: string) => (
     <input type="date" value={value} min={min} max={max} onChange={(e) => onChange(e.target.value)} />
@@ -432,6 +596,7 @@ export function EmployeeDetail() {
 
       <LivePresence presence={presence} />
       <LiveResources resources={presence?.resources} />
+      <LiveScreen employeeId={id} presence={presence} />
 
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}
@@ -443,7 +608,6 @@ export function EmployeeDetail() {
           icon={IconClock}
           label={mode === "day" ? t("detail.summary.activeTime") : t("detail.summary.activeTimeRange")}
           value={fmtDuration(activeS)}
-          delta="12%" /* PLACEHOLDER — no period-over-period data yet (matches Dashboard) */
           sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
         />
         <StatCard
@@ -457,15 +621,13 @@ export function EmployeeDetail() {
           icon={IconKeyboard}
           label={t("detail.summary.keypresses")}
           value={keypresses.toLocaleString()}
-          delta="8%" /* PLACEHOLDER pending backend trend data */
-          sub={t("dashboard.vsYesterday")}
+          sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
         />
         <StatCard
           icon={IconCamera}
           label={t("detail.summary.screenshots")}
           value={(shots?.length ?? 0).toLocaleString()}
-          delta="+4" /* PLACEHOLDER pending backend trend data */
-          sub={t("dashboard.todayLabel")}
+          sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
         />
       </div>
 

@@ -11,10 +11,14 @@
     "table": {
       "login": "Đăng nhập",
       "lastSeen": "Lần cuối",
+      "currentNow": "Đang làm việc",
+      "onlineFor": "Thời gian trực tuyến",
       "activeToday": "Hoạt động hôm nay",
       "focus": "Tập trung",
       "name": "Tên"
     },
+    "states": { "active": "Hoạt động", "idle": "Rảnh", "offline": "Ngoại tuyến" },
+    "noCurrentApp": "Không có ứng dụng hiện tại",
     "statRecorded": "Đã ghi hôm nay",
     "statActive": "Hoạt động hôm nay",
     "statFocus": "Tập trung TB",
@@ -82,6 +86,16 @@
         "cpu": "CPU", "memory": "Bộ nhớ", "disk": "Ổ đĩa", "network": "Mạng",
         "download": "Tải xuống", "upload": "Tải lên", "current": "mức sử dụng hiện tại",
         "of": "{{used}} trên {{total}}"
+      },
+      "onlineFor": "Thời gian trực tuyến",
+      "liveView": {
+        "title": "Xem trước màn hình trực tiếp", "description": "Yêu cầu khung hình mới tuân thủ chính sách khoảng mỗi 20 giây.",
+        "ready": "Sẵn sàng", "live": "Xem trực tiếp", "start": "Bắt đầu xem", "stop": "Dừng xem",
+        "waiting": "Đang chờ thiết bị Windows…", "startHint": "Bắt đầu để yêu cầu khung hình hiện tại.",
+        "offline": "Thiết bị phải trực tuyến.", "refreshing": "Đang làm mới…", "lastFrame": "Khung hình cuối {{time}}",
+        "noFrame": "Chưa có khung hình", "readOnly": "Chỉ xem · chính sách và loại trừ riêng tư vẫn được áp dụng",
+        "frameAlt": "Khung hình trực tiếp mới nhất", "requestError": "Thiết bị ngoại tuyến hoặc không nhận yêu cầu.",
+        "imageError": "Không thể tải khung hình mới nhất."
       }
     },
     "summary": {

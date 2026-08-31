@@ -210,6 +210,19 @@ pub struct PresenceSignal {
     pub resources: Option<ResourceSnapshot>,
 }
 
+#[derive(Deserialize)]
+struct PresenceResp {
+    #[serde(default = "default_true")]
+    monitoring_enabled: bool,
+    #[serde(default)]
+    capture_requested: bool,
+}
+
+pub struct PresenceResult {
+    pub monitoring_enabled: bool,
+    pub capture_requested: bool,
+}
+
 #[derive(Serialize)]
 struct PresenceReq<'a> {
     device_id: &'a str,
@@ -458,7 +471,7 @@ impl BackendClient {
         device_id: &str,
         business_id: Option<&str>,
         signal: &PresenceSignal,
-    ) -> Result<(), String> {
+    ) -> Result<PresenceResult, String> {
         let body = PresenceReq {
             device_id,
             business_id,
@@ -485,7 +498,11 @@ impl BackendClient {
             if !resp.status().is_success() {
                 return Err(status_err(resp).await);
             }
-            return Ok(());
+            let parsed: PresenceResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(PresenceResult {
+                monitoring_enabled: parsed.monitoring_enabled,
+                capture_requested: parsed.capture_requested,
+            });
         }
         Err("presence_heartbeat: unreachable retry exhaustion".into())
     }

@@ -3,6 +3,7 @@ package store
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -46,12 +47,31 @@ func TestPresenceLifecycle(t *testing.T) {
 	if presence.State != "active" || presence.App == nil || *presence.App != app {
 		t.Fatalf("presence = %#v", presence)
 	}
-	if presence.Since == nil || *presence.Since != 1234 || presence.SeenAt == nil {
+	if presence.Since == nil || *presence.Since != 1234 || presence.SeenAt == nil || presence.SessionStartedAt == nil {
 		t.Fatalf("timestamps = %#v", presence)
 	}
+	firstSessionStart := *presence.SessionStartedAt
 	if presence.Resources == nil || presence.Resources.CPUPct != 23.5 ||
 		presence.Resources.NetworkRxBPS != 5_000 || presence.Resources.SeenAt == nil {
 		t.Fatalf("resources = %#v", presence.Resources)
+	}
+
+	dayStart := time.Now().UTC().Truncate(24 * time.Hour).Unix()
+	roster, err := s.Roster(ctx, business.ID, dayStart, dayStart+86400)
+	if err != nil {
+		t.Fatalf("roster with live presence: %v", err)
+	}
+	var live *RosterEntry
+	for index := range roster {
+		if roster[index].ID == employee.ID {
+			live = &roster[index]
+			break
+		}
+	}
+	if live == nil || live.DeviceID == nil || *live.DeviceID != deviceID ||
+		live.PresenceState != "active" || live.CurrentApp == nil || *live.CurrentApp != app ||
+		live.SessionStartedAt == nil {
+		t.Fatalf("roster live row = %#v", live)
 	}
 
 	// Repeating the same signal refreshes seen_at without resetting "since".
@@ -64,8 +84,27 @@ func TestPresenceLifecycle(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read refreshed presence: %v", err)
 	}
-	if presence.Since == nil || *presence.Since != 1234 {
+	if presence.Since == nil || *presence.Since != 1234 || presence.SessionStartedAt == nil ||
+		*presence.SessionStartedAt != firstSessionStart {
 		t.Fatalf("same signal reset since: %#v", presence.Since)
+	}
+
+	request, err := s.RequestLiveCapture(ctx, owner.ID, deviceID)
+	if err != nil || request.DeviceID != deviceID {
+		t.Fatalf("request live capture = %#v, %v", request, err)
+	}
+	requested, err := s.ConsumeLiveCaptureRequest(ctx, employee.ID, business.ID, deviceID)
+	if err != nil || !requested {
+		t.Fatalf("consume first live capture = %v, %v", requested, err)
+	}
+	requested, err = s.ConsumeLiveCaptureRequest(ctx, employee.ID, business.ID, deviceID)
+	if err != nil || requested {
+		t.Fatalf("consume live capture twice = %v, %v", requested, err)
+	}
+
+	intruder := mustUser(t, ctx, s, "capture-intruder@example.com", "")
+	if _, err := s.RequestLiveCapture(ctx, intruder.ID, deviceID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-tenant capture request err = %v, want not found", err)
 	}
 }
 

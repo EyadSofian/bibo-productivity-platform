@@ -11,10 +11,14 @@
     "table": {
       "login": "ログイン",
       "lastSeen": "最終アクティブ",
+      "currentNow": "現在の操作",
+      "onlineFor": "接続時間",
       "activeToday": "本日のアクティブ時間",
       "focus": "集中度",
       "name": "名前"
     },
+    "states": { "active": "アクティブ", "idle": "アイドル", "offline": "オフライン" },
+    "noCurrentApp": "現在のアプリなし",
     "statRecorded": "本日の記録",
     "statActive": "本日のアクティブ",
     "statFocus": "平均集中度",
@@ -82,6 +86,16 @@
         "cpu": "CPU", "memory": "メモリ", "disk": "ディスク", "network": "ネットワーク",
         "download": "受信", "upload": "送信", "current": "現在の使用率",
         "of": "{{total}} 中 {{used}}"
+      },
+      "onlineFor": "接続時間",
+      "liveView": {
+        "title": "ライブ画面プレビュー", "description": "ポリシーに準拠した最新フレームを約20秒ごとに要求します。",
+        "ready": "準備完了", "live": "ライブプレビュー", "start": "プレビュー開始", "stop": "プレビュー停止",
+        "waiting": "Windows端末を待機中…", "startHint": "現在のフレームを要求するには開始してください。",
+        "offline": "端末がオンラインである必要があります。", "refreshing": "更新中…", "lastFrame": "最終フレーム {{time}}",
+        "noFrame": "ライブフレームはまだありません", "readOnly": "表示のみ · ポリシーとプライバシー除外は引き続き適用されます",
+        "frameAlt": "最新のライブ画面フレーム", "requestError": "端末がオフラインか要求を受け付けませんでした。",
+        "imageError": "最新フレームを読み込めませんでした。"
       }
     },
     "summary": {

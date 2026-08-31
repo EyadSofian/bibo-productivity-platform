@@ -1,6 +1,6 @@
 [package]
 name = "ctracking"
-version = "1.5.4"
+version = "1.5.5"
 description = "Transparent employee time and activity tracker"
 authors = ["BiBoTracking"]
 edition = "2021"
@@ -35,7 +35,7 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "mul
 # Cross-platform OS CSPRNG for the browser-ingest token (replaces /dev/urandom).
 getrandom = "0.2"
 # Error reporting (Rust core). rustls to match reqwest; no native-tls/openssl.
-sentry = { version = "0.34", default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
+sentry = { version = "0.49.2", default-features = false, features = ["backtrace", "contexts", "panic", "reqwest", "rustls"] }
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-autostart = "2.5.1"

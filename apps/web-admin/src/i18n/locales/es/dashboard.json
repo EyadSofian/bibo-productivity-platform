@@ -11,10 +11,14 @@
     "table": {
       "login": "Acceso",
       "lastSeen": "Última vez",
+      "currentNow": "Trabajando ahora",
+      "onlineFor": "Tiempo conectado",
       "activeToday": "Activo hoy",
       "focus": "Enfoque",
       "name": "Nombre"
     },
+    "states": { "active": "Activo", "idle": "Inactivo", "offline": "Desconectado" },
+    "noCurrentApp": "Sin aplicación actual",
     "statRecorded": "Registrado hoy",
     "statActive": "Activos hoy",
     "statFocus": "Enfoque medio",
@@ -82,6 +86,16 @@
         "cpu": "CPU", "memory": "Memoria", "disk": "Disco", "network": "Red",
         "download": "Descarga", "upload": "Subida", "current": "uso actual",
         "of": "{{used}} de {{total}}"
+      },
+      "onlineFor": "Tiempo conectado",
+      "liveView": {
+        "title": "Vista previa en vivo", "description": "Solicita una captura actual conforme a la política cada 20 segundos.",
+        "ready": "Listo", "live": "Vista en vivo", "start": "Iniciar vista", "stop": "Detener vista",
+        "waiting": "Esperando al dispositivo Windows…", "startHint": "Inicia la vista para solicitar una captura actual.",
+        "offline": "El dispositivo debe estar conectado.", "refreshing": "Actualizando…", "lastFrame": "Última captura {{time}}",
+        "noFrame": "Aún no hay captura", "readOnly": "Solo lectura · se aplican la política y las exclusiones de privacidad",
+        "frameAlt": "Última captura de pantalla en vivo", "requestError": "El dispositivo está desconectado o no aceptó la solicitud.",
+        "imageError": "No se pudo cargar la última captura."
       }
     },
     "summary": {

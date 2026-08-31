@@ -203,3 +203,28 @@ func TestSyncBatchKeepsDeviceLabelWhenOmitted(t *testing.T) {
 		t.Fatalf("label = %v, want it preserved as %q", got, label)
 	}
 }
+
+func TestScreenshotReportIdentifiesFreshDeviceFrame(t *testing.T) {
+	f := newSyncFixture(t)
+	clientID := uuid.NewString()
+	width, height, display := 1920, 1080, 0
+	if err := f.store.UpsertScreenshot(f.ctx, f.userID, f.bizID, ScreenshotRow{
+		ClientUUID: clientID, DeviceID: f.deviceID, Ts: 1_700_000_000,
+		FilePath: "/tmp/live.webp", ByteSize: 1234,
+		Width: &width, Height: &height, DisplayID: &display,
+		ClientUpdatedAt: 1_700_000_000,
+	}); err != nil {
+		t.Fatalf("insert screenshot: %v", err)
+	}
+
+	shots, err := f.store.ScreenshotsReport(
+		f.ctx, f.userID, f.userID, 1_699_999_999, 1_700_000_001, 10, 0,
+	)
+	if err != nil {
+		t.Fatalf("screenshot report: %v", err)
+	}
+	if len(shots) != 1 || shots[0].ClientUUID != clientID ||
+		shots[0].DeviceID != f.deviceID || shots[0].ReceivedAt <= 0 {
+		t.Fatalf("screenshot report metadata = %#v", shots)
+	}
+}

@@ -12,6 +12,7 @@ import {
 import { ApiError, type Department, type Device, type Employee, type MonitoringProfile, type MonitoringProfileInput, type MonitoringScopeType } from "../api/types";
 import { Empty, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
+import { localTimeZone, normalizeTimeZone } from "../timeZone";
 
 const CATEGORIES = ["applications", "websites", "screen", "keystrokes"] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -33,18 +34,30 @@ type Draft = {
   rules: Record<Category, RuleDraft>;
 };
 
-const intlWithSupportedValues = Intl as typeof Intl & {
-  supportedValuesOf?: (key: "timeZone") => string[];
-};
-const TIMEZONES = Array.from(new Set([
+// Keep the policy editor quick and usable: rendering every IANA zone four
+// times creates well over a thousand <option>s. Existing/custom zones are
+// prepended by the select below, so no saved value is ever lost.
+const TIMEZONES = [
   "UTC",
-  ...(intlWithSupportedValues.supportedValuesOf?.("timeZone") ?? [
-    "Africa/Cairo",
-    "Asia/Riyadh",
-    "Europe/London",
-    "America/New_York",
-  ]),
-]));
+  "Africa/Cairo",
+  "Africa/Casablanca",
+  "Africa/Johannesburg",
+  "Asia/Riyadh",
+  "Asia/Dubai",
+  "Asia/Amman",
+  "Asia/Beirut",
+  "Asia/Jerusalem",
+  "Asia/Karachi",
+  "Asia/Kolkata",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Europe/London",
+  "Europe/Paris",
+  "Europe/Berlin",
+  "America/New_York",
+  "America/Chicago",
+  "America/Los_Angeles",
+];
 const WEEK = [1, 2, 3, 4, 5, 6, 7];
 
 const defaultRule = (): RuleDraft => ({
@@ -53,7 +66,7 @@ const defaultRule = (): RuleDraft => ({
   days: [1, 2, 3, 4, 5],
   start: "09:00",
   end: "17:00",
-  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+  timezone: localTimeZone(),
 });
 
 function blankDraft(businessId: string): Draft {
@@ -115,7 +128,7 @@ function inputFromDraft(draft: Draft, businessId: string): MonitoringProfileInpu
       days_of_week: draft.rules[key].days,
       start_minute: timeToMinute(draft.rules[key].start),
       end_minute: timeToMinute(draft.rules[key].end) || 1440,
-      timezone: draft.rules[key].timezone,
+      timezone: normalizeTimeZone(draft.rules[key].timezone),
     })),
     assignments: scopeType && scopeId ? [{ scope_type: scopeType as MonitoringScopeType, scope_id: scopeId }] : [],
   };
