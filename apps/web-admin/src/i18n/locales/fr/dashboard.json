@@ -90,11 +90,12 @@
       "onlineFor": "Durée de connexion",
       "liveView": {
         "title": "Aperçu d’écran en direct", "description": "Demande une image récente conforme à la politique environ toutes les 20 secondes.",
-        "ready": "Prêt", "live": "Aperçu en direct", "start": "Démarrer l’aperçu", "stop": "Arrêter l’aperçu",
+        "ready": "Prêt", "live": "Aperçu en direct", "start": "Démarrer l’aperçu", "stop": "Arrêter l’aperçu", "expand": "Agrandir l’aperçu",
         "waiting": "En attente de l’appareil Windows…", "startHint": "Démarrez l’aperçu pour demander une image actuelle.",
         "offline": "L’appareil doit être en ligne.", "refreshing": "Actualisation…", "lastFrame": "Dernière image {{time}}",
         "noFrame": "Aucune image en direct", "readOnly": "Lecture seule · la politique et les exclusions de confidentialité restent actives",
         "frameAlt": "Dernière image d’écran en direct", "requestError": "L’appareil est hors ligne ou n’a pas accepté la demande.",
+        "remoteStart": "Assistance à distance", "remotePending": "Connexion à l’ordinateur de l’employé…", "remoteActive": "Contrôle à distance actif", "remoteStop": "Terminer l’assistance", "remoteKeyboard": "Activer le clavier", "remoteKeyboardOn": "Clavier activé", "remoteConsent": "L’employé peut autoriser une fois l’assistance sans surveillance sous Windows ; sinon il approuve cette demande. La session expire après 15 minutes et reste toujours signalée.", "remoteWaitingFrame": "Connecté — attente de la première image…", "remoteApproved": "L’ordinateur de l’employé a autorisé cette session temporaire", "remoteEnded": "La session à distance est terminée ou a été refusée.", "remoteError": "L’assistance à distance est indisponible ou interrompue.", "remoteClickHint": "Cliquez sur l’image pour contrôler le pointeur ; activez le clavier avant de saisir",
         "imageError": "Impossible de charger la dernière image."
       }
     },

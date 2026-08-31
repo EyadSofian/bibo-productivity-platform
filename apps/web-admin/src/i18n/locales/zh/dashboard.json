@@ -90,11 +90,12 @@
       "onlineFor": "在线时长",
       "liveView": {
         "title": "实时屏幕预览", "description": "约每20秒请求一帧符合策略的最新画面。",
-        "ready": "就绪", "live": "实时预览", "start": "开始预览", "stop": "停止预览",
+        "ready": "就绪", "live": "实时预览", "start": "开始预览", "stop": "停止预览", "expand": "放大预览",
         "waiting": "正在等待 Windows 设备…", "startHint": "开始预览以请求当前画面。",
         "offline": "设备必须在线。", "refreshing": "正在刷新…", "lastFrame": "最新画面 {{time}}",
         "noFrame": "暂无实时画面", "readOnly": "仅查看 · 策略和隐私排除仍然适用",
         "frameAlt": "最新实时屏幕画面", "requestError": "设备离线或未接受请求。",
+        "remoteStart": "远程协助", "remotePending": "正在连接员工电脑…", "remoteActive": "远程控制进行中", "remoteStop": "结束协助", "remoteKeyboard": "启用键盘", "remoteKeyboardOn": "键盘已启用", "remoteConsent": "员工可在 Windows 电脑上一次性允许无人值守协助；否则需批准本次请求。会话将在15分钟后结束，并始终显示提示。", "remoteWaitingFrame": "已连接——正在等待首个画面…", "remoteApproved": "员工电脑已授权此临时协助会话", "remoteEnded": "远程会话已结束或被拒绝。", "remoteError": "远程协助不可用或会话已中断。", "remoteClickHint": "点击画面控制指针；输入前请先启用键盘",
         "imageError": "无法加载最新画面。"
       }
     },

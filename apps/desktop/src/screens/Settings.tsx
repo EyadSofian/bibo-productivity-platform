@@ -38,6 +38,7 @@ export type AppSettings = {
   domain_only: boolean;
   capture_browser_urls: boolean;
   hide_dock: boolean;
+  remote_assist_preapproved: boolean;
   capture_screenshots: boolean;
   screenshot_mode: string;
   screenshot_skip_apps: string[];
@@ -472,6 +473,20 @@ export function Settings({
           </div>
         )}
       </Section>
+
+      {IS_WINDOWS && (
+        <Section title={t("remoteAssistance")}>
+          <Row
+            title={t("unattendedRemoteAssist")}
+            desc={t("unattendedRemoteAssistDesc")}
+          >
+            <Switch
+              checked={settings.remote_assist_preapproved}
+              onChange={(v) => onChange({ remote_assist_preapproved: v })}
+            />
+          </Row>
+        </Section>
+      )}
 
       {captureLocked ? (
         // Org-managed and no override allowed: the capture settings are not

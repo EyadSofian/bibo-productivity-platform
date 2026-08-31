@@ -2,6 +2,7 @@
   "appName": "BiBoTracking",
   "language": "Language",
   "loading": "Loading…",
+  "remoteAssist": { "title": "Remote assistance active", "subtitle": "{{owner}} can see and control this screen", "stop": "Stop access", "stopping": "Stopping…" },
   "nav": {
     "Dashboard": "Dashboard",
     "Activity": "Activity",

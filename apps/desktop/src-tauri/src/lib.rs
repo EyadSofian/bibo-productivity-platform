@@ -108,6 +108,8 @@ pub fn run() {
             commands::apply_org_policy,
             commands::capture_policy,
             commands::privacy_apps,
+            commands::remote_assist_status,
+            commands::stop_remote_assist,
         ])
         .setup(|app| {
             use tauri_plugin_autostart::ManagerExt;
@@ -223,14 +225,19 @@ pub fn run() {
             // background. No-op while logged out / offline.
             let status = Arc::new(sync::worker::SyncStatus::default());
             app.manage(status.clone());
+            let remote_assist = Arc::new(sync::remote_assist::RemoteAssistState::default());
+            app.manage(remote_assist.clone());
             let sync_context = sync::worker::SyncContext {
                 db: db.clone(),
                 auth,
                 status,
                 settings: settings_state,
                 control,
+                app: app.handle().clone(),
+                remote_assist,
             };
             sync::presence::start(sync_context.clone());
+            sync::remote_assist::start(sync_context.clone());
             sync::worker::start(sync_context);
 
             // Manage remaining state so commands can reach the DB.

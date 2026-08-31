@@ -21,6 +21,24 @@ pub fn ping() -> String {
     "ctracking: ok".to_string()
 }
 
+#[tauri::command]
+pub fn remote_assist_status(
+    state: State<Arc<crate::sync::remote_assist::RemoteAssistState>>,
+) -> Option<crate::sync::remote_assist::RemoteAssistStatus> {
+    state.status()
+}
+
+#[tauri::command]
+pub fn stop_remote_assist(
+    state: State<Arc<crate::sync::remote_assist::RemoteAssistState>>,
+) -> Result<(), String> {
+    if state.request_stop() {
+        Ok(())
+    } else {
+        Err("no active remote assistance session".to_string())
+    }
+}
+
 /// Pause or resume all tracking. Routed through the tray helper so the menu bar
 /// indicator and the dashboard pill stay in sync.
 #[tauri::command]

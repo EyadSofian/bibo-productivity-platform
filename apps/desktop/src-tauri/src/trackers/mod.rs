@@ -600,16 +600,34 @@ const SCREENSHOT_MAX_BYTES: usize = 50 * 1024;
 /// quality down first, then resolution, until a shot fits SCREENSHOT_MAX_BYTES.
 const SHOT_MAX_DIMS: [u32; 3] = [1366, 1152, 960];
 const SHOT_QUALITIES: [f32; 5] = [55.0, 45.0, 35.0, 25.0, 20.0];
+const REMOTE_FRAME_MAX_BYTES: usize = 180 * 1024;
+const REMOTE_FRAME_MAX_DIMS: [u32; 4] = [1600, 1366, 1152, 960];
+const REMOTE_FRAME_QUALITIES: [f32; 5] = [65.0, 55.0, 45.0, 35.0, 25.0];
+
+pub struct RemoteFrame {
+    pub bytes: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+}
 
 /// Downscale to a max long-edge and encode lossy WebP, returning the smallest
 /// result that fits SCREENSHOT_MAX_BYTES. If even the floor (smallest dims +
 /// lowest quality) exceeds the cap, the smallest encoding produced is returned.
 /// Returns the encoded bytes plus the final (width, height).
 fn compress_to_webp(img: &xcap::image::RgbaImage) -> (Vec<u8>, u32, u32) {
+    compress_webp_to_limit(img, &SHOT_MAX_DIMS, &SHOT_QUALITIES, SCREENSHOT_MAX_BYTES)
+}
+
+fn compress_webp_to_limit(
+    img: &xcap::image::RgbaImage,
+    max_dims: &[u32],
+    qualities: &[f32],
+    max_bytes: usize,
+) -> (Vec<u8>, u32, u32) {
     use xcap::image::imageops::{self, FilterType};
 
     let mut smallest: Option<(Vec<u8>, u32, u32)> = None;
-    for &max_dim in &SHOT_MAX_DIMS {
+    for &max_dim in max_dims {
         let (ow, oh) = (img.width(), img.height());
         let long_edge = ow.max(oh);
         let resized;
@@ -625,10 +643,10 @@ fn compress_to_webp(img: &xcap::image::RgbaImage) -> (Vec<u8>, u32, u32) {
             (ow, oh)
         };
 
-        for &q in &SHOT_QUALITIES {
+        for &q in qualities {
             let encoded = webp::Encoder::from_rgba(resized.as_raw(), w, h).encode(q);
             let bytes = encoded.to_vec();
-            if bytes.len() <= SCREENSHOT_MAX_BYTES {
+            if bytes.len() <= max_bytes {
                 return (bytes, w, h);
             }
             if smallest
@@ -641,6 +659,32 @@ fn compress_to_webp(img: &xcap::image::RgbaImage) -> (Vec<u8>, u32, u32) {
     }
     // Nothing fit the cap (extremely detailed screen) — keep the smallest.
     smallest.expect("at least one encoding attempt")
+}
+
+/// Capture the primary screen for an accepted remote-assistance session without
+/// writing it to the activity database. The configured sensitive-app skip list
+/// remains authoritative even during support.
+pub fn capture_remote_frame(control: &TrackerControl) -> Option<RemoteFrame> {
+    if let Some(active) = crate::platform::active_window() {
+        let skip = control.screenshot_skip_apps.read().unwrap();
+        if should_skip(&active.app_name, &skip) {
+            return None;
+        }
+    }
+
+    let monitor = xcap::Monitor::all().ok()?.into_iter().next()?;
+    let image = monitor.capture_image().ok()?;
+    let (bytes, width, height) = compress_webp_to_limit(
+        &image,
+        &REMOTE_FRAME_MAX_DIMS,
+        &REMOTE_FRAME_QUALITIES,
+        REMOTE_FRAME_MAX_BYTES,
+    );
+    Some(RemoteFrame {
+        bytes,
+        width,
+        height,
+    })
 }
 
 /// The active app is on the privacy skip-list. Forgiving match: case-insensitive,

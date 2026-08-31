@@ -29,6 +29,11 @@ pub struct Settings {
     /// Run as a menu-bar-only app (no Dock icon).
     #[serde(default)]
     pub hide_dock: bool,
+    /// Local, one-time opt-in for unattended remote assistance. This is deliberately
+    /// device-owned: an organization policy cannot turn it on remotely. Sessions
+    /// still show the always-on-top indicator, can be stopped locally, and expire.
+    #[serde(default)]
+    pub remote_assist_preapproved: bool,
     /// Capture periodic screenshots. User opt-out (Settings). Default on.
     #[serde(default = "default_true")]
     pub capture_screenshots: bool,
@@ -132,6 +137,7 @@ impl Default for Settings {
             domain_only: false,
             capture_browser_urls: true,
             hide_dock: false,
+            remote_assist_preapproved: false,
             capture_screenshots: true,
             screenshot_mode: default_screenshot_mode(),
             screenshot_skip_apps: default_skip_apps(),
@@ -242,6 +248,7 @@ mod tests {
         assert_eq!(s.idle_threshold_s, DEFAULT_IDLE_THRESHOLD_S);
         assert!(!s.domain_only);
         assert!(s.capture_browser_urls);
+        assert!(!s.remote_assist_preapproved);
     }
 
     #[test]
@@ -252,12 +259,14 @@ mod tests {
         let s = Settings {
             domain_only: true,
             screenshot_interval_s: 600,
+            remote_assist_preapproved: true,
             ..Settings::default()
         };
         save(&path, &s).unwrap();
         let loaded = load(&path);
         assert!(loaded.domain_only);
         assert_eq!(loaded.screenshot_interval_s, 600);
+        assert!(loaded.remote_assist_preapproved);
         std::fs::remove_dir_all(&dir).ok();
     }
 

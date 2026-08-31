@@ -90,11 +90,12 @@
       "onlineFor": "Thời gian trực tuyến",
       "liveView": {
         "title": "Xem trước màn hình trực tiếp", "description": "Yêu cầu khung hình mới tuân thủ chính sách khoảng mỗi 20 giây.",
-        "ready": "Sẵn sàng", "live": "Xem trực tiếp", "start": "Bắt đầu xem", "stop": "Dừng xem",
+        "ready": "Sẵn sàng", "live": "Xem trực tiếp", "start": "Bắt đầu xem", "stop": "Dừng xem", "expand": "Mở rộng bản xem trước",
         "waiting": "Đang chờ thiết bị Windows…", "startHint": "Bắt đầu để yêu cầu khung hình hiện tại.",
         "offline": "Thiết bị phải trực tuyến.", "refreshing": "Đang làm mới…", "lastFrame": "Khung hình cuối {{time}}",
         "noFrame": "Chưa có khung hình", "readOnly": "Chỉ xem · chính sách và loại trừ riêng tư vẫn được áp dụng",
         "frameAlt": "Khung hình trực tiếp mới nhất", "requestError": "Thiết bị ngoại tuyến hoặc không nhận yêu cầu.",
+        "remoteStart": "Hỗ trợ từ xa", "remotePending": "Đang kết nối với máy nhân viên…", "remoteActive": "Điều khiển từ xa đang hoạt động", "remoteStop": "Kết thúc hỗ trợ", "remoteKeyboard": "Bật bàn phím", "remoteKeyboardOn": "Bàn phím đã bật", "remoteConsent": "Nhân viên có thể cho phép hỗ trợ không giám sát một lần trên Windows; nếu không, họ duyệt yêu cầu này. Phiên hết hạn sau 15 phút và luôn có chỉ báo hiển thị.", "remoteWaitingFrame": "Đã kết nối — đang chờ khung hình đầu tiên…", "remoteApproved": "Máy nhân viên đã cho phép phiên hỗ trợ tạm thời", "remoteEnded": "Phiên từ xa đã kết thúc hoặc bị từ chối.", "remoteError": "Hỗ trợ từ xa không khả dụng hoặc đã gián đoạn.", "remoteClickHint": "Nhấp vào ảnh để điều khiển con trỏ; bật bàn phím trước khi nhập",
         "imageError": "Không thể tải khung hình mới nhất."
       }
     },

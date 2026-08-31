@@ -2,6 +2,7 @@
   "appName": "BiBoTracking",
   "language": "Bahasa",
   "loading": "Memuat…",
+  "remoteAssist": { "title": "Bantuan jarak jauh aktif", "subtitle": "{{owner}} dapat melihat dan mengontrol layar ini", "stop": "Hentikan akses", "stopping": "Menghentikan…" },
   "nav": {
     "Dashboard": "Dasbor",
     "Activity": "Aktivitas",

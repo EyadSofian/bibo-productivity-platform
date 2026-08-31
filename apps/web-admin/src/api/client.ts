@@ -166,3 +166,23 @@ export async function fetchImageObjectUrl(clientUuid: string): Promise<string> {
   const blob = await res.blob();
   return URL.createObjectURL(blob);
 }
+
+// The remote-assistance route returns 204 until the employee has accepted and
+// uploaded the first frame. Like screenshot images, the caller owns the object
+// URL and must revoke it after replacing it.
+export async function fetchRemoteAssistFrameObjectUrl(sessionId: string): Promise<string | null> {
+  const tok = tokenStore.getAccess();
+  const res = await fetch(buildUrl(`/v1/remote-assist/${sessionId}/frame`), {
+    headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+    cache: "no-store",
+  });
+  if (res.status === 401) {
+    const ok = await refreshOnce();
+    if (ok) return fetchRemoteAssistFrameObjectUrl(sessionId);
+    emitLogout();
+    throw new ApiError(401, "Session expired.", null);
+  }
+  if (res.status === 204) return null;
+  if (!res.ok) throw new ApiError(res.status, `Remote frame failed (${res.status})`, null);
+  return URL.createObjectURL(await res.blob());
+}

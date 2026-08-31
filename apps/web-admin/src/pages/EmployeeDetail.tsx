@@ -2,6 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  createRemoteAssist,
+  endRemoteAssist,
+  getRemoteAssist,
   reportActivity,
   reportBrowser,
   reportEmployees,
@@ -9,8 +12,9 @@ import {
   reportPresence,
   reportScreenshots,
   requestLiveCapture,
+  sendRemoteAssistAction,
 } from "../api/endpoints";
-import { fetchImageObjectUrl } from "../api/client";
+import { fetchImageObjectUrl, fetchRemoteAssistFrameObjectUrl } from "../api/client";
 import type {
   ActivityResponse,
   BrowserVisit,
@@ -18,6 +22,7 @@ import type {
   EmployeePresence,
   KeystrokeBucket,
   ReportEmployee,
+  RemoteAssistSession,
   ScreenshotMeta,
 } from "../api/types";
 import { ActivityPanel } from "../components/reports/ActivityPanel";
@@ -135,9 +140,20 @@ function LiveScreen({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [remoteSession, setRemoteSession] = useState<RemoteAssistSession | null>(null);
+  const [remoteFrameUrl, setRemoteFrameUrl] = useState<string | null>(null);
+  const [remoteBusy, setRemoteBusy] = useState(false);
+  const [remoteError, setRemoteError] = useState<string | null>(null);
+  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
   const imageRef = useRef<string | null>(null);
+  const remoteImageRef = useRef<string | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
+  const requestInFlight = useRef(false);
+  const consecutiveFailures = useRef(0);
   const deviceId = presence?.device_id ?? null;
   const online = Boolean(deviceId && presence && presence.state !== "offline");
+  const remoteOpen = remoteSession?.status === "pending" || remoteSession?.status === "active";
+  const remoteActive = remoteSession?.status === "active";
 
   useEffect(() => {
     let alive = true;
@@ -162,25 +178,36 @@ function LiveScreen({
 
   useEffect(() => () => {
     if (imageRef.current) URL.revokeObjectURL(imageRef.current);
+    if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
   }, []);
 
   useEffect(() => {
-    if (!enabled || !deviceId || !online) return;
+    if (!enabled || !deviceId || !online || remoteOpen) return;
     let alive = true;
     let requestedAt = 0;
 
     const requestFrame = async () => {
+      if (requestInFlight.current) return;
+      requestInFlight.current = true;
       try {
         const result = await requestLiveCapture(deviceId);
         if (!alive) return;
         requestedAt = result.requested_at;
+        consecutiveFailures.current = 0;
         setWaiting(true);
         setError(null);
       } catch {
         if (alive) {
           setWaiting(false);
-          setError(t("detail.presence.liveView.requestError"));
+          consecutiveFailures.current += 1;
+          // A laptop can miss one heartbeat while sleeping or switching networks.
+          // Keep the last good frame visible and only surface a persistent issue.
+          if (consecutiveFailures.current >= 2) {
+            setError(t("detail.presence.liveView.requestError"));
+          }
         }
+      } finally {
+        requestInFlight.current = false;
       }
     };
 
@@ -191,7 +218,7 @@ function LiveScreen({
       try {
         const today = isoDate(new Date());
         const range = dayRangeToUnix(today, today);
-        const result = await reportScreenshots(employeeId, range.from, range.to, 10);
+        const result = await reportScreenshots(employeeId, range.from, range.to, 3);
         if (!alive || result.screenshots.length === 0) return;
         const fresh = result.screenshots.filter((shot) =>
           (!shot.device_id || shot.device_id === deviceId)
@@ -202,6 +229,7 @@ function LiveScreen({
           (a.received_at ?? a.ts) >= (b.received_at ?? b.ts) ? a : b,
         );
         setFrame((current) => current?.client_uuid === latest.client_uuid ? current : latest);
+        consecutiveFailures.current = 0;
         setWaiting(false);
         setError(null);
       } catch {
@@ -218,7 +246,62 @@ function LiveScreen({
       window.clearInterval(requestTimer);
       window.clearInterval(pollTimer);
     };
-  }, [deviceId, employeeId, enabled, online, t]);
+  }, [deviceId, employeeId, enabled, online, remoteOpen, t]);
+
+  useEffect(() => {
+    if (!remoteOpen || !remoteSession) return;
+    let alive = true;
+    const poll = async () => {
+      try {
+        const result = await getRemoteAssist(remoteSession.id);
+        if (!alive) return;
+        setRemoteSession(result.session);
+        setRemoteError(null);
+        if (result.session.status !== "active") setKeyboardEnabled(false);
+      } catch {
+        if (alive) setRemoteError(t("detail.presence.liveView.remoteError"));
+      }
+    };
+    void poll();
+    const timer = window.setInterval(poll, 1_000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [remoteOpen, remoteSession?.id, t]);
+
+  useEffect(() => {
+    if (!remoteActive || !remoteSession) {
+      if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
+      remoteImageRef.current = null;
+      setRemoteFrameUrl(null);
+      return;
+    }
+    let alive = true;
+    let inFlight = false;
+    const loadFrame = async () => {
+      if (inFlight) return;
+      inFlight = true;
+      try {
+        const url = await fetchRemoteAssistFrameObjectUrl(remoteSession.id);
+        if (!alive || !url) return;
+        if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
+        remoteImageRef.current = url;
+        setRemoteFrameUrl(url);
+        setRemoteError(null);
+      } catch {
+        if (alive) setRemoteError(t("detail.presence.liveView.remoteError"));
+      } finally {
+        inFlight = false;
+      }
+    };
+    void loadFrame();
+    const timer = window.setInterval(loadFrame, 900);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [remoteActive, remoteSession?.id, t]);
 
   useEffect(() => {
     if (!online) {
@@ -226,6 +309,72 @@ function LiveScreen({
       setWaiting(false);
     }
   }, [online]);
+
+  async function startRemoteAssist() {
+    if (!deviceId || remoteBusy) return;
+    setRemoteBusy(true);
+    setEnabled(false);
+    setRemoteError(null);
+    try {
+      const result = await createRemoteAssist(deviceId);
+      setRemoteSession(result.session);
+    } catch {
+      setRemoteError(t("detail.presence.liveView.remoteError"));
+    } finally {
+      setRemoteBusy(false);
+    }
+  }
+
+  async function stopRemoteAssist() {
+    if (!remoteSession || remoteBusy) return;
+    setRemoteBusy(true);
+    try {
+      const result = await endRemoteAssist(remoteSession.id);
+      setRemoteSession(result.session);
+      setKeyboardEnabled(false);
+    } catch {
+      setRemoteError(t("detail.presence.liveView.remoteError"));
+    } finally {
+      setRemoteBusy(false);
+    }
+  }
+
+  function sendRemoteInput(action: Parameters<typeof sendRemoteAssistAction>[1]) {
+    if (!remoteActive || !remoteSession) return;
+    void sendRemoteAssistAction(remoteSession.id, action).catch(() => {
+      setRemoteError(t("detail.presence.liveView.remoteError"));
+    });
+  }
+
+  function clickRemoteFrame(event: React.MouseEvent<HTMLDivElement>) {
+    if (!remoteActive || !remoteFrameUrl) return;
+    const image = event.currentTarget.querySelector("img");
+    if (!image?.naturalWidth || !image.naturalHeight) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const scale = Math.min(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
+    const width = image.naturalWidth * scale;
+    const height = image.naturalHeight * scale;
+    const x = (event.clientX - rect.left - (rect.width - width) / 2) / width;
+    const y = (event.clientY - rect.top - (rect.height - height) / 2) / height;
+    if (x < 0 || x > 1 || y < 0 || y > 1) return;
+    sendRemoteInput({ kind: "click", payload: { x, y, button: "left" } });
+    if (keyboardEnabled) stageRef.current?.focus();
+  }
+
+  function typeOnRemote(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (!remoteActive || !keyboardEnabled) return;
+    const supported = new Set([
+      "Enter", "Tab", "Escape", "Backspace", "Delete",
+      "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
+    ]);
+    if (supported.has(event.key)) {
+      event.preventDefault();
+      sendRemoteInput({ kind: "key", payload: { key: event.key } });
+    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      event.preventDefault();
+      sendRemoteInput({ kind: "text", payload: { text: event.key } });
+    }
+  }
 
   const frameTime = frame
     ? new Date(frame.ts * 1000).toLocaleTimeString(i18n.language, {
@@ -235,46 +384,121 @@ function LiveScreen({
       })
     : null;
 
+  const displayedImage = remoteActive ? remoteFrameUrl : imageUrl;
+
   return (
-    <section className={`ad-live-screen${enabled ? " ad-live-screen--on" : ""}`}>
+    <section className={`ad-live-screen${enabled || remoteActive ? " ad-live-screen--on" : ""}${remoteActive ? " ad-live-screen--remote" : ""}`}>
       <div className="ad-live-screen__head">
         <div>
           <span className="ad-live-screen__eyebrow">
             <i aria-hidden />
-            {enabled ? t("detail.presence.liveView.live") : t("detail.presence.liveView.ready")}
+            {remoteActive
+              ? t("detail.presence.liveView.remoteActive")
+              : remoteSession?.status === "pending"
+                ? t("detail.presence.liveView.remotePending")
+                : enabled
+                  ? t("detail.presence.liveView.live")
+                  : t("detail.presence.liveView.ready")}
           </span>
           <h2>{t("detail.presence.liveView.title")}</h2>
-          <p>{t("detail.presence.liveView.description")}</p>
         </div>
-        <button
-          type="button"
-          className={`bibo-btn ${enabled ? "bibo-btn--ghost" : "bibo-btn--primary"}`}
-          disabled={!online}
-          onClick={() => {
-            setError(null);
-            setEnabled((value) => !value);
-          }}
-        >
-          {enabled ? t("detail.presence.liveView.stop") : t("detail.presence.liveView.start")}
-        </button>
+        <div className="ad-live-screen__actions">
+          {displayedImage ? (
+            <button
+              type="button"
+              className="ad-live-screen__expand"
+              aria-label={t("detail.presence.liveView.expand")}
+              title={t("detail.presence.liveView.expand")}
+              onClick={() => void stageRef.current?.requestFullscreen?.()}
+            >
+              <span aria-hidden>↗</span>
+            </button>
+          ) : null}
+          {remoteActive ? (
+            <button
+              type="button"
+              className={`bibo-btn ${keyboardEnabled ? "bibo-btn--primary" : "bibo-btn--ghost"}`}
+              onClick={() => {
+                setKeyboardEnabled((value) => !value);
+                window.setTimeout(() => stageRef.current?.focus(), 0);
+              }}
+            >
+              {keyboardEnabled
+                ? t("detail.presence.liveView.remoteKeyboardOn")
+                : t("detail.presence.liveView.remoteKeyboard")}
+            </button>
+          ) : null}
+          {remoteOpen ? (
+            <button type="button" className="bibo-btn bibo-btn--danger" disabled={remoteBusy} onClick={() => void stopRemoteAssist()}>
+              {t("detail.presence.liveView.remoteStop")}
+            </button>
+          ) : (
+            <>
+              <button type="button" className="bibo-btn bibo-btn--ghost" disabled={!online || remoteBusy} onClick={() => void startRemoteAssist()}>
+                {remoteBusy ? t("detail.presence.liveView.remotePending") : t("detail.presence.liveView.remoteStart")}
+              </button>
+              <button
+                type="button"
+                className={`bibo-btn ${enabled ? "bibo-btn--ghost" : "bibo-btn--primary"}`}
+                disabled={!online}
+                onClick={() => {
+                  setError(null);
+                  consecutiveFailures.current = 0;
+                  setEnabled((value) => !value);
+                }}
+              >
+                {enabled ? t("detail.presence.liveView.stop") : t("detail.presence.liveView.start")}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="ad-live-screen__stage">
-        {imageUrl ? (
-          <img src={imageUrl} alt={t("detail.presence.liveView.frameAlt")} />
+      {remoteOpen ? <p className="ad-live-screen__consent">{t("detail.presence.liveView.remoteConsent")}</p> : null}
+
+      <div
+        className="ad-live-screen__stage"
+        ref={stageRef}
+        role={remoteActive ? "application" : undefined}
+        aria-label={remoteActive ? t("detail.presence.liveView.remoteClickHint") : undefined}
+        tabIndex={remoteActive && keyboardEnabled ? 0 : -1}
+        onClick={clickRemoteFrame}
+        onKeyDown={typeOnRemote}
+      >
+        {displayedImage ? (
+          <img src={displayedImage} alt={t("detail.presence.liveView.frameAlt")} decoding="async" />
         ) : (
           <div className="ad-live-screen__empty">
-            {waiting ? <Spinner label={t("detail.presence.liveView.waiting")} /> : <span>{online ? t("detail.presence.liveView.startHint") : t("detail.presence.liveView.offline")}</span>}
+            {remoteSession?.status === "pending" ? (
+              <Spinner label={t("detail.presence.liveView.remotePending")} />
+            ) : remoteActive ? (
+              <Spinner label={t("detail.presence.liveView.remoteWaitingFrame")} />
+            ) : waiting ? (
+              <Spinner label={t("detail.presence.liveView.waiting")} />
+            ) : (
+              <span>{online ? t("detail.presence.liveView.startHint") : t("detail.presence.liveView.offline")}</span>
+            )}
           </div>
         )}
-        {enabled && imageUrl ? <span className="ad-live-screen__badge">{waiting ? t("detail.presence.liveView.refreshing") : t("detail.presence.liveView.live")}</span> : null}
+        {(enabled && imageUrl) || (remoteActive && remoteFrameUrl) ? (
+          <span className="ad-live-screen__badge">
+            {remoteActive ? t("detail.presence.liveView.remoteActive") : waiting ? t("detail.presence.liveView.refreshing") : t("detail.presence.liveView.live")}
+          </span>
+        ) : null}
       </div>
 
       <div className="ad-live-screen__foot">
-        <span>{frameTime ? t("detail.presence.liveView.lastFrame", { time: frameTime }) : t("detail.presence.liveView.noFrame")}</span>
-        <span>{t("detail.presence.liveView.readOnly")}</span>
+        <span>
+          {remoteActive
+            ? t("detail.presence.liveView.remoteApproved")
+            : frameTime
+              ? t("detail.presence.liveView.lastFrame", { time: frameTime })
+              : t("detail.presence.liveView.noFrame")}
+        </span>
+        <span>{remoteActive ? t("detail.presence.liveView.remoteClickHint") : t("detail.presence.liveView.readOnly")}</span>
       </div>
-      {error ? <Notice kind="danger">{error}</Notice> : null}
+      {remoteSession && !remoteOpen ? <p className="ad-live-screen__warning" role="status">{t("detail.presence.liveView.remoteEnded")}</p> : null}
+      {remoteError || error ? <p className="ad-live-screen__warning" role="status">{remoteError || error}</p> : null}
     </section>
   );
 }
@@ -594,9 +818,13 @@ export function EmployeeDetail() {
         </div>
       </div>
 
-      <LivePresence presence={presence} />
-      <LiveResources resources={presence?.resources} />
-      <LiveScreen employeeId={id} presence={presence} />
+      <div className="ad-command-deck">
+        <LiveScreen employeeId={id} presence={presence} />
+        <div className="ad-command-deck__telemetry">
+          <LivePresence presence={presence} />
+          <LiveResources resources={presence?.resources} />
+        </div>
+      </div>
 
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}

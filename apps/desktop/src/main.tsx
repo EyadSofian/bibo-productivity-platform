@@ -4,6 +4,7 @@ import "@fontsource-variable/manrope";
 import "./theme.css";
 import "./i18n";
 import App from "./App";
+import { RemoteAssistIndicator } from "./components/RemoteAssistIndicator";
 import { initSentry, Sentry } from "./sentry";
 
 initSentry();
@@ -11,7 +12,11 @@ initSentry();
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <Sentry.ErrorBoundary fallback={<p style={{ padding: 24 }}>Something went wrong.</p>}>
-      <App />
+      {new URLSearchParams(window.location.search).get("remote-assist") === "1" ? (
+        <RemoteAssistIndicator />
+      ) : (
+        <App />
+      )}
     </Sentry.ErrorBoundary>
   </React.StrictMode>,
 );

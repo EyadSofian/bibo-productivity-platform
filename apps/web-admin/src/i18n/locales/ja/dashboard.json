@@ -90,11 +90,12 @@
       "onlineFor": "接続時間",
       "liveView": {
         "title": "ライブ画面プレビュー", "description": "ポリシーに準拠した最新フレームを約20秒ごとに要求します。",
-        "ready": "準備完了", "live": "ライブプレビュー", "start": "プレビュー開始", "stop": "プレビュー停止",
+        "ready": "準備完了", "live": "ライブプレビュー", "start": "プレビュー開始", "stop": "プレビュー停止", "expand": "プレビューを拡大",
         "waiting": "Windows端末を待機中…", "startHint": "現在のフレームを要求するには開始してください。",
         "offline": "端末がオンラインである必要があります。", "refreshing": "更新中…", "lastFrame": "最終フレーム {{time}}",
         "noFrame": "ライブフレームはまだありません", "readOnly": "表示のみ · ポリシーとプライバシー除外は引き続き適用されます",
         "frameAlt": "最新のライブ画面フレーム", "requestError": "端末がオフラインか要求を受け付けませんでした。",
+        "remoteStart": "リモートアシスト", "remotePending": "従業員の端末に接続しています…", "remoteActive": "リモート操作中", "remoteStop": "アシストを終了", "remoteKeyboard": "キーボードを有効化", "remoteKeyboardOn": "キーボード有効", "remoteConsent": "従業員はWindows端末で無人アシストを一度許可できます。それ以外は今回の要求を承認します。セッションは15分で終了し、端末には常に表示されます。", "remoteWaitingFrame": "接続済み — 最初の画面を待っています…", "remoteApproved": "従業員の端末が一時アシストを許可しました", "remoteEnded": "リモートセッションは終了または拒否されました。", "remoteError": "リモートアシストを利用できないか中断されました。", "remoteClickHint": "画像をクリックしてポインターを操作し、入力前にキーボードを有効にしてください",
         "imageError": "最新フレームを読み込めませんでした。"
       }
     },

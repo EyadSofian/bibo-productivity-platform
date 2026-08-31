@@ -12,6 +12,7 @@
 pub mod auth;
 pub mod client;
 pub mod presence;
+pub mod remote_assist;
 pub mod worker;
 
 pub use auth::AuthState;

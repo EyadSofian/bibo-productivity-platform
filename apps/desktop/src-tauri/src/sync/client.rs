@@ -223,6 +223,38 @@ pub struct PresenceResult {
     pub capture_requested: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RemoteAssistSession {
+    pub id: String,
+    pub device_id: String,
+    pub owner_name: String,
+    pub status: String,
+    pub expires_at: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
+pub struct RemoteAssistAction {
+    pub id: i64,
+    pub kind: String,
+    pub payload: serde_json::Value,
+}
+
+#[derive(Deserialize)]
+struct RemoteAssistSessionResp {
+    session: RemoteAssistSession,
+}
+
+#[derive(Deserialize)]
+struct RemoteAssistActionsResp {
+    actions: Vec<RemoteAssistAction>,
+}
+
+#[derive(Serialize)]
+struct RemoteAssistDecisionReq {
+    accepted: bool,
+}
+
 #[derive(Serialize)]
 struct PresenceReq<'a> {
     device_id: &'a str,
@@ -505,6 +537,175 @@ impl BackendClient {
             });
         }
         Err("presence_heartbeat: unreachable retry exhaustion".into())
+    }
+
+    /// Poll for a pending, device-authorized remote assistance request for this
+    /// signed-in employee/device pair. A 204 means there is no request.
+    pub async fn remote_assist_pending(
+        &self,
+        device_id: &str,
+    ) -> Result<Option<RemoteAssistSession>, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url(&format!("/v1/devices/{device_id}/remote-assist/pending")))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if resp.status() == reqwest::StatusCode::NO_CONTENT {
+                return Ok(None);
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: RemoteAssistSessionResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(Some(parsed.session));
+        }
+        Err("remote_assist_pending: unreachable retry exhaustion".into())
+    }
+
+    pub async fn remote_assist_decide(
+        &self,
+        session_id: &str,
+        accepted: bool,
+    ) -> Result<RemoteAssistSession, String> {
+        let body = RemoteAssistDecisionReq { accepted };
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/remote-assist/{session_id}/decision")))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: RemoteAssistSessionResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(parsed.session);
+        }
+        Err("remote_assist_decide: unreachable retry exhaustion".into())
+    }
+
+    pub async fn remote_assist_session(
+        &self,
+        session_id: &str,
+    ) -> Result<RemoteAssistSession, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url(&format!("/v1/remote-assist/{session_id}")))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: RemoteAssistSessionResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(parsed.session);
+        }
+        Err("remote_assist_session: unreachable retry exhaustion".into())
+    }
+
+    pub async fn remote_assist_end(&self, session_id: &str) -> Result<(), String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/remote-assist/{session_id}/end")))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return Ok(());
+        }
+        Err("remote_assist_end: unreachable retry exhaustion".into())
+    }
+
+    pub async fn remote_assist_actions(
+        &self,
+        session_id: &str,
+        after: i64,
+    ) -> Result<Vec<RemoteAssistAction>, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url(&format!(
+                    "/v1/remote-assist/{session_id}/actions?after={after}"
+                )))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: RemoteAssistActionsResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(parsed.actions);
+        }
+        Err("remote_assist_actions: unreachable retry exhaustion".into())
+    }
+
+    pub async fn remote_assist_upload_frame(
+        &self,
+        session_id: &str,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<(), String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/remote-assist/{session_id}/frame")))
+                .bearer_auth(&token)
+                .header(reqwest::header::CONTENT_TYPE, "image/webp")
+                .header("X-Frame-Width", width)
+                .header("X-Frame-Height", height)
+                .body(bytes.to_vec())
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return Ok(());
+        }
+        Err("remote_assist_upload_frame: unreachable retry exhaustion".into())
     }
 
     /// `POST /v1/sync/screenshots` (multipart) for a single screenshot, with the

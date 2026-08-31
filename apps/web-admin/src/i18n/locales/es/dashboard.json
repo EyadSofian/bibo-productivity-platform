@@ -90,11 +90,12 @@
       "onlineFor": "Tiempo conectado",
       "liveView": {
         "title": "Vista previa en vivo", "description": "Solicita una captura actual conforme a la política cada 20 segundos.",
-        "ready": "Listo", "live": "Vista en vivo", "start": "Iniciar vista", "stop": "Detener vista",
+        "ready": "Listo", "live": "Vista en vivo", "start": "Iniciar vista", "stop": "Detener vista", "expand": "Ampliar vista",
         "waiting": "Esperando al dispositivo Windows…", "startHint": "Inicia la vista para solicitar una captura actual.",
         "offline": "El dispositivo debe estar conectado.", "refreshing": "Actualizando…", "lastFrame": "Última captura {{time}}",
         "noFrame": "Aún no hay captura", "readOnly": "Solo lectura · se aplican la política y las exclusiones de privacidad",
         "frameAlt": "Última captura de pantalla en vivo", "requestError": "El dispositivo está desconectado o no aceptó la solicitud.",
+        "remoteStart": "Asistencia remota", "remotePending": "Conectando con el equipo del empleado…", "remoteActive": "Control remoto activo", "remoteStop": "Finalizar asistencia", "remoteKeyboard": "Activar teclado", "remoteKeyboardOn": "Teclado activado", "remoteConsent": "El empleado puede autorizar una vez la asistencia desatendida en Windows; de lo contrario aprueba esta solicitud. La sesión caduca a los 15 minutos y siempre permanece visible.", "remoteWaitingFrame": "Conectado: esperando la primera imagen…", "remoteApproved": "El equipo del empleado autorizó esta sesión temporal", "remoteEnded": "La sesión remota terminó o fue rechazada.", "remoteError": "La asistencia remota no está disponible o se interrumpió.", "remoteClickHint": "Haz clic en la imagen para controlar el puntero; activa el teclado antes de escribir",
         "imageError": "No se pudo cargar la última captura."
       }
     },

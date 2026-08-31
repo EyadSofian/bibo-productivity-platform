@@ -2,6 +2,7 @@
   "appName": "BiBoTracking",
   "language": "语言",
   "loading": "加载中…",
+  "remoteAssist": { "title": "远程协助进行中", "subtitle": "{{owner}} 可以查看和控制此屏幕", "stop": "停止访问", "stopping": "正在停止…" },
   "nav": {
     "Dashboard": "仪表板",
     "Activity": "活动",

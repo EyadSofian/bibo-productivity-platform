@@ -2,6 +2,7 @@
   "appName": "BiBoTracking",
   "language": "اللغة",
   "loading": "جارٍ التحميل…",
+  "remoteAssist": { "title": "المساعدة عن بُعد نشطة", "subtitle": "يمكن لـ {{owner}} مشاهدة هذه الشاشة والتحكم بها", "stop": "إيقاف الوصول", "stopping": "جارٍ الإيقاف…" },
   "nav": {
     "Dashboard": "لوحة التحكم",
     "Activity": "النشاط",

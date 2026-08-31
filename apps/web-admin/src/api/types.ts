@@ -168,6 +168,24 @@ export interface EmployeePresence {
   resources: DeviceResourceSnapshot | null;
 }
 
+export type RemoteAssistStatus = "pending" | "active" | "declined" | "ended" | "expired";
+
+export interface RemoteAssistSession {
+  id: string;
+  device_id: string;
+  business_id: string;
+  employee_user_id: string;
+  owner_user_id: string;
+  owner_name: string;
+  status: RemoteAssistStatus;
+  requested_at: string;
+  decided_at: string | null;
+  expires_at: string;
+  ended_at: string | null;
+  end_reason: string | null;
+  last_frame_at: string | null;
+}
+
 export interface KeystrokeBucket {
   ts_bucket: number;
   count: number;

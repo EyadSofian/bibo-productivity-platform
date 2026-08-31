@@ -36,8 +36,30 @@ const hhmmss = (ts: number) => {
 // One gallery card: real thumbnail when it loads, gradient placeholder before.
 function Shot({ meta, onOpen }: { meta: ShotMeta; onOpen: () => void }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const cardRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    const card = cardRef.current;
+    if (!card || typeof IntersectionObserver === "undefined") {
+      setShouldLoad(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry?.isIntersecting) return;
+        setShouldLoad(true);
+        observer.disconnect();
+      },
+      { rootMargin: "240px" },
+    );
+    observer.observe(card);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!shouldLoad) return;
     let alive = true;
     let made: string | null = null;
     fetchImageObjectUrl(meta.client_uuid)
@@ -51,10 +73,16 @@ function Shot({ meta, onOpen }: { meta: ShotMeta; onOpen: () => void }) {
       alive = false;
       if (made) URL.revokeObjectURL(made);
     };
-  }, [meta.client_uuid]);
+  }, [meta.client_uuid, shouldLoad]);
 
   return (
-    <div className={`ad-shot${url ? " ad-shot--clickable" : ""}`} onClick={url ? onOpen : undefined}>
+    <button
+      ref={cardRef}
+      type="button"
+      className={`ad-shot${url ? " ad-shot--clickable" : ""}`}
+      disabled={!url}
+      onClick={onOpen}
+    >
       <div
         className="ad-shot__img"
         style={url ? { backgroundImage: `url("${url}")` } : { background: gradientFor(meta.app) }}
@@ -62,7 +90,7 @@ function Shot({ meta, onOpen }: { meta: ShotMeta; onOpen: () => void }) {
       <div className="ad-shot__veil" />
       {meta.app && <span className="ad-shot__app">{meta.app}</span>}
       <span className="ad-shot__t">{hhmmss(meta.ts)}</span>
-    </div>
+    </button>
   );
 }
 

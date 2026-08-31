@@ -6,6 +6,65 @@
 :root {
   --dir: 1;
 }
+
+/* Always-on-top employee control shown only during an accepted assistance
+   session. It deliberately cannot be hidden by the organization's managed lock. */
+.remote-assist-indicator {
+  box-sizing: border-box;
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 13px;
+  color: #f7f8ff;
+  background: linear-gradient(135deg, #171b2b, #242038);
+  cursor: move;
+  user-select: none;
+}
+.remote-assist-indicator__pulse {
+  width: 11px;
+  height: 11px;
+  border: 3px solid rgba(67, 214, 144, 0.2);
+  border-radius: 50%;
+  background: #43d690;
+  box-shadow: 0 0 0 4px rgba(67, 214, 144, 0.1);
+}
+.remote-assist-indicator__copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+.remote-assist-indicator__copy strong,
+.remote-assist-indicator__copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.remote-assist-indicator__copy strong {
+  font-size: 13px;
+}
+.remote-assist-indicator__copy small {
+  color: rgba(247, 248, 255, 0.68);
+  font-size: 10px;
+}
+.remote-assist-indicator__stop {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 11px;
+  color: #fff;
+  background: #d9485f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+}
+.remote-assist-indicator__stop:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
 [dir="rtl"] {
   --dir: -1;
 }

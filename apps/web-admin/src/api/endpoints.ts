@@ -38,6 +38,7 @@ import type {
   PrivacyAppCategory,
   PublicBusiness,
   ReportEmployee,
+  RemoteAssistSession,
   ScreenshotsResponse,
   Tokens,
   User,
@@ -322,4 +323,66 @@ export function requestLiveCapture(deviceId: string) {
     `/v1/devices/${deviceId}/live-capture`,
     { method: "POST" },
   );
+}
+
+let demoRemoteSession: RemoteAssistSession | null = null;
+
+export function createRemoteAssist(deviceId: string) {
+  if (isDemo()) {
+    const now = Date.now();
+    demoRemoteSession = {
+      id: `demo-remote-${now}`,
+      device_id: deviceId,
+      business_id: "demo-northstar",
+      employee_user_id: "demo-daniel",
+      owner_user_id: "demo-owner",
+      owner_name: "Amina Farouk",
+      status: "pending",
+      requested_at: new Date(now).toISOString(),
+      decided_at: null,
+      expires_at: new Date(now + 120_000).toISOString(),
+      ended_at: null,
+      end_reason: null,
+      last_frame_at: null,
+    };
+    return Promise.resolve({ session: demoRemoteSession });
+  }
+  return request<{ session: RemoteAssistSession }>(`/v1/devices/${deviceId}/remote-assist`, {
+    method: "POST",
+  });
+}
+
+export function getRemoteAssist(sessionId: string) {
+  if (isDemo() && demoRemoteSession?.id === sessionId) {
+    return Promise.resolve({ session: demoRemoteSession });
+  }
+  return request<{ session: RemoteAssistSession }>(`/v1/remote-assist/${sessionId}`);
+}
+
+export function endRemoteAssist(sessionId: string) {
+  if (isDemo() && demoRemoteSession?.id === sessionId) {
+    demoRemoteSession = {
+      ...demoRemoteSession,
+      status: "ended",
+      ended_at: new Date().toISOString(),
+      end_reason: "owner_ended",
+    };
+    return Promise.resolve({ session: demoRemoteSession });
+  }
+  return request<{ session: RemoteAssistSession }>(`/v1/remote-assist/${sessionId}/end`, {
+    method: "POST",
+  });
+}
+
+export type RemoteAssistAction =
+  | { kind: "click" | "move"; payload: { x: number; y: number; button?: "left" | "right" } }
+  | { kind: "key"; payload: { key: string } }
+  | { kind: "text"; payload: { text: string } };
+
+export function sendRemoteAssistAction(sessionId: string, action: RemoteAssistAction) {
+  if (isDemo()) return Promise.resolve({ action_id: Date.now() });
+  return request<{ action_id: number }>(`/v1/remote-assist/${sessionId}/actions`, {
+    method: "POST",
+    body: action,
+  });
 }

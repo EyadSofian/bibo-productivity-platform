@@ -65,6 +65,10 @@ pub struct SyncContext {
     /// Applies the server-managed per-device monitoring switch immediately to
     /// every capture loop while keeping the employee's own pause separate.
     pub control: Arc<crate::trackers::TrackerControl>,
+    /// Native handle + explicit session state used by the locally authorized
+    /// remote assistance worker and its always-visible Stop window.
+    pub app: tauri::AppHandle,
+    pub remote_assist: Arc<super::remote_assist::RemoteAssistState>,
 }
 
 /// Spawn the worker on its own thread with a dedicated single-thread tokio runtime

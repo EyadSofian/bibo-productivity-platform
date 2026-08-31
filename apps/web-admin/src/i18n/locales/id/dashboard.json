@@ -90,11 +90,12 @@
       "onlineFor": "Lama online",
       "liveView": {
         "title": "Pratinjau layar langsung", "description": "Meminta bingkai terbaru sesuai kebijakan sekitar setiap 20 detik.",
-        "ready": "Siap", "live": "Pratinjau langsung", "start": "Mulai pratinjau", "stop": "Hentikan pratinjau",
+        "ready": "Siap", "live": "Pratinjau langsung", "start": "Mulai pratinjau", "stop": "Hentikan pratinjau", "expand": "Perbesar pratinjau",
         "waiting": "Menunggu perangkat Windows…", "startHint": "Mulai pratinjau untuk meminta bingkai saat ini.",
         "offline": "Perangkat harus online.", "refreshing": "Memperbarui…", "lastFrame": "Bingkai terakhir {{time}}",
         "noFrame": "Belum ada bingkai langsung", "readOnly": "Hanya lihat · kebijakan dan pengecualian privasi tetap berlaku",
         "frameAlt": "Bingkai layar langsung terbaru", "requestError": "Perangkat offline atau tidak menerima permintaan.",
+        "remoteStart": "Bantuan jarak jauh", "remotePending": "Menghubungkan ke komputer karyawan…", "remoteActive": "Kontrol jarak jauh aktif", "remoteStop": "Akhiri bantuan", "remoteKeyboard": "Aktifkan keyboard", "remoteKeyboardOn": "Keyboard aktif", "remoteConsent": "Karyawan dapat mengizinkan bantuan tanpa pendamping satu kali di Windows; jika tidak, mereka menyetujui permintaan ini. Sesi berakhir setelah 15 menit dan indikator selalu terlihat.", "remoteWaitingFrame": "Terhubung — menunggu bingkai pertama…", "remoteApproved": "Komputer karyawan mengizinkan sesi bantuan sementara ini", "remoteEnded": "Sesi jarak jauh berakhir atau ditolak.", "remoteError": "Bantuan jarak jauh tidak tersedia atau terputus.", "remoteClickHint": "Klik gambar untuk mengontrol penunjuk; aktifkan keyboard sebelum mengetik",
         "imageError": "Bingkai terbaru tidak dapat dimuat."
       }
     },
