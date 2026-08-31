@@ -59,8 +59,8 @@ func TestNonRequestLines(t *testing.T) {
 
 func TestLevel(t *testing.T) {
 	cases := map[string]string{
-		`{"time":"x","level":"ERROR","msg":"boom"}`: "ERROR",
-		`time=x level=WARN msg=slow`:                "WARN",
+		`{"time":"x","level":"ERROR","msg":"boom"}`:                           "ERROR",
+		`time=x level=WARN msg=slow`:                                          "WARN",
 		`[GIN] 2026/07/05 - 16:30:20 | 500 |  1ms |  1.2.3.4 | GET      "/x"`: "ERROR",
 		`[GIN] 2026/07/05 - 16:30:20 | 404 |  1ms |  1.2.3.4 | GET      "/x"`: "WARN",
 		`[GIN] 2026/07/05 - 16:30:20 | 200 |  1ms |  1.2.3.4 | GET      "/x"`: "INFO",
