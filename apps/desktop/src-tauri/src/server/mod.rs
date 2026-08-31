@@ -80,7 +80,7 @@ fn check_request(headers: &HeaderMap, token: &str) -> Result<(), StatusCode> {
 }
 
 /// Reduce a URL to its origin (`scheme://host`) for the domain-only privacy mode.
-fn origin_only(url: &str) -> String {
+pub(crate) fn origin_only(url: &str) -> String {
     if let Some(scheme_end) = url.find("://") {
         let rest = &url[scheme_end + 3..];
         let host_end = rest.find('/').unwrap_or(rest.len());
@@ -157,6 +157,9 @@ fn gen_token() -> String {
 async fn whoami(State(s): State<AppState>) -> Json<Value> {
     // The extension reads the token here. A web page can't read this response
     // (no CORS headers), and `/ingest` additionally rejects web origins + bad tokens.
+    s.control
+        .extension_last_seen
+        .store(crate::now_unix(), Ordering::Relaxed);
     Json(json!({
         "app": "employeetrack",
         "version": env!("CARGO_PKG_VERSION"),
@@ -179,6 +182,13 @@ async fn ingest(
     if visits.len() > MAX_INGEST_BATCH {
         return StatusCode::PAYLOAD_TOO_LARGE;
     }
+
+    // An authenticated ingest is also the authoritative "extension is alive"
+    // signal. Windows' address-bar fallback keeps a grace buffer and discards it
+    // when this timestamp is fresh, preventing duplicate visits.
+    s.control
+        .extension_last_seen
+        .store(crate::now_unix(), Ordering::Relaxed);
 
     for v in visits {
         if let Err(code) = record(&s, v) {
@@ -204,6 +214,9 @@ fn record(s: &AppState, v: VisitIn) -> Result<(), StatusCode> {
     if !marker && s.control.is_capture_paused() {
         // Tracking stopped: accept the request so the extension doesn't retry, but
         // don't record anything (consistent with the keyboard/window trackers).
+        return Ok(());
+    }
+    if !marker && !s.control.capture_browser_urls.load(Ordering::Relaxed) {
         return Ok(());
     }
     // Domain-only privacy mode: store just the origin, and drop the page title.
@@ -491,6 +504,18 @@ mod tests {
         let rows = stored(&s);
         assert_eq!(rows[0].url, "https://github.com");
         assert_eq!(rows[0].page_title, None, "the title can leak the path");
+    }
+
+    #[test]
+    fn browser_url_opt_out_suppresses_regular_visits() {
+        let s = state();
+        s.control
+            .capture_browser_urls
+            .store(false, Ordering::Relaxed);
+
+        record(&s, visit_in("https://github.com/private/path")).unwrap();
+
+        assert!(stored(&s).is_empty());
     }
 
     // Markers carry no browsing data, so privacy mode must leave them intact —

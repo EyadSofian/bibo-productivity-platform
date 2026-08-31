@@ -139,6 +139,17 @@ export interface ActivityResponse {
 
 export type PresenceState = "online" | "active" | "idle" | "offline";
 
+export interface DeviceResourceSnapshot {
+  cpu_pct: number;
+  memory_used_bytes: number;
+  memory_total_bytes: number;
+  disk_used_bytes: number;
+  disk_total_bytes: number;
+  network_rx_bps: number;
+  network_tx_bps: number;
+  seen_at: number | null;
+}
+
 export interface EmployeePresence {
   device_id: string | null;
   state: PresenceState;
@@ -146,6 +157,7 @@ export interface EmployeePresence {
   window_title: string | null;
   since: number | null;
   seen_at: number | null;
+  resources: DeviceResourceSnapshot | null;
 }
 
 export interface KeystrokeBucket {

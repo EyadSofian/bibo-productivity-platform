@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "Tanggal mulai berada setelah tanggal akhir.",
     "loadingReports": "Memuat laporan…",
     "presence": {
-      "states": { "active": "Aktif sekarang", "idle": "Idle sekarang", "online": "Online — pemantauan dijeda", "offline": "Offline" },
+      "states": { "active": "Aktif sekarang", "idle": "Idle sekarang", "online": "Online", "offline": "Offline" },
       "openNow": "Terbuka sekarang", "noCurrentApp": "Tidak ada sinyal aplikasi saat ini", "since": "Sejak",
-      "updated": "Sinyal langsung diperbarui pukul {{time}}", "waiting": "Menunggu heartbeat aplikasi Windows"
+      "updated": "Sinyal langsung diperbarui pukul {{time}}", "waiting": "Menunggu heartbeat aplikasi Windows",
+      "resources": {
+        "title": "Beban perangkat sekarang", "wholeDevice": "Penggunaan seluruh perangkat dari heartbeat terbaru.",
+        "cpu": "CPU", "memory": "Memori", "disk": "Disk", "network": "Jaringan",
+        "download": "Unduh", "upload": "Unggah", "current": "penggunaan saat ini",
+        "of": "{{used}} dari {{total}}"
+      }
     },
     "summary": {
       "activeTime": "Waktu aktif",

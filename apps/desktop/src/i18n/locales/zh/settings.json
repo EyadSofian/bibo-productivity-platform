@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "定期保存您屏幕的截图",
   "countKeystrokes": "统计按键次数",
   "countKeystrokesDesc": "仅统计按键次数——绝不记录按下了哪些键",
+  "captureBrowserUrls": "记录浏览器网址和时长",
+  "captureBrowserUrlsDesc": "记录当前地址及停留时长。优先使用扩展；未安装时，Windows 仅读取地址栏。",
   "screenshotInterval": "截图间隔",
   "screenshotIntervalDesc": "采集屏幕的频率",
   "screenshotMode": "截图模式",

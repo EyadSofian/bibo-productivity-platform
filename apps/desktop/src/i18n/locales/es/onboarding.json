@@ -19,7 +19,7 @@
       "foreground": "Qué aplicación está en primer plano y durante cuánto tiempo",
       "keypress": "Solo el número de pulsaciones de teclas — nunca las teclas reales",
       "screenshots": "Capturas de pantalla periódicas",
-      "webPages": "Páginas web visitadas (con la extensión del navegador)"
+      "webPages": "Dirección web activa y tiempo (se prefiere la extensión; alternativa de Windows)"
     }
   },
   "step2": {

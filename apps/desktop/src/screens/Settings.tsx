@@ -36,6 +36,7 @@ export type AppSettings = {
   screenshot_interval_s: number;
   screenshot_retention_days: number;
   domain_only: boolean;
+  capture_browser_urls: boolean;
   hide_dock: boolean;
   capture_screenshots: boolean;
   screenshot_mode: string;
@@ -44,6 +45,7 @@ export type AppSettings = {
   consented: boolean;
   local_only: boolean;
   onboarding_completed: boolean;
+  managed_locked: boolean;
 };
 
 const IS_WINDOWS = navigator.userAgent.includes("Windows");
@@ -551,6 +553,12 @@ export function Settings({
           </Section>
 
           <Section title={t("capture")}>
+            <Row title={t("captureBrowserUrls")} desc={t("captureBrowserUrlsDesc")}>
+              <Switch
+                checked={settings.capture_browser_urls}
+                onChange={(v) => onChange({ capture_browser_urls: v })}
+              />
+            </Row>
             <Row title={t("countKeystrokes")}>
               <Switch
                 checked={settings.count_keystrokes}

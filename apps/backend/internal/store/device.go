@@ -94,7 +94,19 @@ func (s *Store) SetDeviceMonitoring(ctx context.Context, ownerID, deviceID strin
 		UPDATE devices d
 		   SET monitoring_enabled = $3,
 		       disabled_at = $4,
-		       disabled_by = $5
+		       disabled_by = $5,
+		       presence_state = CASE WHEN $3 THEN presence_state ELSE 'online' END,
+		       current_app = CASE WHEN $3 THEN current_app ELSE NULL END,
+		       current_window_title = CASE WHEN $3 THEN current_window_title ELSE NULL END,
+		       presence_since = CASE WHEN $3 THEN presence_since ELSE EXTRACT(EPOCH FROM now())::bigint END,
+		       resource_cpu_pct = CASE WHEN $3 THEN resource_cpu_pct ELSE NULL END,
+		       resource_memory_used_bytes = CASE WHEN $3 THEN resource_memory_used_bytes ELSE NULL END,
+		       resource_memory_total_bytes = CASE WHEN $3 THEN resource_memory_total_bytes ELSE NULL END,
+		       resource_disk_used_bytes = CASE WHEN $3 THEN resource_disk_used_bytes ELSE NULL END,
+		       resource_disk_total_bytes = CASE WHEN $3 THEN resource_disk_total_bytes ELSE NULL END,
+		       resource_network_rx_bps = CASE WHEN $3 THEN resource_network_rx_bps ELSE NULL END,
+		       resource_network_tx_bps = CASE WHEN $3 THEN resource_network_tx_bps ELSE NULL END,
+		       resource_seen_at = CASE WHEN $3 THEN resource_seen_at ELSE NULL END
 		  FROM businesses b
 		 WHERE d.id = $1
 		   AND d.business_id = b.id
@@ -141,7 +153,19 @@ func (s *Store) SetDeviceArchived(ctx context.Context, ownerID, deviceID string,
 		       deleted_by = $4,
 		       monitoring_enabled = CASE WHEN $5 THEN false ELSE monitoring_enabled END,
 		       disabled_at = CASE WHEN $5 AND disabled_at IS NULL THEN now() ELSE disabled_at END,
-		       disabled_by = CASE WHEN $5 AND disabled_by IS NULL THEN $2::uuid ELSE disabled_by END
+		       disabled_by = CASE WHEN $5 AND disabled_by IS NULL THEN $2::uuid ELSE disabled_by END,
+		       presence_state = CASE WHEN $5 THEN 'online' ELSE presence_state END,
+		       current_app = CASE WHEN $5 THEN NULL ELSE current_app END,
+		       current_window_title = CASE WHEN $5 THEN NULL ELSE current_window_title END,
+		       presence_since = CASE WHEN $5 THEN EXTRACT(EPOCH FROM now())::bigint ELSE presence_since END,
+		       resource_cpu_pct = CASE WHEN $5 THEN NULL ELSE resource_cpu_pct END,
+		       resource_memory_used_bytes = CASE WHEN $5 THEN NULL ELSE resource_memory_used_bytes END,
+		       resource_memory_total_bytes = CASE WHEN $5 THEN NULL ELSE resource_memory_total_bytes END,
+		       resource_disk_used_bytes = CASE WHEN $5 THEN NULL ELSE resource_disk_used_bytes END,
+		       resource_disk_total_bytes = CASE WHEN $5 THEN NULL ELSE resource_disk_total_bytes END,
+		       resource_network_rx_bps = CASE WHEN $5 THEN NULL ELSE resource_network_rx_bps END,
+		       resource_network_tx_bps = CASE WHEN $5 THEN NULL ELSE resource_network_tx_bps END,
+		       resource_seen_at = CASE WHEN $5 THEN NULL ELSE resource_seen_at END
 		  FROM businesses b
 		 WHERE d.id = $1
 		   AND d.business_id = b.id

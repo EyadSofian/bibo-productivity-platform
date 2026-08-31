@@ -41,7 +41,7 @@
     },
     "web": {
       "t": "Pages web",
-      "d": "Domaines visités — le contenu des pages reste privé."
+      "d": "Adresse web active et durée — le contenu des pages reste privé."
     },
     "whoLabel": "QUI VOIT CECI ?",
     "whoLocal": "Vous seul, sur cet appareil. Rien n'est envoyé.",

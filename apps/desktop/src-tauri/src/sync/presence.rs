@@ -6,10 +6,11 @@
 //! continues as `online` without foreground metadata.
 
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use super::client::{BackendClient, PresenceSignal};
+use super::client::{BackendClient, PresenceSignal, ResourceSnapshot};
 use super::worker::SyncContext;
+use sysinfo::{Disks, Networks, System};
 
 const STARTUP_DELAY: Duration = Duration::from_secs(3);
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(30);
@@ -31,6 +32,7 @@ pub fn start(ctx: SyncContext) {
 }
 
 async fn run(ctx: SyncContext) {
+    let mut resources = ResourceSampler::new();
     tokio::time::sleep(STARTUP_DELAY).await;
     let mut previous: Option<(String, Option<String>, Option<String>)> = None;
     let mut since = crate::now_unix();
@@ -41,6 +43,7 @@ async fn run(ctx: SyncContext) {
             let base_url = crate::settings::backend_base_url();
             if !device_id.is_empty() && !base_url.is_empty() {
                 let (state, app, window_title) = current_signal(&ctx);
+                let collection_allowed = ctx.control.category_allowed("applications");
                 let identity = (state.clone(), app.clone(), window_title.clone());
                 if previous.as_ref() != Some(&identity) {
                     since = crate::now_unix();
@@ -48,11 +51,18 @@ async fn run(ctx: SyncContext) {
                 }
 
                 let client = BackendClient::new(base_url, ctx.auth.clone());
+                let resource_snapshot = if collection_allowed {
+                    Some(resources.sample())
+                } else {
+                    resources.reset_baseline();
+                    None
+                };
                 let signal = PresenceSignal {
                     state,
                     app,
                     window_title,
                     since,
+                    resources: resource_snapshot,
                 };
                 if let Err(error) = client
                     .presence_heartbeat(&device_id, session.business_id.as_deref(), &signal)
@@ -66,10 +76,79 @@ async fn run(ctx: SyncContext) {
     }
 }
 
+struct ResourceSampler {
+    system: System,
+    networks: Networks,
+    disks: Disks,
+    last_sample: Instant,
+}
+
+impl ResourceSampler {
+    fn new() -> Self {
+        let mut system = System::new();
+        system.refresh_cpu_usage();
+        system.refresh_memory();
+        Self {
+            system,
+            networks: Networks::new_with_refreshed_list(),
+            disks: Disks::new_with_refreshed_list(),
+            last_sample: Instant::now(),
+        }
+    }
+
+    fn sample(&mut self) -> ResourceSnapshot {
+        self.system.refresh_cpu_usage();
+        self.system.refresh_memory();
+        self.networks.refresh(true);
+        self.disks.refresh(true);
+
+        let elapsed = self.last_sample.elapsed().as_secs_f64().max(1.0);
+        self.last_sample = Instant::now();
+        let (network_rx, network_tx) =
+            self.networks.iter().fold((0_u64, 0_u64), |sum, (_, data)| {
+                (
+                    sum.0.saturating_add(data.received()),
+                    sum.1.saturating_add(data.transmitted()),
+                )
+            });
+        let (disk_total, disk_available) = self.disks.iter().fold((0_u64, 0_u64), |sum, disk| {
+            (
+                sum.0.saturating_add(disk.total_space()),
+                sum.1.saturating_add(disk.available_space()),
+            )
+        });
+
+        ResourceSnapshot {
+            cpu_pct: self.system.global_cpu_usage().clamp(0.0, 100.0),
+            memory_used_bytes: self.system.used_memory(),
+            memory_total_bytes: self.system.total_memory(),
+            disk_used_bytes: disk_total.saturating_sub(disk_available),
+            disk_total_bytes: disk_total,
+            network_rx_bps: rate_per_second(network_rx, elapsed),
+            network_tx_bps: rate_per_second(network_tx, elapsed),
+        }
+    }
+
+    fn reset_baseline(&mut self) {
+        self.system.refresh_cpu_usage();
+        self.system.refresh_memory();
+        self.networks.refresh(true);
+        self.disks.refresh(true);
+        self.last_sample = Instant::now();
+    }
+}
+
+fn rate_per_second(bytes: u64, elapsed_s: f64) -> u64 {
+    if !elapsed_s.is_finite() || elapsed_s <= 0.0 {
+        return 0;
+    }
+    ((bytes as f64 / elapsed_s).max(0.0).min(u64::MAX as f64)) as u64
+}
+
 fn current_signal(ctx: &SyncContext) -> (String, Option<String>, Option<String>) {
     // Presence is still useful while collection is paused, but foreground
     // metadata must obey the same local + remote + schedule controls as activity.
-    if !ctx.control.category_allowed("activity") {
+    if !ctx.control.category_allowed("applications") {
         return ("online".into(), None, None);
     }
 
@@ -92,5 +171,12 @@ mod tests {
     #[test]
     fn heartbeat_interval_stays_inside_offline_timeout() {
         assert!(HEARTBEAT_INTERVAL < Duration::from_secs(90));
+    }
+
+    #[test]
+    fn network_rate_handles_elapsed_time_and_invalid_input() {
+        assert_eq!(rate_per_second(3_000, 2.0), 1_500);
+        assert_eq!(rate_per_second(3_000, 0.0), 0);
+        assert_eq!(rate_per_second(3_000, f64::NAN), 0);
     }
 }

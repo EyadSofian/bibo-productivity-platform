@@ -12,6 +12,7 @@ import {
 import type {
   ActivityResponse,
   BrowserVisit,
+  DeviceResourceSnapshot,
   EmployeePresence,
   KeystrokeBucket,
   ReportEmployee,
@@ -23,7 +24,14 @@ import { KeystrokePanel } from "../components/reports/KeystrokePanel";
 import { PlaybackPanel } from "../components/reports/PlaybackPanel";
 import { ScreenshotGallery } from "../components/reports/ScreenshotGallery";
 import { Notice, Spinner } from "../components/ui";
-import { dayRangeToUnix, fmtDuration, isoDate } from "../format";
+import {
+  dayRangeToUnix,
+  fmtByteRate,
+  fmtBytes,
+  fmtDuration,
+  isoDate,
+  usagePercent,
+} from "../format";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
@@ -105,6 +113,97 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
           </strong>
         </div>
       ) : null}
+    </section>
+  );
+}
+
+function ResourceMeter({
+  label,
+  value,
+  detail,
+  percent,
+}: {
+  label: string;
+  value: string;
+  detail: string;
+  percent: number;
+}) {
+  return (
+    <div className="ad-resource-card">
+      <div className="ad-resource-card__head">
+        <span>{label}</span>
+        <strong dir="ltr">{value}</strong>
+      </div>
+      <div
+        className="ad-resource-meter"
+        role="progressbar"
+        aria-label={label}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
+        <span style={{ width: `${percent}%` }} />
+      </div>
+      <small dir="ltr">{detail}</small>
+    </div>
+  );
+}
+
+function LiveResources({ resources }: { resources: DeviceResourceSnapshot | null | undefined }) {
+  const { t } = useTranslation("dashboard");
+  if (!resources) return null;
+
+  const cpu = usagePercent(resources.cpu_pct, 100);
+  const memory = usagePercent(resources.memory_used_bytes, resources.memory_total_bytes);
+  const disk = usagePercent(resources.disk_used_bytes, resources.disk_total_bytes);
+
+  return (
+    <section className="ad-resources" aria-labelledby="device-resource-title">
+      <div className="ad-resources__intro">
+        <h2 id="device-resource-title">{t("detail.presence.resources.title")}</h2>
+        <p>{t("detail.presence.resources.wholeDevice")}</p>
+      </div>
+      <div className="ad-resources__grid">
+        <ResourceMeter
+          label={t("detail.presence.resources.cpu")}
+          value={`${cpu}%`}
+          detail={t("detail.presence.resources.current")}
+          percent={cpu}
+        />
+        <ResourceMeter
+          label={t("detail.presence.resources.memory")}
+          value={`${memory}%`}
+          detail={t("detail.presence.resources.of", {
+            used: fmtBytes(resources.memory_used_bytes),
+            total: fmtBytes(resources.memory_total_bytes),
+          })}
+          percent={memory}
+        />
+        <ResourceMeter
+          label={t("detail.presence.resources.disk")}
+          value={`${disk}%`}
+          detail={t("detail.presence.resources.of", {
+            used: fmtBytes(resources.disk_used_bytes),
+            total: fmtBytes(resources.disk_total_bytes),
+          })}
+          percent={disk}
+        />
+        <div className="ad-resource-card ad-resource-card--network">
+          <div className="ad-resource-card__head">
+            <span>{t("detail.presence.resources.network")}</span>
+          </div>
+          <div className="ad-resource-network">
+            <span>
+              <small>{t("detail.presence.resources.download")}</small>
+              <strong dir="ltr">↓ {fmtByteRate(resources.network_rx_bps)}</strong>
+            </span>
+            <span>
+              <small>{t("detail.presence.resources.upload")}</small>
+              <strong dir="ltr">↑ {fmtByteRate(resources.network_tx_bps)}</strong>
+            </span>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -332,6 +431,7 @@ export function EmployeeDetail() {
       </div>
 
       <LivePresence presence={presence} />
+      <LiveResources resources={presence?.resources} />
 
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}

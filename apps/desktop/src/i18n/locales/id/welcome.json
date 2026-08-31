@@ -41,7 +41,7 @@
     },
     "web": {
       "t": "Halaman web",
-      "d": "Domain yang dikunjungi — isi halaman tetap privat."
+      "d": "Alamat web aktif dan durasi — isi halaman tetap privat."
     },
     "whoLabel": "SIAPA YANG MELIHAT?",
     "whoLocal": "Hanya Anda, di perangkat ini. Tidak ada yang diunggah.",

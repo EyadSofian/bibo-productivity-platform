@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "Guardar periódicamente capturas de su pantalla o pantallas",
   "countKeystrokes": "Contar pulsaciones de teclas",
   "countKeystrokesDesc": "Contar solo el número de pulsaciones — nunca qué teclas se pulsan",
+  "captureBrowserUrls": "Registrar URL y tiempo del navegador",
+  "captureBrowserUrlsDesc": "Registra la dirección activa y su duración. Se prefiere la extensión; Windows puede leer solo la barra de direcciones si no está instalada.",
   "screenshotInterval": "Intervalo de capturas de pantalla",
   "screenshotIntervalDesc": "Con qué frecuencia se capturan las pantallas",
   "screenshotMode": "Modo de captura de pantalla",

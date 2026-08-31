@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "تاريخ البداية بعد تاريخ النهاية.",
     "loadingReports": "جارٍ تحميل التقارير…",
     "presence": {
-      "states": { "active": "نشط الآن", "idle": "خامل الآن", "online": "متصل — المراقبة متوقفة", "offline": "غير متصل" },
+      "states": { "active": "نشط الآن", "idle": "خامل الآن", "online": "متصل", "offline": "غير متصل" },
       "openNow": "المفتوح الآن", "noCurrentApp": "لا توجد إشارة حالية للتطبيق", "since": "منذ",
-      "updated": "آخر إشارة مباشرة {{time}}", "waiting": "في انتظار نبضة تطبيق Windows"
+      "updated": "آخر إشارة مباشرة {{time}}", "waiting": "في انتظار نبضة تطبيق Windows",
+      "resources": {
+        "title": "استهلاك الجهاز الآن", "wholeDevice": "الاستهلاك الحالي للجهاز بالكامل من آخر نبضة.",
+        "cpu": "المعالج", "memory": "الذاكرة", "disk": "القرص", "network": "الشبكة",
+        "download": "تنزيل", "upload": "رفع", "current": "الاستهلاك الحالي",
+        "of": "{{used}} من {{total}}"
+      }
     },
     "summary": {
       "activeTime": "وقت النشاط",

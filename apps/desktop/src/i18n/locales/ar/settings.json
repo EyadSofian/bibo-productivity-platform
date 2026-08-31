@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "حفظ لقطات دورية لشاشتك/شاشاتك",
   "countKeystrokes": "عدّ ضغطات المفاتيح",
   "countKeystrokesDesc": "عدّ الضغطات فقط — لا يُسجَّل أبدًا أي مفتاح تم ضغطه",
+  "captureBrowserUrls": "تسجيل روابط المتصفح والمدة",
+  "captureBrowserUrlsDesc": "يسجّل العنوان النشط ومدة فتحه. الإضافة هي الأدق، ويمكن لويندوز قراءة شريط العنوان فقط عند عدم وجودها.",
   "screenshotInterval": "فاصل لقطات الشاشة",
   "screenshotIntervalDesc": "كم مرة يتم التقاط الشاشات",
   "screenshotMode": "نمط لقطات الشاشة",

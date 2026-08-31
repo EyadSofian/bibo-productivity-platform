@@ -1266,6 +1266,15 @@ td {
 }
 
 /* ---------- Browser screen (Places visited today) ---------- */
+.bb-browser {
+  display: grid;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+.bb-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
 /* Bordered panel like the design (rounded 16px, dark #171A25 surface). */
 .bb-browser .card {
   border-radius: 16px;
@@ -1337,6 +1346,28 @@ td {
 .bb-muted {
   color: #9aa1b4;
   font-size: 12px;
+}
+.bb-page-cell {
+  display: grid;
+  gap: 3px;
+  min-width: 260px;
+  max-width: 620px;
+}
+.bb-page-title {
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bb-page-url {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 11px;
+  direction: ltr;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 /* Browser panel subtitle: small caption + muted blue-grey */
 .bb-browser .bb-panel__sub {

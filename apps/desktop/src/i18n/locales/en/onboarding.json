@@ -19,7 +19,7 @@
       "foreground": "Which app is in the foreground & for how long",
       "keypress": "Keypress counts only — never the actual keys",
       "screenshots": "Periodic screenshots",
-      "webPages": "Web pages visited (with the browser extension)"
+      "webPages": "Active web address and time spent (extension preferred; Windows address-bar fallback)"
     }
   },
   "step2": {

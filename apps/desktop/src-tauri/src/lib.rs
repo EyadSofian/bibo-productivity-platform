@@ -67,6 +67,10 @@ pub fn run() {
     let _sentry = obs::init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            Some(vec!["--background"]),
+        ))
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         // Auto-update: check a signed manifest on our own domain, download + install.
@@ -106,6 +110,15 @@ pub fn run() {
             commands::privacy_apps,
         ])
         .setup(|app| {
+            use tauri_plugin_autostart::ManagerExt;
+
+            // Register once per installed user. A login launch stays in the tray;
+            // a normal user launch opens the main window. This is a visible,
+            // standard OS startup entry—not a hidden service or persistence hack.
+            if let Err(e) = app.autolaunch().enable() {
+                crate::log_warn!("autostart", "could not enable login startup: {e}");
+            }
+            let background_launch = std::env::args().any(|arg| arg == "--background");
             // Open the local SQLite DB under the app data dir.
             let data_dir = app.path().app_data_dir().expect("resolve app data dir");
             std::fs::create_dir_all(&data_dir).expect("create app data dir");
@@ -121,6 +134,7 @@ pub fn run() {
             settings::apply(&loaded, &control);
             let hide_dock = loaded.hide_dock;
             let loaded_locale = loaded.locale.clone();
+            let persisted_managed_lock = loaded.managed_locked;
             // One fresh Aptabase session id per launch, shared by the native launch/focus
             // events and the web-UI `track_event` command. A stable per-day key made
             // Aptabase drop repeat posts so events never landed (ticket 135).
@@ -129,7 +143,11 @@ pub fn run() {
             let settings_state = Arc::new(settings::SettingsState {
                 path: settings_path,
                 current: std::sync::Mutex::new(loaded),
-                managed: std::sync::Mutex::new(settings::CaptureManaged::default()),
+                managed: std::sync::Mutex::new(settings::CaptureManaged {
+                    managed: persisted_managed_lock,
+                    allow_employee_override: false,
+                    family: false,
+                }),
             });
             app.manage(settings_state.clone());
             // Manage control early so the tray can read pause state.
@@ -145,6 +163,9 @@ pub fn run() {
             // listener does NOT fire on native window activation in the webview. Throttled
             // to ≥30 s so rapid switching doesn't spam.
             if let Some(win) = app.get_webview_window("main") {
+                if background_launch {
+                    let _ = win.hide();
+                }
                 let w = win.clone();
                 let analytics_queue = data_dir.join("analytics-queue");
                 let analytics_session_id = analytics_session.0.clone();
@@ -187,6 +208,12 @@ pub fn run() {
             // Start the local ingest server for the browser extension.
             let link = server::start(db.clone(), control.clone());
             app.manage(link);
+
+            // Chrome/Edge extension data is preferred. When no extension is
+            // present, Windows can transparently read only the browser address
+            // bar via UI Automation and derive page duration from foreground time.
+            #[cfg(target_os = "windows")]
+            trackers::start_browser_fallback(db.clone(), control.clone());
 
             // Auth/session (task 51): load any persisted session from disk.
             let auth = Arc::new(sync::AuthState::load(data_dir.join("session.json")));

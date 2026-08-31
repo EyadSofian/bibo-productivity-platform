@@ -19,7 +19,7 @@
       "foreground": "Ứng dụng nào đang ở nền trước & trong bao lâu",
       "keypress": "Chỉ số lần gõ phím — không bao giờ ghi lại phím thực tế",
       "screenshots": "Ảnh chụp màn hình định kỳ",
-      "webPages": "Các trang web đã truy cập (với tiện ích mở rộng trình duyệt)"
+      "webPages": "Địa chỉ web đang hoạt động và thời lượng (ưu tiên tiện ích; Windows có phương án dự phòng)"
     }
   },
   "step2": {

@@ -19,7 +19,7 @@
       "foreground": "Aplikasi mana yang berada di latar depan & berapa lama",
       "keypress": "Hanya jumlah ketikan — tidak pernah tombol yang sebenarnya ditekan",
       "screenshots": "Tangkapan layar berkala",
-      "webPages": "Halaman web yang dikunjungi (dengan ekstensi peramban)"
+      "webPages": "Alamat web aktif dan durasi (ekstensi diprioritaskan; cadangan Windows)"
     }
   },
   "step2": {

@@ -180,6 +180,14 @@ function StepConfigure({
           />
         </div>
         <div className="onb-set-row">
+          <span className="onb-set-ic"><GlobeIcon /></span>
+          <span className="onb-set-label">{t("settings:captureBrowserUrls")}</span>
+          <button
+            className={`switch ${settings.capture_browser_urls ? "" : "off"}`}
+            onClick={() => onChange({ capture_browser_urls: !settings.capture_browser_urls })}
+          />
+        </div>
+        <div className="onb-set-row">
           <span className="onb-set-ic"><KeyboardIcon /></span>
           <span className="onb-set-label">{t("settings:countKeystrokes")}</span>
           <button

@@ -41,7 +41,7 @@
     },
     "web": {
       "t": "Web pages",
-      "d": "Domains visited — page contents stay private."
+      "d": "Active web address and time spent — page contents stay private."
     },
     "whoLabel": "WHO SEES THIS?",
     "whoLocal": "Only you, on this device. Nothing is uploaded.",

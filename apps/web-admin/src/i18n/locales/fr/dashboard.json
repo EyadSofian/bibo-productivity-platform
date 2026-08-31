@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "La date de début est postérieure à la date de fin.",
     "loadingReports": "Chargement des rapports…",
     "presence": {
-      "states": { "active": "Actif maintenant", "idle": "Inactif maintenant", "online": "En ligne — suivi en pause", "offline": "Hors ligne" },
+      "states": { "active": "Actif maintenant", "idle": "Inactif maintenant", "online": "En ligne", "offline": "Hors ligne" },
       "openNow": "Ouvert maintenant", "noCurrentApp": "Aucun signal d’application actuel", "since": "Depuis",
-      "updated": "Signal en direct mis à jour à {{time}}", "waiting": "En attente du signal de l’application Windows"
+      "updated": "Signal en direct mis à jour à {{time}}", "waiting": "En attente du signal de l’application Windows",
+      "resources": {
+        "title": "Charge de l’appareil", "wholeDevice": "Utilisation actuelle de l’appareil entier selon le dernier signal.",
+        "cpu": "CPU", "memory": "Mémoire", "disk": "Disque", "network": "Réseau",
+        "download": "Réception", "upload": "Envoi", "current": "utilisation actuelle",
+        "of": "{{used}} sur {{total}}"
+      }
     },
     "summary": {
       "activeTime": "Temps actif",

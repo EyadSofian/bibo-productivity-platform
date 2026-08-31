@@ -211,6 +211,16 @@ export function reportPresence(employeeId: string) {
         window_title: "BiBoTracking — Dashboard",
         since: now - 12 * 60,
         seen_at: now,
+        resources: {
+          cpu_pct: 34.6,
+          memory_used_bytes: 9_230_000_000,
+          memory_total_bytes: 17_180_000_000,
+          disk_used_bytes: 238_000_000_000,
+          disk_total_bytes: 512_000_000_000,
+          network_rx_bps: 1_820_000,
+          network_tx_bps: 284_000,
+          seen_at: now,
+        },
       },
     });
   }

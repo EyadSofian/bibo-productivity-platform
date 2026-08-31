@@ -31,9 +31,21 @@ export function fmtTime(unixSeconds: number): string {
 }
 
 export function fmtBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  if (!Number.isFinite(n) || n <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const exponent = Math.min(Math.floor(Math.log(n) / Math.log(1024)), units.length - 1);
+  const value = n / 1024 ** exponent;
+  const digits = exponent === 0 || value >= 100 ? 0 : 1;
+  return `${value.toFixed(digits)} ${units[exponent]}`;
+}
+
+export function fmtByteRate(bytesPerSecond: number): string {
+  return `${fmtBytes(bytesPerSecond)}/s`;
+}
+
+export function usagePercent(used: number, total: number): number {
+  if (!Number.isFinite(used) || !Number.isFinite(total) || total <= 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((used / total) * 100)));
 }
 
 // Unix-second bounds for a YYYY-MM-DD date input (local time, inclusive end).

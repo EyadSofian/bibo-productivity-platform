@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "The start date is after the end date.",
     "loadingReports": "Loading reports…",
     "presence": {
-      "states": { "active": "Active now", "idle": "Idle now", "online": "Online — monitoring paused", "offline": "Offline" },
+      "states": { "active": "Active now", "idle": "Idle now", "online": "Online", "offline": "Offline" },
       "openNow": "Open now", "noCurrentApp": "No current app signal", "since": "Since",
-      "updated": "Live signal updated at {{time}}", "waiting": "Waiting for the Windows app heartbeat"
+      "updated": "Live signal updated at {{time}}", "waiting": "Waiting for the Windows app heartbeat",
+      "resources": {
+        "title": "Device load now", "wholeDevice": "Current whole-device usage from the latest heartbeat.",
+        "cpu": "CPU", "memory": "Memory", "disk": "Disk", "network": "Network",
+        "download": "Download", "upload": "Upload", "current": "current usage",
+        "of": "{{used}} of {{total}}"
+      }
     },
     "summary": {
       "activeTime": "Active time",

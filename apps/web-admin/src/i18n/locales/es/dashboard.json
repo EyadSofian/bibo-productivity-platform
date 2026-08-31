@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "La fecha de inicio es posterior a la fecha de fin.",
     "loadingReports": "Cargando informes…",
     "presence": {
-      "states": { "active": "Activo ahora", "idle": "Inactivo ahora", "online": "En línea — supervisión pausada", "offline": "Sin conexión" },
+      "states": { "active": "Activo ahora", "idle": "Inactivo ahora", "online": "En línea", "offline": "Sin conexión" },
       "openNow": "Abierto ahora", "noCurrentApp": "Sin señal de aplicación actual", "since": "Desde",
-      "updated": "Señal en vivo actualizada a las {{time}}", "waiting": "Esperando el pulso de la aplicación de Windows"
+      "updated": "Señal en vivo actualizada a las {{time}}", "waiting": "Esperando el pulso de la aplicación de Windows",
+      "resources": {
+        "title": "Carga del dispositivo ahora", "wholeDevice": "Uso actual de todo el dispositivo según el último pulso.",
+        "cpu": "CPU", "memory": "Memoria", "disk": "Disco", "network": "Red",
+        "download": "Descarga", "upload": "Subida", "current": "uso actual",
+        "of": "{{used}} de {{total}}"
+      }
     },
     "summary": {
       "activeTime": "Tiempo activo",

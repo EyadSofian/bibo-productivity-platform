@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "開始日が終了日より後になっています。",
     "loadingReports": "レポートを読み込んでいます…",
     "presence": {
-      "states": { "active": "現在アクティブ", "idle": "現在アイドル", "online": "オンライン — 監視一時停止", "offline": "オフライン" },
+      "states": { "active": "現在アクティブ", "idle": "現在アイドル", "online": "オンライン", "offline": "オフライン" },
       "openNow": "現在開いているアプリ", "noCurrentApp": "現在のアプリ信号はありません", "since": "開始時刻",
-      "updated": "ライブ信号更新 {{time}}", "waiting": "Windows アプリのハートビートを待っています"
+      "updated": "ライブ信号更新 {{time}}", "waiting": "Windows アプリのハートビートを待っています",
+      "resources": {
+        "title": "現在のデバイス負荷", "wholeDevice": "最新のハートビートによるデバイス全体の使用状況です。",
+        "cpu": "CPU", "memory": "メモリ", "disk": "ディスク", "network": "ネットワーク",
+        "download": "受信", "upload": "送信", "current": "現在の使用率",
+        "of": "{{total}} 中 {{used}}"
+      }
     },
     "summary": {
       "activeTime": "アクティブ時間",

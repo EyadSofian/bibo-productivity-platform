@@ -45,9 +45,11 @@ const STATUS_COLOR: Record<TrackStatus, string> = {
 export function AppTrayMenu({
   status,
   onToggleTracking,
+  locked = false,
 }: {
   status: TrackStatus;
   onToggleTracking: () => void;
+  locked?: boolean;
 }) {
   const { t } = useTranslation();
   const { t: tw } = useTranslation("welcome");
@@ -100,9 +102,9 @@ export function AppTrayMenu({
           <button
             type="button"
             className="tray-item"
-            disabled={!paused}
+            disabled={locked || !paused}
             onClick={() => {
-              if (paused) onToggleTracking();
+              if (!locked && paused) onToggleTracking();
               setOpen(false);
             }}
           >
@@ -112,9 +114,9 @@ export function AppTrayMenu({
           <button
             type="button"
             className="tray-item"
-            disabled={paused}
+            disabled={locked || paused}
             onClick={() => {
-              if (!paused) onToggleTracking();
+              if (!locked && !paused) onToggleTracking();
               setOpen(false);
             }}
           >

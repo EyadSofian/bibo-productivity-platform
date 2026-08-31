@@ -188,6 +188,17 @@ struct ScreenshotResp {
 }
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ResourceSnapshot {
+    pub cpu_pct: f32,
+    pub memory_used_bytes: u64,
+    pub memory_total_bytes: u64,
+    pub disk_used_bytes: u64,
+    pub disk_total_bytes: u64,
+    pub network_rx_bps: u64,
+    pub network_tx_bps: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct PresenceSignal {
     pub state: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -195,6 +206,8 @@ pub struct PresenceSignal {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window_title: Option<String>,
     pub since: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resources: Option<ResourceSnapshot>,
 }
 
 #[derive(Serialize)]
@@ -208,6 +221,8 @@ struct PresenceReq<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     window_title: Option<&'a str>,
     since: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    resources: Option<&'a ResourceSnapshot>,
 }
 
 impl BackendClient {
@@ -451,6 +466,7 @@ impl BackendClient {
             app: signal.app.as_deref(),
             window_title: signal.window_title.as_deref(),
             since: signal.since,
+            resources: signal.resources.as_ref(),
         };
         let mut token = self.access_token()?;
         for attempt in 0..2 {

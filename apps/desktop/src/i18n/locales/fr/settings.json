@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "Enregistrer périodiquement des captures de votre ou vos écrans",
   "countKeystrokes": "Compter les frappes",
   "countKeystrokesDesc": "Compter uniquement le nombre de frappes — jamais quelles touches sont pressées",
+  "captureBrowserUrls": "Enregistrer les URL et la durée",
+  "captureBrowserUrlsDesc": "Enregistre l’adresse active et sa durée. L’extension est privilégiée ; Windows peut lire uniquement la barre d’adresse en son absence.",
   "screenshotInterval": "Intervalle des captures d'écran",
   "screenshotIntervalDesc": "Fréquence de capture des écrans",
   "screenshotMode": "Mode de capture d'écran",

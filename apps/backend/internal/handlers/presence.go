@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"errors"
+	"math"
 	"net/http"
 	"strings"
 	"time"
@@ -22,12 +23,13 @@ func NewPresenceHandler(s *store.Store) *PresenceHandler {
 }
 
 type presenceHeartbeatReq struct {
-	DeviceID    string  `json:"device_id"`
-	BusinessID  *string `json:"business_id"`
-	State       string  `json:"state"`
-	App         *string `json:"app"`
-	WindowTitle *string `json:"window_title"`
-	Since       int64   `json:"since"`
+	DeviceID    string                  `json:"device_id"`
+	BusinessID  *string                 `json:"business_id"`
+	State       string                  `json:"state"`
+	App         *string                 `json:"app"`
+	WindowTitle *string                 `json:"window_title"`
+	Since       int64                   `json:"since"`
+	Resources   *store.ResourceSnapshot `json:"resources"`
 }
 
 // Heartbeat accepts a cheap 30-second presence signal from the signed-in
@@ -53,6 +55,10 @@ func (h *PresenceHandler) Heartbeat(c *gin.Context) {
 		req.App = nil
 		req.WindowTitle = nil
 	}
+	if !validResourceSnapshot(req.Resources) {
+		badRequest(c, "invalid resource snapshot")
+		return
+	}
 	if req.Since <= 0 || req.Since > time.Now().Unix()+60 {
 		req.Since = time.Now().Unix()
 	}
@@ -72,7 +78,7 @@ func (h *PresenceHandler) Heartbeat(c *gin.Context) {
 
 	enabled, err := h.store.UpdatePresence(
 		c.Request.Context(), userID, businessID, req.DeviceID,
-		req.State, req.App, req.WindowTitle, req.Since,
+		req.State, req.App, req.WindowTitle, req.Since, req.Resources,
 	)
 	if errors.Is(err, store.ErrForbidden) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "device belongs to another account"})
@@ -83,6 +89,17 @@ func (h *PresenceHandler) Heartbeat(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "monitoring_enabled": enabled})
+}
+
+func validResourceSnapshot(value *store.ResourceSnapshot) bool {
+	if value == nil {
+		return true
+	}
+	cpu := float64(value.CPUPct)
+	return !math.IsNaN(cpu) && !math.IsInf(cpu, 0) && cpu >= 0 && cpu <= 100 &&
+		value.MemoryUsedBytes >= 0 && value.MemoryTotalBytes >= value.MemoryUsedBytes &&
+		value.DiskUsedBytes >= 0 && value.DiskTotalBytes >= value.DiskUsedBytes &&
+		value.NetworkRxBPS >= 0 && value.NetworkTxBPS >= 0
 }
 
 // Employee returns the freshest presence for an employee owned by the caller.

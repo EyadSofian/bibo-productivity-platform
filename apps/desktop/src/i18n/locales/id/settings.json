@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "Menyimpan tangkapan layar Anda secara berkala",
   "countKeystrokes": "Hitung ketukan tombol",
   "countKeystrokesDesc": "Hanya menghitung jumlah ketukan tombol — tidak pernah merekam tombol mana yang ditekan",
+  "captureBrowserUrls": "Rekam URL dan waktu browser",
+  "captureBrowserUrlsDesc": "Merekam alamat aktif dan durasinya. Ekstensi diprioritaskan; Windows hanya membaca bilah alamat saat ekstensi tidak ada.",
   "screenshotInterval": "Interval tangkapan layar",
   "screenshotIntervalDesc": "Seberapa sering layar direkam",
   "screenshotMode": "Mode tangkapan layar",

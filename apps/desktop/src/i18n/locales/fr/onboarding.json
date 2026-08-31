@@ -19,7 +19,7 @@
       "foreground": "Quelle application est au premier plan et pendant combien de temps",
       "keypress": "Uniquement le nombre de frappes au clavier — jamais les touches réelles",
       "screenshots": "Captures d'écran périodiques",
-      "webPages": "Pages web visitées (avec l'extension de navigateur)"
+      "webPages": "Adresse web active et durée (extension privilégiée ; solution Windows intégrée)"
     }
   },
   "step2": {

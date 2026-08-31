@@ -74,9 +74,15 @@
     "errorStartAfterEnd": "Ngày bắt đầu sau ngày kết thúc.",
     "loadingReports": "Đang tải báo cáo…",
     "presence": {
-      "states": { "active": "Đang hoạt động", "idle": "Đang nhàn rỗi", "online": "Trực tuyến — tạm dừng giám sát", "offline": "Ngoại tuyến" },
+      "states": { "active": "Đang hoạt động", "idle": "Đang nhàn rỗi", "online": "Trực tuyến", "offline": "Ngoại tuyến" },
       "openNow": "Đang mở", "noCurrentApp": "Không có tín hiệu ứng dụng hiện tại", "since": "Từ",
-      "updated": "Tín hiệu trực tiếp cập nhật lúc {{time}}", "waiting": "Đang chờ nhịp tim từ ứng dụng Windows"
+      "updated": "Tín hiệu trực tiếp cập nhật lúc {{time}}", "waiting": "Đang chờ nhịp tim từ ứng dụng Windows",
+      "resources": {
+        "title": "Tải thiết bị hiện tại", "wholeDevice": "Mức sử dụng toàn thiết bị từ nhịp tim mới nhất.",
+        "cpu": "CPU", "memory": "Bộ nhớ", "disk": "Ổ đĩa", "network": "Mạng",
+        "download": "Tải xuống", "upload": "Tải lên", "current": "mức sử dụng hiện tại",
+        "of": "{{used}} trên {{total}}"
+      }
     },
     "summary": {
       "activeTime": "Thời gian hoạt động",

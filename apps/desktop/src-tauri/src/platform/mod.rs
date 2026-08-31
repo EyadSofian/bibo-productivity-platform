@@ -85,6 +85,15 @@ pub struct ActiveWindowInfo {
     pub pid: i64,
 }
 
+/// A browser address read from the browser's own address-bar accessibility
+/// element. It deliberately contains no page body, cookies, form values, or keys.
+#[cfg(target_os = "windows")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BrowserAddress {
+    pub url: String,
+    pub browser: String,
+}
+
 /// Total key-down presses observed since the last flush. The OS backend's
 /// keyboard counter increments it; the keyboard flusher swaps it out into
 /// per-minute buckets. The key itself is never decoded or stored.

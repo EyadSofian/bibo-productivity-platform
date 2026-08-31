@@ -13,7 +13,7 @@
 //! Not yet implemented: session events (lock/unlock, sleep/resume, user switching)
 //! — see docs/IMPLEMENTATION_TASKS.md F2.
 
-use super::{CapabilityRow, Permission, PermissionState};
+use super::{ActiveWindowInfo, BrowserAddress, CapabilityRow, Permission, PermissionState};
 use crate::settings::Settings;
 
 /// Windows capture/consent rows for the data-driven setup screen. There are no
@@ -40,6 +40,16 @@ pub fn capability_rows(s: &Settings) -> Vec<CapabilityRow> {
             can_open_settings: false,
         },
         CapabilityRow {
+            key: "browser_urls".to_string(),
+            label: "Browser URLs and time".to_string(),
+            description: "Records the active browser address and time spent. The browser extension is preferred; without it, Windows reads only the address bar through UI Automation — never page contents, form values, cookies, or typed keys."
+                .to_string(),
+            state: state(s.capture_browser_urls),
+            required: false,
+            can_request: false,
+            can_open_settings: false,
+        },
+        CapabilityRow {
             key: "screenshots".to_string(),
             label: "Screenshots".to_string(),
             description: "Captures periodic screenshots of your screen(s).".to_string(),
@@ -49,6 +59,235 @@ pub fn capability_rows(s: &Settings) -> Vec<CapabilityRow> {
             can_open_settings: false,
         },
     ]
+}
+
+// ---------- transparent browser address-bar fallback ----------
+
+/// A thread-affine Windows UI Automation client. Construct and use it on the
+/// same dedicated tracker thread; `Drop` balances COM initialization there.
+pub struct BrowserUrlReader {
+    automation: windows::Win32::UI::Accessibility::IUIAutomation,
+}
+
+impl BrowserUrlReader {
+    pub fn new() -> Option<Self> {
+        use windows::Win32::System::Com::{
+            CoCreateInstance, CoInitializeEx, CLSCTX_INPROC_SERVER, COINIT_MULTITHREADED,
+        };
+        use windows::Win32::UI::Accessibility::{CUIAutomation, IUIAutomation};
+
+        unsafe {
+            if CoInitializeEx(None, COINIT_MULTITHREADED).is_err() {
+                return None;
+            }
+            match CoCreateInstance::<_, IUIAutomation>(&CUIAutomation, None, CLSCTX_INPROC_SERVER) {
+                Ok(automation) => Some(Self { automation }),
+                Err(_) => {
+                    windows::Win32::System::Com::CoUninitialize();
+                    None
+                }
+            }
+        }
+    }
+
+    /// Read the exact URL from a known foreground browser's address-bar edit
+    /// element. Page edit controls are deliberately rejected by requiring an
+    /// address-bar-specific accessibility name/id/class near the browser chrome.
+    pub fn read(&self, active: &ActiveWindowInfo) -> Option<BrowserAddress> {
+        use windows::core::VARIANT;
+        use windows::Win32::UI::Accessibility::{
+            IUIAutomationValuePattern, TreeScope_Descendants, UIA_ControlTypePropertyId,
+            UIA_EditControlTypeId, UIA_ValuePatternId,
+        };
+        use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
+
+        let browser = browser_name(&active.app_name)?;
+        unsafe {
+            let hwnd = GetForegroundWindow();
+            if hwnd.0.is_null() {
+                return None;
+            }
+            let root = self.automation.ElementFromHandle(hwnd).ok()?;
+            let root_rect = root.CurrentBoundingRectangle().ok()?;
+            let control_type = VARIANT::from(UIA_EditControlTypeId.0);
+            let condition = self
+                .automation
+                .CreatePropertyCondition(UIA_ControlTypePropertyId, &control_type)
+                .ok()?;
+            let elements = root.FindAll(TreeScope_Descendants, &condition).ok()?;
+            let len = elements.Length().ok()?.clamp(0, 512);
+
+            let mut best: Option<(i32, String)> = None;
+            for index in 0..len {
+                let Ok(element) = elements.GetElement(index) else {
+                    continue;
+                };
+                if element
+                    .CurrentIsPassword()
+                    .map(|v| v.as_bool())
+                    .unwrap_or(true)
+                {
+                    continue;
+                }
+                let name = element
+                    .CurrentName()
+                    .map(|v| v.to_string())
+                    .unwrap_or_default();
+                let automation_id = element
+                    .CurrentAutomationId()
+                    .map(|v| v.to_string())
+                    .unwrap_or_default();
+                let class_name = element
+                    .CurrentClassName()
+                    .map(|v| v.to_string())
+                    .unwrap_or_default();
+                let rect = element.CurrentBoundingRectangle().ok();
+                let score = address_bar_score(
+                    &name,
+                    &automation_id,
+                    &class_name,
+                    rect.map(|r| r.top.saturating_sub(root_rect.top)),
+                );
+                if score <= 0 {
+                    continue;
+                }
+                let Ok(pattern) =
+                    element.GetCurrentPatternAs::<IUIAutomationValuePattern>(UIA_ValuePatternId)
+                else {
+                    continue;
+                };
+                let Ok(value) = pattern.CurrentValue() else {
+                    continue;
+                };
+                let Some(url) = normalize_address_bar_value(&value.to_string()) else {
+                    continue;
+                };
+                if best.as_ref().is_none_or(|(old, _)| score > *old) {
+                    best = Some((score, url));
+                }
+            }
+            best.map(|(_, url)| BrowserAddress {
+                url,
+                browser: browser.to_string(),
+            })
+        }
+    }
+}
+
+impl Drop for BrowserUrlReader {
+    fn drop(&mut self) {
+        unsafe { windows::Win32::System::Com::CoUninitialize() }
+    }
+}
+
+fn browser_name(app_name: &str) -> Option<&'static str> {
+    let app = app_name.to_ascii_lowercase();
+    if app.contains("msedge") || app == "edge" || app.contains("microsoft edge") {
+        Some("Edge")
+    } else if app.contains("chrome") {
+        Some("Chrome")
+    } else if app.contains("brave") {
+        Some("Brave")
+    } else if app.contains("firefox") {
+        Some("Firefox")
+    } else if app.contains("vivaldi") {
+        Some("Vivaldi")
+    } else if app.contains("opera") {
+        Some("Opera")
+    } else {
+        None
+    }
+}
+
+fn address_bar_score(name: &str, automation_id: &str, class_name: &str, top: Option<i32>) -> i32 {
+    // An address bar lives in the browser chrome, not in the document body.
+    if top.is_none_or(|v| !(0..=280).contains(&v)) {
+        return 0;
+    }
+    let metadata = format!("{name} {automation_id} {class_name}").to_ascii_lowercase();
+    let strong = [
+        "address and search bar",
+        "address bar",
+        "search or enter address",
+        "enter address",
+        "location bar",
+        "omnibox",
+        "urlbar",
+        "chrome_omniboxview",
+    ];
+    strong
+        .iter()
+        .position(|marker| metadata.contains(marker))
+        .map(|index| 100 - index as i32)
+        .unwrap_or(0)
+}
+
+fn normalize_address_bar_value(raw: &str) -> Option<String> {
+    let value = raw.trim();
+    if value.is_empty()
+        || value.len() > 4096
+        || value.chars().any(char::is_whitespace)
+        || value.starts_with("chrome://")
+        || value.starts_with("edge://")
+        || value.starts_with("about:")
+        || value.starts_with("file:")
+    {
+        return None;
+    }
+    if value.starts_with("https://") || value.starts_with("http://") {
+        return Some(value.to_string());
+    }
+    // Chrome/Edge sometimes omit the scheme in the exposed address-bar value.
+    // Only normalize values that look like a hostname; search terms stay out.
+    let host = value.split('/').next().unwrap_or_default();
+    if host.contains('.') && !host.starts_with('.') && !host.ends_with('.') {
+        Some(format!("https://{value}"))
+    } else {
+        None
+    }
+}
+
+#[cfg(test)]
+mod browser_url_tests {
+    use super::*;
+
+    #[test]
+    fn recognises_supported_browser_process_names() {
+        assert_eq!(browser_name("chrome.exe"), Some("Chrome"));
+        assert_eq!(browser_name("msedge.exe"), Some("Edge"));
+        assert_eq!(browser_name("Brave Browser"), Some("Brave"));
+        assert_eq!(browser_name("notepad.exe"), None);
+    }
+
+    #[test]
+    fn accepts_web_addresses_but_rejects_private_browser_pages_and_search_terms() {
+        assert_eq!(
+            normalize_address_bar_value("https://example.com/a?q=1"),
+            Some("https://example.com/a?q=1".into())
+        );
+        assert_eq!(
+            normalize_address_bar_value("example.com/path"),
+            Some("https://example.com/path".into())
+        );
+        for rejected in [
+            "chrome://settings",
+            "about:blank",
+            "hello world",
+            "file:///secret",
+        ] {
+            assert_eq!(normalize_address_bar_value(rejected), None);
+        }
+    }
+
+    #[test]
+    fn requires_address_bar_metadata_in_the_browser_chrome() {
+        assert!(address_bar_score("Address and search bar", "", "", Some(90)) > 0);
+        assert_eq!(address_bar_score("Search", "", "", Some(90)), 0);
+        assert_eq!(
+            address_bar_score("Address and search bar", "", "", Some(600)),
+            0
+        );
+    }
 }
 
 /// No-op on Windows: there is no System Settings pane to grant a per-feature

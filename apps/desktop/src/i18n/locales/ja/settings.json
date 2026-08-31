@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "画面のスクリーンショットを定期的に保存します",
   "countKeystrokes": "キー入力数をカウント",
   "countKeystrokesDesc": "キー入力の回数のみをカウントします。どのキーが押されたかは記録しません",
+  "captureBrowserUrls": "ブラウザーURLと時間を記録",
+  "captureBrowserUrlsDesc": "アクティブなアドレスと表示時間を記録します。拡張機能を優先し、未導入時のWindowsではアドレスバーだけを読み取ります。",
   "screenshotInterval": "スクリーンショットの間隔",
   "screenshotIntervalDesc": "画面をキャプチャする頻度",
   "screenshotMode": "スクリーンショットモード",

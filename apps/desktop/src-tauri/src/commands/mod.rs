@@ -24,8 +24,12 @@ pub fn ping() -> String {
 /// Pause or resume all tracking. Routed through the tray helper so the menu bar
 /// indicator and the dashboard pill stay in sync.
 #[tauri::command]
-pub fn set_paused(paused: bool, app: tauri::AppHandle) {
-    crate::tray::set_paused(&app, paused);
+pub fn set_paused(paused: bool, app: tauri::AppHandle) -> Result<(), String> {
+    if crate::tray::set_user_paused(&app, paused) {
+        Ok(())
+    } else {
+        Err("tracking is managed by your organization".to_string())
+    }
 }
 
 /// UI reports whether the user is still on the setup surfaces (welcome/login/
@@ -155,7 +159,9 @@ pub fn set_settings(
 ) -> Result<(), String> {
     // The UI's settings payload doesn't carry `locale` (it's owned by `set_locale`),
     // so preserve the persisted value instead of letting serde's default reset it.
-    value.locale = state.current.lock().unwrap().locale.clone();
+    let persisted = state.current.lock().unwrap().clone();
+    value.locale = persisted.locale.clone();
+    value.managed_locked = persisted.managed_locked;
     // When the org controls capture settings, ignore changes to those fields —
     // the rest (theme, dock, etc.) still apply.
     if state.managed.lock().unwrap().locked() {
@@ -165,6 +171,10 @@ pub fn set_settings(
         value.screenshot_retention_days = cur.screenshot_retention_days;
         value.screenshot_mode = cur.screenshot_mode;
         value.screenshot_skip_apps = cur.screenshot_skip_apps;
+        value.capture_screenshots = cur.capture_screenshots;
+        value.count_keystrokes = cur.count_keystrokes;
+        value.capture_browser_urls = cur.capture_browser_urls;
+        value.domain_only = cur.domain_only;
     }
     crate::settings::apply(&value, &control);
     crate::apply_dock_policy(&app, value.hide_dock);
@@ -191,6 +201,17 @@ pub async fn apply_org_policy(
         family: policy.kind.as_deref() == Some("family"),
     };
     *settings.managed.lock().unwrap() = status;
+    control
+        .managed_locked
+        .store(status.locked(), Ordering::Relaxed);
+
+    // Persist the lock itself even when the policy was just unlocked. It must
+    // survive offline restarts, and a stale lock must clear after an admin change.
+    {
+        let mut s = settings.current.lock().unwrap();
+        s.managed_locked = status.locked();
+        let _ = crate::settings::save(&settings.path, &s);
+    }
 
     if status.locked() {
         let mut s = settings.current.lock().unwrap().clone();
@@ -471,7 +492,13 @@ pub async fn login(
 
 /// Clear the stored session (Keychain + memory).
 #[tauri::command]
-pub fn logout(auth: State<Arc<AuthState>>) -> Result<(), String> {
+pub fn logout(
+    auth: State<Arc<AuthState>>,
+    control: State<Arc<TrackerControl>>,
+) -> Result<(), String> {
+    if control.managed_locked.load(Ordering::Relaxed) {
+        return Err("sign out is disabled by your organization".to_string());
+    }
     auth.clear()
 }
 

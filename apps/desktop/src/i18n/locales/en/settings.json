@@ -15,6 +15,8 @@
   "captureScreenshotsDesc": "Periodically save screenshots of your screen(s)",
   "countKeystrokes": "Count keystrokes",
   "countKeystrokesDesc": "Count keypresses only — never which keys are pressed",
+  "captureBrowserUrls": "Record browser URLs and time",
+  "captureBrowserUrlsDesc": "Records the active address and duration. The extension is preferred; Windows can read only the address bar when it is absent.",
   "screenshotInterval": "Screenshot interval",
   "screenshotIntervalDesc": "How often screens are captured",
   "screenshotMode": "Screenshot mode",

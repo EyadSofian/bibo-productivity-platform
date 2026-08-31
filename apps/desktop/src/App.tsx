@@ -155,6 +155,7 @@ function App() {
     // Settings are local (no auth) — load them up front so the welcome/personal
     // gate can read `local_only` before any login.
     invoke<AppSettings>("get_settings").then(setSettings).catch(() => {});
+    invoke<CaptureManaged>("capture_policy").then(setCaptureManaged).catch(() => {});
     // Sync the native side (tray) to the UI's detected/saved language on startup.
     invoke("set_locale", { locale: i18n.resolvedLanguage ?? "en" }).catch(() => {});
   }, [i18n.resolvedLanguage]);
@@ -372,12 +373,13 @@ function App() {
       : status === "idle"
         ? t("statusTooltip.idle")
         : t("statusTooltip.tracking");
+  const trackingLocked = !!captureManaged?.managed && !captureManaged.allow_employee_override;
 
   return (
     <div className="app">
       <div className="app-titlebar" onMouseDown={dragWindow}>
         <span className="app-titlebar-title">BiBoTracking — {t(`nav.${screen}`)}</span>
-        <AppTrayMenu status={status} onToggleTracking={toggleTracking} />
+        <AppTrayMenu status={status} onToggleTracking={toggleTracking} locked={trackingLocked} />
       </div>
       <div className="app-body">
       <aside className="sidebar">
@@ -421,7 +423,7 @@ function App() {
                 <span className="account-ic"><UserIcon /></span>
                 <span className="account-text" title={session.email}>{session.email}</span>
               </div>
-              <button className="account-link" onClick={signOut}>
+              <button className="account-link" onClick={signOut} disabled={trackingLocked}>
                 {t("account.signOut")}
               </button>
             </div>
@@ -465,6 +467,7 @@ function App() {
               <button
                 className={`bb-trackpill ${trackClass}`}
                 onClick={toggleTracking}
+                disabled={trackingLocked}
                 aria-label={pillTitle}
               >
                 {status === "paused" ? <PauseBars /> : <span className="bb-trackpill__dot" />}

@@ -229,9 +229,20 @@ pub fn build(app: &AppHandle, control: Arc<TrackerControl>) -> tauri::Result<()>
         .menu(&menu)
         .on_menu_event(|app, event| match event.id().as_ref() {
             "open" => show_main(app),
-            "start" => set_paused(app, false),
-            "stop" => set_paused(app, true),
-            "quit" => app.exit(0),
+            "start" => {
+                set_user_paused(app, false);
+            }
+            "stop" => {
+                set_user_paused(app, true);
+            }
+            "quit" => {
+                let managed = app
+                    .try_state::<Arc<TrackerControl>>()
+                    .is_some_and(|c| c.managed_locked.load(Ordering::Relaxed));
+                if !managed {
+                    app.exit(0);
+                }
+            }
             _ => {}
         })
         .build(app)?;
@@ -260,7 +271,10 @@ fn version_label(app: &AppHandle, loc: &str) -> String {
 /// tracking accordingly; on the dashboard tracking resumes and Start becomes usable.
 pub fn set_in_setup(app: &AppHandle, in_setup: bool) {
     IN_SETUP.store(in_setup, Ordering::Relaxed);
-    set_paused(app, in_setup);
+    let managed = app
+        .try_state::<Arc<TrackerControl>>()
+        .is_some_and(|c| c.managed_locked.load(Ordering::Relaxed));
+    set_paused(app, in_setup && !managed);
 }
 
 /// Show + focus the main window (it may be hidden in menu-bar-only mode).
@@ -278,6 +292,21 @@ pub fn set_paused(app: &AppHandle, paused: bool) {
         c.paused.store(paused, Ordering::Relaxed);
     }
     refresh(app); // emits the new tracking-state + updates the badge
+}
+
+/// Employee-facing pause control. A locked organization policy removes the
+/// local stop path; the owner can still stop collection remotely through the
+/// per-device monitoring switch.
+pub fn set_user_paused(app: &AppHandle, paused: bool) -> bool {
+    let managed = app
+        .try_state::<Arc<TrackerControl>>()
+        .is_some_and(|c| c.managed_locked.load(Ordering::Relaxed));
+    if managed && paused {
+        refresh(app);
+        return false;
+    }
+    set_paused(app, paused);
+    true
 }
 
 /// Recompute the current state and update the tray (dispatched to the main thread,
@@ -324,11 +353,15 @@ fn render(app: &AppHandle, state: State) {
     // Stop is available only while running (tracking/idle); Start only while
     // paused AND on the dashboard (never from the setup surfaces).
     let paused = state == State::Paused;
+    let managed = app
+        .try_state::<Arc<TrackerControl>>()
+        .is_some_and(|c| c.managed_locked.load(Ordering::Relaxed));
     if let Some(items) = app.try_state::<MenuItems>() {
         let _ = items
             .start
-            .set_enabled(paused && !IN_SETUP.load(Ordering::Relaxed));
-        let _ = items.stop.set_enabled(!paused);
+            .set_enabled(!managed && paused && !IN_SETUP.load(Ordering::Relaxed));
+        let _ = items.stop.set_enabled(!managed && !paused);
+        let _ = items.quit.set_enabled(!managed);
     }
 }
 

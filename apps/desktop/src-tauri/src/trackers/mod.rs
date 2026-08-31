@@ -9,7 +9,7 @@
 //! tested without real timers or platform calls.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicU8, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -47,6 +47,11 @@ pub struct TrackerControl {
     pub screenshot_retention_days: AtomicU64,
     /// Store only the site origin (scheme://host) for browser visits, not full URLs.
     pub domain_only: AtomicBool,
+    /// Record browser URL + duration (extension preferred, Windows fallback).
+    pub capture_browser_urls: AtomicBool,
+    /// Last authenticated browser-extension ingest. The Windows address-bar
+    /// fallback yields to it so one browsing interval is never stored twice.
+    pub extension_last_seen: AtomicI64,
     /// Capture periodic screenshots (user opt-out; Windows: also gated on consent).
     pub capture_screenshots: AtomicBool,
     /// SHOT_MODE_PRIVACY | SHOT_MODE_NORMAL.
@@ -57,6 +62,10 @@ pub struct TrackerControl {
     pub screenshot_skip_apps: RwLock<Vec<String>>,
     /// Count keystrokes (user opt-out; Windows: also gated on consent).
     pub count_keystrokes: AtomicBool,
+    /// The signed-in organization's capture policy is locked. Local pause/quit
+    /// controls yield to this flag; the server-owned monitoring switch remains
+    /// the authoritative way for the owner to stop collection.
+    pub managed_locked: AtomicBool,
 }
 
 impl TrackerControl {
@@ -69,10 +78,13 @@ impl TrackerControl {
             screenshot_interval_s: AtomicU64::new(DEFAULT_SCREENSHOT_INTERVAL_S),
             screenshot_retention_days: AtomicU64::new(DEFAULT_RETENTION_DAYS),
             domain_only: AtomicBool::new(false),
+            capture_browser_urls: AtomicBool::new(true),
+            extension_last_seen: AtomicI64::new(0),
             capture_screenshots: AtomicBool::new(true),
             screenshot_mode: AtomicU8::new(SHOT_MODE_PRIVACY),
             screenshot_skip_apps: RwLock::new(default_privacy_apps_flat()),
             count_keystrokes: AtomicBool::new(true),
+            managed_locked: AtomicBool::new(false),
         }
     }
 
@@ -366,6 +378,166 @@ impl WindowTracker {
 /// Spawn the active-window + idle tracker on a background thread.
 pub fn start(db: Arc<Db>, control: Arc<TrackerControl>) {
     thread::spawn(move || run(db, control));
+}
+
+// ---------- Windows browser address-bar fallback ----------
+
+/// The extension reports at one-minute checkpoints. Keep native observations in
+/// memory for longer than that before persisting them; if an authenticated
+/// extension ingest arrives, discard the buffer and let the richer extension
+/// record win. This prevents duplicate time while still supporting an install
+/// with no extension.
+#[cfg(any(target_os = "windows", test))]
+const BROWSER_FALLBACK_GRACE_S: i64 = 90;
+#[cfg(any(target_os = "windows", test))]
+const BROWSER_FALLBACK_CHUNK_S: i64 = 60;
+
+#[cfg(any(target_os = "windows", test))]
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BrowserObservation {
+    url: String,
+    page_title: Option<String>,
+    browser: String,
+}
+
+#[cfg(any(target_os = "windows", test))]
+#[derive(Debug, Clone)]
+struct BrowserInterval {
+    start_ts: i64,
+    last_ts: i64,
+    observation: BrowserObservation,
+    duration_s: i64,
+}
+
+#[cfg(any(target_os = "windows", test))]
+impl BrowserInterval {
+    fn visit(self) -> Option<crate::storage::BrowserVisit> {
+        (self.duration_s > 0).then_some(crate::storage::BrowserVisit {
+            ts: self.start_ts,
+            url: self.observation.url,
+            page_title: self.observation.page_title,
+            browser: Some(self.observation.browser),
+            duration_s: self.duration_s,
+        })
+    }
+}
+
+#[cfg(any(target_os = "windows", test))]
+#[derive(Default)]
+struct BrowserFallbackTracker {
+    current: Option<BrowserInterval>,
+    pending: Vec<crate::storage::BrowserVisit>,
+}
+
+#[cfg(any(target_os = "windows", test))]
+impl BrowserFallbackTracker {
+    fn close_current(&mut self) {
+        if let Some(visit) = self.current.take().and_then(BrowserInterval::visit) {
+            self.pending.push(visit);
+        }
+    }
+
+    /// Advance the native fallback and return visits old enough to be sure the
+    /// extension did not report them. `active=false` closes the current page.
+    fn tick(
+        &mut self,
+        active: bool,
+        observation: Option<BrowserObservation>,
+        extension_seen_at: i64,
+        now: i64,
+    ) -> Vec<crate::storage::BrowserVisit> {
+        let extension_is_fresh = extension_seen_at > 0
+            && now.saturating_sub(extension_seen_at) <= BROWSER_FALLBACK_GRACE_S;
+        if extension_is_fresh {
+            self.current = None;
+            self.pending.clear();
+            return Vec::new();
+        }
+
+        let observation = active.then_some(observation).flatten();
+        match (self.current.as_mut(), observation) {
+            (Some(cur), Some(next)) if cur.observation == next => {
+                // A delayed poll must not invent a long active interval after
+                // sleep/resume. The idle gate handles ordinary inactivity.
+                let elapsed = now.saturating_sub(cur.last_ts).min(5);
+                cur.duration_s += elapsed;
+                cur.last_ts = now;
+                if cur.duration_s >= BROWSER_FALLBACK_CHUNK_S {
+                    self.close_current();
+                    self.current = Some(BrowserInterval {
+                        start_ts: now,
+                        last_ts: now,
+                        observation: next,
+                        duration_s: 0,
+                    });
+                }
+            }
+            (_, Some(next)) => {
+                self.close_current();
+                self.current = Some(BrowserInterval {
+                    start_ts: now,
+                    last_ts: now,
+                    observation: next,
+                    duration_s: 0,
+                });
+            }
+            (_, None) => self.close_current(),
+        }
+
+        let mut ready = Vec::new();
+        self.pending.retain(|visit| {
+            if now.saturating_sub(visit.ts) >= BROWSER_FALLBACK_GRACE_S {
+                ready.push(visit.clone());
+                false
+            } else {
+                true
+            }
+        });
+        ready
+    }
+}
+
+/// On Windows, read only the foreground browser's accessibility address-bar
+/// value. It is separately opt-out/consent/schedule gated and yields to the
+/// browser extension whenever the extension is active.
+#[cfg(target_os = "windows")]
+pub fn start_browser_fallback(db: Arc<Db>, control: Arc<TrackerControl>) {
+    thread::spawn(move || {
+        let Some(reader) = crate::platform::BrowserUrlReader::new() else {
+            crate::log_warn!("browser-fallback", "Windows UI Automation unavailable");
+            return;
+        };
+        let mut tracker = BrowserFallbackTracker::default();
+        loop {
+            thread::sleep(Duration::from_secs(2));
+            let now = now_ts();
+            let enabled = control.category_allowed("websites")
+                && control.capture_browser_urls.load(Ordering::Relaxed)
+                && crate::platform::idle_seconds()
+                    < control.idle_threshold_s.load(Ordering::Relaxed) as f64;
+            let observation = if enabled {
+                crate::platform::active_window().and_then(|active| {
+                    reader.read(&active).map(|address| BrowserObservation {
+                        url: address.url,
+                        page_title: active.title,
+                        browser: address.browser,
+                    })
+                })
+            } else {
+                None
+            };
+            let extension_seen = control.extension_last_seen.load(Ordering::Relaxed);
+            for mut visit in tracker.tick(enabled, observation, extension_seen, now) {
+                if control.domain_only.load(Ordering::Relaxed) {
+                    visit.url = crate::server::origin_only(&visit.url);
+                    visit.page_title = None;
+                }
+                if let Err(e) = db.insert_browser_visit(&visit, None) {
+                    crate::log_warn!("browser-fallback", "failed to write browser visit: {e}");
+                }
+            }
+        }
+    });
 }
 
 // ---------- keyboard counter (task 17) ----------
@@ -923,5 +1095,56 @@ mod tests {
             !rule.active_at(before_jump),
             "invalid schedules fail closed"
         );
+    }
+
+    fn browser(url: &str) -> BrowserObservation {
+        BrowserObservation {
+            url: url.into(),
+            page_title: Some("Page".into()),
+            browser: "Chrome".into(),
+        }
+    }
+
+    #[test]
+    fn browser_fallback_waits_for_extension_grace_then_flushes_active_time() {
+        let mut tracker = BrowserFallbackTracker::default();
+        assert!(tracker
+            .tick(true, Some(browser("https://a.test/one")), 0, 0)
+            .is_empty());
+        for now in (2..=60).step_by(2) {
+            assert!(tracker
+                .tick(true, Some(browser("https://a.test/one")), 0, now)
+                .is_empty());
+        }
+        let ready = tracker.tick(true, Some(browser("https://a.test/one")), 0, 90);
+        assert_eq!(ready.len(), 1);
+        assert_eq!(ready[0].url, "https://a.test/one");
+        assert_eq!(ready[0].duration_s, 60);
+    }
+
+    #[test]
+    fn browser_fallback_discards_buffer_when_extension_reports() {
+        let mut tracker = BrowserFallbackTracker::default();
+        tracker.tick(true, Some(browser("https://a.test")), 0, 0);
+        for now in (2..=60).step_by(2) {
+            tracker.tick(true, Some(browser("https://a.test")), 0, now);
+        }
+        assert!(tracker
+            .tick(true, Some(browser("https://a.test")), 61, 61)
+            .is_empty());
+        assert!(tracker.current.is_none());
+        assert!(tracker.pending.is_empty());
+    }
+
+    #[test]
+    fn browser_fallback_closes_page_on_url_change() {
+        let mut tracker = BrowserFallbackTracker::default();
+        tracker.tick(true, Some(browser("https://a.test")), 0, 10);
+        tracker.tick(true, Some(browser("https://a.test")), 0, 15);
+        tracker.tick(true, Some(browser("https://b.test")), 0, 20);
+        let ready = tracker.tick(false, None, 0, 100);
+        assert_eq!(ready.len(), 1);
+        assert_eq!(ready[0].url, "https://a.test");
+        assert_eq!(ready[0].duration_s, 5);
     }
 }

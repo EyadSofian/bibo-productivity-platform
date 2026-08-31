@@ -14,9 +14,7 @@ type Visit = {
 
 type BrowserLinkInfo = { port: number | null; token_active: boolean };
 
-// Where the "Get the extension" button points. Chrome-only for now; published
-// page can be swapped without code changes elsewhere.
-const EXTENSION_URL = "https://bibotracker.com/extension";
+const EXTENSION_URL = "https://chromewebstore.google.com/detail/bibo-tracker/meoifmgllkafmaeckbdambfnoolnilme";
 
 /**
  * ExtensionGuide — shown on the Browser screen until the extension has reported
@@ -176,6 +174,7 @@ export function Browser() {
           </span>
         </div>
 
+        <div className="bb-table-scroll">
         <table className="bb-tbl">
           <thead>
             <tr>
@@ -207,6 +206,45 @@ export function Browser() {
             ))}
           </tbody>
         </table>
+        </div>
+      </Card>
+
+      <Card>
+        <div className="bb-panel__head">
+          <div>
+            <div className="bb-panel__title">{t("browser.pageVisits")}</div>
+            <div className="bb-panel__sub">{t("browser.pageVisitsSub")}</div>
+          </div>
+        </div>
+        <div className="bb-table-scroll">
+          <table className="bb-tbl">
+            <thead>
+              <tr>
+                <th>{t("browser.colPage")}</th>
+                <th>{t("browser.colWhen")}</th>
+                <th className="r">{t("browser.colDuration")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[...visits]
+                .filter((v) => v.duration_s > 0 && /^https?:\/\//.test(v.url))
+                .sort((a, b) => b.ts - a.ts)
+                .slice(0, 200)
+                .map((v, index) => (
+                  <tr key={`${v.ts}-${v.url}-${index}`}>
+                    <td>
+                      <div className="bb-page-cell">
+                        <span className="bb-page-title">{v.page_title || hostOf(v.url)}</span>
+                        <span className="bb-page-url" title={v.url}>{v.url}</span>
+                      </div>
+                    </td>
+                    <td className="bb-tbl__time">{hhmm(v.ts)}</td>
+                    <td className="r bb-tbl__dur">{fmtDur(v.duration_s)}</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

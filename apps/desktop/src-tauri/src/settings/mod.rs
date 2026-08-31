@@ -21,6 +21,11 @@ pub struct Settings {
     pub screenshot_retention_days: u64,
     /// Store only the site origin for browser visits, not the full URL.
     pub domain_only: bool,
+    /// Record browser addresses and active time. On Windows the browser extension
+    /// is preferred; a transparent address-bar-only fallback is used when the
+    /// extension is absent. Default on and gated by first-run consent on Windows.
+    #[serde(default = "default_true")]
+    pub capture_browser_urls: bool,
     /// Run as a menu-bar-only app (no Dock icon).
     #[serde(default)]
     pub hide_dock: bool,
@@ -52,6 +57,11 @@ pub struct Settings {
     /// off so onboarding shows once per install.
     #[serde(default)]
     pub onboarding_completed: bool,
+    /// Last successfully fetched organization policy lock. Persisted so a managed
+    /// device remains locked after an offline reboot; refreshed by `/v1/policy`.
+    /// This is native-owned and ignored from UI settings payloads.
+    #[serde(default)]
+    pub managed_locked: bool,
     /// Stable per-install device identifier (UUID), created on first run and never
     /// changed. Sent with auth + sync so the backend can attribute rows to a device.
     #[serde(default)]
@@ -120,6 +130,7 @@ impl Default for Settings {
             screenshot_interval_s: DEFAULT_SCREENSHOT_INTERVAL_S,
             screenshot_retention_days: DEFAULT_RETENTION_DAYS,
             domain_only: false,
+            capture_browser_urls: true,
             hide_dock: false,
             capture_screenshots: true,
             screenshot_mode: default_screenshot_mode(),
@@ -128,6 +139,7 @@ impl Default for Settings {
             consented: false,
             local_only: false,
             onboarding_completed: false,
+            managed_locked: false,
             device_id: String::new(),
             locale: default_locale(),
         }
@@ -186,6 +198,10 @@ pub fn apply(s: &Settings, control: &crate::trackers::TrackerControl) {
     control
         .count_keystrokes
         .store(s.count_keystrokes && consent_ok, Relaxed);
+    control
+        .capture_browser_urls
+        .store(s.capture_browser_urls && consent_ok, Relaxed);
+    control.managed_locked.store(s.managed_locked, Relaxed);
 }
 
 /// Whether the org controls capture settings for the signed-in employee. Default
@@ -225,6 +241,7 @@ mod tests {
         let s = load(Path::new("/nonexistent/ctracking/settings.json"));
         assert_eq!(s.idle_threshold_s, DEFAULT_IDLE_THRESHOLD_S);
         assert!(!s.domain_only);
+        assert!(s.capture_browser_urls);
     }
 
     #[test]
