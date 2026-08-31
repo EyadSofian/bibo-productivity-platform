@@ -344,3 +344,33 @@ describe("maxTicksFor", () => {
     }
   });
 });
+
+describe("buildAxisTicks label budget", () => {
+  // Regression: past the end of the step ladder the coarsest rung was used as a
+  // fallback even though it still overflowed the budget — a 90-day range drew
+  // 13 labels where 12 was the cap. Local time hid it (a UTC+3 offset pushed
+  // the first tick out of the window); CI in UTC did not.
+  it("never exceeds the budget at any span", () => {
+    const spans = [1, 2, 3, 7, 14, 30, 60, 90, 180, 365, 730];
+    for (const days of spans) {
+      for (const budget of [2, 4, 8, 12]) {
+        const ticks = buildAxisTicks(DAY_START, DAY_START + days * 86400, "en-US", budget);
+        expect(
+          ticks.length,
+          `${days}d at budget ${budget} produced ${ticks.length} labels`,
+        ).toBeLessThanOrEqual(budget);
+        expect(ticks.length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it("still labels a long range in order and inside the window", () => {
+    const to = DAY_START + 365 * 86400;
+    const ticks = buildAxisTicks(DAY_START, to, "en-US", 12);
+    for (let i = 0; i < ticks.length; i++) {
+      expect(ticks[i].ts).toBeGreaterThanOrEqual(DAY_START);
+      expect(ticks[i].ts).toBeLessThan(to);
+      if (i > 0) expect(ticks[i].ts).toBeGreaterThan(ticks[i - 1].ts);
+    }
+  });
+});

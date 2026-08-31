@@ -285,7 +285,13 @@ export function buildAxisTicks(
   const DAY = 86400;
   const limit = Math.max(2, maxTicks);
   const steps = [HOUR, 2 * HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, DAY, 2 * DAY, 7 * DAY];
-  const step = steps.find((candidate) => span / candidate <= limit) ?? steps[steps.length - 1];
+  // Past the end of the ladder (a quarter, a year) the coarsest rung still
+  // overflows the label budget, so derive a step instead of falling back to it.
+  // Rounded up to whole weeks so every label keeps landing on the same weekday.
+  const week = 7 * DAY;
+  const step =
+    steps.find((candidate) => span / candidate <= limit) ??
+    Math.ceil(span / limit / week) * week;
   const byDay = step >= DAY;
 
   const ticks: AxisTick[] = [];
