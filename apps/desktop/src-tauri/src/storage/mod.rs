@@ -16,7 +16,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 /// Latest schema version. Bump when adding a migration below.
-const SCHEMA_VERSION: i64 = 2;
+const SCHEMA_VERSION: i64 = 3;
 
 /// A fresh client-generated UUID (v4), the backend's natural sync key.
 fn new_uuid() -> String {
@@ -68,6 +68,17 @@ pub struct BrowserVisit {
     pub duration_s: i64,
 }
 
+/// One closed device-state interval (audit finding P0-2): what the machine was
+/// doing, as opposed to which app had focus. Intervals are contiguous, so idle
+/// and suspended time are recorded rather than being inferred from missing rows.
+#[derive(Debug, Clone, Serialize)]
+pub struct OsStateRow {
+    pub ts: i64,
+    /// "active" | "idle" | "suspended".
+    pub state: String,
+    pub duration_s: i64,
+}
+
 // ---------- pending-sync row types (synced = 0) ----------
 //
 // These carry the sync bookkeeping (`client_uuid`, `updated_at`) the worker (task
@@ -81,6 +92,15 @@ pub struct PendingActivity {
     pub app_name: String,
     pub window_title: Option<String>,
     pub pid: Option<i64>,
+    pub duration_s: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct PendingOsState {
+    pub client_uuid: String,
+    pub ts: i64,
+    pub state: String,
     pub duration_s: i64,
     pub updated_at: i64,
 }
@@ -151,6 +171,11 @@ impl Db {
         if version < 2 {
             Self::migrate_2(&conn)?;
             version = 2;
+        }
+
+        if version < 3 {
+            conn.execute_batch(MIGRATION_3)?;
+            version = 3;
         }
 
         conn.pragma_update(None, "user_version", version)?;
@@ -408,6 +433,45 @@ impl Db {
     // ---------- sync helpers (synced = 0 → backend; task 53) ----------
 
     /// Pending activity rows (oldest first, capped at `limit`) for a sync batch.
+    /// Record closed device-state intervals. Written in one transaction so a
+    /// suspend (which closes one interval and opens another) never lands half in.
+    pub fn insert_os_states(&self, rows: &[OsStateRow]) -> Result<usize> {
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        let mut conn = self.conn.lock().unwrap();
+        let tx = conn.transaction()?;
+        for row in rows {
+            tx.execute(
+                "INSERT INTO os_state (ts, state, duration_s, client_uuid, synced, updated_at)
+                 VALUES (?1, ?2, ?3, ?4, 0, ?5)",
+                params![row.ts, row.state, row.duration_s, new_uuid(), now_secs()],
+            )?;
+        }
+        tx.commit()?;
+        Ok(rows.len())
+    }
+
+    pub fn pending_os_states(&self, limit: i64) -> Result<Vec<PendingOsState>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT client_uuid, ts, state, duration_s, updated_at
+             FROM os_state WHERE synced = 0 ORDER BY id LIMIT ?1",
+        )?;
+        let rows = stmt
+            .query_map(params![limit], |r| {
+                Ok(PendingOsState {
+                    client_uuid: r.get(0)?,
+                    ts: r.get(1)?,
+                    state: r.get(2)?,
+                    duration_s: r.get(3)?,
+                    updated_at: r.get(4)?,
+                })
+            })?
+            .collect::<Result<Vec<_>>>()?;
+        Ok(rows)
+    }
+
     pub fn pending_activity(&self, limit: i64) -> Result<Vec<PendingActivity>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
@@ -556,6 +620,7 @@ impl Db {
             "keystroke_bucket",
             "screenshot",
             "browser_visit",
+            "os_state",
         ] {
             let n: i64 = conn.query_row(
                 &format!("SELECT COUNT(*) FROM {t} WHERE synced = 0"),
@@ -575,6 +640,7 @@ pub enum SyncTable {
     Keystroke,
     Browser,
     Screenshot,
+    OsState,
 }
 
 impl SyncTable {
@@ -584,6 +650,7 @@ impl SyncTable {
             SyncTable::Keystroke => "keystroke_bucket",
             SyncTable::Browser => "browser_visit",
             SyncTable::Screenshot => "screenshot",
+            SyncTable::OsState => "os_state",
         }
     }
 }
@@ -625,6 +692,24 @@ CREATE TABLE browser_visit (
     duration_s  INTEGER NOT NULL
 );
 CREATE INDEX idx_browser_visit_ts ON browser_visit(ts);
+"#;
+
+/// Migration v3: the device-state timeline (audit finding P0-2). Created with
+/// its sync bookkeeping already in place, unlike the four v1 tables which had it
+/// bolted on by `migrate_2`.
+const MIGRATION_3: &str = r#"
+CREATE TABLE os_state (
+    id          INTEGER PRIMARY KEY,
+    ts          INTEGER NOT NULL,
+    state       TEXT    NOT NULL,
+    duration_s  INTEGER NOT NULL,
+    client_uuid TEXT    NOT NULL,
+    synced      INTEGER NOT NULL DEFAULT 0,
+    updated_at  INTEGER NOT NULL
+);
+CREATE INDEX idx_os_state_ts ON os_state(ts);
+CREATE UNIQUE INDEX idx_os_state_client_uuid ON os_state(client_uuid);
+CREATE INDEX idx_os_state_pending ON os_state(id) WHERE synced = 0;
 "#;
 
 #[cfg(test)]

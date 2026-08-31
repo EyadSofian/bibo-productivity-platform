@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"ctracking/backend/internal/auth"
+	"ctracking/backend/internal/live"
 	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/store"
 
@@ -17,12 +18,13 @@ import (
 // enforces that in SQL, so these handlers do not re-check ownership beyond
 // resolving which business to list.
 type DeviceHandler struct {
-	store *store.Store
+	store    *store.Store
+	commands *live.CommandBus
 }
 
 // NewDeviceHandler wires the device handler.
-func NewDeviceHandler(s *store.Store) *DeviceHandler {
-	return &DeviceHandler{store: s}
+func NewDeviceHandler(s *store.Store, bus *live.CommandBus) *DeviceHandler {
+	return &DeviceHandler{store: s, commands: bus}
 }
 
 // List returns the devices in one business the caller owns.
@@ -141,8 +143,14 @@ func (h *DeviceHandler) RequestLiveCapture(c *gin.Context) {
 		return
 	}
 
+	// Wake the agent now instead of letting it discover the request on its next
+	// heartbeat (0-15s). The heartbeat still carries the request, so this is
+	// purely an accelerator: an agent with no command stream behaves as before.
+	h.commands.Publish(deviceID, live.Command{Type: live.CommandCaptureNow})
+
 	obs.Info("live capture requested", "owner", ownerID, "device", deviceID)
 	c.JSON(http.StatusAccepted, gin.H{
 		"device_id": request.DeviceID, "requested_at": request.RequestedAt.Unix(),
+		"agent_connected": h.commands.Connected(deviceID) > 0,
 	})
 }

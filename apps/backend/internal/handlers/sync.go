@@ -53,6 +53,19 @@ type browserIn struct {
 	UpdatedAt  int64   `json:"updated_at"`
 }
 
+type osStateIn struct {
+	ClientUUID string `json:"client_uuid"`
+	State      string `json:"state"`
+	Ts         int64  `json:"ts"`
+	DurationS  int    `json:"duration_s"`
+	UpdatedAt  int64  `json:"updated_at"`
+}
+
+// validOsStates mirrors the CHECK constraint on os_states.state. Validating here
+// turns a bad agent build into a 400 naming the field, rather than a 500 from the
+// database halfway through a batch.
+var validOsStates = map[string]bool{"active": true, "idle": true, "suspended": true}
+
 type syncBatchReq struct {
 	DeviceID     string        `json:"device_id"`
 	DeviceLabel  *string       `json:"device_label"`
@@ -62,6 +75,8 @@ type syncBatchReq struct {
 	Activity     []activityIn  `json:"activity"`
 	Keystrokes   []keystrokeIn `json:"keystrokes"`
 	Browser      []browserIn   `json:"browser"`
+	// Absent from older agents; an empty timeline is not an error.
+	OsStates []osStateIn `json:"os_states"`
 }
 
 // Batch validates and idempotently upserts a sync batch, returning the accepted
@@ -78,7 +93,8 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 		badRequest(c, "device_id must be a uuid")
 		return
 	}
-	if len(req.Activity) > maxBatch || len(req.Keystrokes) > maxBatch || len(req.Browser) > maxBatch {
+	if len(req.Activity) > maxBatch || len(req.Keystrokes) > maxBatch ||
+		len(req.Browser) > maxBatch || len(req.OsStates) > maxBatch {
 		badRequest(c, fmt.Sprintf("batch too large (max %d per kind)", maxBatch))
 		return
 	}
@@ -131,6 +147,30 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 		accBrowser = append(accBrowser, b.ClientUUID)
 	}
 
+	states := make([]store.OsStateRow, 0, len(req.OsStates))
+	accStates := make([]string, 0, len(req.OsStates))
+	for i, st := range req.OsStates {
+		if err := validUUID(st.ClientUUID); err != nil {
+			badRequest(c, fmt.Sprintf("os_states[%d]: %v", i, err))
+			return
+		}
+		if !validOsStates[st.State] {
+			badRequest(c, fmt.Sprintf("os_states[%d]: unknown state %q", i, st.State))
+			return
+		}
+		// The table requires a positive duration; a zero-length interval carries
+		// no information and would only be rejected by the CHECK constraint.
+		if st.DurationS <= 0 {
+			badRequest(c, fmt.Sprintf("os_states[%d]: duration_s must be positive", i))
+			return
+		}
+		states = append(states, store.OsStateRow{
+			ClientUUID: st.ClientUUID, State: st.State, Ts: st.Ts,
+			DurationS: st.DurationS, ClientUpdatedAt: st.UpdatedAt,
+		})
+		accStates = append(accStates, st.ClientUUID)
+	}
+
 	businessID, err := h.store.ResolveBusinessForUser(c.Request.Context(), userID, req.BusinessID)
 	switch {
 	case errors.Is(err, store.ErrNotFound):
@@ -159,7 +199,7 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 	}
 
 	res, err := h.store.SyncBatch(c.Request.Context(), userID, businessID, req.DeviceID,
-		req.DeviceLabel, req.DeviceOS, req.AgentVersion, act, keys, brs)
+		req.DeviceLabel, req.DeviceOS, req.AgentVersion, act, keys, brs, states)
 	if err != nil {
 		serverError(c, err)
 		return
@@ -168,7 +208,8 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 	if res.MonitoringEnabled {
 		obs.Info("sync batch accepted",
 			"user", userID, "device", req.DeviceID,
-			"activity", len(accAct), "keystrokes", len(accKeys), "browser", len(accBrowser))
+			"activity", len(accAct), "keystrokes", len(accKeys), "browser", len(accBrowser),
+			"os_states", len(accStates))
 	} else {
 		// The device is registered and alive, but an owner has turned its
 		// monitoring off, so the data was discarded. We still return the
@@ -185,6 +226,7 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 			"activity":   accAct,
 			"keystrokes": accKeys,
 			"browser":    accBrowser,
+			"os_states":  accStates,
 		},
 		"monitoring_enabled": res.MonitoringEnabled,
 	})

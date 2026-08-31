@@ -235,7 +235,12 @@ pub fn run() {
                 control,
                 app: app.handle().clone(),
                 remote_assist,
+                push: sync::commands::signals(),
             };
+            // The push channel only raises signals; the workers below still own
+            // every decision, and each keeps its polling fallback.
+            sync::commands::start(sync_context.clone());
+            sync::live_view::start(sync_context.clone());
             sync::presence::start(sync_context.clone());
             sync::remote_assist::start(sync_context.clone());
             sync::worker::start(sync_context);

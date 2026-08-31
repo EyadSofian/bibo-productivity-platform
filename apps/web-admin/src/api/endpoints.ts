@@ -13,6 +13,7 @@ import {
   demoKeystrokes,
   demoRoster,
   demoScreenshots,
+  demoStates,
   demoMonitoringProfiles,
   demoOrganization,
   demoSaveOrganizationItem,
@@ -46,6 +47,7 @@ import type {
   MonitoringProfileInput,
   Organization,
   OrganizationItemInput,
+  OsStateReport,
 } from "./types";
 
 // ---------- public ----------
@@ -240,6 +242,18 @@ export function reportKeystrokes(employeeId: string, from: number, to: number) {
 export function reportBrowser(employeeId: string, from: number, to: number) {
   if (isDemo()) return Promise.resolve(demoBrowser(employeeId));
   return request<{ visits: BrowserVisit[] }>(`/v1/reports/employees/${employeeId}/browser`, {
+    query: { from, to },
+  });
+}
+
+/**
+ * Device-state timeline: how the window splits into active / idle / suspended /
+ * offline. This is the only source for idle and total-device time; the activity
+ * report records active foreground intervals only.
+ */
+export function reportStates(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve(demoStates());
+  return request<OsStateReport>(`/v1/reports/employees/${employeeId}/states`, {
     query: { from, to },
   });
 }

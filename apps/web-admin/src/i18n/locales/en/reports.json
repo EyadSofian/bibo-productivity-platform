@@ -64,5 +64,23 @@
     "url": "Full URL",
     "keys": "Keypresses this minute",
     "resolution": "Resolution"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "Device state",
+      "applications": "Applications",
+      "websites": "Websites",
+      "input": "Input",
+      "screenshots": "Screenshots"
+    },
+    "states": {
+      "active": "Active",
+      "idle": "Idle",
+      "suspended": "Asleep or locked",
+      "offline": "Not reporting"
+    },
+    "inputAt": "{{count}} keypresses",
+    "empty": "Nothing was reported for this range.",
+    "note": "Input is a count of keypresses only — never what was typed. \"Not reporting\" means no data arrived, which is not the same as the device being off."
   }
 }

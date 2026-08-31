@@ -64,5 +64,23 @@
     "url": "URL đầy đủ",
     "keys": "Lần gõ phím trong phút này",
     "resolution": "Độ phân giải"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "Trạng thái thiết bị",
+      "applications": "Ứng dụng",
+      "websites": "Trang web",
+      "input": "Nhập liệu",
+      "screenshots": "Ảnh chụp màn hình"
+    },
+    "states": {
+      "active": "Hoạt động",
+      "idle": "Nhàn rỗi",
+      "suspended": "Ngủ hoặc đã khoá",
+      "offline": "Không có dữ liệu"
+    },
+    "inputAt": "{{count}} lần gõ phím",
+    "empty": "Không có dữ liệu trong khoảng này.",
+    "note": "Nhập liệu chỉ là số lần gõ phím — không bao giờ ghi nội dung. \"Không có dữ liệu\" nghĩa là dữ liệu chưa tới, khác với việc thiết bị đã tắt."
   }
 }

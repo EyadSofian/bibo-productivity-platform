@@ -2,6 +2,7 @@ import { tokenStore } from "./tokenStore";
 import { ApiError, type Tokens } from "./types";
 import { Sentry } from "../sentry";
 import { log } from "../log";
+import { SSEDecoder } from "./sse";
 
 // Empty default base => same-origin relative URLs, which the Vite dev proxy
 // (and the backend serving the built SPA in prod) forwards to /v1/*. Set
@@ -167,22 +168,165 @@ export async function fetchImageObjectUrl(clientUuid: string): Promise<string> {
   return URL.createObjectURL(blob);
 }
 
-// The remote-assistance route returns 204 until the employee has accepted and
-// uploaded the first frame. Like screenshot images, the caller owns the object
-// URL and must revoke it after replacing it.
-export async function fetchRemoteAssistFrameObjectUrl(sessionId: string): Promise<string | null> {
-  const tok = tokenStore.getAccess();
-  const res = await fetch(buildUrl(`/v1/remote-assist/${sessionId}/frame`), {
-    headers: tok ? { Authorization: `Bearer ${tok}` } : {},
-    cache: "no-store",
-  });
-  if (res.status === 401) {
-    const ok = await refreshOnce();
-    if (ok) return fetchRemoteAssistFrameObjectUrl(sessionId);
-    emitLogout();
-    throw new ApiError(401, "Session expired.", null);
-  }
-  if (res.status === 204) return null;
-  if (!res.ok) throw new ApiError(res.status, `Remote frame failed (${res.status})`, null);
-  return URL.createObjectURL(await res.blob());
+
+// --- live frame streaming ---
+
+/** One live screen frame pushed over SSE. `image` is base64-encoded WebP. */
+export type LiveFrameEvent = {
+  image: string;
+  width: number;
+  height: number;
+  received_at: string;
+};
+
+export type LiveFrameHandlers = {
+  onFrame: (frame: LiveFrameEvent) => void;
+  /** The session ended server-side; the stream will not reconnect. */
+  onEnd: () => void;
+  /** A transport failure. The subscription retries on its own afterwards. */
+  onError: (error: unknown) => void;
+  /** The agent is not reachable on its push channel; frames may be delayed. */
+  onAgentUnreachable?: () => void;
+};
+
+// Reconnect backoff. A live session lasts minutes, so retries stay short and
+// capped rather than growing unbounded.
+const STREAM_RETRY_MIN_MS = 500;
+const STREAM_RETRY_MAX_MS = 5_000;
+
+/**
+ * Subscribes to a remote-assistance session's live frames.
+ *
+ * Frames are pushed as they arrive instead of being discovered by polling,
+ * which is what removes the 0-3s per-frame discovery delay (FULL_SYSTEM_AUDIT
+ * P0-1). Returns an unsubscribe function that aborts the request; call it on
+ * unmount or when the session changes.
+ */
+export function subscribeRemoteAssistFrames(
+  sessionId: string,
+  handlers: LiveFrameHandlers,
+): () => void {
+  return subscribeFrameStream(`/v1/remote-assist/${sessionId}/frames/stream`, handlers);
+}
+
+/**
+ * Subscribes to a device's live screen.
+ *
+ * Holding this stream open is also what keeps the agent capturing: the backend
+ * renews the agent's capture authorization for as long as a viewer is attached,
+ * and the agent stops on its own once the renewals stop. Closing the stream is
+ * therefore the way to stop capture -- there is no separate stop call to miss.
+ */
+export function subscribeDeviceLiveFrames(
+  deviceId: string,
+  handlers: LiveFrameHandlers,
+): () => void {
+  return subscribeFrameStream(`/v1/devices/${deviceId}/live/stream`, handlers);
+}
+
+function subscribeFrameStream(path: string, handlers: LiveFrameHandlers): () => void {
+  const controller = new AbortController();
+  let stopped = false;
+  let retryMs = STREAM_RETRY_MIN_MS;
+  let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const stop = () => {
+    stopped = true;
+    if (retryTimer !== undefined) clearTimeout(retryTimer);
+    controller.abort();
+  };
+
+  const scheduleRetry = () => {
+    if (stopped) return;
+    retryTimer = setTimeout(() => {
+      if (!stopped) void connect();
+    }, retryMs);
+    retryMs = Math.min(retryMs * 2, STREAM_RETRY_MAX_MS);
+  };
+
+  const connect = async (): Promise<void> => {
+    if (stopped) return;
+    const tok = tokenStore.getAccess();
+    let res: Response;
+    try {
+      res = await fetch(buildUrl(path), {
+        headers: {
+          Accept: "text/event-stream",
+          ...(tok ? { Authorization: `Bearer ${tok}` } : {}),
+        },
+        cache: "no-store",
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (stopped) return;
+      handlers.onError(error);
+      scheduleRetry();
+      return;
+    }
+
+    if (res.status === 401) {
+      const ok = await refreshOnce();
+      if (stopped) return;
+      if (!ok) {
+        emitLogout();
+        handlers.onError(new ApiError(401, "Session expired.", null));
+        return;
+      }
+      void connect();
+      return;
+    }
+    // 409 means the session is no longer active: a retry can never succeed.
+    if (res.status === 409) {
+      handlers.onEnd();
+      return;
+    }
+    if (!res.ok || !res.body) {
+      handlers.onError(new ApiError(res.status, `Live stream failed (${res.status})`, null));
+      scheduleRetry();
+      return;
+    }
+
+    // Connected: a later drop is treated as transient again.
+    retryMs = STREAM_RETRY_MIN_MS;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    const sse = new SSEDecoder();
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        for (const event of sse.push(decoder.decode(value, { stream: true }))) {
+          if (event.event === "frame") {
+            try {
+              handlers.onFrame(JSON.parse(event.data) as LiveFrameEvent);
+            } catch (error) {
+              handlers.onError(error);
+            }
+          } else if (event.event === "end") {
+            stop();
+            handlers.onEnd();
+            return;
+          } else if (event.event === "agent_unreachable") {
+            // The device is registered and online but is not holding a command
+            // stream, so frames will arrive slowly (or not at all) until it
+            // reconnects. Surface it rather than showing an unexplained blank.
+            handlers.onAgentUnreachable?.();
+          }
+          // "ping" is a keepalive and needs no handling.
+        }
+      }
+    } catch (error) {
+      if (stopped) return;
+      handlers.onError(error);
+    } finally {
+      reader.cancel().catch(() => {});
+    }
+    // The server closed the stream without an end event (deploy, proxy
+    // timeout): reconnect rather than freezing on the last frame.
+    scheduleRetry();
+  };
+
+  void connect();
+  return stop;
 }

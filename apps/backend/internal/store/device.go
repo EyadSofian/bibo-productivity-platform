@@ -247,3 +247,47 @@ func (s *Store) ConsumeLiveCaptureRequest(ctx context.Context, userID, businessI
 	}
 	return err == nil, err
 }
+
+// AuthorizeDeviceAgent reports whether deviceID is a live, monitored device
+// belonging to userID. It is the permission check an agent passes to open its
+// command stream and to push ephemeral live-view frames.
+//
+// Monitoring being enabled is part of the predicate on purpose: an owner who
+// switches a device off must stop its live path too, not only its stored
+// telemetry. Archived (soft-deleted) devices are excluded for the same reason.
+func (s *Store) AuthorizeDeviceAgent(ctx context.Context, userID, deviceID string) error {
+	var ok bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT true
+		  FROM devices d
+		 WHERE d.id = $1
+		   AND d.user_id = $2
+		   AND d.deleted_at IS NULL
+		   AND d.monitoring_enabled`, deviceID, userID).Scan(&ok)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
+}
+
+// AuthorizeLiveView reports whether ownerID may watch deviceID's live screen.
+// The predicate deliberately matches RequestLiveCapture's: same ownership, same
+// monitoring switch, same 90-second liveness window. Live viewing must not be
+// reachable through a path with weaker conditions than the one-shot capture it
+// replaces.
+func (s *Store) AuthorizeLiveView(ctx context.Context, ownerID, deviceID string) error {
+	var ok bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT true
+		  FROM devices d
+		  JOIN businesses b ON d.business_id = b.id
+		 WHERE d.id = $1
+		   AND b.owner_user_id = $2
+		   AND d.deleted_at IS NULL
+		   AND d.monitoring_enabled
+		   AND d.presence_seen_at > now() - interval '90 seconds'`, deviceID, ownerID).Scan(&ok)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrNotFound
+	}
+	return err
+}

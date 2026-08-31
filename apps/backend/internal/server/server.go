@@ -11,6 +11,7 @@ import (
 	"ctracking/backend/internal/config"
 	"ctracking/backend/internal/filestore"
 	"ctracking/backend/internal/handlers"
+	"ctracking/backend/internal/live"
 	"ctracking/backend/internal/middleware"
 	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/retention"
@@ -29,6 +30,22 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	gin.DefaultErrorWriter = obs.Writer()
 
 	r := gin.New()
+
+	// Decide whose X-Forwarded-For we believe, BEFORE anything calls ClientIP().
+	// gin's default is to trust every proxy, which lets any client forge the header
+	// and mint itself a fresh rate-limit bucket (verified: rotating X-Forwarded-For
+	// defeated the login limiter entirely). Trusting nobody is the safe default;
+	// a real deployment behind an edge sets TRUSTED_PROXIES or TRUSTED_PLATFORM so
+	// legitimate callers are still told apart.
+	if cfg.TrustedPlatform != "" {
+		r.TrustedPlatform = cfg.TrustedPlatform
+	}
+	if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		// A malformed CIDR must not silently fall back to trusting everyone.
+		obs.Warn("invalid TRUSTED_PROXIES; trusting no proxy", "error", err)
+		_ = r.SetTrustedProxies(nil)
+	}
+
 	r.Use(gin.Logger(), gin.Recovery(), middleware.CORS(cfg.AllowedOrigin))
 
 	// Report panics to Sentry (then re-panic so gin.Recovery still returns 500).
@@ -46,9 +63,17 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	shotH := handlers.NewScreenshotHandler(st, files)
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
-	deviceH := handlers.NewDeviceHandler(st)
+	// Live frames are ephemeral and stay out of Postgres; see internal/live.
+	// The command bus is how an agent hears about work without waiting for its
+	// next heartbeat -- an accelerator over the polling paths, never a
+	// replacement for them.
+	liveHub := live.NewHub()
+	liveCommands := live.NewCommandBus()
+
+	deviceH := handlers.NewDeviceHandler(st, liveCommands)
 	presenceH := handlers.NewPresenceHandler(st)
-	remoteAssistH := handlers.NewRemoteAssistHandler(st)
+	remoteAssistH := handlers.NewRemoteAssistHandler(st, liveHub, liveCommands)
+	liveViewH := handlers.NewLiveViewHandler(st, liveHub, liveCommands)
 	monitoringProfileH := handlers.NewMonitoringProfileHandler(st)
 	organizationH := handlers.NewOrganizationHandler(st)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
@@ -106,8 +131,14 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	authed.POST("/remote-assist/:session_id/end", remoteAssistH.End)
 	authed.POST("/remote-assist/:session_id/actions", remoteAssistH.Action)
 	authed.GET("/remote-assist/:session_id/actions", remoteAssistH.Actions)
-	authed.POST("/remote-assist/:session_id/frame", remoteAssistH.UploadFrame)
+	// The frame upload is registered with the ingest group below (rate-limited).
 	authed.GET("/remote-assist/:session_id/frame", remoteAssistH.Frame)
+	// Server-push replacement for the dashboard's frame poll.
+	authed.GET("/remote-assist/:session_id/frames/stream", remoteAssistH.FrameStream)
+	// Live view: the owner's frame stream, and the agent's command stream.
+	// Holding the first open is what keeps the agent capturing.
+	authed.GET("/devices/:device_id/live/stream", liveViewH.Stream)
+	authed.GET("/agent/commands/stream", liveViewH.AgentCommands)
 	authed.POST("/devices/:device_id/archive", deviceH.Archive)
 	authed.POST("/devices/:device_id/restore", deviceH.Restore)
 	authed.GET("/businesses/:id/monitoring-profiles", monitoringProfileH.List)
@@ -129,16 +160,22 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Capture policy for the desktop (employee's org settings).
 	authed.GET("/policy", ownerH.Policy)
 
-	// Sync ingest (desktop → backend, one-directional).
-	authed.POST("/sync/batch", syncH.Batch)
-	authed.POST("/sync/screenshots", shotH.Upload)
-	authed.POST("/presence/heartbeat", presenceH.Heartbeat)
+	// Sync ingest (desktop → backend, one-directional). Rate-limited: these are the
+	// only routes a device can push unbounded data through, so a looping client or
+	// a stolen agent token is capped here rather than at the database.
+	ingest := v1.Group("", tok.Required(), middleware.IngestRateLimit())
+	ingest.POST("/sync/batch", syncH.Batch)
+	ingest.POST("/sync/screenshots", shotH.Upload)
+	ingest.POST("/presence/heartbeat", presenceH.Heartbeat)
+	ingest.POST("/remote-assist/:session_id/frame", remoteAssistH.UploadFrame)
+	ingest.POST("/agent/live/frame", liveViewH.UploadFrame)
 
 	// Owner read path (reporting).
 	authed.GET("/reports/employees", reportsH.Roster)
 	authed.GET("/reports/employees/:id/activity", reportsH.Activity)
 	authed.GET("/reports/employees/:id/keystrokes", reportsH.Keystrokes)
 	authed.GET("/reports/employees/:id/browser", reportsH.Browser)
+	authed.GET("/reports/employees/:id/states", reportsH.States)
 	authed.GET("/reports/employees/:id/screenshots", reportsH.Screenshots)
 	authed.GET("/reports/employees/:id/presence", presenceH.Employee)
 	authed.GET("/screenshots/:client_uuid", reportsH.ScreenshotImage)

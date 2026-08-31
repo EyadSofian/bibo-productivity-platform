@@ -25,6 +25,17 @@ type Config struct {
 	LogMaxBackups  int    // number of rotated files to keep
 	LogMaxAgeDays  int    // delete rotated files older than this many days
 	KeepaliveToken string // secret for the CPU keep-alive endpoint; "" = disabled
+
+	// TrustedProxies lists the proxy addresses/CIDRs whose X-Forwarded-For may be
+	// believed. EMPTY MEANS TRUST NOBODY, which is the safe default: gin's own
+	// default trusts every proxy, so any client could forge X-Forwarded-For and
+	// hand itself a fresh rate-limit bucket.
+	TrustedProxies []string
+	// TrustedPlatform names a single header set by a trusted edge that carries the
+	// real client IP (e.g. "CF-Connecting-IP" behind Cloudflare). It takes
+	// precedence over TrustedProxies when set, and is only safe when the edge is
+	// the sole route to this backend.
+	TrustedPlatform string
 }
 
 // Load reads .env (if present) then the process environment. It returns an error
@@ -51,6 +62,9 @@ func Load() (*Config, error) {
 		LogMaxBackups:  getenvInt("LOG_MAX_BACKUPS", 5),
 		LogMaxAgeDays:  getenvInt("LOG_MAX_AGE_DAYS", 30),
 		KeepaliveToken: os.Getenv("KEEPALIVE_TOKEN"),
+
+		TrustedProxies:  getenvList("TRUSTED_PROXIES"),
+		TrustedPlatform: os.Getenv("TRUSTED_PLATFORM"),
 	}
 
 	var missing []string
@@ -71,6 +85,22 @@ func getenv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+// getenvList splits a comma-separated env var, dropping blanks so a trailing
+// comma or an all-whitespace value reads as "unset" rather than as one empty entry.
+func getenvList(key string) []string {
+	raw := os.Getenv(key)
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out []string
+	for _, part := range strings.Split(raw, ",") {
+		if v := strings.TrimSpace(part); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 func getenvInt(key string, fallback int) int {

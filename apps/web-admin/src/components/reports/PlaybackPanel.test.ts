@@ -5,7 +5,7 @@ import type {
   KeystrokeBucket,
   ScreenshotMeta,
 } from "../../api/types";
-import { assemblePlaybackFrames } from "./PlaybackPanel";
+import { assemblePlaybackFrames, frameIndexAt, type PlaybackFrame } from "./PlaybackPanel";
 
 function shot(ts: number, id = String(ts)): ScreenshotMeta {
   return {
@@ -65,5 +65,26 @@ describe("assemblePlaybackFrames", () => {
 
     expect(frames[3].gapBeforeS).toBe(380);
     expect(frames[3]).toMatchObject({ app: null, url: null, keyCount: 0 });
+  });
+});
+
+describe("frameIndexAt", () => {
+  const frames = [100, 200, 300, 400].map((ts) => ({ ts })) as PlaybackFrame[];
+
+  it("picks the nearest frame to the requested moment", () => {
+    expect(frameIndexAt(frames, 200)).toBe(1);
+    expect(frameIndexAt(frames, 240)).toBe(1);
+    expect(frameIndexAt(frames, 260)).toBe(2);
+  });
+
+  // Clicking the state band at 06:00 on a day whose first screenshot is at
+  // 09:00 must land on that first frame, not walk off the array.
+  it("clamps to the ends of the day", () => {
+    expect(frameIndexAt(frames, 0)).toBe(0);
+    expect(frameIndexAt(frames, 99999)).toBe(3);
+  });
+
+  it("survives an empty day", () => {
+    expect(frameIndexAt([], 200)).toBe(0);
   });
 });

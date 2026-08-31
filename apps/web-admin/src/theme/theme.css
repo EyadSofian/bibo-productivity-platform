@@ -4867,3 +4867,224 @@ select.input:focus,
 @keyframes ad-page-spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Unified timeline ────────────────────────────────────────────────────────
+   One shared axis, one lane per question. The frame is forced to `dir: ltr`
+   in the markup so time always reads earliest-first: mirroring a clock axis
+   under RTL puts the end of the day on the left and misreads at a glance.
+   Everything inside therefore uses physical left/right, which is correct here
+   precisely because the frame's direction is fixed. Lane labels sit outside
+   the frame and follow the page direction normally. */
+.ad-tl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.ad-tl__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  font-size: var(--fz-xs);
+  color: var(--text-muted);
+}
+
+.ad-tl__legenditem {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.ad-tl__legenditem i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: none;
+}
+
+.ad-tl__frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.ad-tl__axis {
+  position: relative;
+  height: 16px;
+  /* Clears the lane-label gutter so a tick sits over the track, not the label. */
+  margin-left: 92px;
+}
+
+.ad-tl__tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: var(--fz-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The outermost labels align to the edge rather than centring on it, which
+   would hang half of each one outside the frame. */
+.ad-tl__tick--first {
+  transform: none;
+}
+
+.ad-tl__tick--last {
+  transform: translateX(-100%);
+}
+
+.ad-tl__tick--major {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.ad-tl__lane {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.ad-tl__lanelabel {
+  width: 84px;
+  flex: none;
+  font-size: var(--fz-xs);
+  color: var(--text-muted);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-tl__track {
+  position: relative;
+  flex: 1;
+  height: 22px;
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.ad-tl__grid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--border-subtle);
+}
+
+.ad-tl__block {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 2px;
+  /* Slivers are common (a two-second window focus); a minimum keeps them
+     visible and clickable instead of collapsing to nothing. */
+  min-width: 2px;
+}
+
+.ad-tl__block--input {
+  top: auto;
+  bottom: 2px;
+  border-radius: 1px 1px 0 0;
+}
+
+/* "Not reporting" is the absence of data, not a fourth measured state, so it is
+   drawn as a hatch rather than a solid fill. The pattern also carries the
+   meaning without relying on hue, which a flat tint could not: at 35% opacity
+   this band measured 1.1:1 against the empty track in the light theme —
+   invisible, and it is the one thing on the timeline an operator most needs to
+   notice. Stripes use --text-muted so both themes stay above the 3:1 WCAG
+   minimum for non-text graphics: measured 4.6:1 light and 5.5:1 dark. */
+.ad-tl__block--offline {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0 3px,
+    var(--text-muted) 3px 6px
+  );
+}
+
+.ad-tl__marker {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--brand-600);
+}
+
+.ad-tl__block[role="button"],
+.ad-tl__marker[role="button"] {
+  cursor: pointer;
+}
+
+.ad-tl__block[role="button"]:hover,
+.ad-tl__marker[role="button"]:hover {
+  filter: brightness(1.12);
+}
+
+.ad-tl__block:focus-visible,
+.ad-tl__marker:focus-visible {
+  outline: 2px solid var(--brand-500);
+  outline-offset: 1px;
+  /* Sit above neighbouring blocks so the ring is not clipped by them. */
+  z-index: 2;
+}
+
+.ad-tl__tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 260px;
+  padding: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  box-shadow: 0 6px 18px rgba(20, 22, 27, 0.14);
+  font-size: var(--fz-xs);
+  line-height: 1.35;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.ad-tl__tip > span:first-child {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.ad-tl__tip > span {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ad-tl__note {
+  margin: 0;
+  font-size: var(--fz-xs);
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  /* The label gutter costs too much of a narrow screen; labels move above
+     their track and the axis reclaims the full width. */
+  .ad-tl__axis {
+    margin-left: 0;
+  }
+
+  .ad-tl__lane {
+    display: block;
+  }
+
+  .ad-tl__lanelabel {
+    display: block;
+    width: auto;
+    text-align: start;
+    margin-bottom: 2px;
+  }
+}

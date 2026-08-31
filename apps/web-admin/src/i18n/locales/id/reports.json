@@ -64,5 +64,23 @@
     "url": "URL lengkap",
     "keys": "Ketikan pada menit ini",
     "resolution": "Resolusi"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "Status perangkat",
+      "applications": "Aplikasi",
+      "websites": "Situs web",
+      "input": "Masukan",
+      "screenshots": "Tangkapan layar"
+    },
+    "states": {
+      "active": "Aktif",
+      "idle": "Diam",
+      "suspended": "Tidur atau terkunci",
+      "offline": "Tidak ada laporan"
+    },
+    "inputAt": "{{count}} ketikan",
+    "empty": "Tidak ada data pada rentang ini.",
+    "note": "Masukan hanya berupa jumlah ketikan — tidak pernah isinya. \"Tidak ada laporan\" berarti data tidak sampai, bukan berarti perangkat mati."
   }
 }

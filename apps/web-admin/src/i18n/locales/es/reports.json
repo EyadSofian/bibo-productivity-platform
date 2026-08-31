@@ -64,5 +64,23 @@
     "url": "URL completa",
     "keys": "Pulsaciones en este minuto",
     "resolution": "Resolución"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "Estado del dispositivo",
+      "applications": "Aplicaciones",
+      "websites": "Sitios web",
+      "input": "Entrada",
+      "screenshots": "Capturas"
+    },
+    "states": {
+      "active": "Activo",
+      "idle": "Inactivo",
+      "suspended": "Suspendido o bloqueado",
+      "offline": "Sin datos"
+    },
+    "inputAt": "{{count}} pulsaciones",
+    "empty": "No se registró nada en este rango.",
+    "note": "La entrada es solo un recuento de pulsaciones, nunca lo que se escribió. «Sin datos» significa que no llegó información, que no es lo mismo que el dispositivo apagado."
   }
 }

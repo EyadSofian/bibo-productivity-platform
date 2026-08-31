@@ -8,9 +8,15 @@
 //! - `auth`   — login/logout/session, tokens in the macOS Keychain.
 //! - `client` — HTTP client over `reqwest` with auto-refresh on 401.
 //! - `worker` — background task that batches pending rows to the backend.
+//! - `commands` — server push channel (SSE) that wakes the workers immediately
+//!   instead of making them wait for a poll. An accelerator only: every command
+//!   has a polling path behind it that still works when the channel is down.
+//! - `live_view` — ~1 FPS ephemeral screen capture while an owner is watching.
 
 pub mod auth;
 pub mod client;
+pub mod commands;
+pub mod live_view;
 pub mod presence;
 pub mod remote_assist;
 pub mod worker;

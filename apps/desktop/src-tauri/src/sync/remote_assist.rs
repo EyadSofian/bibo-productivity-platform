@@ -19,7 +19,7 @@ use super::worker::SyncContext;
 
 const IDLE_POLL: Duration = Duration::from_secs(2);
 const ACTIVE_POLL: Duration = Duration::from_millis(180);
-const FRAME_INTERVAL: Duration = Duration::from_millis(900);
+pub(crate) const FRAME_INTERVAL: Duration = Duration::from_millis(900);
 const STATUS_INTERVAL: Duration = Duration::from_secs(2);
 
 #[derive(Clone, Debug, Serialize)]
@@ -135,7 +135,12 @@ async fn run(ctx: SyncContext) {
                     crate::log_warn!("remote_assist", "pending poll failed: {error}")
                 }
             }
-            tokio::time::sleep(IDLE_POLL).await;
+            // Cut the idle poll short when the push channel reports a pending
+            // request, so the employee's consent prompt appears at once.
+            tokio::select! {
+                _ = tokio::time::sleep(IDLE_POLL) => {}
+                _ = ctx.push.remote_assist.notified() => {}
+            }
             continue;
         }
 

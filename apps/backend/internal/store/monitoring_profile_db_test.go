@@ -35,7 +35,7 @@ func TestMonitoringProfileResolutionOrderAndInheritance(t *testing.T) {
 		t.Fatal(err)
 	}
 	deviceID := uuid.NewString()
-	if _, err := s.SyncBatch(ctx, employee.ID, biz.ID, deviceID, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := s.SyncBatch(ctx, employee.ID, biz.ID, deviceID, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatal(err)
 	}
 

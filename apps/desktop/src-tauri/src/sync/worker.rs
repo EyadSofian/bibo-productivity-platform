@@ -69,6 +69,9 @@ pub struct SyncContext {
     /// remote assistance worker and its always-visible Stop window.
     pub app: tauri::AppHandle,
     pub remote_assist: Arc<super::remote_assist::RemoteAssistState>,
+    /// Signals raised by the server push channel so the polling loops can act
+    /// immediately instead of waiting out their interval.
+    pub push: Arc<super::commands::PushSignals>,
 }
 
 /// Spawn the worker on its own thread with a dedicated single-thread tokio runtime
@@ -138,7 +141,7 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
     // Register/heartbeat before resolving F41. This makes company/employee
     // profiles effective on the first real data upload, not five minutes later.
     match client
-        .sync_batch(&device_id, business_id.as_deref(), &[], &[], &[])
+        .sync_batch(&device_id, business_id.as_deref(), &[], &[], &[], &[])
         .await
     {
         Ok(result) => ctx
@@ -186,8 +189,12 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
         };
         let keystrokes = ctx.db.pending_keystrokes(BATCH_LIMIT).unwrap_or_default();
         let browser = ctx.db.pending_browser(BATCH_LIMIT).unwrap_or_default();
+        let os_states = ctx.db.pending_os_states(BATCH_LIMIT).unwrap_or_default();
 
-        let empty = activity.is_empty() && keystrokes.is_empty() && browser.is_empty();
+        let empty = activity.is_empty()
+            && keystrokes.is_empty()
+            && browser.is_empty()
+            && os_states.is_empty();
         if empty {
             break;
         }
@@ -199,6 +206,7 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
                 &activity,
                 &keystrokes,
                 &browser,
+                &os_states,
             )
             .await
         {
@@ -212,6 +220,7 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
                     .db
                     .mark_synced(SyncTable::Keystroke, &accepted.keystrokes);
                 let _ = ctx.db.mark_synced(SyncTable::Browser, &accepted.browser);
+                let _ = ctx.db.mark_synced(SyncTable::OsState, &accepted.os_states);
 
                 // Even with no data, the request is the device heartbeat and
                 // refreshes the remote monitoring switch.

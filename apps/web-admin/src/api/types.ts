@@ -281,3 +281,34 @@ export interface MonitoringProfile {
 }
 
 export type MonitoringProfileInput = Omit<MonitoringProfile, "id" | "created_at" | "updated_at">;
+
+/** One device-state interval, clipped to the requested window. */
+export interface OsStateInterval {
+  state: "active" | "idle" | "suspended";
+  ts: number;
+  duration_s: number;
+}
+
+/**
+ * The time budget for a window. The four durations are disjoint and together
+ * cover the elapsed part of the window exactly, so they can be shown as a
+ * breakdown without any of them being a residual guess.
+ *
+ * `offline_s` is derived on the backend from gaps in the timeline: a
+ * disconnected agent cannot report its own disconnection.
+ */
+export interface OsStateTotals {
+  active_s: number;
+  idle_s: number;
+  suspended_s: number;
+  offline_s: number;
+  covered_s: number;
+  elapsed_s: number;
+}
+
+export interface OsStateReport {
+  totals: OsStateTotals;
+  first_activity: number | null;
+  last_activity: number | null;
+  intervals: OsStateInterval[];
+}

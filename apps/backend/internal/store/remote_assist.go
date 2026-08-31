@@ -35,13 +35,6 @@ type RemoteAssistAction struct {
 	Payload json.RawMessage `json:"payload"`
 }
 
-type RemoteAssistFrame struct {
-	Bytes      []byte
-	Width      int
-	Height     int
-	ReceivedAt time.Time
-}
-
 const remoteSessionCols = `s.id, s.device_id, s.business_id, s.employee_user_id,
 	s.owner_user_id, COALESCE(o.display_name, ''), s.status, s.requested_at,
 	s.decided_at, s.expires_at, s.ended_at, s.end_reason, s.last_frame_at`
@@ -318,41 +311,49 @@ func (s *Store) ConsumeRemoteAssistActions(ctx context.Context, employeeID, sess
 	return actions, rows.Err()
 }
 
-func (s *Store) SaveRemoteAssistFrame(ctx context.Context, employeeID, sessionID string, frame RemoteAssistFrame) error {
-	command, err := s.pool.Exec(ctx, `
-		INSERT INTO remote_assist_frames (session_id, width, height, mime_type, image)
-		SELECT s.id, $3, $4, 'image/webp', $5
+// AuthorizeRemoteAssistFrame reports whether sessionID is an active, unexpired
+// session belonging to employeeID. It is the permission check for the live
+// frame path; the frame bytes themselves never reach Postgres (see
+// internal/live and docs/adr/0001-ephemeral-live-frames.md). This is a
+// SELECT-only statement so it produces no WAL and no table churn per frame.
+func (s *Store) AuthorizeRemoteAssistFrame(ctx context.Context, employeeID, sessionID string) error {
+	var ok bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT true
 		  FROM remote_assist_sessions s
 		 WHERE s.id = $1 AND s.employee_user_id = $2
-		   AND s.status = 'active' AND s.expires_at > now()
-		ON CONFLICT (session_id) DO UPDATE
-		  SET received_at = now(), width = EXCLUDED.width, height = EXCLUDED.height,
-		      mime_type = EXCLUDED.mime_type, image = EXCLUDED.image`,
-		sessionID, employeeID, frame.Width, frame.Height, frame.Bytes)
-	if err != nil {
-		return err
-	}
-	if command.RowsAffected() == 0 {
+		   AND s.status = 'active' AND s.expires_at > now()`,
+		sessionID, employeeID,
+	).Scan(&ok)
+	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrNotFound
 	}
-	_, err = s.pool.Exec(ctx, `
-		UPDATE remote_assist_sessions SET last_frame_at = now()
-		 WHERE id = $1 AND employee_user_id = $2 AND status = 'active'`, sessionID, employeeID)
 	return err
 }
 
-func (s *Store) RemoteAssistFrameForOwner(ctx context.Context, ownerID, sessionID string) (RemoteAssistFrame, error) {
-	var frame RemoteAssistFrame
+// AuthorizeRemoteAssistViewer reports whether sessionID is an active, unexpired
+// session owned by ownerID, i.e. whether this admin may watch it.
+func (s *Store) AuthorizeRemoteAssistViewer(ctx context.Context, ownerID, sessionID string) error {
+	var ok bool
 	err := s.pool.QueryRow(ctx, `
-		SELECT f.image, f.width, f.height, f.received_at
-		  FROM remote_assist_frames f
-		  JOIN remote_assist_sessions s ON s.id = f.session_id
+		SELECT true
+		  FROM remote_assist_sessions s
 		 WHERE s.id = $1 AND s.owner_user_id = $2
 		   AND s.status = 'active' AND s.expires_at > now()`,
 		sessionID, ownerID,
-	).Scan(&frame.Bytes, &frame.Width, &frame.Height, &frame.ReceivedAt)
+	).Scan(&ok)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return RemoteAssistFrame{}, ErrNotFound
+		return ErrNotFound
 	}
-	return frame, err
+	return err
+}
+
+// MarkRemoteAssistFrameAt records that frames are flowing for this session.
+// Callers throttle it (see live.Hub.ShouldPersist) so it runs on the order of
+// once per 10s rather than once per frame.
+func (s *Store) MarkRemoteAssistFrameAt(ctx context.Context, employeeID, sessionID string) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE remote_assist_sessions SET last_frame_at = now()
+		 WHERE id = $1 AND employee_user_id = $2 AND status = 'active'`, sessionID, employeeID)
+	return err
 }

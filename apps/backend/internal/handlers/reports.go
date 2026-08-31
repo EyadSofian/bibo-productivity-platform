@@ -144,6 +144,22 @@ func (h *ReportsHandler) ScreenshotImage(c *gin.Context) {
 
 // scope authenticates, validates the :id employee is one the caller owns, and parses
 // the from/to window. It writes the error response and returns ok=false on failure.
+// States returns the device-state timeline: how the window splits into active,
+// idle, suspended and offline time. This is the source for the profile's idle
+// and total-device-time figures, which activity_samples alone cannot answer.
+func (h *ReportsHandler) States(c *gin.Context) {
+	ownerID, empID, from, to, ok := h.scope(c)
+	if !ok {
+		return
+	}
+	report, err := h.store.OsStateReportFor(c.Request.Context(), empID, ownerID, from, to)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, report)
+}
+
 func (h *ReportsHandler) scope(c *gin.Context) (ownerID, empID string, from, to int64, ok bool) {
 	ownerID, _ = auth.UserID(c)
 	empID = c.Param("id")

@@ -49,6 +49,17 @@ type BrowserRow struct {
 	ClientUpdatedAt int64
 }
 
+// OsStateRow is one closed device-state interval: what the machine was doing,
+// as opposed to which app had focus. Intervals are contiguous, so idle and
+// suspended time are real rows rather than gaps to be guessed at.
+type OsStateRow struct {
+	ClientUUID      string
+	State           string
+	Ts              int64
+	DurationS       int
+	ClientUpdatedAt int64
+}
+
 // DomainOf extracts the hostname a visit belongs to, or nil when the URL has
 // none — which includes the reserved on/off marker values, that are not URLs.
 //
@@ -143,6 +154,14 @@ ON CONFLICT (client_uuid) DO UPDATE SET
   browser = EXCLUDED.browser, duration_s = EXCLUDED.duration_s,
   client_updated_at = EXCLUDED.client_updated_at, received_at = now()`
 
+	osStateUpsert = `
+INSERT INTO os_states
+  (client_uuid, user_id, business_id, device_id, state, ts, duration_s, client_updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+ON CONFLICT (client_uuid) DO UPDATE SET
+  state = EXCLUDED.state, ts = EXCLUDED.ts, duration_s = EXCLUDED.duration_s,
+  client_updated_at = EXCLUDED.client_updated_at, received_at = now()`
+
 	// business_id/os/agent_version are COALESCEd so a sparse heartbeat (which may
 	// omit os/version) never nulls out what a fuller sync already recorded.
 	// last_seen_at is bumped unconditionally — the device is alive even when its
@@ -175,7 +194,7 @@ RETURNING monitoring_enabled AND deleted_at IS NULL`
 // choke point every device's data passes through, rather than in the agent,
 // which is the untrusted side.
 func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID string, label, os, agentVersion *string,
-	act []ActivityRow, ks []KeystrokeRow, br []BrowserRow) (SyncResult, error) {
+	act []ActivityRow, ks []KeystrokeRow, br []BrowserRow, states []OsStateRow) (SyncResult, error) {
 
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -197,7 +216,7 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 		}
 		return SyncResult{
 			MonitoringEnabled: false,
-			Dropped:           len(act) + len(ks) + len(br),
+			Dropped:           len(act) + len(ks) + len(br) + len(states),
 		}, nil
 	}
 
@@ -215,6 +234,11 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 		// matches the stored URL.
 		batch.Queue(browserUpsert, b.ClientUUID, userID, businessID, deviceID,
 			b.Ts, b.URL, DomainOf(b.URL), b.PageTitle, b.Browser, b.DurationS, b.ClientUpdatedAt)
+	}
+
+	for _, st := range states {
+		batch.Queue(osStateUpsert, st.ClientUUID, userID, businessID, deviceID,
+			st.State, st.Ts, st.DurationS, st.ClientUpdatedAt)
 	}
 
 	if batch.Len() > 0 {

@@ -12,7 +12,9 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use super::auth::{AuthState, Session};
-use crate::storage::{PendingActivity, PendingBrowser, PendingKeystroke, PendingScreenshot};
+use crate::storage::{
+    PendingActivity, PendingBrowser, PendingKeystroke, PendingOsState, PendingScreenshot,
+};
 
 /// A backend client bound to a base URL and the shared auth state.
 #[derive(Clone)]
@@ -138,6 +140,9 @@ struct BatchReq<'a> {
     activity: &'a [PendingActivity],
     keystrokes: &'a [PendingKeystroke],
     browser: &'a [PendingBrowser],
+    /// Device-state timeline. Older backends ignore the unknown field, so a new
+    /// agent stays compatible with a backend that has not been deployed yet.
+    os_states: &'a [PendingOsState],
 }
 
 /// The backend echoes back exactly the `client_uuid`s it accepted, per kind.
@@ -149,6 +154,10 @@ pub struct BatchAccepted {
     pub keystrokes: Vec<String>,
     #[serde(default)]
     pub browser: Vec<String>,
+    /// Absent when talking to a backend that predates the state timeline, which
+    /// leaves those rows pending rather than marking them wrongly synced.
+    #[serde(default)]
+    pub os_states: Vec<String>,
 }
 
 #[derive(Deserialize)]
@@ -338,7 +347,7 @@ impl BackendClient {
     /// `POST /v1/auth/refresh`. Updates the stored tokens in place on success.
     /// Returns the new access token. Caller (the 401 retry path) re-issues the
     /// original request with it.
-    async fn refresh(&self) -> Result<String, String> {
+    pub(crate) async fn refresh(&self) -> Result<String, String> {
         let refresh_token = self
             .auth
             .session()
@@ -435,6 +444,7 @@ impl BackendClient {
         activity: &[PendingActivity],
         keystrokes: &[PendingKeystroke],
         browser: &[PendingBrowser],
+        os_states: &[PendingOsState],
     ) -> Result<BatchResult, String> {
         let label = hostname::get()
             .ok()
@@ -450,6 +460,7 @@ impl BackendClient {
             activity,
             keystrokes,
             browser,
+            os_states,
         };
 
         // First attempt + one retry after a refresh on 401.
@@ -483,11 +494,12 @@ impl BackendClient {
             let parsed: BatchResp = resp.json().await.map_err(|e| e.to_string())?;
             crate::log_info!(
                 "sync",
-                "POST /v1/sync/batch -> {} (act={} keys={} br={})",
+                "POST /v1/sync/batch -> {} (act={} keys={} br={} states={})",
                 status.as_u16(),
                 activity.len(),
                 keystrokes.len(),
-                browser.len()
+                browser.len(),
+                os_states.len()
             );
             return Ok(BatchResult {
                 accepted: parsed.accepted,
@@ -706,6 +718,51 @@ impl BackendClient {
             return Ok(());
         }
         Err("remote_assist_upload_frame: unreachable retry exhaustion".into())
+    }
+
+    /// `POST /v1/agent/live/frame` — one ephemeral live-view frame.
+    ///
+    /// Returns `false` when the backend reports that no viewer is attached any
+    /// more, which tells the capture loop to stop rather than keep encoding
+    /// frames nobody will see.
+    pub async fn live_view_upload_frame(
+        &self,
+        device_id: &str,
+        bytes: &[u8],
+        width: u32,
+        height: u32,
+    ) -> Result<bool, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/agent/live/frame?device_id={device_id}")))
+                .bearer_auth(&token)
+                .header(reqwest::header::CONTENT_TYPE, "image/webp")
+                .header("X-Frame-Width", width)
+                .header("X-Frame-Height", height)
+                .body(bytes.to_vec())
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            // 409 is the backend saying the last viewer left. 403 means the
+            // owner switched monitoring off or archived the device: in both
+            // cases capture must stop, not retry.
+            if resp.status() == reqwest::StatusCode::CONFLICT
+                || resp.status() == reqwest::StatusCode::FORBIDDEN
+            {
+                return Ok(false);
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return Ok(true);
+        }
+        Err("live_view_upload_frame: unreachable retry exhaustion".into())
     }
 
     /// `POST /v1/sync/screenshots` (multipart) for a single screenshot, with the

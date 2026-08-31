@@ -10,7 +10,7 @@ import (
 // on first contact. Returns the device id.
 func registerDevice(t *testing.T, f syncFixture) string {
 	t.Helper()
-	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, nil, nil, nil, nil, nil); err != nil {
+	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID, nil, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Fatalf("register device: %v", err)
 	}
 	return f.deviceID
@@ -185,7 +185,7 @@ func TestSyncPersistsDeviceMetadata(t *testing.T) {
 	f := newSyncFixture(t)
 	label, operatingSystem, version := "Amina's MacBook", "macOS 15.3", "1.5.1"
 	if _, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, f.deviceID,
-		&label, &operatingSystem, &version, nil, nil, nil); err != nil {
+		&label, &operatingSystem, &version, nil, nil, nil, nil); err != nil {
 		t.Fatalf("sync metadata: %v", err)
 	}
 	devices, err := f.store.ListDevices(f.ctx, f.userID, f.bizID, false)
@@ -211,7 +211,7 @@ func TestSyncDropsDataWhenMonitoringDisabled(t *testing.T) {
 
 	before := f.count(t, "activity_samples")
 	res, err := f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil, nil, nil,
-		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil)
+		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("sync while disabled: %v", err)
 	}
@@ -231,7 +231,7 @@ func TestSyncDropsDataWhenMonitoringDisabled(t *testing.T) {
 		t.Fatalf("re-enable: %v", err)
 	}
 	res, err = f.store.SyncBatch(f.ctx, f.userID, f.bizID, id, nil, nil, nil,
-		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil)
+		[]ActivityRow{activity(uuid.NewString(), "Code", 60, 1)}, nil, nil, nil)
 	if err != nil {
 		t.Fatalf("sync after re-enable: %v", err)
 	}

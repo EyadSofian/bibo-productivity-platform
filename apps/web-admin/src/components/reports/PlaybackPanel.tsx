@@ -59,16 +59,37 @@ export function assemblePlaybackFrames(
   });
 }
 
+/**
+ * Index of the frame closest to `ts`. Exported for testing because "closest"
+ * has to hold at the ends of the day too, where a naive search walks off.
+ */
+export function frameIndexAt(frames: PlaybackFrame[], ts: number): number {
+  if (frames.length === 0) return 0;
+  let best = 0;
+  let bestDistance = Math.abs(frames[0].ts - ts);
+  for (let i = 1; i < frames.length; i++) {
+    const distance = Math.abs(frames[i].ts - ts);
+    if (distance < bestDistance) {
+      best = i;
+      bestDistance = distance;
+    }
+  }
+  return best;
+}
+
 export function PlaybackPanel({
   shots,
   activity,
   visits,
   buckets,
+  seekTo,
 }: {
   shots: ScreenshotMeta[];
   activity: ActivityResponse;
   visits: BrowserVisit[];
   buckets: KeystrokeBucket[];
+  /** Unix seconds to open at; the nearest frame wins. */
+  seekTo?: number | null;
 }) {
   const { t } = useTranslation("reports");
   const frames = useMemo(
@@ -85,6 +106,14 @@ export function PlaybackPanel({
   useEffect(() => {
     setIndex((current) => Math.min(current, Math.max(0, frames.length - 1)));
   }, [frames.length]);
+
+  // Jumping in from the timeline stops playback: the operator asked to look at
+  // one moment, not to start a tour from it.
+  useEffect(() => {
+    if (seekTo == null || frames.length === 0) return;
+    setIndex(frameIndexAt(frames, seekTo));
+    setPlaying(false);
+  }, [seekTo, frames]);
 
   useEffect(() => {
     if (!frame) return;

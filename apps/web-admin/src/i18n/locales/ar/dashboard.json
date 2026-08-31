@@ -17,7 +17,11 @@
       "focus": "التركيز",
       "name": "الاسم"
     },
-    "states": { "active": "نشط", "idle": "خامل", "offline": "غير متصل" },
+    "states": {
+      "active": "نشط",
+      "idle": "خامل",
+      "offline": "غير متصل"
+    },
     "noCurrentApp": "لا يوجد تطبيق حالي",
     "statRecorded": "المسجَّل اليوم",
     "statActive": "النشط اليوم",
@@ -78,13 +82,27 @@
     "errorStartAfterEnd": "تاريخ البداية بعد تاريخ النهاية.",
     "loadingReports": "جارٍ تحميل التقارير…",
     "presence": {
-      "states": { "active": "نشط الآن", "idle": "خامل الآن", "online": "متصل", "offline": "غير متصل" },
-      "openNow": "المفتوح الآن", "noCurrentApp": "لا توجد إشارة حالية للتطبيق", "since": "منذ",
-      "updated": "آخر إشارة مباشرة {{time}}", "waiting": "في انتظار نبضة تطبيق Windows",
+      "states": {
+        "active": "نشط الآن",
+        "idle": "خامل الآن",
+        "online": "متصل",
+        "offline": "غير متصل"
+      },
+      "openNow": "المفتوح الآن",
+      "noCurrentApp": "لا توجد إشارة حالية للتطبيق",
+      "since": "منذ",
+      "updated": "آخر إشارة مباشرة {{time}}",
+      "waiting": "في انتظار نبضة تطبيق Windows",
       "resources": {
-        "title": "استهلاك الجهاز الآن", "wholeDevice": "الاستهلاك الحالي للجهاز بالكامل من آخر نبضة.",
-        "cpu": "المعالج", "memory": "الذاكرة", "disk": "القرص", "network": "الشبكة",
-        "download": "تنزيل", "upload": "رفع", "current": "الاستهلاك الحالي",
+        "title": "استهلاك الجهاز الآن",
+        "wholeDevice": "الاستهلاك الحالي للجهاز بالكامل من آخر نبضة.",
+        "cpu": "المعالج",
+        "memory": "الذاكرة",
+        "disk": "القرص",
+        "network": "الشبكة",
+        "download": "تنزيل",
+        "upload": "رفع",
+        "current": "الاستهلاك الحالي",
         "of": "{{used}} من {{total}}"
       },
       "onlineFor": "مدة الاتصال",
@@ -125,7 +143,15 @@
       "activeTimeRange": "وقت النشاط (الفترة)",
       "topApp": "أكثر تطبيق",
       "keypresses": "ضغطات المفاتيح",
-      "screenshots": "لقطات الشاشة"
+      "screenshots": "لقطات الشاشة",
+      "idleTime": "وقت الخمول",
+      "deviceTime": "إجمالي وقت الجهاز",
+      "firstActivity": "أول نشاط",
+      "lastActivity": "آخر نشاط",
+      "offlineTime": "غير متصل",
+      "topSite": "أكثر موقع",
+      "coverage": "من الفترة مُسجَّلة",
+      "noActivity": "لا يوجد نشاط"
     },
     "tabs": {
       "activity": "النشاط",
@@ -135,7 +161,8 @@
       "playback": "إعادة التشغيل"
     },
     "singleDay": "يوم واحد",
-    "dateRange": "نطاق زمني"
+    "dateRange": "نطاق زمني",
+    "timelineTitle": "الخط الزمني"
   },
   "devices": {
     "title": "أسطول الأجهزة",
@@ -222,7 +249,15 @@
       "screen": "لقطات الشاشة",
       "keystrokes": "أعداد نشاط لوحة المفاتيح"
     },
-    "day": { "1": "ن", "2": "ث", "3": "ر", "4": "خ", "5": "ج", "6": "س", "7": "ح" }
+    "day": {
+      "1": "ن",
+      "2": "ث",
+      "3": "ر",
+      "4": "خ",
+      "5": "ج",
+      "6": "س",
+      "7": "ح"
+    }
   },
   "organization": {
     "loading": "جارٍ تحميل الهيكل التنظيمي…",

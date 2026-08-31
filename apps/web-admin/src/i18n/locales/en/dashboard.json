@@ -17,7 +17,11 @@
       "focus": "Focus",
       "name": "Name"
     },
-    "states": { "active": "Active", "idle": "Idle", "offline": "Offline" },
+    "states": {
+      "active": "Active",
+      "idle": "Idle",
+      "offline": "Offline"
+    },
     "noCurrentApp": "No current app",
     "statRecorded": "Recorded today",
     "statActive": "Active today",
@@ -78,13 +82,27 @@
     "errorStartAfterEnd": "The start date is after the end date.",
     "loadingReports": "Loading reports…",
     "presence": {
-      "states": { "active": "Active now", "idle": "Idle now", "online": "Online", "offline": "Offline" },
-      "openNow": "Open now", "noCurrentApp": "No current app signal", "since": "Since",
-      "updated": "Live signal updated at {{time}}", "waiting": "Waiting for the Windows app heartbeat",
+      "states": {
+        "active": "Active now",
+        "idle": "Idle now",
+        "online": "Online",
+        "offline": "Offline"
+      },
+      "openNow": "Open now",
+      "noCurrentApp": "No current app signal",
+      "since": "Since",
+      "updated": "Live signal updated at {{time}}",
+      "waiting": "Waiting for the Windows app heartbeat",
       "resources": {
-        "title": "Device load now", "wholeDevice": "Current whole-device usage from the latest heartbeat.",
-        "cpu": "CPU", "memory": "Memory", "disk": "Disk", "network": "Network",
-        "download": "Download", "upload": "Upload", "current": "current usage",
+        "title": "Device load now",
+        "wholeDevice": "Current whole-device usage from the latest heartbeat.",
+        "cpu": "CPU",
+        "memory": "Memory",
+        "disk": "Disk",
+        "network": "Network",
+        "download": "Download",
+        "upload": "Upload",
+        "current": "current usage",
         "of": "{{used}} of {{total}}"
       },
       "onlineFor": "Online for",
@@ -125,7 +143,15 @@
       "activeTimeRange": "Active time (range)",
       "topApp": "Top app",
       "keypresses": "Keypresses",
-      "screenshots": "Screenshots"
+      "screenshots": "Screenshots",
+      "idleTime": "Idle time",
+      "deviceTime": "Device time",
+      "firstActivity": "First activity",
+      "lastActivity": "Last activity",
+      "offlineTime": "Offline",
+      "topSite": "Top website",
+      "coverage": "of the period tracked",
+      "noActivity": "No activity"
     },
     "tabs": {
       "activity": "Activity",
@@ -135,7 +161,8 @@
       "playback": "Playback"
     },
     "singleDay": "Single day",
-    "dateRange": "Date range"
+    "dateRange": "Date range",
+    "timelineTitle": "Timeline"
   },
   "devices": {
     "title": "Device fleet",
@@ -222,7 +249,15 @@
       "screen": "Screenshots",
       "keystrokes": "Keyboard activity counts"
     },
-    "day": { "1": "Mo", "2": "Tu", "3": "We", "4": "Th", "5": "Fr", "6": "Sa", "7": "Su" }
+    "day": {
+      "1": "Mo",
+      "2": "Tu",
+      "3": "We",
+      "4": "Th",
+      "5": "Fr",
+      "6": "Sa",
+      "7": "Su"
+    }
   },
   "organization": {
     "loading": "Loading organization…",

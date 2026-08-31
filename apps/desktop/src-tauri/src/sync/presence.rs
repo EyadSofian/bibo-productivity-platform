@@ -87,7 +87,14 @@ async fn run(ctx: SyncContext) {
                 }
             }
         }
-        tokio::time::sleep(HEARTBEAT_INTERVAL).await;
+        // Wait out the interval, or cut it short when the push channel says an
+        // owner just asked for a frame. The heartbeat is still what carries and
+        // atomically consumes the request, so an agent with no push channel
+        // behaves exactly as before -- it just waits the full interval.
+        tokio::select! {
+            _ = tokio::time::sleep(HEARTBEAT_INTERVAL) => {}
+            _ = ctx.push.capture_now.notified() => {}
+        }
     }
 }
 

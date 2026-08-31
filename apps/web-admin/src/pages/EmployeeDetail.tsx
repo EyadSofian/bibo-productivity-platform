@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,16 +11,17 @@ import {
   reportKeystrokes,
   reportPresence,
   reportScreenshots,
-  requestLiveCapture,
+  reportStates,
   sendRemoteAssistAction,
 } from "../api/endpoints";
-import { fetchImageObjectUrl, fetchRemoteAssistFrameObjectUrl } from "../api/client";
+import { subscribeDeviceLiveFrames, subscribeRemoteAssistFrames } from "../api/client";
 import type {
   ActivityResponse,
   BrowserVisit,
   DeviceResourceSnapshot,
   EmployeePresence,
   KeystrokeBucket,
+  OsStateReport,
   ReportEmployee,
   RemoteAssistSession,
   ScreenshotMeta,
@@ -29,8 +30,9 @@ import { ActivityPanel } from "../components/reports/ActivityPanel";
 import { BrowserPanel } from "../components/reports/BrowserPanel";
 import { KeystrokePanel } from "../components/reports/KeystrokePanel";
 import { PlaybackPanel } from "../components/reports/PlaybackPanel";
+import { UnifiedTimeline } from "../components/reports/UnifiedTimeline";
 import { ScreenshotGallery } from "../components/reports/ScreenshotGallery";
-import { Notice, Spinner } from "../components/ui";
+import { Notice, SectionTitle, Spinner } from "../components/ui";
 import {
   dayRangeToUnix,
   fmtByteRate,
@@ -59,6 +61,10 @@ const IconClock = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /
 const IconAppWindow = svg(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 4v4" /><path d="M2 8h20" /><path d="M6 4v4" /></>);
 const IconKeyboard = svg(<><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></>);
 const IconCamera = svg(<><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></>);
+const IconPause = svg(<><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></>);
+const IconMonitor = svg(<><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></>);
+const IconSunrise = svg(<><path d="M12 2v6" /><path d="m4.93 8.93 1.41 1.41" /><path d="M2 18h2" /><path d="M20 18h2" /><path d="m17.66 10.34 1.41-1.41" /><path d="M22 22H2" /><path d="m8 6 4-4 4 4" /><path d="M16 18a4 4 0 0 0-8 0" /></>);
+const IconGlobe = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></>);
 const TrendUp = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
     <path d="M7 17 17 7M9 7h8v8" />
@@ -128,16 +134,14 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
 }
 
 function LiveScreen({
-  employeeId,
   presence,
 }: {
-  employeeId: string;
   presence: EmployeePresence | null;
 }) {
   const { t, i18n } = useTranslation("dashboard");
   const [enabled, setEnabled] = useState(false);
-  const [frame, setFrame] = useState<ScreenshotMeta | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [frameAt, setFrameAt] = useState<Date | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remoteSession, setRemoteSession] = useState<RemoteAssistSession | null>(null);
@@ -145,108 +149,63 @@ function LiveScreen({
   const [remoteBusy, setRemoteBusy] = useState(false);
   const [remoteError, setRemoteError] = useState<string | null>(null);
   const [keyboardEnabled, setKeyboardEnabled] = useState(false);
-  const imageRef = useRef<string | null>(null);
-  const remoteImageRef = useRef<string | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
-  const requestInFlight = useRef(false);
   const consecutiveFailures = useRef(0);
   const deviceId = presence?.device_id ?? null;
   const online = Boolean(deviceId && presence && presence.state !== "offline");
   const remoteOpen = remoteSession?.status === "pending" || remoteSession?.status === "active";
   const remoteActive = remoteSession?.status === "active";
 
+  // The live screen is a pushed stream, not a poll. Holding it open is also what
+  // keeps the agent capturing: the backend renews the agent's authorization while
+  // a viewer is attached, and the agent stops on its own when renewals stop. That
+  // replaces a 20s frame request + 3s discovery poll that together capped the
+  // live view at one frame per 20 seconds (FULL_SYSTEM_AUDIT P0-1).
+  //
+  // These frames are ephemeral and are never stored; scheduled screenshots stay
+  // on their own policy schedule and are unaffected by watching.
   useEffect(() => {
+    if (!enabled || !deviceId || !online || remoteOpen) {
+      setWaiting(false);
+      return;
+    }
     let alive = true;
-    setImageUrl(null);
-    if (!frame) return () => {};
+    setWaiting(true);
+    setError(null);
+    consecutiveFailures.current = 0;
 
-    fetchImageObjectUrl(frame.client_uuid)
-      .then((url) => {
-        if (imageRef.current) URL.revokeObjectURL(imageRef.current);
-        imageRef.current = url;
-        if (alive) setImageUrl(url);
-        else URL.revokeObjectURL(url);
-      })
-      .catch(() => {
-        if (alive) setError(t("detail.presence.liveView.imageError"));
-      });
-
-    return () => {
-      alive = false;
-    };
-  }, [frame, t]);
-
-  useEffect(() => () => {
-    if (imageRef.current) URL.revokeObjectURL(imageRef.current);
-    if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
-  }, []);
-
-  useEffect(() => {
-    if (!enabled || !deviceId || !online || remoteOpen) return;
-    let alive = true;
-    let requestedAt = 0;
-
-    const requestFrame = async () => {
-      if (requestInFlight.current) return;
-      requestInFlight.current = true;
-      try {
-        const result = await requestLiveCapture(deviceId);
+    const unsubscribe = subscribeDeviceLiveFrames(deviceId, {
+      onFrame: (frame) => {
         if (!alive) return;
-        requestedAt = result.requested_at;
-        consecutiveFailures.current = 0;
-        setWaiting(true);
-        setError(null);
-      } catch {
-        if (alive) {
-          setWaiting(false);
-          consecutiveFailures.current += 1;
-          // A laptop can miss one heartbeat while sleeping or switching networks.
-          // Keep the last good frame visible and only surface a persistent issue.
-          if (consecutiveFailures.current >= 2) {
-            setError(t("detail.presence.liveView.requestError"));
-          }
-        }
-      } finally {
-        requestInFlight.current = false;
-      }
-    };
-
-    const pollFrame = async () => {
-      // Do not label an older periodic screenshot as a live frame while the
-      // one-shot request is still in flight.
-      if (!requestedAt) return;
-      try {
-        const today = isoDate(new Date());
-        const range = dayRangeToUnix(today, today);
-        const result = await reportScreenshots(employeeId, range.from, range.to, 3);
-        if (!alive || result.screenshots.length === 0) return;
-        const fresh = result.screenshots.filter((shot) =>
-          (!shot.device_id || shot.device_id === deviceId)
-          && (shot.received_at ?? shot.ts) >= requestedAt - 5,
-        );
-        if (fresh.length === 0) return;
-        const latest = fresh.reduce((a, b) =>
-          (a.received_at ?? a.ts) >= (b.received_at ?? b.ts) ? a : b,
-        );
-        setFrame((current) => current?.client_uuid === latest.client_uuid ? current : latest);
+        setImageUrl(`data:image/webp;base64,${frame.image}`);
+        setFrameAt(new Date(frame.received_at));
         consecutiveFailures.current = 0;
         setWaiting(false);
         setError(null);
-      } catch {
-        if (alive) setError(t("detail.presence.liveView.imageError"));
-      }
-    };
+      },
+      onEnd: () => {
+        if (alive) setWaiting(false);
+      },
+      onAgentUnreachable: () => {
+        if (alive) setError(t("detail.presence.liveView.requestError"));
+      },
+      onError: () => {
+        if (!alive) return;
+        consecutiveFailures.current += 1;
+        // A laptop can miss a beat while sleeping or switching networks. Keep the
+        // last good frame visible and only surface a persistent issue.
+        if (consecutiveFailures.current >= 2) {
+          setError(t("detail.presence.liveView.requestError"));
+        }
+      },
+    });
 
-    void requestFrame();
-    void pollFrame();
-    const requestTimer = window.setInterval(requestFrame, 20_000);
-    const pollTimer = window.setInterval(pollFrame, 3_000);
     return () => {
       alive = false;
-      window.clearInterval(requestTimer);
-      window.clearInterval(pollTimer);
+      unsubscribe();
+      setWaiting(false);
     };
-  }, [deviceId, employeeId, enabled, online, remoteOpen, t]);
+  }, [deviceId, enabled, online, remoteOpen, t]);
 
   useEffect(() => {
     if (!remoteOpen || !remoteSession) return;
@@ -270,36 +229,34 @@ function LiveScreen({
     };
   }, [remoteOpen, remoteSession?.id, t]);
 
+  // Live frames arrive over a pushed stream rather than a 900ms poll, so a
+  // frame renders as soon as the agent uploads it. Frames come through as
+  // base64 data URLs, which also removes the object-URL lifecycle (and the leak
+  // that came with it) from this path entirely.
   useEffect(() => {
     if (!remoteActive || !remoteSession) {
-      if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
-      remoteImageRef.current = null;
       setRemoteFrameUrl(null);
       return;
     }
     let alive = true;
-    let inFlight = false;
-    const loadFrame = async () => {
-      if (inFlight) return;
-      inFlight = true;
-      try {
-        const url = await fetchRemoteAssistFrameObjectUrl(remoteSession.id);
-        if (!alive || !url) return;
-        if (remoteImageRef.current) URL.revokeObjectURL(remoteImageRef.current);
-        remoteImageRef.current = url;
-        setRemoteFrameUrl(url);
+    const unsubscribe = subscribeRemoteAssistFrames(remoteSession.id, {
+      onFrame: (frame) => {
+        if (!alive) return;
+        setRemoteFrameUrl(`data:image/webp;base64,${frame.image}`);
         setRemoteError(null);
-      } catch {
-        if (alive) setRemoteError(t("detail.presence.liveView.remoteError"));
-      } finally {
-        inFlight = false;
-      }
-    };
-    void loadFrame();
-    const timer = window.setInterval(loadFrame, 900);
+      },
+      onEnd: () => {
+        if (!alive) return;
+        setRemoteFrameUrl(null);
+      },
+      onError: () => {
+        if (!alive) return;
+        setRemoteError(t("detail.presence.liveView.remoteError"));
+      },
+    });
     return () => {
       alive = false;
-      window.clearInterval(timer);
+      unsubscribe();
     };
   }, [remoteActive, remoteSession?.id, t]);
 
@@ -376,8 +333,8 @@ function LiveScreen({
     }
   }
 
-  const frameTime = frame
-    ? new Date(frame.ts * 1000).toLocaleTimeString(i18n.language, {
+  const frameTime = frameAt
+    ? frameAt.toLocaleTimeString(i18n.language, {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
@@ -629,7 +586,7 @@ function StatCard(props: {
 }
 
 export function EmployeeDetail() {
-  const { t } = useTranslation("dashboard");
+  const { t, i18n } = useTranslation("dashboard");
   const { id = "" } = useParams();
   const [params] = useSearchParams();
   const businessId = params.get("business");
@@ -645,6 +602,8 @@ export function EmployeeDetail() {
   const [to, setTo] = useState(() => isoDate(new Date()));
 
   const [tab, setTab] = useState<Tab>("activity");
+  // Set by a timeline click: switches to the player and points it at a moment.
+  const [seekTo, setSeekTo] = useState<number | null>(null);
 
   const [employee, setEmployee] = useState<ReportEmployee | null>(null);
   const [presence, setPresence] = useState<EmployeePresence | null>(null);
@@ -652,6 +611,7 @@ export function EmployeeDetail() {
   const [keystrokes, setKeystrokes] = useState<KeystrokeBucket[] | null>(null);
   const [visits, setVisits] = useState<BrowserVisit[] | null>(null);
   const [shots, setShots] = useState<ScreenshotMeta[] | null>(null);
+  const [states, setStates] = useState<OsStateReport | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -671,10 +631,17 @@ export function EmployeeDetail() {
     return () => setTitle(null);
   }, [employee, setTitle]);
 
+  // The exact window the reports were loaded for. The timeline must lay blocks
+  // out against this and not recompute it, or a block would drift from the
+  // numbers in the cards above it.
+  const rangeUnix = useMemo(() => {
+    const [fromDate, toDate] = mode === "day" ? [day, day] : [from, to];
+    return dayRangeToUnix(fromDate, toDate);
+  }, [mode, day, from, to]);
+
   const load = useCallback(async () => {
     if (!id) return;
-    const [fromDate, toDate] = mode === "day" ? [day, day] : [from, to];
-    const { from: f, to: to2 } = dayRangeToUnix(fromDate, toDate);
+    const { from: f, to: to2 } = rangeUnix;
     if (f > to2) {
       setError(t("detail.errorStartAfterEnd"));
       return;
@@ -682,22 +649,24 @@ export function EmployeeDetail() {
     setLoading(true);
     setError(null);
     try {
-      const [a, k, b, s] = await Promise.all([
+      const [a, k, b, s, st] = await Promise.all([
         reportActivity(id, f, to2),
         reportKeystrokes(id, f, to2),
         reportBrowser(id, f, to2),
         reportScreenshots(id, f, to2),
+        reportStates(id, f, to2),
       ]);
       setActivity(a);
       setKeystrokes(k.buckets);
       setVisits(b.visits);
       setShots(s.screenshots);
+      setStates(st);
     } catch {
       setError(t("detail.errorRange"));
     } finally {
       setLoading(false);
     }
-  }, [id, mode, day, from, to, t]);
+  }, [id, rangeUnix, t]);
 
   useEffect(() => {
     load();
@@ -734,6 +703,51 @@ export function EmployeeDetail() {
   const keypresses = keystrokes?.reduce((sum, b) => sum + b.count, 0) ?? 0;
   // Top app's share of active time (real) — shown as the "focus" chip.
   const topShare = activeS > 0 ? Math.round((topAppS / activeS) * 100) : 0;
+  // NOTE: topShare stays relative to activity_samples' own total, because both
+  // numerator and denominator come from that table. Mixing sources here would
+  // produce a percentage that silently exceeds 100%.
+
+  // Time budget from the device-state timeline. `activity_samples` only records
+  // active foreground intervals, so idle, suspended and total device time can
+  // only come from here. Null until loaded — never substituted with a guess.
+  const totals = states?.totals ?? null;
+  // The timeline is authoritative for the time budget when it has data, so the
+  // cards cannot contradict each other. It measures active time device-wide,
+  // whereas activity_samples only accrues while a foreground window is
+  // identifiable — two honest numbers that would otherwise disagree on screen.
+  //
+  // Agents older than the timeline report nothing here; falling back to the
+  // activity sum keeps their dashboards working instead of showing a bare zero.
+  const hasTimeline = !!totals && totals.covered_s > 0;
+  const budgetActiveS = hasTimeline ? totals.active_s : activeS;
+  // "Device time" is the time the machine was powered and reporting: active +
+  // idle. Suspended and offline are deliberately excluded.
+  const deviceS = hasTimeline ? totals.active_s + totals.idle_s : null;
+  const coverage = totals && totals.elapsed_s > 0 && totals.covered_s > 0
+    ? Math.round((totals.covered_s / totals.elapsed_s) * 100)
+    : null;
+
+  const clockTime = (unix: number | null | undefined) =>
+    unix == null
+      ? null
+      : new Date(unix * 1000).toLocaleTimeString(i18n.language, {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+  // Most-visited site for the window, by summed real visit duration.
+  const topSite = (() => {
+    if (!visits || visits.length === 0) return null;
+    const byDomain = new Map<string, number>();
+    for (const v of visits) {
+      const key = v.domain || v.url;
+      if (!key) continue;
+      byDomain.set(key, (byDomain.get(key) ?? 0) + v.duration_s);
+    }
+    let best: [string, number] | null = null;
+    for (const entry of byDomain) if (!best || entry[1] > best[1]) best = entry;
+    return best;
+  })();
 
   const name = employee?.display_name ?? terms.one;
   const isSelf = employee?.role === "owner" || (!!employee && employee.id === user?.id);
@@ -819,7 +833,7 @@ export function EmployeeDetail() {
       </div>
 
       <div className="ad-command-deck">
-        <LiveScreen employeeId={id} presence={presence} />
+        <LiveScreen presence={presence} />
         <div className="ad-command-deck__telemetry">
           <LivePresence presence={presence} />
           <LiveResources resources={presence?.resources} />
@@ -835,8 +849,30 @@ export function EmployeeDetail() {
           focal
           icon={IconClock}
           label={mode === "day" ? t("detail.summary.activeTime") : t("detail.summary.activeTimeRange")}
-          value={fmtDuration(activeS)}
+          value={fmtDuration(budgetActiveS)}
           sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
+        />
+        <StatCard
+          icon={IconPause}
+          label={t("detail.summary.idleTime")}
+          value={hasTimeline ? fmtDuration(totals.idle_s) : "—"}
+          sub={hasTimeline ? `${t("detail.summary.offlineTime")} ${fmtDuration(totals.offline_s)}` : undefined}
+        />
+        <StatCard
+          icon={IconMonitor}
+          label={t("detail.summary.deviceTime")}
+          value={deviceS === null ? "—" : fmtDuration(deviceS)}
+          sub={coverage === null ? undefined : `${coverage}% ${t("detail.summary.coverage")}`}
+        />
+        <StatCard
+          icon={IconSunrise}
+          label={t("detail.summary.firstActivity")}
+          value={clockTime(states?.first_activity) ?? "—"}
+          sub={
+            states && states.last_activity
+              ? `${t("detail.summary.lastActivity")} ${clockTime(states.last_activity)}`
+              : t("detail.summary.noActivity")
+          }
         />
         <StatCard
           icon={IconAppWindow}
@@ -844,6 +880,12 @@ export function EmployeeDetail() {
           value={topApp}
           delta={`${topShare}%`}
           sub={t("dashboard.statFocus")}
+        />
+        <StatCard
+          icon={IconGlobe}
+          label={t("detail.summary.topSite")}
+          value={topSite ? topSite[0] : "—"}
+          sub={topSite ? fmtDuration(topSite[1]) : undefined}
         />
         <StatCard
           icon={IconKeyboard}
@@ -857,6 +899,30 @@ export function EmployeeDetail() {
           value={(shots?.length ?? 0).toLocaleString()}
           sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
         />
+      </div>
+
+      {/* Unified timeline: the five reports below share one axis here, so a
+          vertical slice answers "what was happening at 14:20" without moving
+          between tabs. Clicking anything opens the player at that moment. */}
+      <div className="bibo-card bibo-card--default ad-cardpad" style={{ marginBottom: "var(--sp-4)" }}>
+        <SectionTitle>{t("detail.timelineTitle")}</SectionTitle>
+        {loading ? (
+          <Spinner label={t("detail.loadingReports")} />
+        ) : error ? null : (
+          <UnifiedTimeline
+            from={rangeUnix.from}
+            to={rangeUnix.to}
+            states={states}
+            activity={activity}
+            buckets={keystrokes}
+            visits={visits}
+            shots={shots}
+            onSeek={(ts) => {
+              setSeekTo(ts);
+              setTab("playback");
+            }}
+          />
+        )}
       </div>
 
       {/* tabs + panel */}
@@ -899,6 +965,7 @@ export function EmployeeDetail() {
                     activity={activity}
                     visits={visits}
                     buckets={keystrokes}
+                    seekTo={seekTo}
                   />
                 ) : null}
               </>

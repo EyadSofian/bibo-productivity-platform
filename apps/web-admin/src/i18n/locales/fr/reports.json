@@ -64,5 +64,23 @@
     "url": "URL complète",
     "keys": "Frappes pendant cette minute",
     "resolution": "Résolution"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "État de l'appareil",
+      "applications": "Applications",
+      "websites": "Sites web",
+      "input": "Saisie",
+      "screenshots": "Captures"
+    },
+    "states": {
+      "active": "Actif",
+      "idle": "Inactif",
+      "suspended": "En veille ou verrouillé",
+      "offline": "Aucune donnée"
+    },
+    "inputAt": "{{count}} frappes",
+    "empty": "Rien n'a été enregistré sur cette période.",
+    "note": "La saisie est un simple comptage de frappes, jamais leur contenu. « Aucune donnée » signifie que rien n'est arrivé, ce qui n'est pas la même chose qu'un appareil éteint."
   }
 }

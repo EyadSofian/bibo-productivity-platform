@@ -9,7 +9,7 @@
 //! tested without real timers or platform calls.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU64, AtomicU8, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -18,6 +18,8 @@ use std::path::Path;
 
 use chrono::{DateTime, Datelike, Timelike, Utc};
 use chrono_tz::Tz;
+
+pub mod os_state;
 
 use crate::platform::ActiveWindowInfo;
 use crate::storage::{ActivitySample, Db, Screenshot};
@@ -66,6 +68,11 @@ pub struct TrackerControl {
     /// controls yield to this flag; the server-owned monitoring switch remains
     /// the authoritative way for the owner to stop collection.
     pub managed_locked: AtomicBool,
+    /// Where the live-frame compression ladder succeeded last time. Live frames
+    /// arrive about once a second and a screen's compressibility changes slowly,
+    /// so resuming here turns the common case into a single encode instead of a
+    /// full walk down the ladder (audit P0-3).
+    pub remote_ladder_rung: AtomicUsize,
 }
 
 impl TrackerControl {
@@ -85,6 +92,7 @@ impl TrackerControl {
             screenshot_skip_apps: RwLock::new(default_privacy_apps_flat()),
             count_keystrokes: AtomicBool::new(true),
             managed_locked: AtomicBool::new(false),
+            remote_ladder_rung: AtomicUsize::new(0),
         }
     }
 
@@ -618,47 +626,105 @@ fn compress_to_webp(img: &xcap::image::RgbaImage) -> (Vec<u8>, u32, u32) {
     compress_webp_to_limit(img, &SHOT_MAX_DIMS, &SHOT_QUALITIES, SCREENSHOT_MAX_BYTES)
 }
 
+/// Downscale to `max_dim` on the long edge, or `None` when the image already fits
+/// and can be encoded in place. Returning `None` rather than a copy matters: the
+/// source is a full-screen RGBA buffer (14 MB at 2560x1440).
+fn scaled_to(img: &xcap::image::RgbaImage, max_dim: u32) -> Option<xcap::image::RgbaImage> {
+    use xcap::image::imageops::{self, FilterType};
+
+    let (ow, oh) = (img.width(), img.height());
+    if ow.max(oh) <= max_dim {
+        return None;
+    }
+    let scale = max_dim as f32 / ow.max(oh) as f32;
+    let nw = (ow as f32 * scale).round().max(1.0) as u32;
+    let nh = (oh as f32 * scale).round().max(1.0) as u32;
+    Some(imageops::resize(img, nw, nh, FilterType::Triangle))
+}
+
+/// A frame that fit the cap, plus the rung of the ladder that produced it.
+struct LadderResult {
+    bytes: Vec<u8>,
+    width: u32,
+    height: u32,
+    /// Flat index into the (dims x qualities) ladder — feed back as `start`.
+    rung: usize,
+}
+
+/// Walk the (resolution, quality) ladder from `start` and return the first
+/// encoding at or under `max_bytes`.
+///
+/// `start` exists because this is called once per live frame, and a screen does
+/// not usually change compressibility between frames. Restarting at the top every
+/// time made a dense screen cost up to 4 resizes + 20 WebP encodes per frame —
+/// measured at 456 ms against a 900 ms frame interval, i.e. more than half a core
+/// on the fastest hardware available (see docs/FULL_SYSTEM_AUDIT.md §3.2).
+/// Resuming where the last frame succeeded makes the common case a single encode.
+fn compress_ladder(
+    img: &xcap::image::RgbaImage,
+    max_dims: &[u32],
+    qualities: &[f32],
+    max_bytes: usize,
+    start: usize,
+) -> LadderResult {
+    let rungs = max_dims.len() * qualities.len();
+    let start = start.min(rungs.saturating_sub(1));
+
+    let mut smallest: Option<LadderResult> = None;
+    // The resize is the expensive half, so it is done once per resolution and
+    // reused across that resolution's quality attempts.
+    let mut current_dim = usize::MAX;
+    let mut owned: Option<xcap::image::RgbaImage> = None;
+
+    for rung in start..rungs {
+        let dim_i = rung / qualities.len();
+        if dim_i != current_dim {
+            current_dim = dim_i;
+            owned = scaled_to(img, max_dims[dim_i]);
+        }
+        let src = owned.as_ref().unwrap_or(img);
+        let (w, h) = (src.width(), src.height());
+
+        let bytes = webp::Encoder::from_rgba(src.as_raw(), w, h)
+            .encode(qualities[rung % qualities.len()])
+            .to_vec();
+
+        if bytes.len() <= max_bytes {
+            return LadderResult {
+                bytes,
+                width: w,
+                height: h,
+                rung,
+            };
+        }
+        if smallest
+            .as_ref()
+            .is_none_or(|best| bytes.len() < best.bytes.len())
+        {
+            smallest = Some(LadderResult {
+                bytes,
+                width: w,
+                height: h,
+                rung,
+            });
+        }
+    }
+
+    // Nothing fit the cap (an extremely detailed screen) — keep the smallest. If
+    // `start` was already the floor, that single attempt is the result.
+    smallest.expect("at least one encoding attempt")
+}
+
+/// Ladder entry point for callers with no hint to carry (periodic screenshots,
+/// which run minutes apart, so resuming would not pay for itself).
 fn compress_webp_to_limit(
     img: &xcap::image::RgbaImage,
     max_dims: &[u32],
     qualities: &[f32],
     max_bytes: usize,
 ) -> (Vec<u8>, u32, u32) {
-    use xcap::image::imageops::{self, FilterType};
-
-    let mut smallest: Option<(Vec<u8>, u32, u32)> = None;
-    for &max_dim in max_dims {
-        let (ow, oh) = (img.width(), img.height());
-        let long_edge = ow.max(oh);
-        let resized;
-        let (w, h) = if long_edge > max_dim {
-            let scale = max_dim as f32 / long_edge as f32;
-            let nw = (ow as f32 * scale).round().max(1.0) as u32;
-            let nh = (oh as f32 * scale).round().max(1.0) as u32;
-            resized = imageops::resize(img, nw, nh, FilterType::Triangle);
-            (nw, nh)
-        } else {
-            // Already small enough; encode the original buffer at each quality.
-            resized = img.clone();
-            (ow, oh)
-        };
-
-        for &q in qualities {
-            let encoded = webp::Encoder::from_rgba(resized.as_raw(), w, h).encode(q);
-            let bytes = encoded.to_vec();
-            if bytes.len() <= max_bytes {
-                return (bytes, w, h);
-            }
-            if smallest
-                .as_ref()
-                .is_none_or(|(b, ..)| bytes.len() < b.len())
-            {
-                smallest = Some((bytes, w, h));
-            }
-        }
-    }
-    // Nothing fit the cap (extremely detailed screen) — keep the smallest.
-    smallest.expect("at least one encoding attempt")
+    let out = compress_ladder(img, max_dims, qualities, max_bytes, 0);
+    (out.bytes, out.width, out.height)
 }
 
 /// Capture the primary screen for an accepted remote-assistance session without
@@ -674,16 +740,32 @@ pub fn capture_remote_frame(control: &TrackerControl) -> Option<RemoteFrame> {
 
     let monitor = xcap::Monitor::all().ok()?.into_iter().next()?;
     let image = monitor.capture_image().ok()?;
-    let (bytes, width, height) = compress_webp_to_limit(
+
+    let start = control.remote_ladder_rung.load(Ordering::Relaxed);
+    let out = compress_ladder(
         &image,
         &REMOTE_FRAME_MAX_DIMS,
         &REMOTE_FRAME_QUALITIES,
         REMOTE_FRAME_MAX_BYTES,
+        start,
     );
+
+    // Remember where this frame landed. When the result is comfortably under the
+    // cap the screen has become easier to compress, so aim one rung higher next
+    // time; that way a temporarily busy screen does not permanently degrade
+    // quality for the rest of the session. Costs nothing extra: the recovery
+    // attempt is the next frame's first encode either way.
+    let next = if out.bytes.len() * 100 < REMOTE_FRAME_MAX_BYTES * 55 {
+        out.rung.saturating_sub(1)
+    } else {
+        out.rung
+    };
+    control.remote_ladder_rung.store(next, Ordering::Relaxed);
+
     Some(RemoteFrame {
-        bytes,
-        width,
-        height,
+        bytes: out.bytes,
+        width: out.width,
+        height: out.height,
     })
 }
 
@@ -891,6 +973,10 @@ pub fn start_screenshots(db: Arc<Db>, control: Arc<TrackerControl>, dir: std::pa
 
 fn run(db: Arc<Db>, control: Arc<TrackerControl>) {
     let mut tracker = WindowTracker::default();
+    // Runs alongside the window tracker on the same poll: one records which app
+    // had focus, the other records what the machine itself was doing, so idle and
+    // suspended time exist as data instead of as missing rows (audit P0-2).
+    let mut states = os_state::StateTracker::default();
 
     loop {
         thread::sleep(POLL);
@@ -900,6 +986,7 @@ fn run(db: Arc<Db>, control: Arc<TrackerControl>) {
         // Idle covers screen-locked / display-asleep too: no input → idle grows.
         let idle = crate::platform::idle_seconds();
         let active = !paused && idle < threshold as f64;
+        let now = now_ts();
 
         let win = if active {
             crate::platform::active_window()
@@ -907,12 +994,28 @@ fn run(db: Arc<Db>, control: Arc<TrackerControl>) {
             None
         };
 
-        if let Some(sample) = tracker.tick(active, win, threshold, now_ts()) {
+        if let Some(sample) = tracker.tick(active, win, threshold, now) {
             if sample.duration_s > 0 {
                 if let Err(e) = db.insert_activity_sample(&sample) {
                     crate::log_warn!("tracker", "failed to write activity_sample: {e}");
                     crate::obs::capture_error(&e);
                 }
+            }
+        }
+
+        let closed = states.tick(now, idle, threshold, !paused);
+        if !closed.is_empty() {
+            let rows: Vec<crate::storage::OsStateRow> = closed
+                .iter()
+                .map(|s| crate::storage::OsStateRow {
+                    ts: s.start_ts,
+                    state: s.state.as_str().to_string(),
+                    duration_s: s.duration_s,
+                })
+                .collect();
+            if let Err(e) = db.insert_os_states(&rows) {
+                crate::log_warn!("tracker", "failed to write os_state: {e}");
+                crate::obs::capture_error(&e);
             }
         }
     }
@@ -1190,5 +1293,177 @@ mod tests {
         assert_eq!(ready.len(), 1);
         assert_eq!(ready[0].url, "https://a.test");
         assert_eq!(ready[0].duration_s, 5);
+    }
+
+    // ---------- capture-path measurements (audit baseline) ----------
+    //
+    // Ignored by default: these time the real resize+encode ladder and take a
+    // few seconds. Run explicitly with
+    //   cargo test --release -- --ignored --nocapture capture_cost
+    // The numbers back the live-view findings in docs/FULL_SYSTEM_AUDIT.md.
+
+    #[test]
+    #[ignore = "measurement, not an assertion; run with --ignored --nocapture"]
+    fn capture_cost_remote_frame_ladder() {
+        use std::time::Instant;
+
+        let img = synthetic_screen();
+        println!("\nsource: {}x{} RGBA", img.width(), img.height());
+
+        // Whole ladder, exactly as capture_remote_frame calls it.
+        let mut total = std::time::Duration::ZERO;
+        let runs = 5;
+        let mut last = (Vec::<u8>::new(), 0u32, 0u32);
+        for _ in 0..runs {
+            let t = Instant::now();
+            last = compress_webp_to_limit(
+                &img,
+                &REMOTE_FRAME_MAX_DIMS,
+                &REMOTE_FRAME_QUALITIES,
+                REMOTE_FRAME_MAX_BYTES,
+            );
+            total += t.elapsed();
+        }
+        let (bytes, w, h) = last;
+        println!(
+            "remote frame ladder: {:?}/frame -> {}x{} {} KiB (cap {} KiB)",
+            total / runs,
+            w,
+            h,
+            bytes.len() / 1024,
+            REMOTE_FRAME_MAX_BYTES / 1024
+        );
+
+        // Cost split: one resize vs one encode, so we can see which dominates
+        // and how much a failed ladder step costs.
+        use xcap::image::imageops::{self, FilterType};
+        let t = Instant::now();
+        let resized = imageops::resize(&img, 1600, 900, FilterType::Triangle);
+        println!("single resize 2560x1440 -> 1600x900: {:?}", t.elapsed());
+
+        for &q in REMOTE_FRAME_QUALITIES.iter() {
+            let t = Instant::now();
+            let out = webp::Encoder::from_rgba(resized.as_raw(), 1600, 900).encode(q);
+            println!(
+                "  encode q={q}: {:?} -> {} KiB",
+                t.elapsed(),
+                out.to_vec().len() / 1024
+            );
+        }
+
+        let t = Instant::now();
+        let _ = img.clone();
+        println!("img.clone() of source: {:?}", t.elapsed());
+    }
+
+    #[test]
+    #[ignore = "measurement, not an assertion; run with --ignored --nocapture"]
+    fn capture_cost_periodic_screenshot_ladder() {
+        use std::time::Instant;
+        let img = synthetic_screen();
+        let t = Instant::now();
+        let (bytes, w, h) = compress_to_webp(&img);
+        println!(
+            "\nperiodic screenshot ladder: {:?} -> {}x{} {} KiB",
+            t.elapsed(),
+            w,
+            h,
+            bytes.len() / 1024
+        );
+    }
+
+    /// A screen that resists compression: full-frame high-frequency noise, which
+    /// is what a dense IDE/spreadsheet looks like to a lossy encoder.
+    #[cfg(test)]
+    fn noisy_screen() -> xcap::image::RgbaImage {
+        let (w, h) = (2560u32, 1440u32);
+        xcap::image::RgbaImage::from_fn(w, h, |x, y| {
+            let n = |k: u32| {
+                (x.wrapping_mul(2654435761)
+                    .wrapping_add(y.wrapping_mul(40503))
+                    .wrapping_add(k.wrapping_mul(2246822519))
+                    >> 13) as u8
+            };
+            xcap::image::Rgba([n(1), n(2), n(3), 255])
+        })
+    }
+
+    #[test]
+    #[ignore = "measurement, not an assertion; run with --ignored --nocapture"]
+    fn capture_cost_worst_case_ladder() {
+        use std::time::Instant;
+        let img = noisy_screen();
+        let t = Instant::now();
+        let (bytes, w, h) = compress_webp_to_limit(
+            &img,
+            &REMOTE_FRAME_MAX_DIMS,
+            &REMOTE_FRAME_QUALITIES,
+            REMOTE_FRAME_MAX_BYTES,
+        );
+        println!(
+            "\nworst-case remote ladder: {:?} -> {}x{} {} KiB",
+            t.elapsed(),
+            w,
+            h,
+            bytes.len() / 1024
+        );
+
+        let t = Instant::now();
+        let (bytes, w, h) = compress_to_webp(&img);
+        println!(
+            "worst-case screenshot ladder: {:?} -> {}x{} {} KiB",
+            t.elapsed(),
+            w,
+            h,
+            bytes.len() / 1024
+        );
+    }
+
+    /// The measurement that matters for live view: a *stream* of frames, which is
+    /// how the ladder is actually used, rather than one cold frame.
+    #[test]
+    #[ignore = "measurement, not an assertion; run with --ignored --nocapture capture_cost"]
+    fn capture_cost_streaming_with_resume() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        use std::time::Instant;
+
+        let img = noisy_screen();
+        let frames = 10;
+
+        // Cold ladder every frame — the behaviour before the fix.
+        let t = Instant::now();
+        for _ in 0..frames {
+            let _ = compress_ladder(
+                &img,
+                &REMOTE_FRAME_MAX_DIMS,
+                &REMOTE_FRAME_QUALITIES,
+                REMOTE_FRAME_MAX_BYTES,
+                0,
+            );
+        }
+        let cold = t.elapsed() / frames;
+
+        // Resuming from the previous frame's rung — the behaviour after.
+        let hint = AtomicUsize::new(0);
+        let t = Instant::now();
+        for _ in 0..frames {
+            let out = compress_ladder(
+                &img,
+                &REMOTE_FRAME_MAX_DIMS,
+                &REMOTE_FRAME_QUALITIES,
+                REMOTE_FRAME_MAX_BYTES,
+                hint.load(Ordering::Relaxed),
+            );
+            hint.store(out.rung, Ordering::Relaxed);
+        }
+        let warm = t.elapsed() / frames;
+
+        println!("\nstreaming {frames} dense frames:");
+        println!("  cold ladder each frame: {cold:?}/frame");
+        println!("  resuming from last rung: {warm:?}/frame");
+        println!(
+            "  frame interval is {}ms",
+            crate::sync::remote_assist::FRAME_INTERVAL.as_millis()
+        );
     }
 }

@@ -64,5 +64,23 @@
     "url": "完整网址",
     "keys": "本分钟按键次数",
     "resolution": "分辨率"
+  },
+  "timeline": {
+    "lanes": {
+      "state": "设备状态",
+      "applications": "应用程序",
+      "websites": "网站",
+      "input": "输入",
+      "screenshots": "截图"
+    },
+    "states": {
+      "active": "活跃",
+      "idle": "空闲",
+      "suspended": "睡眠或已锁定",
+      "offline": "无上报"
+    },
+    "inputAt": "{{count}} 次按键",
+    "empty": "此时间范围内没有数据。",
+    "note": "输入仅统计按键次数，绝不记录键入内容。“无上报”表示没有收到数据，与设备关机不是一回事。"
   }
 }

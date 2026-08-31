@@ -23,6 +23,8 @@ import type {
   MonitoringProfileInput,
   Organization,
   OrganizationItemInput,
+  OsStateInterval,
+  OsStateReport,
   ReportEmployee,
   ScreenshotMeta,
   ScreenshotsResponse,
@@ -371,4 +373,49 @@ export function demoSetDeviceArchived(deviceId: string, archived: boolean): Devi
   const found = demoDevices().find((d) => d.id === deviceId);
   if (!found) throw new Error("demo: unknown device");
   return found;
+}
+
+/**
+ * A demo state timeline. Built so the four totals partition the window exactly,
+ * the same invariant the real backend guarantees — a demo that broke it would
+ * make the breakdown look buggy.
+ */
+export function demoStates(): OsStateReport {
+  const now = Math.floor(Date.now() / 1000);
+  const from = now - 8 * 3600;
+  const plan: Array<[OsStateInterval["state"], number]> = [
+    ["active", 5400],
+    ["idle", 900],
+    ["active", 7200],
+    ["suspended", 3600],
+    ["active", 5400],
+    ["idle", 1200],
+    ["active", 4500],
+  ];
+  const intervals: OsStateInterval[] = [];
+  let ts = from;
+  for (const [state, duration_s] of plan) {
+    intervals.push({ state, ts, duration_s });
+    ts += duration_s;
+  }
+  const sum = (state: OsStateInterval["state"]) =>
+    intervals.filter((i) => i.state === state).reduce((n, i) => n + i.duration_s, 0);
+  const covered_s = ts - from;
+  const elapsed_s = now - from;
+  const active = intervals.filter((i) => i.state === "active");
+  return {
+    totals: {
+      active_s: sum("active"),
+      idle_s: sum("idle"),
+      suspended_s: sum("suspended"),
+      offline_s: Math.max(0, elapsed_s - covered_s),
+      covered_s,
+      elapsed_s,
+    },
+    first_activity: active.length ? active[0].ts : null,
+    last_activity: active.length
+      ? active[active.length - 1].ts + active[active.length - 1].duration_s
+      : null,
+    intervals,
+  };
 }
