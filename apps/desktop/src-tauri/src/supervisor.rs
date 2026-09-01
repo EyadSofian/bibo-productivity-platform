@@ -39,15 +39,17 @@ use windows::{
 use windows_service::{
     define_windows_service,
     service::{
-        ServiceControl, ServiceControlAccept, ServiceExitCode, ServiceState, ServiceStatus,
-        ServiceType,
+        ServiceAccess, ServiceAction, ServiceActionType, ServiceControl, ServiceControlAccept,
+        ServiceErrorControl, ServiceExitCode, ServiceFailureActions, ServiceFailureResetPeriod,
+        ServiceInfo, ServiceStartType, ServiceState, ServiceStatus, ServiceType,
     },
     service_control_handler::{self, ServiceControlHandlerResult},
     service_dispatcher,
+    service_manager::{ServiceManager, ServiceManagerAccess},
 };
 
 pub const SERVICE_NAME: &str = "BiBoTrackingSupervisor";
-const AGENT_EXE_NAME: &str = "BiBoTracking.exe";
+const AGENT_EXE_NAME: &str = "ctracking.exe";
 const CHECK_INTERVAL: Duration = Duration::from_secs(5);
 const RESTART_WINDOW_SECS: u64 = 10 * 60;
 const MAX_RESTARTS_PER_WINDOW: usize = 5;
@@ -58,6 +60,163 @@ define_windows_service!(ffi_service_main, service_main);
 /// Manager launches it with the supervisor-service argument.
 pub fn run() -> windows_service::Result<()> {
     service_dispatcher::start(SERVICE_NAME, ffi_service_main)
+}
+
+/// Install or repair the supervisor using the native Service Control Manager
+/// API. The NSIS process invokes this command while elevated.
+pub fn install() -> Result<(), String> {
+    let manager = ServiceManager::local_computer(
+        None::<&str>,
+        ServiceManagerAccess::CONNECT | ServiceManagerAccess::CREATE_SERVICE,
+    )
+    .map_err(|error| format!("open service manager: {error}"))?;
+    let executable = std::env::current_exe()
+        .map_err(|error| format!("resolve installed executable: {error}"))?;
+    let service_info = ServiceInfo {
+        name: OsString::from(SERVICE_NAME),
+        display_name: OsString::from("BiBoTracking Agent Supervisor"),
+        service_type: ServiceType::OWN_PROCESS,
+        start_type: ServiceStartType::AutoStart,
+        error_control: ServiceErrorControl::Normal,
+        executable_path: executable,
+        launch_arguments: vec![OsString::from("--supervisor-service")],
+        dependencies: vec![],
+        account_name: None,
+        account_password: None,
+    };
+    let access = ServiceAccess::QUERY_STATUS
+        | ServiceAccess::QUERY_CONFIG
+        | ServiceAccess::CHANGE_CONFIG
+        | ServiceAccess::START
+        | ServiceAccess::STOP
+        | ServiceAccess::DELETE;
+    let service = manager
+        .create_service(&service_info, access)
+        .or_else(|_| manager.open_service(SERVICE_NAME, access))
+        .map_err(|error| format!("create or open service: {error}"))?;
+
+    service
+        .change_config(&service_info)
+        .map_err(|error| format!("configure service: {error}"))?;
+    service
+        .set_description("Keeps the visible, company-managed BiBoTracking agent available.")
+        .map_err(|error| format!("set service description: {error}"))?;
+    service
+        .update_failure_actions(ServiceFailureActions {
+            reset_period: ServiceFailureResetPeriod::After(Duration::from_secs(24 * 60 * 60)),
+            reboot_msg: None,
+            command: None,
+            actions: Some(vec![
+                ServiceAction {
+                    action_type: ServiceActionType::Restart,
+                    delay: Duration::from_secs(5),
+                },
+                ServiceAction {
+                    action_type: ServiceActionType::Restart,
+                    delay: Duration::from_secs(15),
+                },
+                ServiceAction {
+                    action_type: ServiceActionType::Restart,
+                    delay: Duration::from_secs(30),
+                },
+            ]),
+        })
+        .map_err(|error| format!("configure service recovery: {error}"))?;
+
+    let status = service
+        .query_status()
+        .map_err(|error| format!("query service before start: {error}"))?;
+    if status.current_state == ServiceState::Stopped {
+        service
+            .start::<&std::ffi::OsStr>(&[])
+            .map_err(|error| format!("start service: {error}"))?;
+        wait_for_state(&service, ServiceState::Running, Duration::from_secs(20))?;
+    }
+    log_info("supervisor service installed or repaired");
+    Ok(())
+}
+
+/// Stop the service before an in-place installer update replaces the binary.
+pub fn stop() -> Result<(), String> {
+    let Some(service) = open_service(
+        ServiceAccess::QUERY_STATUS | ServiceAccess::STOP,
+        "open service for stop",
+    )?
+    else {
+        return Ok(());
+    };
+    let status = service
+        .query_status()
+        .map_err(|error| format!("query service before stop: {error}"))?;
+    if status.current_state != ServiceState::Stopped {
+        service
+            .stop()
+            .map_err(|error| format!("request service stop: {error}"))?;
+        wait_for_state(&service, ServiceState::Stopped, Duration::from_secs(20))?;
+    }
+    log_info("supervisor service stopped for installer update");
+    Ok(())
+}
+
+/// Stop and delete the service during an explicit administrator uninstall.
+pub fn uninstall() -> Result<(), String> {
+    let Some(service) = open_service(
+        ServiceAccess::QUERY_STATUS | ServiceAccess::STOP | ServiceAccess::DELETE,
+        "open service for uninstall",
+    )?
+    else {
+        return Ok(());
+    };
+    let status = service
+        .query_status()
+        .map_err(|error| format!("query service before uninstall: {error}"))?;
+    if status.current_state != ServiceState::Stopped {
+        service
+            .stop()
+            .map_err(|error| format!("stop service before uninstall: {error}"))?;
+        wait_for_state(&service, ServiceState::Stopped, Duration::from_secs(20))?;
+    }
+    service
+        .delete()
+        .map_err(|error| format!("delete service: {error}"))?;
+    log_info("supervisor service marked for deletion");
+    Ok(())
+}
+
+fn open_service(
+    access: ServiceAccess,
+    context: &str,
+) -> Result<Option<windows_service::service::Service>, String> {
+    let manager = ServiceManager::local_computer(None::<&str>, ServiceManagerAccess::CONNECT)
+        .map_err(|error| format!("open service manager: {error}"))?;
+    match manager.open_service(SERVICE_NAME, access) {
+        Ok(service) => Ok(Some(service)),
+        Err(windows_service::Error::Winapi(error)) if error.raw_os_error() == Some(1060) => {
+            Ok(None)
+        }
+        Err(error) => Err(format!("{context}: {error}")),
+    }
+}
+
+fn wait_for_state(
+    service: &windows_service::service::Service,
+    expected: ServiceState,
+    timeout: Duration,
+) -> Result<(), String> {
+    let started = std::time::Instant::now();
+    while started.elapsed() < timeout {
+        let state = service
+            .query_status()
+            .map_err(|error| format!("query service state: {error}"))?
+            .current_state;
+        if state == expected {
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(250));
+    }
+    Err(format!(
+        "service did not reach {expected:?} within {timeout:?}"
+    ))
 }
 
 fn service_main(_arguments: Vec<OsString>) {

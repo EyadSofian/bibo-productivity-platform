@@ -76,6 +76,10 @@ jobs:
           if (Test-Path $installerLog) {
             Get-Content $installerLog | Write-Host
           }
+          $supervisorLog = Join-Path $env:ProgramData "BiBoTracking\supervisor.log"
+          if (Test-Path $supervisorLog) {
+            Get-Content $supervisorLog | Write-Host
+          }
 
           if ($process.ExitCode -ne 0) {
             throw "NSIS installer exited with code $($process.ExitCode)"
@@ -102,6 +106,22 @@ jobs:
           $binaryPath = ($serviceConfig | Select-String "BINARY_PATH_NAME").ToString()
           if ($binaryPath -notmatch "ctracking\.exe.+--supervisor-service") {
             throw "BiBoTrackingSupervisor points to an unexpected binary: $binaryPath"
+          }
+
+          $serviceDetails = Get-CimInstance Win32_Service -Filter "Name='BiBoTrackingSupervisor'"
+          if (-not $serviceDetails.PathName -or $serviceDetails.PathName -notmatch '^"?(.+?ctracking\.exe)"?\s+--supervisor-service') {
+            throw "Unable to resolve the installed agent from: $($serviceDetails.PathName)"
+          }
+
+          $installedAgent = $Matches[1]
+          $uninstallProcess = Start-Process -FilePath $installedAgent -ArgumentList "--uninstall-supervisor-service" -PassThru -Wait
+          if ($uninstallProcess.ExitCode -ne 0) {
+            throw "Supervisor uninstall command exited with code $($uninstallProcess.ExitCode)"
+          }
+
+          Start-Sleep -Seconds 1
+          if (Get-Service -Name "BiBoTrackingSupervisor" -ErrorAction SilentlyContinue) {
+            throw "BiBoTrackingSupervisor still exists after the uninstall command"
           }
 
       - uses: actions/upload-artifact@v4
