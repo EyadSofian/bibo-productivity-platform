@@ -60,6 +60,40 @@ jobs:
           --bundles ${{ matrix.bundle }}
           --config src-tauri/tauri.railway.conf.json
 
+      - name: Smoke-test Windows managed-agent installation
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path "apps/desktop/src-tauri/target/release/bundle/nsis" -Filter "*.exe" | Select-Object -First 1
+
+          if (-not $installer) {
+            throw "NSIS installer was not produced"
+          }
+
+          $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S" -PassThru -Wait
+
+          if ($process.ExitCode -ne 0) {
+            throw "NSIS installer exited with code $($process.ExitCode)"
+          }
+
+          $service = Get-Service -Name "BiBoTrackingSupervisor" -ErrorAction Stop
+
+          if ($service.Status -ne "Running") {
+            Start-Service -Name "BiBoTrackingSupervisor"
+            $service.WaitForStatus("Running", [TimeSpan]::FromSeconds(20))
+          }
+
+          $serviceConfig = sc.exe qc "BiBoTrackingSupervisor"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Unable to inspect BiBoTrackingSupervisor"
+          }
+
+          $serviceConfig | Out-String | Write-Host
+
+          if (($serviceConfig | Out-String) -notmatch "AUTO_START") {
+            throw "BiBoTrackingSupervisor is not configured for automatic startup"
+          }
+
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
