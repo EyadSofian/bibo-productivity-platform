@@ -83,6 +83,7 @@ pub fn start(ctx: SyncContext) {
 
 async fn run(ctx: SyncContext) {
     let mut active: Option<RemoteAssistSession> = None;
+    let mut backend: Option<(String, BackendClient)> = None;
     let mut last_action_id = 0_i64;
     let mut last_frame = tokio::time::Instant::now() - FRAME_INTERVAL;
     let mut last_status = tokio::time::Instant::now() - STATUS_INTERVAL;
@@ -91,6 +92,7 @@ async fn run(ctx: SyncContext) {
         let Some(_auth_session) = ctx.auth.session() else {
             finish_local(&ctx);
             active = None;
+            backend = None;
             tokio::time::sleep(IDLE_POLL).await;
             continue;
         };
@@ -100,7 +102,17 @@ async fn run(ctx: SyncContext) {
             tokio::time::sleep(IDLE_POLL).await;
             continue;
         }
-        let client = BackendClient::new(base_url, ctx.auth.clone());
+        if backend.as_ref().is_none_or(|(url, _)| url != &base_url) {
+            backend = Some((
+                base_url.clone(),
+                BackendClient::new(base_url, ctx.auth.clone()),
+            ));
+        }
+        // Reuse reqwest's pool across the 120ms input loop and 900ms frame
+        // uploads. Constructing a new client here previously forced repeated
+        // DNS/TLS setup and made pointer/keyboard control feel several beats
+        // behind even on a healthy connection.
+        let client = &backend.as_ref().expect("backend client initialized").1;
 
         if active.is_none() {
             match client.remote_assist_pending(&device_id).await {
