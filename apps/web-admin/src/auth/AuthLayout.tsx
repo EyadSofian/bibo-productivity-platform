@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import lockupLight from "../assets/lockup-light.png";
-import lockupDark from "../assets/lockup-dark.png";
 import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { EngosoftBrand } from "../components/EngosoftBrand";
 
 /**
  * AuthLayout — the shared "welcome surface": centered card on a soft accent
@@ -30,10 +29,7 @@ export function AuthLayout({
         <LanguageSwitcher />
       </div>
       {!hideLockup && (
-        <>
-          <img className="auth-logo logo-light" src={lockupLight} alt="BiBoTracking" />
-          <img className="auth-logo logo-dark" src={lockupDark} alt="BiBoTracking" />
-        </>
+        <EngosoftBrand className="auth-logo auth-logo--engosoft" />
       )}
       {bare ? children : <div className={wide ? "auth-card wide" : "auth-card"}>{children}</div>}
       {footer && <div className="auth-foot">{footer}</div>}

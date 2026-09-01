@@ -140,7 +140,7 @@
         "noFrame": "No live frame yet",
         "readOnly": "Read-only view · capture policy and privacy exclusions still apply",
         "frameAlt": "Latest live employee screen frame",
-        "requestError": "The live stream was interrupted. BiBo is reconnecting automatically.",
+        "requestError": "The live stream was interrupted. Engosoft Workforce is reconnecting automatically.",
         "fallback": "The direct command channel is reconnecting. Secure HTTPS fallback is active; the first frame can take a few seconds.",
         "remoteStart": "Remote assistance",
         "remotePending": "Connecting to the employee device…",

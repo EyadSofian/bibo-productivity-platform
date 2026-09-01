@@ -211,7 +211,7 @@ export function reportPresence(employeeId: string) {
         device_id: "demo-device",
         state: "active" as const,
         app: "Google Chrome",
-        window_title: "BiBoTracking — Dashboard",
+        window_title: "Engosoft Workforce — Dashboard",
         since: now - 12 * 60,
         seen_at: now,
         session_started_at: now - 2 * 60 * 60,

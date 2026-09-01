@@ -1,4 +1,4 @@
-# البرومبت التنفيذي الشامل — منصة BiBoTracking لمراقبة الموظفين
+# البرومبت التنفيذي الشامل — Engosoft Workforce
 
 > هذا الملف هو البرومبت الرئيسي للتنفيذ. يُرسل كاملًا إلى Codex/فريق التطوير، مع تحديد
 > المرحلة المطلوبة في خانة `CURRENT_PHASE`. لا تختصره إلى طلب مثل “اعمل نسخة Teramind”،
@@ -11,7 +11,7 @@
 ## 0. الدور والهدف
 
 أنت Principal Full-Stack Engineer وSecurity/Product Architect مسؤول عن تطوير المستودع
-الحالي **BiBoTracking** إلى منصة مؤسسية لمراقبة نشاط موظفي الشركة وإدارة الإنتاجية والدعم
+الحالي إلى منصة **Engosoft Workforce** المؤسسية لمراقبة نشاط موظفي الشركة وإدارة الإنتاجية والدعم
 عن بعد، مكافئة وظيفيًا للقدرات العامة المدروسة من Teramind، ولكن:
 
 - بكود وهيكل وتصميم وهوية أصلية بالكامل.
@@ -747,13 +747,49 @@ Agent routes لها token/device binding وbatch byte/event limits وcompression
 
 ### 12.2 نظام التصميم
 
-- استخدم tokens الحالية للألوان والمسافات والradius والظلال والخط.
+- الهوية الرسمية هي **Engosoft Workforce**. استخدم شعار Engosoft المقدم، ولا تعرض
+  `BiBoTracking` أو `BiBo` كاسم منتج للمستخدم؛ تبقى الأسماء التقنية القديمة داخليًا إلى
+  أن تمر بخطة migration مستقلة لا تكسر updater أو installer أو device identity.
+- مرجع الهوية المؤسسية: <https://engosoft.com/>، مع عدم نسخ تصميم الموقع التعليمي حرفيًا.
+- لوحة الألوان: `Engosoft Navy #061B35`، `Engosoft Blue #086BE8`،
+  `Engosoft Blue 600 #0056C7`، `Sky #48A5FF`، و`Paper #F3F7FC`.
+- اللون الأزرق للهوية والتنقل والإجراءات الأساسية فقط. احتفظ بـmint للحالة النشطة،
+  amber للخمول/التحذير، red للخطر، grey لغير المتصل؛ لا تجعل الحالة الزرقاء تعني “نشط”.
+- مصدر الحقيقة البصري هو tokens في `apps/web-admin/src/theme/theme.css` ومكوّن
+  `apps/web-admin/src/components/EngosoftBrand.tsx`؛ لا تكرر hex داخل الصفحات.
+- استخدم أيقونات line موحّدة 20/24px، `stroke-width` بين 1.8 و2، مع labels واضحة؛ لا تستخدم
+  emoji أو مكتبات أيقونات مختلطة أو أيقونات بلا `aria-label` عندما يكون النص مخفيًا.
+- استخدم tokens الحالية للألوان والمسافات والradius والظلال والخط، ووسّعها دلاليًا بدل
+  اختراع نظام ثانٍ داخل الصفحة.
 - grid مرن، cards حد أدنى 280px، لا قيم عرض صلبة تسبب overflow.
 - logical CSS properties لدعم RTL.
 - dialogs لها focus trap وEscape وscroll lock صحيح.
 - sticky/fixed elements تحجز مساحة فعلية ولا تتراكب.
 - جدول كثيف/عادي، columns hide/reorder مستقبلًا.
 - charts لها table/text fallback وألوان يمكن تمييزها.
+
+### 12.3 هيكلة لوحة الإدارة وهوية كل مساحة
+
+```text
+Overview          حالة الفريق الآن + KPIs + live desk + roster
+People            الموظفون + ملف الموظف + timeline + evidence
+Devices           الصحة + الإصدار + الصلاحيات + policy + last heartbeat
+Live              مشاهدة الأجهزة المتصلة + جلسات الدعم المصرح بها
+Activity          apps + websites + URLs + focused/idle + input counts
+Evidence          screenshots + playback + exports + annotations
+Rules & Incidents policies + alerts + cases + review workflow
+Reports           saved reports + schedules + async export center
+Configuration     monitoring/productivity/shared lists/retention
+Organization      departments/roles/schedules/locations/access
+System            agents/health/missing/integrations/audit
+```
+
+- لا تعرض route فارغًا في production. اخفِ الوحدة خلف capability/feature flag حتى يكتمل
+  المصدر وAPI والصلاحيات والحالات الست في الواجهة.
+- ملف الموظف هو نقطة العمل الأساسية: header مضغوط، presence/current app، KPIs، unified
+  timeline، ثم تبويبات Activity/Browser/Input/Screenshots/Playback/Incidents.
+- صفحة Live لا تعيد تحميل لوحة الموظف كاملة، وتستخدم transport منفصلًا عن REST reporting.
+- كل action حساس يعرض scope والجهاز والمدة والسبب، ويسجل audit event.
 
 ---
 

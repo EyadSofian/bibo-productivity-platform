@@ -72,7 +72,7 @@
     "goToDashboard": "Đến bảng điều khiển"
   },
   "clipboard": {
-    "text": "Thông tin đăng nhập BiBoTracking\nTên đăng nhập hoặc email: {{login}}\nMật khẩu: {{password}}"
+    "text": "Thông tin đăng nhập Engosoft Workforce\nTên đăng nhập hoặc email: {{login}}\nMật khẩu: {{password}}"
   },
   "members": {
     "title": "Thêm {{members}} của bạn",

@@ -140,7 +140,7 @@
         "noFrame": "Aún no hay captura",
         "readOnly": "Solo lectura · se aplican la política y las exclusiones de privacidad",
         "frameAlt": "Última captura de pantalla en vivo",
-        "requestError": "La transmisión se interrumpió. BiBo se reconecta automáticamente.",
+        "requestError": "La transmisión se interrumpió. Engosoft Workforce se reconecta automáticamente.",
         "fallback": "El canal de comandos se está reconectando. La alternativa HTTPS segura está activa; la primera imagen puede tardar unos segundos.",
         "remoteStart": "Asistencia remota",
         "remotePending": "Conectando con el equipo del empleado…",

@@ -33,8 +33,8 @@
      browser picks an arbitrary fallback with mismatched metrics. */
   --font-arabic: "SF Arabic", "Geeza Pro", "Segoe UI", "Noto Sans Arabic",
     "Dubai", "Tahoma", var(--font-sans);
-  --accent: #2d6cdf;
-  --accent-weak: #eaf1fe;
+  --accent: #086be8;
+  --accent-weak: #e9f3ff;
   --danger: #c0392b;
   --negative: #dc2626;
   --success: #2e7d55;
@@ -56,9 +56,9 @@
   /* Signature background (UX v2, docs/14 §4 — overrides the flat rule in docs/07).
      A bold blue→violet→pink mesh used app-wide; surfaces sit on it as translucent
      glass. Components reference these tokens, never raw hex. */
-  --violet: #8b5cf6;
-  --pink: #ec4899;
-  --app-base: #f3f4fb;
+  --violet: #086be8;
+  --pink: #42a5ff;
+  --app-base: #f2f6fb;
   --app-gradient: radial-gradient(
       at 0% 0%,
       color-mix(in srgb, var(--accent) 40%, transparent),
@@ -86,12 +86,12 @@
   /* sunken track/inset surfaces (timeline, app bars, donut ring) */
   --surface-sunken: #edeff5;
   --control-track: rgba(20, 22, 27, 0.1);
-  /* brand (lavender-indigo) + focal stat card, per offline design */
-  --brand-tint: #f4f2fe;
-  --brand-400: #8b7df6;
-  --brand-500: #6c5ce7;
-  --brand-600: #5b4bd6;
-  --ring-focus: 0 0 0 3px rgba(108, 92, 231, 0.45);
+  /* Engosoft brand: electric blue, deep navy and crisp cool surfaces. */
+  --brand-tint: #eaf3ff;
+  --brand-400: #4a9aff;
+  --brand-500: #086be8;
+  --brand-600: #0056c7;
+  --ring-focus: 0 0 0 3px rgba(8, 107, 232, 0.38);
   --surface-hover: #f1f3f8;
   --border-strong: #cbd2e0;
   --border-subtle: rgba(20, 22, 27, 0.08);
@@ -108,8 +108,8 @@
   --border: #363636;
   --text: #ececec;
   --text-muted: #9a9a9a;
-  --accent: #5b8def;
-  --accent-weak: #1e2a40;
+  --accent: #57a3ff;
+  --accent-weak: #102e54;
   --danger: #e06a5c;
   --negative: #f87171;
   --success: #5fb58a;
@@ -138,7 +138,9 @@
   --focal-muted: rgba(255, 255, 255, 0.55);
   --surface-hover: #1f2633;
   --border-strong: rgba(255, 255, 255, 0.18);
-  --brand-500: #6c5ce7;
+  --brand-400: #69b0ff;
+  --brand-500: #2584f5;
+  --brand-600: #8cc2ff;
   --border-subtle: rgba(255, 255, 255, 0.08);
   --ink: #0b0e16;
 }
@@ -261,9 +263,9 @@ body:lang(ar) {
   color: var(--text);
 }
 .ad-railbtn.on {
-  background: #6c5ce7;
+  background: var(--brand-500);
   color: #fff;
-  box-shadow: 0 8px 18px -4px rgba(108, 92, 231, 0.5);
+  box-shadow: 0 8px 18px -4px rgba(8, 107, 232, 0.45);
 }
 :root[data-theme="dark"] .ad-railbtn:not(.on) {
   color: #6b7488;
@@ -507,12 +509,12 @@ body:lang(ar) {
   border-radius: 7px;
   font-size: 11px;
   font-weight: 700;
-  background: #ecebfb;
-  color: #4c3cc9;
+  background: var(--brand-tint);
+  color: var(--brand-600);
 }
 :root[data-theme="dark"] .ad-bizpick__ic {
-  background: color-mix(in srgb, #6c5ce7 26%, transparent);
-  color: #c4bbff;
+  background: color-mix(in srgb, var(--brand-500) 26%, transparent);
+  color: #8cc2ff;
 }
 .ad-bizpick__name {
   white-space: nowrap;
@@ -600,13 +602,13 @@ body:lang(ar) {
   height: 16px;
 }
 .ad-menu__opt.on {
-  color: #6c5ce7;
-  background: #ecebfb;
+  color: var(--brand-600);
+  background: var(--brand-tint);
   font-weight: 600;
 }
 :root[data-theme="dark"] .ad-menu__opt.on {
-  color: #c4bbff;
-  background: color-mix(in srgb, #6c5ce7 22%, transparent);
+  color: #8cc2ff;
+  background: color-mix(in srgb, var(--brand-500) 22%, transparent);
 }
 .ad-menu__sep {
   height: 1px;
@@ -697,7 +699,7 @@ body:lang(ar) {
   border-radius: 50%;
 }
 .ad-acct-btn:focus-visible {
-  outline: 2px solid #8b7df6;
+  outline: 2px solid var(--brand-500);
   outline-offset: 2px;
 }
 .ad-acctmenu {
@@ -1396,6 +1398,50 @@ select.input:focus,
 }
 
 /* ---------- login / welcome surface ---------- */
+.engosoft-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #086be8;
+  line-height: 1;
+}
+.engosoft-brand__mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+}
+.engosoft-brand__orbit {
+  stroke: #086be8;
+}
+.engosoft-brand__e {
+  stroke: #061b35;
+}
+.engosoft-brand__dot {
+  fill: #086be8;
+}
+.engosoft-brand__wordmark {
+  display: grid;
+  color: #061b35;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.045em;
+  line-height: 0.82;
+}
+.engosoft-brand__wordmark strong:last-child {
+  color: #086be8;
+}
+.engosoft-brand--compact {
+  gap: 0;
+}
+:root[data-theme="dark"] .engosoft-brand__e,
+.ad-rail .engosoft-brand__e {
+  stroke: #dcecff;
+}
+:root[data-theme="dark"] .engosoft-brand__wordmark {
+  color: #edf5ff;
+}
+
 .auth-wrap {
   min-height: 100vh;
   display: flex;
@@ -1406,10 +1452,9 @@ select.input:focus,
   gap: var(--sp-4);
 }
 .auth-wrap.welcome {
-  /* light: soft lavender auth gradient (per request); dark keeps the app-wide body gradient */
-  background: radial-gradient(1200px 800px at 12% -8%, #ECE9FA, transparent 55%),
-    radial-gradient(1000px 700px at 100% 0%, #E7ECF8, transparent 50%),
-    linear-gradient(160deg, #EEF0F8, #E4E8F3);
+  background: radial-gradient(1000px 700px at 8% -10%, rgba(8, 107, 232, 0.2), transparent 55%),
+    radial-gradient(900px 640px at 100% 0%, rgba(72, 165, 255, 0.18), transparent 52%),
+    linear-gradient(155deg, #f7fbff, #eaf2fb);
 }
 :root[data-theme="dark"] .auth-wrap.welcome {
   background: transparent;
@@ -1418,6 +1463,13 @@ select.input:focus,
   height: 34px;
   width: auto;
   display: block;
+}
+.auth-logo--engosoft {
+  height: auto;
+}
+.auth-logo--engosoft .engosoft-brand__mark {
+  width: 44px;
+  height: 44px;
 }
 /* theme-aware lockup: show the one matching the active theme */
 .logo-dark {
@@ -1458,10 +1510,9 @@ select.input:focus,
   text-align: center;
 }
 
-/* ---------- admin sign-in card (offline design language, violet accent) ----------
+/* ---------- Engosoft admin sign-in card ----------
    Self-contained bibo- and ad- prefixed classes ported from the desktop offline
-   design so the admin login matches it. Scoped to the sign-in card; the rest of
-   web-admin keeps the blue --accent tokens until each screen is migrated. */
+   design so the admin login matches it. */
 .ad-loginbox {
   width: 400px;
   max-width: 100%;
@@ -1474,17 +1525,18 @@ select.input:focus,
   box-shadow: 0 20px 50px -20px rgba(38, 30, 90, 0.35);
 }
 .ad-login__logo {
-  width: 52px;
+  width: max-content;
   height: 52px;
-  border-radius: 16px;
-  display: block;
-  box-shadow: 0 12px 26px -10px rgba(108, 92, 231, 0.75);
+  display: inline-flex;
+  box-shadow: none;
   margin-bottom: 22px;
 }
-.ad-login__logo svg {
-  display: block;
+.ad-login__logo .engosoft-brand__mark {
   width: 52px;
   height: 52px;
+}
+.ad-login__logo .engosoft-brand__wordmark {
+  font-size: 20px;
 }
 .ad-login__title {
   font-size: 26px;
@@ -1527,8 +1579,8 @@ select.input:focus,
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .bibo-input:focus-within {
-  border-color: #8b7df6;
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.45);
+  border-color: var(--brand-500);
+  box-shadow: var(--ring-focus);
 }
 .bibo-input__icon {
   flex: none;
@@ -1599,12 +1651,12 @@ select.input:focus,
   color: #f1f3f8;
 }
 .bibo-btn--primary {
-  background: #6c5ce7;
+  background: var(--brand-500);
   color: #fff;
-  box-shadow: 0 12px 24px -12px rgba(108, 92, 231, 0.9);
+  box-shadow: 0 12px 24px -12px rgba(8, 107, 232, 0.78);
 }
 .bibo-btn--primary:hover:not(:disabled) {
-  background: #5f4dd0;
+  background: var(--brand-600);
 }
 .bibo-btn--primary:disabled {
   cursor: not-allowed;
@@ -1660,7 +1712,7 @@ select.input:focus,
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: #6c5ce7;
+  color: var(--brand-600);
   text-decoration: none;
   cursor: pointer;
 }
@@ -1696,10 +1748,10 @@ select.input:focus,
   background: var(--border);
 }
 .ad-wiz-pip.on {
-  background: #6c5ce7;
+  background: var(--brand-500);
 }
 .ad-wiz-pip.done {
-  background: color-mix(in srgb, #6c5ce7 50%, var(--border));
+  background: color-mix(in srgb, var(--brand-500) 50%, var(--border));
 }
 .ad-wiz-step {
   text-align: center;
@@ -1748,14 +1800,14 @@ select.input:focus,
   background: var(--bg-subtle);
 }
 .ad-persona:hover {
-  border-color: #6c5ce7;
+  border-color: var(--brand-500);
   background: var(--bg-inset);
-  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
+  box-shadow: 0 8px 20px -12px rgba(8, 107, 232, 0.5);
 }
 .ad-persona__ic {
   flex: none;
   display: inline-flex;
-  color: #6c5ce7;
+  color: var(--brand-500);
 }
 .ad-persona__ic svg {
   width: 24px;
@@ -1866,9 +1918,9 @@ select.input:focus,
 }
 /* Selected/open persona card — mirrors the hover affordance. */
 .ad-persona--open {
-  border-color: #6c5ce7;
+  border-color: var(--brand-500);
   background: var(--bg-inset);
-  box-shadow: 0 8px 20px -12px rgba(108, 92, 231, 0.6);
+  box-shadow: 0 8px 20px -12px rgba(8, 107, 232, 0.5);
 }
 
 /* ---------- signup wizard — add employees step ---------- */
@@ -2030,8 +2082,8 @@ select.input:focus,
   border: 1px solid var(--border);
 }
 .bibo-btn--secondary:hover:not(:disabled) {
-  border-color: #6c5ce7;
-  color: #6c5ce7;
+  border-color: var(--brand-500);
+  color: var(--brand-600);
 }
 .bibo-btn--secondary svg {
   width: 20px;
@@ -3240,7 +3292,7 @@ select.input:focus,
   border: none;
   background: none;
   cursor: pointer;
-  color: #5b4bd6;
+  color: var(--brand-600);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -5328,39 +5380,38 @@ select.input:focus,
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
-   Operations Console — 2026 dashboard and shell
+   Engosoft Workforce Console — dashboard and shell
 
-   This is intentionally a different visual system from the old violet glass
-   dashboard: an ink navigation plane, warm paper workspace and high-signal
-   operational accents. The selectors are scoped so report internals retain
-   their existing data colours and semantics.
+   Brand surfaces use Engosoft navy/blue while semantic states retain their
+   own mint/amber/red meanings. The selectors stay scoped so dense reports
+   remain readable and do not inherit decorative marketing treatments.
    ────────────────────────────────────────────────────────────────────────── */
 :root,
 :root[data-theme="light"] {
-  --ops-ink: #101816;
-  --ops-ink-2: #1a2421;
-  --ops-paper: #f3f1ea;
-  --ops-panel: #fffefa;
-  --ops-line: #deddd6;
-  --ops-muted: #757972;
-  --ops-acid: #d9ff52;
+  --ops-ink: #061b35;
+  --ops-ink-2: #0b2b50;
+  --ops-paper: #f3f7fc;
+  --ops-panel: #ffffff;
+  --ops-line: #dce5f0;
+  --ops-muted: #697a91;
+  --ops-acid: #0b6ff0;
   --ops-mint: #29c98f;
   --ops-amber: #f5ad3d;
-  --ops-blue: #6188f5;
-  --ops-offline: #b9bdb5;
+  --ops-blue: #48a5ff;
+  --ops-offline: #b8c3d1;
 }
 :root[data-theme="dark"] {
-  --ops-ink: #080d0c;
-  --ops-ink-2: #101816;
-  --ops-paper: #101514;
-  --ops-panel: #171d1b;
-  --ops-line: #2c3431;
-  --ops-muted: #929b95;
-  --ops-acid: #d9ff52;
+  --ops-ink: #041225;
+  --ops-ink-2: #081d38;
+  --ops-paper: #081321;
+  --ops-panel: #0d1d30;
+  --ops-line: #1d3550;
+  --ops-muted: #8fa4bc;
+  --ops-acid: #3d96ff;
   --ops-mint: #44d7a3;
   --ops-amber: #ffc35e;
-  --ops-blue: #84a3ff;
-  --ops-offline: #59625d;
+  --ops-blue: #6bb4ff;
+  --ops-offline: #53677e;
 }
 
 .app {
@@ -5372,14 +5423,14 @@ select.input:focus,
   gap: 24px;
   padding: 22px 14px 16px;
   overflow: hidden;
-  color: #f7f8f4;
+  color: #f4f8ff;
   border-inline-end: 0;
   background: var(--ops-ink);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
 :root[data-theme="dark"] .ad-rail {
-  border-inline-end: 1px solid #202826;
+  border-inline-end: 1px solid #15304d;
   background: var(--ops-ink);
 }
 .ad-rail__brand {
@@ -5394,12 +5445,13 @@ select.input:focus,
   height: 40px;
   flex: 0 0 40px;
   margin: 0;
-  color: var(--ops-acid);
-  border-radius: 12px;
+  color: #0b73f1;
+  border-radius: 0;
   box-shadow: none;
 }
-.ad-rail__logo path {
-  stroke: var(--ops-ink);
+.ad-rail__logo .engosoft-brand__mark {
+  width: 40px;
+  height: 40px;
 }
 .ad-rail__wordmark,
 .ad-rail__identity {
@@ -5407,15 +5459,15 @@ select.input:focus,
   min-width: 0;
 }
 .ad-rail__wordmark strong {
-  color: #f8faf6;
-  font-size: 19px;
+  color: #ffffff;
+  font-size: 16px;
   font-weight: 850;
   letter-spacing: -0.04em;
 }
 .ad-rail__wordmark small,
 .ad-rail__identity small {
-  color: #78847f;
-  font-size: 9px;
+  color: #6f8cac;
+  font-size: 7.5px;
   font-weight: 800;
   letter-spacing: 0.13em;
 }
@@ -5430,20 +5482,20 @@ select.input:focus,
   gap: 12px;
   padding: 0 13px;
   border-radius: 10px;
-  color: #86918c;
+  color: #7f97b2;
   text-decoration: none;
 }
 .ad-railbtn:hover {
-  color: #f7f9f5;
-  background: #18211f;
+  color: #ffffff;
+  background: #0c2b4e;
 }
 .ad-railbtn.on {
-  color: var(--ops-ink);
+  color: #ffffff;
   background: var(--ops-acid);
-  box-shadow: none;
+  box-shadow: 0 8px 24px rgba(0, 94, 218, 0.24);
 }
 :root[data-theme="dark"] .ad-railbtn:not(.on) {
-  color: #86918c;
+  color: #7f97b2;
 }
 :root[data-theme="dark"] .ad-railbtn:not(.on):hover {
   color: #f7f9f5;
@@ -5465,19 +5517,19 @@ select.input:focus,
   align-items: center;
   gap: 10px;
   padding: 14px 8px 0;
-  border-block-start: 1px solid #26302d;
+  border-block-start: 1px solid #173654;
 }
 .ad-rail__foot .bibo-avatar {
   --_s: 34px;
 }
 .ad-rail__foot .bibo-avatar__img {
-  color: var(--ops-ink);
+  color: #ffffff;
   border: 0;
   background: var(--ops-acid);
 }
 .ad-rail__identity strong {
   overflow: hidden;
-  color: #edf1ec;
+  color: #edf5ff;
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5488,6 +5540,7 @@ select.input:focus,
 }
 .ad-topbar,
 :root[data-theme="dark"] .ad-topbar {
+  flex: 0 0 auto;
   min-height: 72px;
   padding: 12px 30px;
   border-block-end: 1px solid var(--ops-line);
@@ -5561,8 +5614,8 @@ select.input:focus,
   border-radius: 20px;
   color: #f6f8f4;
   background:
-    linear-gradient(115deg, transparent 0 66%, rgba(217, 255, 82, 0.08) 66% 67%, transparent 67% 73%, rgba(217, 255, 82, 0.05) 73% 74%, transparent 74%),
-    var(--ops-ink);
+    radial-gradient(circle at 92% 5%, rgba(61, 150, 255, 0.3), transparent 34%),
+    linear-gradient(120deg, #061b35 0%, #082a53 58%, #0746a0 100%);
 }
 .ops-hero::after {
   content: "";
@@ -5571,9 +5624,9 @@ select.input:focus,
   inset-block-end: -140px;
   width: 360px;
   height: 360px;
-  border: 1px solid rgba(217, 255, 82, 0.18);
+  border: 1px solid rgba(110, 181, 255, 0.28);
   border-radius: 50%;
-  box-shadow: 0 0 0 50px rgba(217, 255, 82, 0.035), 0 0 0 100px rgba(217, 255, 82, 0.025);
+  box-shadow: 0 0 0 50px rgba(110, 181, 255, 0.055), 0 0 0 100px rgba(110, 181, 255, 0.035);
 }
 .ops-hero__copy,
 .ops-hero__signal {
@@ -5584,7 +5637,7 @@ select.input:focus,
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: var(--ops-acid);
+  color: #77bbff;
   font-size: 10px;
   font-weight: 850;
   letter-spacing: 0.12em;
@@ -5605,7 +5658,7 @@ select.input:focus,
 .ops-hero__copy > p {
   max-width: 670px;
   margin: 0;
-  color: #9aa7a1;
+  color: #a9bed5;
   font-size: 13px;
   line-height: 1.65;
 }
@@ -5621,20 +5674,20 @@ select.input:focus,
   justify-content: center;
   gap: 8px;
   padding: 0 15px;
-  border: 1px solid #33403c;
+  border: 1px solid #31577e;
   border-radius: 9px;
-  color: #d8ded9;
+  color: #dcecff;
   font-size: 12px;
   font-weight: 750;
   text-decoration: none;
 }
 .ops-action:hover {
-  border-color: #65726c;
+  border-color: #6da8e4;
 }
 .ops-action--primary {
-  color: var(--ops-ink);
-  border-color: var(--ops-acid);
-  background: var(--ops-acid);
+  color: #063168;
+  border-color: #ffffff;
+  background: #ffffff;
 }
 .ops-action svg,
 .ops-panel__head a svg,
@@ -5651,12 +5704,12 @@ select.input:focus,
   flex-direction: column;
   justify-content: center;
   padding: 26px;
-  border: 1px solid #2c3834;
+  border: 1px solid rgba(132, 192, 255, 0.26);
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.035);
 }
 .ops-hero__signal > span {
-  color: #8f9b95;
+  color: #9eb9d5;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.09em;
@@ -5673,18 +5726,18 @@ select.input:focus,
   height: 4px;
   overflow: hidden;
   border-radius: 999px;
-  background: #303a37;
+  background: #294b6f;
 }
 .ops-hero__signalbar i,
 .ops-activebar > span i {
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: var(--ops-acid);
+  background: #54a8ff;
 }
 .ops-hero__signal small {
   margin-top: 10px;
-  color: #84908a;
+  color: #91abc5;
   font-size: 10px;
 }
 
@@ -6091,13 +6144,13 @@ select.input:focus,
   width: calc(100% - 24px);
   margin-inline: 12px;
   border-radius: 10px;
-  background: #080d0c;
+  background: #041225;
 }
 .ad-live-screen__empty {
   background:
-    linear-gradient(rgba(217, 255, 82, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(217, 255, 82, 0.03) 1px, transparent 1px),
-    #080d0c;
+    linear-gradient(rgba(67, 150, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(67, 150, 255, 0.05) 1px, transparent 1px),
+    #041225;
   background-size: 28px 28px;
 }
 .ad-live-screen__foot {
@@ -6146,7 +6199,7 @@ select.input:focus,
   .ad-rail {
     flex-direction: row;
     padding: 7px 8px;
-    border-block-start: 1px solid #28312e;
+    border-block-start: 1px solid #173654;
   }
   .ad-rail__brand,
   .ad-rail__foot { display: none; }

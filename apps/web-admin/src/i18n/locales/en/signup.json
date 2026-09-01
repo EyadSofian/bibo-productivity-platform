@@ -22,7 +22,7 @@
     "addMember": "Could not add {{member}}."
   },
   "persona": {
-    "heading": "How will you use BiBoTracking?",
+    "heading": "How will you use Engosoft Workforce?",
     "sub": "You can change this later.",
     "back": "Back",
     "justMeTitle": "Just me",
@@ -44,7 +44,7 @@
   "account": {
     "back": "← Back",
     "title": "Create your account",
-    "sub": "Get the most out of BiBoTracking.",
+    "sub": "Get the most out of Engosoft Workforce.",
     "name": "Your name",
     "identifier": "Email or username",
     "identifierPlaceholder": "you@example.com or a username",
@@ -72,7 +72,7 @@
     "goToDashboard": "Go to dashboard"
   },
   "clipboard": {
-    "text": "BiBoTracking login\nUsername or email: {{login}}\nPassword: {{password}}"
+    "text": "Engosoft Workforce login\nUsername or email: {{login}}\nPassword: {{password}}"
   },
   "members": {
     "title": "Add your {{members}}",

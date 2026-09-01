@@ -140,7 +140,7 @@
         "noFrame": "Belum ada bingkai langsung",
         "readOnly": "Hanya lihat · kebijakan dan pengecualian privasi tetap berlaku",
         "frameAlt": "Bingkai layar langsung terbaru",
-        "requestError": "Aliran langsung terputus. BiBo menyambung kembali secara otomatis.",
+        "requestError": "Aliran langsung terputus. Engosoft Workforce menyambung kembali secara otomatis.",
         "fallback": "Kanal perintah sedang tersambung kembali. Jalur HTTPS aman aktif; bingkai pertama dapat memerlukan beberapa detik.",
         "remoteStart": "Bantuan jarak jauh",
         "remotePending": "Menghubungkan ke komputer karyawan…",

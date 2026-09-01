@@ -140,7 +140,7 @@
         "noFrame": "Aucune image en direct",
         "readOnly": "Lecture seule · la politique et les exclusions de confidentialité restent actives",
         "frameAlt": "Dernière image d’écran en direct",
-        "requestError": "Le flux a été interrompu. BiBo se reconnecte automatiquement.",
+        "requestError": "Le flux a été interrompu. Engosoft Workforce se reconnecte automatiquement.",
         "fallback": "Le canal de commande se reconnecte. Le secours HTTPS sécurisé est actif ; la première image peut prendre quelques secondes.",
         "remoteStart": "Assistance à distance",
         "remotePending": "Connexion à l’ordinateur de l’employé…",

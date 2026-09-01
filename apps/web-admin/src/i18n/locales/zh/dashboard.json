@@ -140,7 +140,7 @@
         "noFrame": "暂无实时画面",
         "readOnly": "仅查看 · 策略和隐私排除仍然适用",
         "frameAlt": "最新实时屏幕画面",
-        "requestError": "实时画面已中断，BiBo 正在自动重新连接。",
+        "requestError": "实时画面已中断，Engosoft Workforce 正在自动重新连接。",
         "fallback": "命令通道正在重连。安全的 HTTPS 备用通道已启用，首帧可能需要几秒钟。",
         "remoteStart": "远程协助",
         "remotePending": "正在连接员工电脑…",

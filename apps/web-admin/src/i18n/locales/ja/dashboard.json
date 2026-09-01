@@ -140,7 +140,7 @@
         "noFrame": "ライブフレームはまだありません",
         "readOnly": "表示のみ · ポリシーとプライバシー除外は引き続き適用されます",
         "frameAlt": "最新のライブ画面フレーム",
-        "requestError": "ライブ配信が中断されました。BiBoが自動で再接続します。",
+        "requestError": "ライブ配信が中断されました。Engosoft Workforceが自動で再接続します。",
         "fallback": "コマンド接続を再確立しています。安全なHTTPS代替経路が有効で、最初の画像まで数秒かかる場合があります。",
         "remoteStart": "リモートアシスト",
         "remotePending": "従業員の端末に接続しています…",

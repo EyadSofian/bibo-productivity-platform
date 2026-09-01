@@ -7,24 +7,11 @@ import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { DetailHeaderContext } from "../detailHeader";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { EngosoftBrand } from "./EngosoftBrand";
 
 /** Brand mark used by the operational workspace shell. */
 function RailLogo() {
-  return (
-    <span className="ad-rail__logo" aria-label="BiBoTracking">
-      <svg viewBox="0 0 48 48" role="img" aria-label="BiBoTracking">
-        <rect x="0" y="0" width="48" height="48" rx="14" fill="currentColor" />
-        <path
-          d="M12 24h6l3 8 6-16 3 8h6"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
+  return <EngosoftBrand compact className="ad-rail__logo" />;
 }
 
 /** Shared lucide-style icon frame (24×24, stroke = currentColor). */
@@ -326,8 +313,8 @@ export function AppShell() {
         <div className="ad-rail__brand">
           <RailLogo />
           <span className="ad-rail__wordmark">
-            <strong>BiBo</strong>
-            <small>WORKFORCE OS</small>
+            <strong>ENGOSOFT</strong>
+            <small>WORKFORCE INTELLIGENCE</small>
           </span>
         </div>
 
@@ -364,7 +351,7 @@ export function AppShell() {
             <span className="ad-topbar__pulse" aria-hidden />
             <div>
               <div className="ad-topbar__title">{title}</div>
-              <small>BiBo control center</small>
+              <small>Engosoft workforce control</small>
             </div>
           </div>
           <div className="ad-topbar__right">

@@ -22,7 +22,7 @@
     "addMember": "无法添加{{member}}。"
   },
   "persona": {
-    "heading": "你将如何使用 BiBoTracking？",
+    "heading": "你将如何使用 Engosoft Workforce？",
     "sub": "你可以稍后更改。",
     "back": "返回",
     "justMeTitle": "仅我自己",
@@ -44,7 +44,7 @@
   "account": {
     "back": "← 返回",
     "title": "创建账户",
-    "sub": "充分发挥 BiBoTracking 的价值。",
+    "sub": "充分发挥 Engosoft Workforce 的价值。",
     "name": "你的姓名",
     "identifier": "邮箱或用户名",
     "identifierPlaceholder": "you@example.com 或用户名",
@@ -72,7 +72,7 @@
     "goToDashboard": "前往仪表盘"
   },
   "clipboard": {
-    "text": "BiBoTracking 登录信息\n用户名或邮箱：{{login}}\n密码：{{password}}"
+    "text": "Engosoft Workforce 登录信息\n用户名或邮箱：{{login}}\n密码：{{password}}"
   },
   "members": {
     "title": "添加你的{{members}}",

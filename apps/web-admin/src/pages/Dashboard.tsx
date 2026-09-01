@@ -186,7 +186,7 @@ export function Dashboard() {
         <div className="ops-hero__copy">
           <span className="ops-kicker"><i aria-hidden />{t("dashboard.ops.eyebrow")}</span>
           <h1>{t("dashboard.ops.headline")}</h1>
-          <p>{t("dashboard.ops.subtitle", { name: selected?.name ?? "BiBo", count: rows.length, members: terms.many })}</p>
+          <p>{t("dashboard.ops.subtitle", { name: selected?.name ?? "Engosoft", count: rows.length, members: terms.many })}</p>
           <div className="ops-hero__actions">
             <Link className="ops-action ops-action--primary" to="/employees">{t("dashboard.ops.openWorkforce")}{ArrowIcon}</Link>
             <Link className="ops-action" to="/devices">{t("devices.title")}</Link>

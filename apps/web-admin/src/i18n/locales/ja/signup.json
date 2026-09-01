@@ -22,7 +22,7 @@
     "addMember": "{{member}}を追加できませんでした。"
   },
   "persona": {
-    "heading": "BiBoTracking をどのようにご利用になりますか？",
+    "heading": "Engosoft Workforce をどのようにご利用になりますか？",
     "sub": "後で変更できます。",
     "back": "戻る",
     "justMeTitle": "自分だけ",
@@ -44,7 +44,7 @@
   "account": {
     "back": "← 戻る",
     "title": "アカウント作成",
-    "sub": "BiBoTracking を最大限に活用しましょう。",
+    "sub": "Engosoft Workforce を最大限に活用しましょう。",
     "name": "お名前",
     "identifier": "メールまたはユーザー名",
     "identifierPlaceholder": "you@example.com またはユーザー名",
@@ -72,7 +72,7 @@
     "goToDashboard": "ダッシュボードへ"
   },
   "clipboard": {
-    "text": "BiBoTracking ログイン情報\nユーザー名またはメール：{{login}}\nパスワード：{{password}}"
+    "text": "Engosoft Workforce ログイン情報\nユーザー名またはメール：{{login}}\nパスワード：{{password}}"
   },
   "members": {
     "title": "{{members}}を追加",

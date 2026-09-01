@@ -1,14 +1,14 @@
 # STATUS — أين وصلنا
 
-**آخر تحديث:** 2026-08-31
+**آخر تحديث:** 2026-09-01
 
 **الفرع:** `main` (‏`productivity-platform` متأخر بـ12 commit ولم يعد الفرع العامل)
 
-**آخر commit أساسي:** `44a8713` — *feat(remote): add authorized unattended Windows assistance*
+**آخر commits أساسية:** `888d8cc` — *operations dashboard + live fallback*، ثم
+`8950d48` — *reuse remote-assistance connections*.
 
-**حالة الشجرة:** تغييرات غير ملتزم بها من جولتين (2026-08-31): جولة الأوديت (‏حد المعدل،
-حدود الابتلاع، خط الحالات `os_states`) ثم جولة P03 (‏إخراج إطارات البث من Postgres وقناة
-دفع SSE). لم تُدفع.
+**حالة النشر:** Backend/Web يعملان على Railway، وWindows `1.5.10` منشور في الرابط الثابت
+وملف التحديث الموقّع `latest.json`. هوية Engosoft Workforce قيد نفس جولة 2026-09-01.
 
 > ملخص تنفيذي. تفاصيل الأوديت والقياسات وخطة ما تبقّى في
 > [`FULL_SYSTEM_AUDIT.md`](FULL_SYSTEM_AUDIT.md)؛ معايير القبول في
@@ -18,8 +18,9 @@
 
 ## الخلاصة الحالية
 
-- تم الحفاظ على **نظام التصميم الأصلي** للوحة الإدارة؛ الإضافات الجديدة تستخدم نفس
-  الألوان والتوكنز والبطاقات والشريط الجانبي بدل فرض هوية بصرية جديدة.
+- أعيد بناء لوحة الإدارة كـ**Operations Console**، ثم نُقلت الهوية الظاهرة إلى
+  **Engosoft Workforce**: navy/blue، شعار code-native، sidebar مسمى، dashboard مباشر،
+  responsive/RTL، وشاشة دخول وfavicon وmetadata موحدة.
 - واجهة المنتج تستخدم **موظفين / فريق / شركة**. قيم `family` و`parent` القديمة ما زالت
   موجودة في عقد الخلفية فقط حتى لا تنكسر قواعد البيانات القديمة، ولا تغيّر نصوص الواجهة.
 - خريطة التكافؤ توسعت إلى **F1–F74** بعد مراجعة سطح Teramind الحالي، مع حدود أمان صريحة:
@@ -28,6 +29,21 @@
 - **F41 ملفات المراقبة والجداول:** `IN PROGRESS`؛ النواة مكتملة ومختبرة، وتكامل الأقسام
   مكتمل الآن، بينما مجموعات الدليل تنتظر F46، كما بقيت اختبارات الحزم الفعلية ودفع التحديث الفوري.
 - **F7 الأقسام والمسميات الوظيفية:** `IN PROGRESS`؛ النواة وواجهة الإدارة وربط F41 مكتملة.
+
+## جولة 2026-09-01 — Dashboard، Live resilience وWindows 1.5.10
+
+- Dashboard جديد قائم على بيانات حقيقية: hero تشغيلي، active/idle/offline، live desk،
+  current app، وقت الاتصال، التركيز، اللقطات وroster كامل.
+- sidebar مسمى، topbar أخف، دعم 390px وRTL/LTR، وإصلاح scroll restoration الذي كان يعيد
+  فتح Dashboard في منتصف الصفحة بعد تقرير موظف طويل.
+- `GET /v1/agent/live/status` fallback آمن عندما تتعطل قناة أوامر SSE.
+- Agent يعيد استخدام HTTP client في live worker وremote assist بدل إنشاء اتصال كل frame/poll.
+- GitHub CI الأخضر شمل frontend/backend وWindows/macOS Rust وdependency audit.
+- Windows `1.5.10`: EXE/MSI/updater نجحت، واختبار Windows صامت حقيقي أثبت service running،
+  `AUTO_START`، command line الصحيح وuninstall الناجح.
+- Railway download تم التحقق منه بالـSHA-256:
+  `25d50355442033148f1a3cea44cee999b2adcb4ac5a5599374a987736b90e8b7`.
+- الاستراتيجية المحدثة: [`ENGOSOFT_WORKFORCE_MVP_STRATEGY_AR.md`](ENGOSOFT_WORKFORCE_MVP_STRATEGY_AR.md).
 
 ---
 
@@ -66,9 +82,9 @@
 
 | المكوّن | النتيجة |
 |---|---|
-| Web admin | **185/185** Vitest ناجحة (‏115 قبل الجولات)؛ TypeScript والبناء ناجحان |
+| Web admin | **192/192** Vitest ناجحة (‏115 قبل الجولات)؛ TypeScript والبناء ناجحان |
 | Browser extension | 63/63 Vitest ناجحة |
-| Desktop Rust | **74/74** ناجحة + 4 متخطاة عمدًا (‏61 قبل)؛ `fmt` وClippy `-D warnings` ناجحة |
+| Desktop Rust | **78/78** ناجحة + 4 قياسات متخطاة عمدًا؛ `fmt` وClippy `-D warnings` ناجحة |
 | Backend Go | **127/127** ناجحة تحت `-race` (‏92 قبل)؛ `go vet` و`go build` ناجحان |
 | E2E مقابل خلفية حيّة | مسار العرض + القياسات + عزل المستأجرين: ناجحة (`scripts/e2e/`) |
 | كل مساحات pnpm | `pnpm typecheck` و`pnpm build` ناجحان |
@@ -98,7 +114,7 @@
   ومُتحقَّق منه من الطرف للطرف.
 - **P0-3:** سُلَّم ضغط الإطار من **417ms إلى 118ms** للإطار في البث الكثيف (‏3.5×).
 
-**الاختبارات:** 311 → **331**، كلها ناجحة. (بعد جولات P03/P0-1/الخط الزمني: **449** = ‏127 Go + 185 web + 63 extension + 74 Rust.)
+**الاختبارات:** 311 → **331**، كلها ناجحة. (الإجمالي الحالي: **460** = ‏127 Go + 192 web + 63 extension + 78 Rust.)
 
 **لم يُنجز في تلك الجولة:** **P0-1** و**P1-1** — تُركا معًا لأنهما مترابطان معماريًا.
 ✅ عولجا في جولة P03 أدناه (‏P1-1 مُغلق بالكامل، وP0-1 نصفه الخلفي). القائمة الكاملة

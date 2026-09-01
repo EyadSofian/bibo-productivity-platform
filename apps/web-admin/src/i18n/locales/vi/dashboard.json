@@ -140,7 +140,7 @@
         "noFrame": "Chưa có khung hình",
         "readOnly": "Chỉ xem · chính sách và loại trừ riêng tư vẫn được áp dụng",
         "frameAlt": "Khung hình trực tiếp mới nhất",
-        "requestError": "Luồng trực tiếp bị gián đoạn. BiBo đang tự động kết nối lại.",
+        "requestError": "Luồng trực tiếp bị gián đoạn. Engosoft Workforce đang tự động kết nối lại.",
         "fallback": "Kênh lệnh đang kết nối lại. Tuyến HTTPS an toàn dự phòng đã hoạt động; khung hình đầu tiên có thể mất vài giây.",
         "remoteStart": "Hỗ trợ từ xa",
         "remotePending": "Đang kết nối với máy nhân viên…",

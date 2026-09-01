@@ -6,32 +6,13 @@ import { ApiError } from "../api/types";
 import { useAuth } from "./AuthContext";
 import { Notice } from "../components/ui";
 import { AuthLayout } from "./AuthLayout";
+import { EngosoftBrand } from "../components/EngosoftBrand";
 
 const DOWNLOAD_URL = import.meta.env.VITE_DOWNLOAD_URL || "/";
 
-/** Brand mark shown inside the card — pulse/activity glyph on a violet gradient tile. */
+/** Brand mark shown inside the sign-in card. */
 function LogoMark() {
-  return (
-    <span className="ad-login__logo" aria-hidden>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="BiBoTracking">
-        <defs>
-          <linearGradient id="biboLogoGrad" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#9a90f7" />
-            <stop offset="1" stopColor="#6157e6" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="48" height="48" rx="15" fill="url(#biboLogoGrad)" />
-        <path
-          d="M12 24h6l3 8 6-16 3 8h6"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
-  );
+  return <EngosoftBrand className="ad-login__logo" />;
 }
 
 function AtSignIcon() {
