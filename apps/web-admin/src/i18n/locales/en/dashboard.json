@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "Activity",
+      "communications": "Communication evidence",
       "keystrokes": "Keystrokes",
       "browser": "Browser",
       "screenshots": "Screenshots",
       "playback": "Playback"
+    },
+    "communications": {
+      "eyebrow": "Evidence, not assumptions",
+      "title": "Communication activity",
+      "subtitle": "Correlates communication apps, page addresses, foreground time and input counts without recording message text.",
+      "summaryLabel": "Communication activity summary",
+      "sessions": "sessions",
+      "interacting": "with input",
+      "possibleCalls": "possible calls",
+      "totalTime": "total time",
+      "truthTitle": "What this proves:",
+      "truthBody": "Input proves interaction, not that a message was sent. “Possible call” comes from an active call/meeting screen. Confirmed sends and completed calls require the platform’s official API or webhook.",
+      "empty": "No communication workspace activity was detected in this period.",
+      "inputCount": "{{count}} keypresses",
+      "evidence": {
+        "observed": "Workspace open",
+        "interacting": "Interaction recorded",
+        "possible_call": "Possible call"
+      }
     },
     "singleDay": "Single day",
     "dateRange": "Date range",

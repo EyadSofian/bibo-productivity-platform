@@ -1,6 +1,6 @@
 [package]
 name = "ctracking"
-version = "1.5.7"
+version = "1.5.8"
 description = "Transparent employee time and activity tracker"
 authors = ["BiBoTracking"]
 edition = "2021"
@@ -41,6 +41,7 @@ sentry = { version = "0.49.2", default-features = false, features = ["backtrace"
 tauri-plugin-updater = "2.10.1"
 tauri-plugin-process = "2.3.1"
 tauri-plugin-autostart = "2.5.1"
+tauri-plugin-single-instance = "2"
 os_info = "3.15.0"
 hostname = "0.4.2"
 chrono = { version = "0.4", default-features = false, features = ["clock"] }
@@ -52,12 +53,20 @@ sysinfo = { version = "0.39.6", default-features = false, features = ["system", 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10"
 
-# Windows-only: Win32 bindings for idle detection (M1) and the keyboard hook (M2).
+# Windows-only: Win32 bindings for activity tracking and the company-managed
+# agent supervisor. The supervisor is a normal Windows service installed by the
+# per-machine NSIS package; the employee-facing tray application remains visible.
 [target.'cfg(target_os = "windows")'.dependencies]
+windows-service = "0.8.1"
 windows = { version = "0.58", features = [
     "Win32_Foundation",
+    "Win32_Security",
     "Win32_System_Com",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_Environment",
+    "Win32_System_RemoteDesktop",
     "Win32_System_SystemInformation",
+    "Win32_System_Threading",
     "Win32_UI_Accessibility",
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_WindowsAndMessaging",

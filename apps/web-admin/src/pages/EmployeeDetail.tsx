@@ -28,6 +28,7 @@ import type {
 } from "../api/types";
 import { ActivityPanel } from "../components/reports/ActivityPanel";
 import { BrowserPanel } from "../components/reports/BrowserPanel";
+import { CommunicationEvidencePanel } from "../components/reports/CommunicationEvidencePanel";
 import { KeystrokePanel } from "../components/reports/KeystrokePanel";
 import { PlaybackPanel } from "../components/reports/PlaybackPanel";
 import { UnifiedTimeline } from "../components/reports/UnifiedTimeline";
@@ -46,8 +47,15 @@ import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
 import { useDetailHeader } from "../detailHeader";
 
-type Tab = "activity" | "keystrokes" | "browser" | "screenshots" | "playback";
-const TABS: Tab[] = ["activity", "keystrokes", "browser", "screenshots", "playback"];
+type Tab = "activity" | "communications" | "keystrokes" | "browser" | "screenshots" | "playback";
+const TABS: Tab[] = [
+  "activity",
+  "communications",
+  "keystrokes",
+  "browser",
+  "screenshots",
+  "playback",
+];
 
 // ── inline icons (no icon dependency in web-admin) ───────────────────
 const svg = (children: ReactNode) => (
@@ -949,6 +957,13 @@ export function EmployeeDetail() {
               <>
                 {tab === "activity" &&
                   (activity ? <ActivityPanel data={activity} /> : <Spinner />)}
+                {tab === "communications" && activity && visits && keystrokes ? (
+                  <CommunicationEvidencePanel
+                    activity={activity}
+                    visits={visits}
+                    keystrokes={keystrokes}
+                  />
+                ) : null}
                 {/* Browser panel renders its own table card */}
                 {tab === "browser" && (visits ? <BrowserPanel visits={visits} /> : <Spinner />)}
                 {(tab === "keystrokes" || tab === "screenshots") && (

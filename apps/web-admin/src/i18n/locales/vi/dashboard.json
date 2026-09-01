@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "Hoạt động",
+      "communications": "Bằng chứng liên lạc",
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
       "screenshots": "Ảnh chụp màn hình",
       "playback": "Phát lại"
+    },
+    "communications": {
+      "eyebrow": "Bằng chứng, không suy đoán",
+      "title": "Hoạt động liên lạc",
+      "subtitle": "Liên kết ứng dụng, địa chỉ trang, thời gian ở tiền cảnh và số lần nhập mà không ghi nội dung tin nhắn.",
+      "summaryLabel": "Tóm tắt hoạt động liên lạc",
+      "sessions": "phiên",
+      "interacting": "có nhập liệu",
+      "possibleCalls": "cuộc gọi có thể",
+      "totalTime": "tổng thời gian",
+      "truthTitle": "Dữ liệu này chứng minh:",
+      "truthBody": "Nhập liệu chứng minh có tương tác, không chứng minh tin nhắn đã gửi. “Cuộc gọi có thể” dựa trên màn hình gọi hoặc họp đang hoạt động. Xác nhận cần API hoặc webhook chính thức của nền tảng.",
+      "empty": "Không phát hiện hoạt động liên lạc trong khoảng thời gian này.",
+      "inputCount": "{{count}} phím",
+      "evidence": {
+        "observed": "Không gian đang mở",
+        "interacting": "Đã ghi nhận tương tác",
+        "possible_call": "Cuộc gọi có thể"
+      }
     },
     "singleDay": "Một ngày",
     "dateRange": "Khoảng ngày",

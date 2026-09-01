@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "Aktivitas",
+      "communications": "Bukti komunikasi",
       "keystrokes": "Ketikan",
       "browser": "Peramban",
       "screenshots": "Tangkapan layar",
       "playback": "Pemutaran"
+    },
+    "communications": {
+      "eyebrow": "Bukti, bukan asumsi",
+      "title": "Aktivitas komunikasi",
+      "subtitle": "Menghubungkan aplikasi komunikasi, alamat halaman, waktu aktif, dan jumlah input tanpa merekam teks pesan.",
+      "summaryLabel": "Ringkasan aktivitas komunikasi",
+      "sessions": "sesi",
+      "interacting": "dengan input",
+      "possibleCalls": "kemungkinan panggilan",
+      "totalTime": "total waktu",
+      "truthTitle": "Yang dibuktikan:",
+      "truthBody": "Input membuktikan interaksi, bukan pesan terkirim. “Kemungkinan panggilan” berasal dari layar panggilan atau rapat aktif. Konfirmasi memerlukan API atau webhook resmi platform.",
+      "empty": "Tidak ada aktivitas ruang komunikasi yang terdeteksi pada periode ini.",
+      "inputCount": "{{count}} ketukan",
+      "evidence": {
+        "observed": "Ruang terbuka",
+        "interacting": "Interaksi terekam",
+        "possible_call": "Kemungkinan panggilan"
+      }
     },
     "singleDay": "Satu hari",
     "dateRange": "Rentang tanggal",

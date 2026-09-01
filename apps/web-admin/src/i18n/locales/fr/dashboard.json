@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "Activité",
+      "communications": "Preuves de communication",
       "keystrokes": "Frappes",
       "browser": "Navigateur",
       "screenshots": "Captures d'écran",
       "playback": "Lecture"
+    },
+    "communications": {
+      "eyebrow": "Des preuves, pas des suppositions",
+      "title": "Activité de communication",
+      "subtitle": "Met en relation les applications, adresses de pages, temps au premier plan et frappes sans enregistrer le texte des messages.",
+      "summaryLabel": "Résumé de l’activité de communication",
+      "sessions": "sessions",
+      "interacting": "avec saisie",
+      "possibleCalls": "appels possibles",
+      "totalTime": "temps total",
+      "truthTitle": "Ce que cela prouve :",
+      "truthBody": "La saisie prouve une interaction, pas l’envoi d’un message. « Appel possible » provient d’un écran d’appel ou de réunion actif. La confirmation nécessite l’API ou le webhook officiel de la plateforme.",
+      "empty": "Aucune activité de communication détectée sur cette période.",
+      "inputCount": "{{count}} frappes",
+      "evidence": {
+        "observed": "Espace ouvert",
+        "interacting": "Interaction enregistrée",
+        "possible_call": "Appel possible"
+      }
     },
     "singleDay": "Journée",
     "dateRange": "Période",

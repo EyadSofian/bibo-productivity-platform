@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "活动",
+      "communications": "沟通证据",
       "keystrokes": "按键",
       "browser": "浏览器",
       "screenshots": "截图",
       "playback": "回放"
+    },
+    "communications": {
+      "eyebrow": "证据，而非推测",
+      "title": "沟通活动",
+      "subtitle": "关联沟通应用、页面地址、前台时长和输入次数，不记录消息文本。",
+      "summaryLabel": "沟通活动摘要",
+      "sessions": "个会话",
+      "interacting": "有输入",
+      "possibleCalls": "可能的通话",
+      "totalTime": "总时长",
+      "truthTitle": "这些数据能证明：",
+      "truthBody": "输入只能证明发生了交互，不能证明消息已发送。“可能的通话”来自活跃的通话或会议界面；确认发送或完成通话需要平台官方 API 或 Webhook。",
+      "empty": "此时间段未检测到沟通工作区活动。",
+      "inputCount": "{{count}} 次按键",
+      "evidence": {
+        "observed": "工作区已打开",
+        "interacting": "检测到交互",
+        "possible_call": "可能的通话"
+      }
     },
     "singleDay": "单日",
     "dateRange": "日期范围",

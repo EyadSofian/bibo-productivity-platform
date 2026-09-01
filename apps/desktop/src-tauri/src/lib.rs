@@ -8,6 +8,8 @@ mod platform;
 mod server;
 mod settings;
 mod storage;
+#[cfg(target_os = "windows")]
+pub mod supervisor;
 mod sync;
 mod trackers;
 mod tray;
@@ -67,6 +69,12 @@ pub fn run() {
     let _sentry = obs::init();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+        }))
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--background"]),

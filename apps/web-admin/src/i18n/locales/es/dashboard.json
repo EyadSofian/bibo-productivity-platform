@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "Actividad",
+      "communications": "Evidencia de comunicación",
       "keystrokes": "Pulsaciones",
       "browser": "Navegador",
       "screenshots": "Capturas de pantalla",
       "playback": "Reproducción"
+    },
+    "communications": {
+      "eyebrow": "Evidencia, no suposiciones",
+      "title": "Actividad de comunicación",
+      "subtitle": "Relaciona aplicaciones, direcciones de página, tiempo en primer plano y pulsaciones sin registrar el texto de los mensajes.",
+      "summaryLabel": "Resumen de actividad de comunicación",
+      "sessions": "sesiones",
+      "interacting": "con interacción",
+      "possibleCalls": "llamadas posibles",
+      "totalTime": "tiempo total",
+      "truthTitle": "Lo que esto demuestra:",
+      "truthBody": "La entrada demuestra interacción, no el envío de un mensaje. «Llamada posible» procede de una pantalla activa de llamada o reunión. La confirmación requiere la API o el webhook oficial de la plataforma.",
+      "empty": "No se detectó actividad de comunicación en este periodo.",
+      "inputCount": "{{count}} pulsaciones",
+      "evidence": {
+        "observed": "Espacio abierto",
+        "interacting": "Interacción registrada",
+        "possible_call": "Llamada posible"
+      }
     },
     "singleDay": "Un día",
     "dateRange": "Rango de fechas",

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "BiBoTracking",
-  "version": "1.5.7",
+  "version": "1.5.8",
   "identifier": "com.briannguyen.bibotracking",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -61,6 +61,7 @@
       },
       "nsis": {
         "installMode": "perMachine",
+        "installerHooks": "./windows/installer-hooks.nsh",
         "installerIcon": "icons/icon.ico",
         "uninstallerIcon": "icons/icon.ico",
         "startMenuFolder": "BiBoTracking"

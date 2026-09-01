@@ -155,10 +155,30 @@
     },
     "tabs": {
       "activity": "アクティビティ",
+      "communications": "コミュニケーション証跡",
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット",
       "playback": "再生"
+    },
+    "communications": {
+      "eyebrow": "推測ではなく証跡",
+      "title": "コミュニケーション活動",
+      "subtitle": "メッセージ本文を記録せず、アプリ、ページURL、前面表示時間、入力回数を関連付けます。",
+      "summaryLabel": "コミュニケーション活動の概要",
+      "sessions": "セッション",
+      "interacting": "入力あり",
+      "possibleCalls": "通話の可能性",
+      "totalTime": "合計時間",
+      "truthTitle": "この情報で分かること：",
+      "truthBody": "入力は操作を示しますが、送信完了を証明しません。「通話の可能性」は通話・会議画面の表示に基づきます。確定には公式APIまたはWebhookが必要です。",
+      "empty": "この期間にコミュニケーション活動は検出されませんでした。",
+      "inputCount": "{{count}} キー",
+      "evidence": {
+        "observed": "ワークスペースを表示",
+        "interacting": "操作を検出",
+        "possible_call": "通話の可能性"
+      }
     },
     "singleDay": "単日",
     "dateRange": "期間",
