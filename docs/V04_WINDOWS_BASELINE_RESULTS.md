@@ -62,19 +62,24 @@ rustc probe.rs -o probe_final.exe   → exit 0
 
 Run from repo root on `96332fa`.
 
+All JS commands are run under **Node 22** (see §3.1).
+
 | Command | Exit | Result |
 | --- | --- | --- |
 | `pnpm install --frozen-lockfile` | 0 | ✅ 90 packages, 10.2s |
 | `node .github/scripts/check-no-still-capture.mjs` | 0 | ✅ green, 10 legacy paths pinned |
 | `pnpm --filter @ctracking/web-admin typecheck` | 0 | ✅ `tsc --noEmit` clean |
-| `pnpm --filter @ctracking/web-admin test` | 1 | ❌ **26 failed / 166 passed** (§3.1) |
+| `pnpm --filter @ctracking/web-admin test` | 0 | ✅ **192 passed (17 files)**, 22.13s |
+| `pnpm --filter @ctracking/web-admin build` | 0 | ✅ 7.72s |
+| `pnpm --filter @ctracking/extension test` | 0 | ✅ **63 passed (4 files)**, 1.98s |
 | `go build ./...` | 0 | ✅ |
+| `go vet ./...` | 0 | ✅ |
 | `go test ./...` | 0 | ✅ auth, handlers, live, middleware, obs, store |
+| `go test -race ./...` | 1 | ⚠️ needs a GCC cgo compiler — §3.2 |
 | `cargo check --all-targets` | 0 | ✅ 7m 35s |
-| `cargo fmt --check` | — | not yet re-run on this base |
-| `cargo clippy --all-targets` | — | not yet run |
-| `cargo test` | — | not yet run |
-| `go test -race ./...` | — | not yet re-run (cgo now available) |
+| `cargo fmt --check` | 0 | ✅ |
+| `cargo clippy --all-targets` | 0 | ✅ 1 advisory warning (`items_after_test_module`); CI treats clippy as advisory |
+| `cargo test` | 0 | ✅ **83 passed, 0 failed, 4 ignored**, 4.50s |
 
 ### Go — full pass
 
@@ -87,9 +92,9 @@ ok  ctracking/backend/internal/obs         (cached)
 ok  ctracking/backend/internal/store       1.800s
 ```
 
-## 3. The one red, and its root cause
+## 3. Root causes found and fixed
 
-### 3.1 All 26 JS failures are a Node version mismatch, not repo bugs
+### 3.1 The 26 JS failures were a Node version mismatch, not repo bugs — resolved
 
 Every failure across the 4 failing files carries the identical error:
 
@@ -116,10 +121,38 @@ installs**, so the `environment: "jsdom"` tests get Node's object instead of jsd
 `.github/workflows/ci.yml` pins **`node-version: 22`** in all three jobs, which has no
 built-in `localStorage` — which is why CI is green and this machine is not.
 
-**No application code is at fault and none was changed.** The fix is to match CI's Node
-major on this machine; changing the tests or adding a shim would mask a real
-environment divergence. This is left as a decision rather than a silent global downgrade,
-since Node 25 may be in use by other projects on this machine.
+**No application code is at fault and none was changed.**
+
+The deeper cause was that **nothing in the repo declared a Node version** — `node-version:
+22` was duplicated across three CI jobs and no local tool could read it. Fixed by adding
+`.node-version` and pointing all three `actions/setup-node` steps at
+`node-version-file: .node-version`, so CI and developer machines share one source of truth.
+
+Locally, Node 22.23.2 is installed through **fnm** rather than replacing Node 25
+system-wide, because other projects on this machine use the newer runtime. Verified:
+
+```
+$ node --version                      → v22.23.2
+$ node -e "typeof globalThis.localStorage"  → undefined
+$ pnpm --filter @ctracking/web-admin test   → 192 passed (17 files), exit 0
+```
+
+### 3.2 `go test -race` needs a GCC toolchain, which MSVC does not provide
+
+```
+$ go env CC          → gcc
+$ where gcc          → not found
+$ go test -race ./... → FAIL [build failed]
+```
+
+Go's race detector requires cgo, and cgo on Windows requires a **GCC-compatible**
+compiler (mingw-w64); the MSVC toolchain installed for Rust does not satisfy it.
+
+This is **not a CI gate on Windows**: `.github/workflows/ci.yml` runs the Go backend job —
+including `go test -race ./...` — on `ubuntu-latest`, where GCC is present by default.
+The Windows matrix only covers the Rust desktop job. Local `-race` is still worth having
+for the concurrent media work ahead (`live.Hub`, `CommandBus`, the WebRTC plane), so a
+mingw-w64 toolchain is being added for local parity.
 
 ## 4. Still-capture guard (ticket 144)
 
@@ -160,9 +193,24 @@ the **already-designed successor** to ADR 0001, not a change of direction. ADR 0
 records three still-open items that V04 must close: real-device first-frame time, agent
 CPU at capture rate, and the absent on-screen indicator during live view.
 
-## 6. Known limitations
+## 6. Baseline verdict
 
-- `cargo fmt` / `clippy` / `test` and `go test -race` are not yet run on this base.
-- The JS suite has not been run under Node 22, so the 166 passing / 26 failing split is
-  not yet a confirmed green.
+**Green on Windows**, with one environment-limited command:
+
+```
+guard         ✅   web-admin test  ✅ 192    extension test ✅ 63
+typecheck     ✅   web-admin build ✅        go build/vet/test ✅
+cargo check   ✅   cargo fmt ✅  clippy ✅   cargo test ✅ 83
+go test -race ⚠️  needs mingw-w64 (CI runs it on Linux)
+```
+
+## 7. Known limitations
+
+- `go test -race` is unverified on this machine until the mingw-w64 toolchain finishes
+  installing. CI covers it on `ubuntu-latest`, so this is a local-parity gap, not a hole
+  in the gate.
+- `cargo clippy` carries one advisory warning, unchanged from the base commit.
+- The desktop agent has been compiled and unit-tested on Windows but **not run**; ADR 0001's
+  three open items (real-device first-frame time, agent CPU at capture rate, the missing
+  on-screen indicator during live view) are still open and are V04 acceptance criteria.
 - No LiveKit, media sidecar, or performance evidence — that work has not started.
