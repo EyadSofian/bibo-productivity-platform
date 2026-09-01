@@ -75,7 +75,7 @@ All JS commands are run under **Node 22** (see §3.1).
 | `go build ./...` | 0 | ✅ |
 | `go vet ./...` | 0 | ✅ |
 | `go test ./...` | 0 | ✅ auth, handlers, live, middleware, obs, store |
-| `go test -race ./...` | 1 | ⚠️ needs a GCC cgo compiler — §3.2 |
+| `go test -race ./...` | 0 | ✅ all packages, after installing mingw-w64 — §3.2 |
 | `cargo check --all-targets` | 0 | ✅ 7m 35s |
 | `cargo fmt --check` | 0 | ✅ |
 | `cargo clippy --all-targets` | 0 | ✅ 1 advisory warning (`items_after_test_module`); CI treats clippy as advisory |
@@ -150,9 +150,16 @@ compiler (mingw-w64); the MSVC toolchain installed for Rust does not satisfy it.
 
 This is **not a CI gate on Windows**: `.github/workflows/ci.yml` runs the Go backend job —
 including `go test -race ./...` — on `ubuntu-latest`, where GCC is present by default.
-The Windows matrix only covers the Rust desktop job. Local `-race` is still worth having
-for the concurrent media work ahead (`live.Hub`, `CommandBus`, the WebRTC plane), so a
-mingw-w64 toolchain is being added for local parity.
+The Windows matrix only covers the Rust desktop job.
+
+Local `-race` is still worth having for the concurrent media work ahead (`live.Hub`,
+`CommandBus`, the WebRTC plane), so **mingw-w64 GCC 14.2.0 (UCRT) was installed**.
+`go test -race ./...` now passes on Windows:
+
+```
+ok  internal/auth 2.783s   ok  internal/handlers 4.339s   ok  internal/live 2.268s
+ok  internal/middleware 2.301s   ok  internal/obs 4.619s   ok  internal/store 2.267s
+```
 
 ## 4. Still-capture guard (ticket 144)
 
@@ -195,20 +202,17 @@ CPU at capture rate, and the absent on-screen indicator during live view.
 
 ## 6. Baseline verdict
 
-**Green on Windows**, with one environment-limited command:
+**Fully green on Windows.**
 
 ```
 guard         ✅   web-admin test  ✅ 192    extension test ✅ 63
 typecheck     ✅   web-admin build ✅        go build/vet/test ✅
 cargo check   ✅   cargo fmt ✅  clippy ✅   cargo test ✅ 83
-go test -race ⚠️  needs mingw-w64 (CI runs it on Linux)
+go test -race ✅
 ```
 
 ## 7. Known limitations
 
-- `go test -race` is unverified on this machine until the mingw-w64 toolchain finishes
-  installing. CI covers it on `ubuntu-latest`, so this is a local-parity gap, not a hole
-  in the gate.
 - `cargo clippy` carries one advisory warning, unchanged from the base commit.
 - The desktop agent has been compiled and unit-tested on Windows but **not run**; ADR 0001's
   three open items (real-device first-frame time, agent CPU at capture rate, the missing
