@@ -72,6 +72,11 @@ jobs:
 
           $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S" -PassThru -Wait
 
+          $installerLog = Join-Path $env:ProgramData "BiBoTracking\installer-service.log"
+          if (Test-Path $installerLog) {
+            Get-Content $installerLog | Write-Host
+          }
+
           if ($process.ExitCode -ne 0) {
             throw "NSIS installer exited with code $($process.ExitCode)"
           }
@@ -92,6 +97,11 @@ jobs:
 
           if (($serviceConfig | Out-String) -notmatch "AUTO_START") {
             throw "BiBoTrackingSupervisor is not configured for automatic startup"
+          }
+
+          $binaryPath = ($serviceConfig | Select-String "BINARY_PATH_NAME").ToString()
+          if ($binaryPath -notmatch "ctracking\.exe.+--supervisor-service") {
+            throw "BiBoTrackingSupervisor points to an unexpected binary: $binaryPath"
           }
 
       - uses: actions/upload-artifact@v4
