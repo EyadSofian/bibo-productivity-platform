@@ -151,6 +151,7 @@ function LiveScreen({
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [frameAt, setFrameAt] = useState<Date | null>(null);
   const [waiting, setWaiting] = useState(false);
+  const [fallbackActive, setFallbackActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [remoteSession, setRemoteSession] = useState<RemoteAssistSession | null>(null);
   const [remoteFrameUrl, setRemoteFrameUrl] = useState<string | null>(null);
@@ -179,6 +180,7 @@ function LiveScreen({
     }
     let alive = true;
     setWaiting(true);
+    setFallbackActive(false);
     setError(null);
     consecutiveFailures.current = 0;
 
@@ -188,6 +190,7 @@ function LiveScreen({
         setImageUrl(`data:image/webp;base64,${frame.image}`);
         setFrameAt(new Date(frame.received_at));
         consecutiveFailures.current = 0;
+        setFallbackActive(false);
         setWaiting(false);
         setError(null);
       },
@@ -195,7 +198,10 @@ function LiveScreen({
         if (alive) setWaiting(false);
       },
       onAgentUnreachable: () => {
-        if (alive) setError(t("detail.presence.liveView.requestError"));
+        // The desktop now has an authenticated HTTPS status fallback for this
+        // exact condition. Keep waiting instead of presenting an offline error:
+        // the first frame should arrive after its next low-rate status check.
+        if (alive) setFallbackActive(true);
       },
       onError: () => {
         if (!alive) return;
@@ -212,6 +218,7 @@ function LiveScreen({
       alive = false;
       unsubscribe();
       setWaiting(false);
+      setFallbackActive(false);
     };
   }, [deviceId, enabled, online, remoteOpen, t]);
 
@@ -272,6 +279,7 @@ function LiveScreen({
     if (!online) {
       setEnabled(false);
       setWaiting(false);
+      setFallbackActive(false);
     }
   }, [online]);
 
@@ -366,6 +374,7 @@ function LiveScreen({
                   : t("detail.presence.liveView.ready")}
           </span>
           <h2>{t("detail.presence.liveView.title")}</h2>
+          <p>{t("detail.presence.liveView.description")}</p>
         </div>
         <div className="ad-live-screen__actions">
           {displayedImage ? (
@@ -408,6 +417,7 @@ function LiveScreen({
                 disabled={!online}
                 onClick={() => {
                   setError(null);
+                  setFallbackActive(false);
                   consecutiveFailures.current = 0;
                   setEnabled((value) => !value);
                 }}
@@ -420,6 +430,7 @@ function LiveScreen({
       </div>
 
       {remoteOpen ? <p className="ad-live-screen__consent">{t("detail.presence.liveView.remoteConsent")}</p> : null}
+      {fallbackActive && !displayedImage ? <p className="ad-live-screen__notice" role="status">{t("detail.presence.liveView.fallback")}</p> : null}
 
       <div
         className="ad-live-screen__stage"

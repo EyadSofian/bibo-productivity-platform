@@ -139,6 +139,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Holding the first open is what keeps the agent capturing.
 	authed.GET("/devices/:device_id/live/stream", liveViewH.Stream)
 	authed.GET("/agent/commands/stream", liveViewH.AgentCommands)
+	authed.GET("/agent/live/status", liveViewH.AgentStatus)
 	authed.POST("/devices/:device_id/archive", deviceH.Archive)
 	authed.POST("/devices/:device_id/restore", deviceH.Restore)
 	authed.GET("/businesses/:id/monitoring-profiles", monitoringProfileH.List)

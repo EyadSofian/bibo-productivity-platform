@@ -162,6 +162,42 @@ func (h *LiveViewHandler) UploadFrame(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+// AgentStatus is the reliable fallback behind the best-effort command stream.
+// Corporate proxies and laptop network changes can interrupt a long-lived SSE
+// connection even while normal HTTPS requests keep working. The agent polls
+// this cheap, authenticated endpoint at a low rate so an attached viewer still
+// starts and renews capture instead of being left with an unexplained blank
+// player. A viewer is the only thing that can make Active true.
+func (h *LiveViewHandler) AgentStatus(c *gin.Context) {
+	userID, _ := auth.UserID(c)
+	deviceID := c.Query("device_id")
+	if _, err := uuid.Parse(deviceID); err != nil {
+		badRequest(c, "device_id must be a uuid")
+		return
+	}
+	if err := h.store.AuthorizeDeviceAgent(c.Request.Context(), userID, deviceID); err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			c.JSON(http.StatusForbidden, gin.H{"error": "device is not registered to this account"})
+			return
+		}
+		serverError(c, err)
+		return
+	}
+
+	active, expiresInMs := agentLiveViewStatus(h.live, deviceID)
+	c.JSON(http.StatusOK, gin.H{
+		"active":        active,
+		"expires_in_ms": expiresInMs,
+	})
+}
+
+func agentLiveViewStatus(hub *live.Hub, deviceID string) (bool, int64) {
+	if hub.Subscribers(live.DeviceKey(deviceID)) == 0 {
+		return false, 0
+	}
+	return true, live.LiveViewTTL.Milliseconds()
+}
+
 // Stream pushes a device's live frames to an authorized owner, and keeps the
 // agent capturing for as long as it stays connected.
 //

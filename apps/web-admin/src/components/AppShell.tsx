@@ -8,18 +8,12 @@ import { memberTerms } from "../terms";
 import { DetailHeaderContext } from "../detailHeader";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 
-/** Brand mark — violet gradient tile with the pulse glyph (matches the auth logo). */
+/** Brand mark used by the operational workspace shell. */
 function RailLogo() {
   return (
     <span className="ad-rail__logo" aria-label="BiBoTracking">
       <svg viewBox="0 0 48 48" role="img" aria-label="BiBoTracking">
-        <defs>
-          <linearGradient id="biboRailGrad" x1="6" y1="4" x2="42" y2="46" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#a99df8" />
-            <stop offset="1" stopColor="#6c5ce7" />
-          </linearGradient>
-        </defs>
-        <rect x="0" y="0" width="48" height="48" rx="17" fill="url(#biboRailGrad)" />
+        <rect x="0" y="0" width="48" height="48" rx="14" fill="currentColor" />
         <path
           d="M12 24h6l3 8 6-16 3 8h6"
           fill="none"
@@ -292,6 +286,7 @@ export function AppShell() {
   const { selected } = useBusinesses();
   const terms = memberTerms(selected?.kind);
   const location = useLocation();
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const NAV = [
     { to: "/", label: t("nav.dashboard"), end: true, icon: <DashboardIcon /> },
@@ -316,10 +311,25 @@ export function AppShell() {
 
   const displayName = user?.display_name ?? user?.email ?? "";
 
+  // The main workspace is its own scroll container. React Router preserves the
+  // element between routes, so without an explicit reset a return from a long
+  // employee report opens the dashboard halfway down its roster.
+  useEffect(() => {
+    if (!contentRef.current) return;
+    contentRef.current.scrollTop = 0;
+    contentRef.current.scrollLeft = 0;
+  }, [location.pathname, location.search]);
+
   return (
     <div className="app">
       <aside className="ad-rail">
-        <RailLogo />
+        <div className="ad-rail__brand">
+          <RailLogo />
+          <span className="ad-rail__wordmark">
+            <strong>BiBo</strong>
+            <small>WORKFORCE OS</small>
+          </span>
+        </div>
 
         <nav className="ad-rail__nav">
           {NAV.map((n) => (
@@ -331,7 +341,7 @@ export function AppShell() {
               className={({ isActive }) => `ad-railbtn${isActive ? " on" : ""}`}
             >
               {n.icon}
-              <span className="ad-railbtn__tip">{n.label}</span>
+              <span className="ad-railbtn__label">{n.label}</span>
             </NavLink>
           ))}
         </nav>
@@ -341,12 +351,22 @@ export function AppShell() {
             <span className="bibo-avatar__img">{initials(displayName)}</span>
             <span className="bibo-avatar__dot bibo-avatar__dot--active" />
           </span>
+          <span className="ad-rail__identity">
+            <strong>{displayName}</strong>
+            <small>ADMIN</small>
+          </span>
         </div>
       </aside>
 
       <main className="main">
         <header className="ad-topbar">
-          <div className="ad-topbar__title">{title}</div>
+          <div className="ad-topbar__heading">
+            <span className="ad-topbar__pulse" aria-hidden />
+            <div>
+              <div className="ad-topbar__title">{title}</div>
+              <small>BiBo control center</small>
+            </div>
+          </div>
           <div className="ad-topbar__right">
             {!isDetail && <BizPicker />}
             <LanguageSwitcher />
@@ -368,7 +388,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <div className={`content${location.pathname === "/" ? " content--flat" : ""}`}>
+        <div ref={contentRef} className={`content${location.pathname === "/" ? " content--flat" : ""}`}>
           <DetailHeaderContext.Provider value={detailHeader}>
             <Outlet />
           </DetailHeaderContext.Provider>

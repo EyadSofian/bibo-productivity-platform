@@ -30,7 +30,25 @@
     "vsYesterday": "前日比",
     "ofMembers": "{{count}} 名の{{members}}中",
     "todayLabel": "本日",
-    "newTeam": "新しいチーム"
+    "newTeam": "新しいチーム",
+    "ops": {
+      "eyebrow": "ライブ運用センター",
+      "headline": "チーム全体を、ひとつの明快な画面に。",
+      "subtitle": "{{name}} · {{count}} {{members}}のライブ状態、現在の作業、今日の記録。",
+      "openWorkforce": "従業員を開く",
+      "reportingNow": "人が現在報告中",
+      "updatedNow": "更新済み",
+      "overview": "運用概要",
+      "activeIdle": "アクティブ {{active}} · アイドル {{idle}}",
+      "teamPulse": "チームの状況",
+      "presenceMix": "在席状況の内訳",
+      "online": "オンライン",
+      "liveDesk": "ライブデスク",
+      "viewAll": "すべて表示",
+      "workforce": "従業員",
+      "rosterTitle": "全体の稼働状況",
+      "autoRefresh": "15秒ごとに自動更新"
+    }
   },
   "employees": {
     "newBusiness": "新規ビジネス",
@@ -108,7 +126,7 @@
       "onlineFor": "接続時間",
       "liveView": {
         "title": "ライブ画面プレビュー",
-        "description": "ポリシーに準拠した最新フレームを約20秒ごとに要求します。",
+        "description": "このビューを開いている間、許可された画面フレームを継続的に配信します。",
         "ready": "準備完了",
         "live": "ライブプレビュー",
         "start": "プレビュー開始",
@@ -122,7 +140,8 @@
         "noFrame": "ライブフレームはまだありません",
         "readOnly": "表示のみ · ポリシーとプライバシー除外は引き続き適用されます",
         "frameAlt": "最新のライブ画面フレーム",
-        "requestError": "端末がオフラインか要求を受け付けませんでした。",
+        "requestError": "ライブ配信が中断されました。BiBoが自動で再接続します。",
+        "fallback": "コマンド接続を再確立しています。安全なHTTPS代替経路が有効で、最初の画像まで数秒かかる場合があります。",
         "remoteStart": "リモートアシスト",
         "remotePending": "従業員の端末に接続しています…",
         "remoteActive": "リモート操作中",

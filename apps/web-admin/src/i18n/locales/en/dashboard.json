@@ -30,7 +30,25 @@
     "vsYesterday": "vs yesterday",
     "ofMembers": "of {{count}} {{members}}",
     "todayLabel": "today",
-    "newTeam": "New team"
+    "newTeam": "New team",
+    "ops": {
+      "eyebrow": "Live operations center",
+      "headline": "Your workforce, in one clear view.",
+      "subtitle": "{{name}} · live status, current work and today’s evidence for {{count}} {{members}}.",
+      "openWorkforce": "Open workforce",
+      "reportingNow": "reporting now",
+      "updatedNow": "updated now",
+      "overview": "Operational overview",
+      "activeIdle": "{{active}} active · {{idle}} idle",
+      "teamPulse": "Team pulse",
+      "presenceMix": "Presence distribution",
+      "online": "online",
+      "liveDesk": "Live desk",
+      "viewAll": "View all",
+      "workforce": "Workforce",
+      "rosterTitle": "Full operating status",
+      "autoRefresh": "Auto-refreshes every 15 seconds"
+    }
   },
   "employees": {
     "newBusiness": "New business",
@@ -108,7 +126,7 @@
       "onlineFor": "Online for",
       "liveView": {
         "title": "Live screen preview",
-        "description": "Requests a fresh, policy-compliant frame from the employee device about every 20 seconds.",
+        "description": "Streams policy-compliant screen frames continuously while this viewer stays open.",
         "ready": "Ready",
         "live": "Live preview",
         "start": "Start live preview",
@@ -122,7 +140,8 @@
         "noFrame": "No live frame yet",
         "readOnly": "Read-only view · capture policy and privacy exclusions still apply",
         "frameAlt": "Latest live employee screen frame",
-        "requestError": "The device is offline or could not accept the live-frame request.",
+        "requestError": "The live stream was interrupted. BiBo is reconnecting automatically.",
+        "fallback": "The direct command channel is reconnecting. Secure HTTPS fallback is active; the first frame can take a few seconds.",
         "remoteStart": "Remote assistance",
         "remotePending": "Connecting to the employee device…",
         "remoteActive": "Remote control active",

@@ -30,7 +30,25 @@
     "vsYesterday": "vs kemarin",
     "ofMembers": "dari {{count}} {{members}}",
     "todayLabel": "hari ini",
-    "newTeam": "Tim baru"
+    "newTeam": "Tim baru",
+    "ops": {
+      "eyebrow": "Pusat operasi langsung",
+      "headline": "Seluruh tim Anda dalam satu tampilan.",
+      "subtitle": "{{name}} · status langsung, pekerjaan saat ini, dan bukti hari ini untuk {{count}} {{members}}.",
+      "openWorkforce": "Buka tenaga kerja",
+      "reportingNow": "melapor sekarang",
+      "updatedNow": "baru diperbarui",
+      "overview": "Ringkasan operasional",
+      "activeIdle": "{{active}} aktif · {{idle}} diam",
+      "teamPulse": "Denyut tim",
+      "presenceMix": "Distribusi kehadiran",
+      "online": "online",
+      "liveDesk": "Meja langsung",
+      "viewAll": "Lihat semua",
+      "workforce": "Tenaga kerja",
+      "rosterTitle": "Status operasional lengkap",
+      "autoRefresh": "Diperbarui otomatis setiap 15 detik"
+    }
   },
   "employees": {
     "newBusiness": "Bisnis baru",
@@ -108,7 +126,7 @@
       "onlineFor": "Lama online",
       "liveView": {
         "title": "Pratinjau layar langsung",
-        "description": "Meminta bingkai terbaru sesuai kebijakan sekitar setiap 20 detik.",
+        "description": "Mengalirkan bingkai layar yang diizinkan terus-menerus selama penampil terbuka.",
         "ready": "Siap",
         "live": "Pratinjau langsung",
         "start": "Mulai pratinjau",
@@ -122,7 +140,8 @@
         "noFrame": "Belum ada bingkai langsung",
         "readOnly": "Hanya lihat · kebijakan dan pengecualian privasi tetap berlaku",
         "frameAlt": "Bingkai layar langsung terbaru",
-        "requestError": "Perangkat offline atau tidak menerima permintaan.",
+        "requestError": "Aliran langsung terputus. BiBo menyambung kembali secara otomatis.",
+        "fallback": "Kanal perintah sedang tersambung kembali. Jalur HTTPS aman aktif; bingkai pertama dapat memerlukan beberapa detik.",
         "remoteStart": "Bantuan jarak jauh",
         "remotePending": "Menghubungkan ke komputer karyawan…",
         "remoteActive": "Kontrol jarak jauh aktif",

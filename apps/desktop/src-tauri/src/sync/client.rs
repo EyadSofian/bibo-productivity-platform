@@ -227,6 +227,22 @@ struct PresenceResp {
     capture_requested: bool,
 }
 
+#[derive(Deserialize)]
+struct LiveViewStatusResp {
+    #[serde(default)]
+    active: bool,
+    #[serde(default)]
+    expires_in_ms: i64,
+}
+
+fn live_view_ttl(status: &LiveViewStatusResp) -> i64 {
+    if status.active {
+        status.expires_in_ms.max(0)
+    } else {
+        0
+    }
+}
+
 pub struct PresenceResult {
     pub monitoring_enabled: bool,
     pub capture_requested: bool,
@@ -765,6 +781,35 @@ impl BackendClient {
         Err("live_view_upload_frame: unreachable retry exhaustion".into())
     }
 
+    /// `GET /v1/agent/live/status` — low-rate fallback for a command SSE stream
+    /// that is blocked or temporarily disconnected. Returns a renewable TTL in
+    /// milliseconds, or zero when nobody is watching this device.
+    pub async fn live_view_status(&self, device_id: &str) -> Result<i64, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url(&format!("/v1/agent/live/status?device_id={device_id}")))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if resp.status() == reqwest::StatusCode::FORBIDDEN {
+                return Ok(0);
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: LiveViewStatusResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(live_view_ttl(&parsed));
+        }
+        Err("live_view_status: unreachable retry exhaustion".into())
+    }
+
     /// `POST /v1/sync/screenshots` (multipart) for a single screenshot, with the
     /// same 401→refresh→retry behavior. Returns the accepted uuid(s).
     pub async fn sync_screenshot(
@@ -841,5 +886,33 @@ async fn status_err(resp: reqwest::Response) -> String {
         format!("backend returned {status}")
     } else {
         format!("backend returned {status}: {body}")
+    }
+}
+
+#[cfg(test)]
+mod live_view_status_tests {
+    use super::{live_view_ttl, LiveViewStatusResp};
+
+    #[test]
+    fn inactive_status_never_renews_capture() {
+        let status = LiveViewStatusResp {
+            active: false,
+            expires_in_ms: 30_000,
+        };
+        assert_eq!(live_view_ttl(&status), 0);
+    }
+
+    #[test]
+    fn active_status_clamps_invalid_ttl() {
+        let valid = LiveViewStatusResp {
+            active: true,
+            expires_in_ms: 30_000,
+        };
+        let invalid = LiveViewStatusResp {
+            active: true,
+            expires_in_ms: -1,
+        };
+        assert_eq!(live_view_ttl(&valid), 30_000);
+        assert_eq!(live_view_ttl(&invalid), 0);
     }
 }

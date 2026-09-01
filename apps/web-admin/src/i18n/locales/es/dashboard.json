@@ -30,7 +30,25 @@
     "vsYesterday": "vs ayer",
     "ofMembers": "de {{count}} {{members}}",
     "todayLabel": "hoy",
-    "newTeam": "Nuevo equipo"
+    "newTeam": "Nuevo equipo",
+    "ops": {
+      "eyebrow": "Centro de operaciones en vivo",
+      "headline": "Todo tu equipo, en una vista clara.",
+      "subtitle": "{{name}} · estado en vivo, trabajo actual y evidencia de hoy para {{count}} {{members}}.",
+      "openWorkforce": "Abrir personal",
+      "reportingNow": "reportando ahora",
+      "updatedNow": "actualizado ahora",
+      "overview": "Resumen operativo",
+      "activeIdle": "{{active}} activos · {{idle}} inactivos",
+      "teamPulse": "Pulso del equipo",
+      "presenceMix": "Distribución de presencia",
+      "online": "en línea",
+      "liveDesk": "Mesa en vivo",
+      "viewAll": "Ver todos",
+      "workforce": "Personal",
+      "rosterTitle": "Estado operativo completo",
+      "autoRefresh": "Actualización automática cada 15 segundos"
+    }
   },
   "employees": {
     "newBusiness": "Nueva empresa",
@@ -108,7 +126,7 @@
       "onlineFor": "Tiempo conectado",
       "liveView": {
         "title": "Vista previa en vivo",
-        "description": "Solicita una captura actual conforme a la política cada 20 segundos.",
+        "description": "Transmite continuamente imágenes de pantalla permitidas mientras el visor esté abierto.",
         "ready": "Listo",
         "live": "Vista en vivo",
         "start": "Iniciar vista",
@@ -122,7 +140,8 @@
         "noFrame": "Aún no hay captura",
         "readOnly": "Solo lectura · se aplican la política y las exclusiones de privacidad",
         "frameAlt": "Última captura de pantalla en vivo",
-        "requestError": "El dispositivo está desconectado o no aceptó la solicitud.",
+        "requestError": "La transmisión se interrumpió. BiBo se reconecta automáticamente.",
+        "fallback": "El canal de comandos se está reconectando. La alternativa HTTPS segura está activa; la primera imagen puede tardar unos segundos.",
         "remoteStart": "Asistencia remota",
         "remotePending": "Conectando con el equipo del empleado…",
         "remoteActive": "Control remoto activo",

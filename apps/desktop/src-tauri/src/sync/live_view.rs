@@ -26,6 +26,10 @@ use super::worker::SyncContext;
 const FRAME_INTERVAL: Duration = Duration::from_millis(900);
 /// How often to re-check for an authorization while idle.
 const IDLE_POLL: Duration = Duration::from_millis(500);
+/// A normal HTTPS fallback for environments that interrupt long-lived command
+/// streams. This is intentionally much slower than the frame rate and reuses a
+/// single HTTP client/connection.
+const STATUS_POLL: Duration = Duration::from_secs(4);
 
 pub fn start(ctx: SyncContext) {
     thread::spawn(move || {
@@ -45,25 +49,48 @@ pub fn start(ctx: SyncContext) {
 
 async fn run(ctx: SyncContext) {
     let mut streaming = false;
+    let mut backend: Option<(String, BackendClient)> = None;
+    let mut next_status_poll = tokio::time::Instant::now();
 
     loop {
-        if !ctx.push.live_view.active() {
-            if streaming {
-                crate::log_info!("live_view", "authorization lapsed; capture stopped");
-                streaming = false;
-            }
-            tokio::time::sleep(IDLE_POLL).await;
-            continue;
-        }
-
         if !ctx.auth.is_logged_in() {
             ctx.push.live_view.clear();
+            backend = None;
             tokio::time::sleep(IDLE_POLL).await;
             continue;
         }
         let device_id = ctx.settings.current.lock().unwrap().device_id.clone();
         let base_url = crate::settings::backend_base_url();
         if device_id.is_empty() || base_url.is_empty() {
+            tokio::time::sleep(IDLE_POLL).await;
+            continue;
+        }
+
+        if backend.as_ref().is_none_or(|(url, _)| url != &base_url) {
+            backend = Some((
+                base_url.clone(),
+                BackendClient::new(base_url.clone(), ctx.auth.clone()),
+            ));
+        }
+        let client = &backend.as_ref().expect("backend client initialized").1;
+
+        // The push channel is the fast path. This status request is the missing
+        // fallback: it starts capture when the command stream is down and keeps
+        // renewing an active viewer until that stream returns.
+        if tokio::time::Instant::now() >= next_status_poll {
+            match client.live_view_status(&device_id).await {
+                Ok(ttl_ms) if ttl_ms > 0 => ctx.push.live_view.renew(ttl_ms),
+                Ok(_) => ctx.push.live_view.clear(),
+                Err(error) => crate::log_warn!("live_view", "status fallback failed: {error}"),
+            }
+            next_status_poll = tokio::time::Instant::now() + STATUS_POLL;
+        }
+
+        if !ctx.push.live_view.active() {
+            if streaming {
+                crate::log_info!("live_view", "authorization lapsed; capture stopped");
+                streaming = false;
+            }
             tokio::time::sleep(IDLE_POLL).await;
             continue;
         }
@@ -87,7 +114,6 @@ async fn run(ctx: SyncContext) {
 
         let started = tokio::time::Instant::now();
         if let Some(frame) = crate::trackers::capture_remote_frame(&ctx.control) {
-            let client = BackendClient::new(base_url, ctx.auth.clone());
             match client
                 .live_view_upload_frame(&device_id, &frame.bytes, frame.width, frame.height)
                 .await
@@ -122,4 +148,22 @@ fn capture_permitted(ctx: &SyncContext) -> bool {
     ctx.control.category_allowed("screen")
         && ctx.control.capture_screenshots.load(Ordering::Relaxed)
         && permission_status(Permission::ScreenRecording) == PermissionState::Granted
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{FRAME_INTERVAL, STATUS_POLL};
+    use std::time::Duration;
+
+    #[test]
+    fn fallback_renews_well_before_authorization_expires() {
+        // Kept in step with backend live.LiveViewTTL. Four chances to renew
+        // means one failed status request cannot blank an otherwise live view.
+        assert!(STATUS_POLL * 4 <= Duration::from_secs(16));
+    }
+
+    #[test]
+    fn status_fallback_is_not_on_the_frame_hot_path() {
+        assert!(STATUS_POLL > FRAME_INTERVAL * 3);
+    }
 }

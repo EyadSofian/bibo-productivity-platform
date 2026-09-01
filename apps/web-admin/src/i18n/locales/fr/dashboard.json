@@ -30,7 +30,25 @@
     "vsYesterday": "vs hier",
     "ofMembers": "sur {{count}} {{members}}",
     "todayLabel": "aujourd'hui",
-    "newTeam": "Nouvelle équipe"
+    "newTeam": "Nouvelle équipe",
+    "ops": {
+      "eyebrow": "Centre d’opérations en direct",
+      "headline": "Toute votre équipe, en un coup d’œil.",
+      "subtitle": "{{name}} · statut en direct, travail actuel et preuves du jour pour {{count}} {{members}}.",
+      "openWorkforce": "Ouvrir l’équipe",
+      "reportingNow": "en ligne maintenant",
+      "updatedNow": "mis à jour",
+      "overview": "Vue opérationnelle",
+      "activeIdle": "{{active}} actifs · {{idle}} inactifs",
+      "teamPulse": "Pouls de l’équipe",
+      "presenceMix": "Répartition des présences",
+      "online": "en ligne",
+      "liveDesk": "Bureau en direct",
+      "viewAll": "Tout voir",
+      "workforce": "Équipe",
+      "rosterTitle": "État opérationnel complet",
+      "autoRefresh": "Actualisation automatique toutes les 15 secondes"
+    }
   },
   "employees": {
     "newBusiness": "Nouvelle entreprise",
@@ -108,7 +126,7 @@
       "onlineFor": "Durée de connexion",
       "liveView": {
         "title": "Aperçu d’écran en direct",
-        "description": "Demande une image récente conforme à la politique environ toutes les 20 secondes.",
+        "description": "Diffuse en continu les images d’écran autorisées tant que cette vue reste ouverte.",
         "ready": "Prêt",
         "live": "Aperçu en direct",
         "start": "Démarrer l’aperçu",
@@ -122,7 +140,8 @@
         "noFrame": "Aucune image en direct",
         "readOnly": "Lecture seule · la politique et les exclusions de confidentialité restent actives",
         "frameAlt": "Dernière image d’écran en direct",
-        "requestError": "L’appareil est hors ligne ou n’a pas accepté la demande.",
+        "requestError": "Le flux a été interrompu. BiBo se reconnecte automatiquement.",
+        "fallback": "Le canal de commande se reconnecte. Le secours HTTPS sécurisé est actif ; la première image peut prendre quelques secondes.",
         "remoteStart": "Assistance à distance",
         "remotePending": "Connexion à l’ordinateur de l’employé…",
         "remoteActive": "Contrôle à distance actif",

@@ -30,7 +30,25 @@
     "vsYesterday": "so với hôm qua",
     "ofMembers": "trên {{count}} {{members}}",
     "todayLabel": "hôm nay",
-    "newTeam": "Nhóm mới"
+    "newTeam": "Nhóm mới",
+    "ops": {
+      "eyebrow": "Trung tâm vận hành trực tiếp",
+      "headline": "Toàn bộ nhân sự trong một màn hình rõ ràng.",
+      "subtitle": "{{name}} · trạng thái trực tiếp, công việc hiện tại và dữ liệu hôm nay của {{count}} {{members}}.",
+      "openWorkforce": "Mở danh sách nhân sự",
+      "reportingNow": "đang báo cáo",
+      "updatedNow": "vừa cập nhật",
+      "overview": "Tổng quan vận hành",
+      "activeIdle": "{{active}} hoạt động · {{idle}} không hoạt động",
+      "teamPulse": "Nhịp đội ngũ",
+      "presenceMix": "Phân bố hiện diện",
+      "online": "trực tuyến",
+      "liveDesk": "Bàn trực tiếp",
+      "viewAll": "Xem tất cả",
+      "workforce": "Nhân sự",
+      "rosterTitle": "Trạng thái vận hành đầy đủ",
+      "autoRefresh": "Tự động cập nhật mỗi 15 giây"
+    }
   },
   "employees": {
     "newBusiness": "Doanh nghiệp mới",
@@ -108,7 +126,7 @@
       "onlineFor": "Thời gian trực tuyến",
       "liveView": {
         "title": "Xem trước màn hình trực tiếp",
-        "description": "Yêu cầu khung hình mới tuân thủ chính sách khoảng mỗi 20 giây.",
+        "description": "Truyền liên tục các khung hình được phép khi cửa sổ xem này còn mở.",
         "ready": "Sẵn sàng",
         "live": "Xem trực tiếp",
         "start": "Bắt đầu xem",
@@ -122,7 +140,8 @@
         "noFrame": "Chưa có khung hình",
         "readOnly": "Chỉ xem · chính sách và loại trừ riêng tư vẫn được áp dụng",
         "frameAlt": "Khung hình trực tiếp mới nhất",
-        "requestError": "Thiết bị ngoại tuyến hoặc không nhận yêu cầu.",
+        "requestError": "Luồng trực tiếp bị gián đoạn. BiBo đang tự động kết nối lại.",
+        "fallback": "Kênh lệnh đang kết nối lại. Tuyến HTTPS an toàn dự phòng đã hoạt động; khung hình đầu tiên có thể mất vài giây.",
         "remoteStart": "Hỗ trợ từ xa",
         "remotePending": "Đang kết nối với máy nhân viên…",
         "remoteActive": "Điều khiển từ xa đang hoạt động",

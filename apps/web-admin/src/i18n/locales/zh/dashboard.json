@@ -30,7 +30,25 @@
     "vsYesterday": "较昨日",
     "ofMembers": "共 {{count}} 名{{members}}",
     "todayLabel": "今日",
-    "newTeam": "新建团队"
+    "newTeam": "新建团队",
+    "ops": {
+      "eyebrow": "实时运营中心",
+      "headline": "一个清晰视图，掌握整个团队。",
+      "subtitle": "{{name}} · {{count}} 名{{members}}的实时状态、当前工作和今日记录。",
+      "openWorkforce": "打开员工列表",
+      "reportingNow": "人正在上报",
+      "updatedNow": "刚刚更新",
+      "overview": "运营概览",
+      "activeIdle": "活跃 {{active}} · 空闲 {{idle}}",
+      "teamPulse": "团队脉搏",
+      "presenceMix": "在线状态分布",
+      "online": "在线",
+      "liveDesk": "实时工作台",
+      "viewAll": "查看全部",
+      "workforce": "员工",
+      "rosterTitle": "完整运行状态",
+      "autoRefresh": "每15秒自动刷新"
+    }
   },
   "employees": {
     "newBusiness": "新建企业",
@@ -108,7 +126,7 @@
       "onlineFor": "在线时长",
       "liveView": {
         "title": "实时屏幕预览",
-        "description": "约每20秒请求一帧符合策略的最新画面。",
+        "description": "查看器保持打开时，持续传输策略允许的屏幕画面。",
         "ready": "就绪",
         "live": "实时预览",
         "start": "开始预览",
@@ -122,7 +140,8 @@
         "noFrame": "暂无实时画面",
         "readOnly": "仅查看 · 策略和隐私排除仍然适用",
         "frameAlt": "最新实时屏幕画面",
-        "requestError": "设备离线或未接受请求。",
+        "requestError": "实时画面已中断，BiBo 正在自动重新连接。",
+        "fallback": "命令通道正在重连。安全的 HTTPS 备用通道已启用，首帧可能需要几秒钟。",
         "remoteStart": "远程协助",
         "remotePending": "正在连接员工电脑…",
         "remoteActive": "远程控制进行中",
