@@ -100,6 +100,14 @@ class CaptureSession {
 
   bool running() const;
 
+  // Terminal failure detected after Start returned — the display disappeared,
+  // the capture item closed, or the D3D device was lost. kOk while healthy.
+  //
+  // Polled by the owner rather than pushed through a callback: these are
+  // detected on WinRT threadpool threads, and tearing capture down from inside
+  // its own event handler deadlocks the revocation.
+  CaptureStatus status() const;
+
   // Live policy changes, applied without reconnecting.
   void SetTargetFps(int fps);
 

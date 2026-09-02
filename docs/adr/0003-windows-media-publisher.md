@@ -175,6 +175,61 @@ WGC delivers 592 frames where DXGI delivers 599 — a 1.2 % difference, not the
   representative of typical office hardware.
 - Multi-monitor is not yet measured. WGC needs one capture item per display, and
   the brief calls for independent tracks per monitor.
-- The H.264 encode path is not measured here; this ADR covers acquisition only.
+- ~~The H.264 encode path is not measured here; this ADR covers acquisition only.
   Media Foundation hardware encode (`mfapi.h`, `codecapi.h`) is present and gets
-  its own measurement before the sidecar is considered done.
+  its own measurement before the sidecar is considered done.~~ **Closed — the
+  question does not arise.** See *Encoding* below.
+
+## Encoding: the sidecar does not encode
+
+This open item was written on the assumption that the sidecar hands H.264 to
+the SDK. Reading the LiveKit headers showed otherwise, and the correction is
+large enough to record here rather than leave in a commit message.
+
+`livekit::VideoSource` takes **raw pixels** and the SDK encodes internally via
+its bundled libwebrtc. Three independent signals in the v1.10.0 headers say so:
+
+- `VideoBufferType` (`video_frame.h`) has no compressed member — every
+  enumerator is a raw pixel layout.
+- `VideoFrame::create` sizes its buffer arithmetically from
+  `width * height * bpp`. A compressed frame has no such size.
+- The Rust FFI hands the buffer straight to a `NativeVideoSource`.
+
+So Media Foundation is dropped from the design entirely. There is no encoder in
+this process, no hardware-encoder selection to measure, and `EncoderKind` in the
+metrics is only ever set from what the SDK reports — never inferred.
+
+What this does buy back is a scaling decision. Because the SDK takes raw pixels,
+publishing at native resolution would push 1920x1080 BGRA (8.3 MB) across the
+FFI boundary 15 times a second and leave libwebrtc to downscale on the CPU. The
+sidecar therefore downsamples on the GPU before readback, which cuts the copy to
+3.7 MB per frame and moves the filtering off the CPU.
+
+## Implementation outcome
+
+Built and measured on the same machine, Release, MSVC 14.44.35207 with Windows
+SDK 10.0.26100.0, against LiveKit C++ SDK 1.10.0 (prebuilt binary release —
+no vcpkg, no libwebrtc compile).
+
+| Run (1920x1080 source) | Delivered | New | Repeated | CPU (one core) | Working set |
+| --- | --- | --- | --- | --- | --- |
+| 1280x720 @ 15, idle-ish, 10.4 s | 14.48/s | 150 | 0 | — | 40.5 MB |
+| 1280x720 @ 15, 60 Hz activity driver, 12.3 s | 14.66/s | 179 | 1 | **3.4 %** | 40.1 MB |
+| 1280x720 @ 30, 8.3 s | 28.92/s | 236 | 3 | 3.8 % | 40.1 MB |
+| 800x800 @ 15 (letterbox), 8.3 s | 14.45/s | 120 | 0 | 4.3 % | 39.6 MB |
+
+Two things in that table matter beyond the totals:
+
+- Under a 60 Hz-changing desktop the published rate holds at 14.66/s, not 60/s.
+  Consequence (1) said the pacer must fill gaps upward; the same measurement
+  shows it must also **discard downward**. Source frames above the published rate
+  are dropped before any GPU work, which is why CPU stays at 3.4 % instead of
+  roughly four times that.
+- 3.4 % of one core against the <12 % agent budget is measured for capture and
+  scaling only. The encode and transport cost is inside the LiveKit DLL and is
+  not represented here; it lands in V05.
+
+Consequence (2) — the border ships enabled — is now enforced in code rather than
+by intent: `IsBorderRequired(false)` is never called, and no IPC message carries
+the field. Consequence (4) is enforced by `CaptureSession::Start` returning
+`kUnsupported` with no fallback path.

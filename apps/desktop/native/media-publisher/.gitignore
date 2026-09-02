@@ -3,3 +3,7 @@ build/
 *.obj
 *.pdb
 *.ilk
+
+# Vendored LiveKit C++ SDK binary release (~26 MB of prebuilt DLLs).
+# Fetched and SHA256-verified by tools/fetch-livekit-sdk.ps1; never committed.
+third_party/
