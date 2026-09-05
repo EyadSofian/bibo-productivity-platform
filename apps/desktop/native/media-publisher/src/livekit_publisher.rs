@@ -1,7 +1,7 @@
 //! Publishes captured frames to the SFU over WebRTC.
 //!
-//! Uses the **official LiveKit Rust SDK** (`livekit` crate). There is no official
-//! LiveKit C++ SDK - see `docs/adr/0003-windows-media-publisher.md`, Decision 1.
+//! Uses the official LiveKit Rust SDK (`livekit` crate), as described in
+//! `docs/adr/0003-windows-media-publisher.md`.
 //!
 //! Invariants:
 //!

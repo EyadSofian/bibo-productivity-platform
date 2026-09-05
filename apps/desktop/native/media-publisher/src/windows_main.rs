@@ -31,6 +31,11 @@ const METRICS_INTERVAL: Duration = Duration::from_secs(2);
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
 
+    if args.iter().any(|a| a == "--version") {
+        println!("media-publisher {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
+
     if args.iter().any(|a| a == "--selftest") {
         std::process::exit(selftest());
     }
