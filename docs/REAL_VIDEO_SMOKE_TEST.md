@@ -93,3 +93,25 @@ Production was inspected read-only on 2026-09-05: `/healthz` reported schema 19;
 the Railway web service had no `MEDIA_PROVIDER` or `LIVEKIT_*` configuration.
 That deployment is distinct from this tested branch. Desktop release version is
 now 1.5.11 so an approved rollout can advance installed 1.5.10 clients.
+
+## Deployed verification, later on 2026-09-05
+
+Railway deployment `02a3cade-707b-4900-bb67-db2c0fe3eb22` now serves revision
+`d496de5`, with schema 21 and `status: ok`. LiveKit Cloud project `tracking` is
+configured through service environment secrets. Cloud-only smoke and the
+deployed control-plane smoke both passed, including actual H.264 decode and
+server-driven teardown. No real employee content was used.
+
+The deployed check can be repeated explicitly from the repository root:
+
+```sh
+python3 scripts/deployed-media-smoke.py --base-url https://web-production-25e92.up.railway.app
+```
+
+This creates a separate, clearly named synthetic QA tenant and accounts, logs
+in through the production auth endpoint, enrolls an empty synthetic device,
+and uses production media endpoints to obtain the browser/publisher tokens.
+Open the loopback URL it prints. After the browser reports PASS, stop the
+harness with Ctrl+C: it ends any remaining test sessions and archives its device.
+The isolated QA tenant remains as an audit record. Credentials stay in memory.
+It is not a load test and does not capture a screen or camera.
