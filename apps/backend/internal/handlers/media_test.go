@@ -99,6 +99,7 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 	r.POST("/v1/devices/:device_id/media/live", h.StartLive)
 	r.GET("/v1/media/agent/session", h.AgentSession)
 	r.GET("/v1/media/sessions/:session_id", h.Session)
+	r.POST("/v1/media/sessions/:session_id/heartbeat", h.ViewerHeartbeat)
 	r.POST("/v1/media/sessions/:session_id/viewer-token", h.ViewerToken)
 	r.POST("/v1/media/sessions/:session_id/publisher-token", h.PublisherToken)
 	r.POST("/v1/media/sessions/:session_id/stop", h.Stop)

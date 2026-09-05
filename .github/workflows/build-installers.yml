@@ -58,6 +58,7 @@ jobs:
           $env:CARGO_TARGET_DIR = 'C:\media-build'
           cargo test --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --all-targets
           if ($LASTEXITCODE -ne 0) { throw "media publisher tests failed" }
+          & ./scripts/test-windows-media.ps1
           cargo build --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --release --bin media-publisher
           if ($LASTEXITCODE -ne 0) { throw "media publisher build failed" }
           New-Item -ItemType Directory -Force apps/desktop/src-tauri/binaries | Out-Null

@@ -64,7 +64,26 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 		mediaInternal(c, err)
 		return
 	}
+	if h.expireUnwatched(c, session) {
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"session_id": session.ID, "room": session.ProviderRoomID, "state": session.State, "control_armed": false})
+}
+
+func (h *MediaHandler) expireUnwatched(c *gin.Context, session store.MediaSession) bool {
+	expired, err := h.store.ExpireUnwatchedMediaSession(c.Request.Context(), session.ID)
+	if err != nil {
+		mediaInternal(c, err)
+		return true
+	}
+	if !expired {
+		return false
+	}
+	h.auditAs(c, "system", "", session.BusinessID, session.ID, store.AuditLiveSessionStop, store.OutcomeAllowed, map[string]any{"reason": "viewer_heartbeat_timeout"})
+	// The terminal row is committed first: a slow SFU cannot extend capture.
+	_ = h.provider.EndRoom(c.Request.Context(), session.ProviderRoomID)
+	c.Status(http.StatusNoContent)
+	return true
 }
 
 type tokenResponse struct {
@@ -187,6 +206,30 @@ func (h *MediaHandler) Session(c *gin.Context) {
 	}
 	if !h.require(c, userID, session.BusinessID, media.PermLiveViewWatch, store.AuditSessionRead) {
 		return
+	}
+	c.JSON(http.StatusOK, sessionResponse{Session: session})
+}
+
+// ViewerHeartbeat renews the current viewer's lease and returns session state.
+// Reading the session alone must not keep unattended screen capture alive.
+func (h *MediaHandler) ViewerHeartbeat(c *gin.Context) {
+	userID, _ := auth.UserID(c)
+	session, ok := h.memberSession(c, userID)
+	if !ok {
+		return
+	}
+	if !h.require(c, userID, session.BusinessID, media.PermLiveViewWatch, store.AuditSessionRead) {
+		return
+	}
+	if !session.State.Terminal() && session.State != media.StateEnding {
+		if err := h.store.TouchViewerSession(c.Request.Context(), session.ID, userID); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				mediaError(c, http.StatusConflict, CodeSessionEnded, "Viewer session expired. Start watching again.", false)
+				return
+			}
+			mediaInternal(c, err)
+			return
+		}
 	}
 	c.JSON(http.StatusOK, sessionResponse{Session: session})
 }

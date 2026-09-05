@@ -9,7 +9,7 @@ const mediaMocks = vi.hoisted(() => ({
   startLiveSession: vi.fn(),
   mintViewerToken: vi.fn(),
   stopMediaSession: vi.fn(),
-  getMediaSession: vi.fn(),
+  heartbeatMediaSession: vi.fn(),
   mediaErrorOf: vi.fn(),
 }));
 
@@ -68,7 +68,7 @@ beforeEach(async () => {
     can_publish: false,
     can_subscribe: true,
   });
-  mediaMocks.getMediaSession.mockResolvedValue({ session });
+  mediaMocks.heartbeatMediaSession.mockResolvedValue({ session });
   mediaMocks.stopMediaSession.mockResolvedValue({ session: { ...session, state: "ended" } });
   // jsdom's HTMLMediaElement has no play(); the player calls it after binding.
   window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
@@ -278,11 +278,26 @@ it("ends a start response that arrives after the player has left", async () => {
 it("surfaces a publisher failure that happens after starting", async () => {
   vi.useFakeTimers();
   try {
-    mediaMocks.getMediaSession.mockResolvedValue({ session: { ...session, state: "failed", failure_code: "CAPTURE_FAILED" } });
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: { ...session, state: "failed", failure_code: "CAPTURE_FAILED" } });
     render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
     await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
     expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
     expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+  } finally { vi.useRealTimers(); }
+});
+
+it("stops the local stream when its viewer lease expires", async () => {
+  vi.useFakeTimers();
+  try {
+    const transport = new ControlledTransport();
+    mediaMocks.heartbeatMediaSession.mockRejectedValue(new ApiError(409, "expired", {
+      error: { code: "SESSION_ENDED", message: "Viewer session expired.", retryable: false },
+    }));
+    render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(transport.stopped).toBe(true);
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+    expect(mediaMocks.heartbeatMediaSession).toHaveBeenCalledTimes(1);
   } finally { vi.useRealTimers(); }
 });
 

@@ -317,6 +317,13 @@ func (s *Store) JoinViewerSession(ctx context.Context, sessionID, businessID, vi
 		return "", err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+	var state media.State
+	if err := tx.QueryRow(ctx, `SELECT state FROM media_sessions WHERE id=$1 FOR UPDATE`, sessionID).Scan(&state); err != nil {
+		return "", err
+	}
+	if state.Terminal() || state == media.StateEnding {
+		return "", ErrNotFound
+	}
 
 	if _, err := tx.Exec(ctx, `
 		UPDATE viewer_sessions
@@ -356,8 +363,69 @@ func (s *Store) ActiveViewerCount(ctx context.Context, sessionID string) (int, e
 	var n int
 	err := s.pool.QueryRow(ctx, `
 		SELECT count(*) FROM viewer_sessions
-		 WHERE media_session_id = $1 AND left_at IS NULL`, sessionID).Scan(&n)
+		 WHERE media_session_id = $1 AND left_at IS NULL
+		 AND last_seen_at > now() - interval '90 seconds'`, sessionID).Scan(&n)
 	return n, err
+}
+
+// TouchViewerSession renews an existing viewer lease; it cannot join a room or
+// resurrect an expired/ended session. The parent lock serializes joins, renewals
+// and expiration, so an expiry cannot race a successfully committed heartbeat.
+func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID string) error {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var state media.State
+	if err := tx.QueryRow(ctx, `SELECT state FROM media_sessions WHERE id=$1 FOR UPDATE`, sessionID).Scan(&state); err != nil {
+		return err
+	}
+	if state.Terminal() || state == media.StateEnding {
+		return ErrNotFound
+	}
+	result, err := tx.Exec(ctx, `UPDATE viewer_sessions SET last_seen_at=now()
+		WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL
+		AND last_seen_at > now() - interval '90 seconds'`, sessionID, viewerID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return tx.Commit(ctx)
+}
+
+// ExpireUnwatchedMediaSession ends an abandoned live session before the agent is
+// allowed to keep capturing. A new session has 90 seconds to attach its viewer.
+func (s *Store) ExpireUnwatchedMediaSession(ctx context.Context, sessionID string) (bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	var state media.State
+	if err := tx.QueryRow(ctx, `SELECT state FROM media_sessions WHERE id=$1 FOR UPDATE`, sessionID).Scan(&state); err != nil {
+		return false, err
+	}
+	if state.Terminal() {
+		// Another request may have ended the row after the agent's first read.
+		return true, nil
+	}
+	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='heartbeat_timeout'
+		WHERE media_session_id=$1 AND left_at IS NULL AND last_seen_at <= now() - interval '90 seconds'`, sessionID); err != nil {
+		return false, err
+	}
+	result, err := tx.Exec(ctx, `UPDATE media_sessions SET state='ended', ended_at=now()
+		WHERE id=$1 AND kind='live' AND started_at <= now() - interval '90 seconds'
+		AND NOT EXISTS (SELECT 1 FROM viewer_sessions WHERE media_session_id=$1 AND left_at IS NULL)`, sessionID)
+	if err != nil {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return result.RowsAffected() > 0, nil
 }
 
 // MediaAuditEvent is one row of the media audit trail.

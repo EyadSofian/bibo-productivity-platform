@@ -54,3 +54,18 @@ or remote control. Windows installer CI separately verifies the installed sideca
 matches the staged executable and can start without needing a desktop capture.
 Use `scripts/verify-windows-install.ps1` on an interactive Windows machine for
 the installed capture test.
+
+Viewer crash recovery uses migration 21: the player renews its lease while it
+polls session state. Device demand expires when every viewer has been absent for
+90 seconds. Expiry and heartbeat updates lock the same parent session; an expired
+heartbeat cannot resurrect capture. Four PostgreSQL tests cover abandonment,
+renewal, tenant scope, and retaining a second active viewer; the browser test
+verifies teardown when renewal is refused.
+
+The Windows CI and installer workflow also run `scripts/test-windows-media.ps1`.
+It verifies the official server archive's SHA-256, starts a loopback SFU, and
+explicitly runs the ignored Rust synthetic-video test. That test uses the same
+publisher implementation as screen capture and requires at least 20 remotely
+decoded 640×360 frames. It requires no screen permissions. The interactive
+capture test remains separately ignored and cannot silently pass when its
+environment variables are missing.

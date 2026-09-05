@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { getMediaSession, mediaErrorOf, mintViewerToken, startLiveSession, stopMediaSession } from "../../api/media";
+import { heartbeatMediaSession, mediaErrorOf, mintViewerToken, startLiveSession, stopMediaSession } from "../../api/media";
 import type { MediaFailureCode, MediaSession } from "../../api/media";
 import type { MediaTransport, TransportState } from "../../media/transport";
 import { releaseStream } from "../../media/transport";
@@ -217,7 +217,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
       // Poll serially so publisher failures and policy stops reach the viewer.
       const poll = async () => {
         try {
-          const { session: latest } = await getMediaSession(started.id);
+          const { session: latest } = await heartbeatMediaSession(started.id);
           if (runRef.current !== run) return;
           onSession?.(latest);
           if (latest.state === "failed") { failFromSession(latest); return; }
@@ -226,13 +226,17 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
             setPhase("ended");
             return;
           }
-        } catch {
-          // Transport and its connection deadline handle transient API outages.
+        } catch (err) {
+          if (runRef.current !== run) return;
+          const detail = mediaErrorOf(err);
+          if (detail && !detail.retryable) {
+            fail({ code: detail.code, message: t(`error.${detail.code}`, { defaultValue: detail.message }), requestId: detail.request_id, retryable: true });
+            return;
+          }
+          // A transient outage may recover before the server's viewer lease expires.
         }
         if (runRef.current === run) pollRef.current = setTimeout(poll, 1500);
       };
-      pollRef.current = setTimeout(poll, 1500);
-
       let token: Awaited<ReturnType<typeof mintViewerToken>>;
       try {
         token = await mintViewerToken(started.id);
@@ -253,6 +257,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         return;
       }
       if (runRef.current !== run) return;
+      pollRef.current = setTimeout(poll, 1500);
 
       try {
         const stop = await transport.connect(

@@ -54,4 +54,5 @@ windows = { version = "0.62", features = [
 livekit = { version = "0.8.4", features = ["rustls-tls-native-roots"] }
 
 [target.'cfg(windows)'.dev-dependencies]
+futures-util = "0.3"
 livekit-api = { version = "0.6.4", default-features = false, features = ["access-token", "rustls-tls-native-roots"] }

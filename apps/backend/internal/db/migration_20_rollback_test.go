@@ -27,6 +27,16 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 		t.Fatalf("connect: %v", err)
 	}
 	defer pool.Close()
+	// Share the store/handler test lock while rolling back shared tables.
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Release()
+	if _, err := conn.Exec(ctx, `SELECT pg_advisory_lock($1)`, int64(0x62_74_72_6B)); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _, _ = conn.Exec(ctx, `SELECT pg_advisory_unlock($1)`, int64(0x62_74_72_6B)) }()
 
 	if got := mediaTableCount(t, ctx, pool); got != 4 {
 		t.Fatalf("media tables before rollback = %d, want 4", got)
@@ -35,11 +45,13 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 	// The Down section of 00020_media_control_plane.sql, verbatim, plus the
 	// goose bookkeeping the migrator would remove.
 	for _, stmt := range []string{
+		`DROP INDEX idx_viewer_sessions_lease`,
+		`ALTER TABLE viewer_sessions DROP COLUMN last_seen_at`,
 		`DROP TABLE media_audit_events`,
 		`DROP TABLE viewer_sessions`,
 		`DROP TABLE media_tracks`,
 		`DROP TABLE media_sessions`,
-		`DELETE FROM goose_db_version WHERE version_id = 20`,
+		`DELETE FROM goose_db_version WHERE version_id IN (20,21)`,
 	} {
 		if _, err := pool.Exec(ctx, stmt); err != nil {
 			t.Fatalf("rollback %q: %v", stmt, err)
@@ -54,6 +66,10 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 	}
 	if got := mediaTableCount(t, ctx, pool); got != 4 {
 		t.Errorf("media tables after re-applying = %d, want 4", got)
+	}
+	var leases int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='viewer_sessions' AND column_name='last_seen_at'`).Scan(&leases); err != nil || leases != 1 {
+		t.Fatalf("viewer lease migration did not reapply: count=%d err=%v", leases, err)
 	}
 }
 

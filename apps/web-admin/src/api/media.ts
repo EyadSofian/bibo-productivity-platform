@@ -116,6 +116,10 @@ export function getMediaSession(sessionId: string) {
   return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}`);
 }
 
+export function heartbeatMediaSession(sessionId: string) {
+  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/heartbeat`, { method: "POST" });
+}
+
 /** Mints a subscribe-only token. Short-lived by design, so it is fetched when
  *  the player connects and never stored. */
 export function mintViewerToken(sessionId: string) {

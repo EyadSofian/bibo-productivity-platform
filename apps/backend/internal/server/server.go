@@ -151,6 +151,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	authed.POST("/devices/:device_id/media/live", mediaH.StartLive)
 	authed.GET("/media/agent/session", mediaH.AgentSession)
 	authed.GET("/media/sessions/:session_id", mediaH.Session)
+	authed.POST("/media/sessions/:session_id/heartbeat", mediaH.ViewerHeartbeat)
 	authed.POST("/media/sessions/:session_id/viewer-token", mediaH.ViewerToken)
 	authed.POST("/media/sessions/:session_id/stop", mediaH.Stop)
 	// Agent-authenticated: the store predicate requires the session's device to
