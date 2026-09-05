@@ -357,6 +357,39 @@ func (s *Store) LeaveViewerSession(ctx context.Context, sessionID, viewerID, rea
 	return err
 }
 
+// LeaveMediaViewerAndMaybeEnd serializes the last-viewer decision with joins,
+// renewals, and expiry. Counting then ending in separate transactions could
+// otherwise end a session after a new viewer had successfully attached.
+func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, viewerID string) (MediaSession, int, bool, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return MediaSession{}, 0, false, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+	session, err := scanMediaSession(tx.QueryRow(ctx, `SELECT `+mediaSessionColumns+` FROM media_sessions ms WHERE ms.id=$1 FOR UPDATE`, sessionID))
+	if err != nil {
+		return MediaSession{}, 0, false, err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='stopped' WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL`, sessionID, viewerID); err != nil {
+		return MediaSession{}, 0, false, err
+	}
+	var remaining int
+	if err := tx.QueryRow(ctx, `SELECT count(*) FROM viewer_sessions WHERE media_session_id=$1 AND left_at IS NULL AND last_seen_at>now()-interval '90 seconds'`, sessionID).Scan(&remaining); err != nil {
+		return MediaSession{}, 0, false, err
+	}
+	ended := !session.State.Terminal() && remaining == 0
+	if ended {
+		session, err = scanMediaSession(tx.QueryRow(ctx, `UPDATE media_sessions ms SET state='ended', ended_at=now(), failure_code=NULL WHERE ms.id=$1 RETURNING `+mediaSessionColumns, sessionID))
+		if err != nil {
+			return MediaSession{}, 0, false, err
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return MediaSession{}, 0, false, err
+	}
+	return session, remaining, ended, nil
+}
+
 // ActiveViewerCount reports how many viewers are attached. This is what decides
 // whether a session still has a reason to exist.
 func (s *Store) ActiveViewerCount(ctx context.Context, sessionID string) (int, error) {

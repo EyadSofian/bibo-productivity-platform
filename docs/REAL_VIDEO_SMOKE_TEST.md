@@ -55,6 +55,14 @@ matches the staged executable and can start without needing a desktop capture.
 Use `scripts/verify-windows-install.ps1` on an interactive Windows machine for
 the installed capture test.
 
+To validate a newly provisioned cloud SFU, explicitly run
+`go run ./cmd/media-smoke --configured-sfu` with `LIVEKIT_URL`, `LIVEKIT_API_KEY`,
+and `LIVEKIT_API_SECRET` provided securely through its environment. No other app
+configuration or database is needed. Only synthetic video is sent. The harness
+still binds loopback and accepts only same-origin requests; it does not expose
+an unauthenticated credential endpoint to the network. Do not paste secrets into
+commands, browser URLs, logs, source files, or this document.
+
 Viewer crash recovery uses migration 21: the player renews its lease while it
 polls session state. Device demand expires when every viewer has been absent for
 90 seconds. Expiry and heartbeat updates lock the same parent session; an expired
@@ -69,3 +77,19 @@ publisher implementation as screen capture and requires at least 20 remotely
 decoded 640×360 frames. It requires no screen permissions. The interactive
 capture test remains separately ignored and cannot silently pass when its
 environment variables are missing.
+
+The `Verify and stage Windows media publisher` step passed on GitHub Actions run
+[33964591267](https://github.com/EyadSofian/bibo-productivity-platform/actions/runs/33964591267)
+at revision `a300d34`. This includes native unit tests, the real SFU/native decode
+test, and the release publisher build. Full desktop and installer outcomes must
+be checked separately in the run; this statement covers only the completed step.
+
+The last-viewer stop decision now uses the same database transaction/parent lock
+as viewer joins. A race-detector test runs concurrent join/leave 20 times and
+asserts either the join succeeds with its session alive or it is refused after
+the session ends. A successful join cannot be silently cut off by a stale count.
+
+Production was inspected read-only on 2026-09-05: `/healthz` reported schema 19;
+the Railway web service had no `MEDIA_PROVIDER` or `LIVEKIT_*` configuration.
+That deployment is distinct from this tested branch. Desktop release version is
+now 1.5.11 so an approved rollout can advance installed 1.5.10 clients.

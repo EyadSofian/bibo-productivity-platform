@@ -75,7 +75,7 @@ button.onclick = async () => {
     stopSucceeded = true;
     await until(() => closed && lost && publisherDisconnected, "server-driven disconnect and video removal");
     report("PASS: backend stop disconnects both peers and clears the viewer");
-    report("RESULT: PASS — real SFU + H.264 + production browser transport. Windows capture and production networking are separate checks.");
+    report("RESULT: PASS — real SFU + H.264 + production browser transport. Actual Windows screen capture remains a separate check.");
     document.body.dataset.result = "passed";
   } catch (error) {
     report(`RESULT: FAIL — ${error instanceof Error ? error.message : "Unknown failure"}`);

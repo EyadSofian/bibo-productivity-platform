@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"ctracking/backend/internal/store"
+	"errors"
 	"net/http"
 	"testing"
 )
@@ -12,6 +14,38 @@ func ageViewerLease(t *testing.T, e *mediaEnv, id, user string) {
 	}
 	if _, err := e.pool.Exec(e.ctx, `UPDATE viewer_sessions SET last_seen_at=now()-interval '2 minutes' WHERE media_session_id=$1 AND viewer_user_id=$2`, id, user); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestConcurrentViewerJoinAndLastViewerLeave(t *testing.T) {
+	e := newMediaEnv(t)
+	for i := 0; i < 20; i++ {
+		id := e.startLive(t, e.ownerID)
+		if _, err := e.store.JoinViewerSession(e.ctx, id, e.businessID, e.ownerID); err != nil {
+			t.Fatal(err)
+		}
+		joined := make(chan error, 1)
+		go func() { _, err := e.store.JoinViewerSession(e.ctx, id, e.businessID, e.employeeID); joined <- err }()
+		session, remaining, ended, err := e.store.LeaveMediaViewerAndMaybeEnd(e.ctx, id, e.ownerID)
+		joinErr := <-joined
+		if err != nil {
+			t.Fatal(err)
+		}
+		if ended {
+			if !errors.Is(joinErr, store.ErrNotFound) {
+				t.Fatalf("viewer joined a terminal session: %v", joinErr)
+			}
+			if !session.State.Terminal() {
+				t.Fatal("end was not persisted")
+			}
+		} else {
+			if joinErr != nil || remaining != 1 || session.State.Terminal() {
+				t.Fatalf("successful join lost session: remaining=%d join=%v", remaining, joinErr)
+			}
+			if _, _, ended, err := e.store.LeaveMediaViewerAndMaybeEnd(e.ctx, id, e.employeeID); err != nil || !ended {
+				t.Fatalf("cleanup remaining viewer: ended=%v err=%v", ended, err)
+			}
+		}
 	}
 }
 

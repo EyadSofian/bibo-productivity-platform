@@ -509,23 +509,19 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 		return
 	}
 
-	if err := h.store.LeaveViewerSession(c.Request.Context(), session.ID, userID, "stopped"); err != nil {
+	updated, remaining, ended, err := h.store.LeaveMediaViewerAndMaybeEnd(c.Request.Context(), session.ID, userID)
+	if err != nil {
 		mediaInternal(c, err)
 		return
 	}
-
-	if session.State.Terminal() {
-		c.JSON(http.StatusOK, sessionResponse{Session: session})
+	session = updated
+	if !ended && session.State.Terminal() {
+		c.JSON(http.StatusOK, sessionResponse{Session: updated})
 		return
 	}
 
 	// Another viewer is still attached: this caller leaves, the session stays.
 	// Ending it would cut off everyone else because one person closed a tab.
-	remaining, err := h.store.ActiveViewerCount(c.Request.Context(), session.ID)
-	if err != nil {
-		mediaInternal(c, err)
-		return
-	}
 	if remaining > 0 {
 		h.audit(c, session.BusinessID, session.ID, store.AuditLiveSessionLeave, store.OutcomeAllowed,
 			map[string]any{"remaining_viewers": remaining})
@@ -535,19 +531,14 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 
 	// Persist the stop before calling an external provider. The agent polls this
 	// row and must stop even when the SFU is slow or unreachable.
-	ended, err := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, "")
-	if err != nil {
-		mediaInternal(c, err)
-		return
-	}
 	if err := h.provider.EndRoom(c.Request.Context(), session.ProviderRoomID); err != nil && !errors.Is(err, media.ErrRoomNotFound) {
 		h.audit(c, session.BusinessID, session.ID, store.AuditLiveSessionStop, store.OutcomeError,
 			map[string]any{"reason": "end_room_failed"})
 	}
 
-	h.audit(c, ended.BusinessID, ended.ID, store.AuditLiveSessionStop, store.OutcomeAllowed,
-		map[string]any{"device_id": ended.DeviceID})
-	c.JSON(http.StatusOK, sessionResponse{Session: ended})
+	h.audit(c, updated.BusinessID, updated.ID, store.AuditLiveSessionStop, store.OutcomeAllowed,
+		map[string]any{"device_id": updated.DeviceID})
+	c.JSON(http.StatusOK, sessionResponse{Session: updated})
 }
 
 // memberSession loads a session the caller's tenant owns, writing the error

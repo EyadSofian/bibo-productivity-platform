@@ -1,5 +1,5 @@
-// media-smoke exercises the real provider and browser transport against a LOCAL
-// LiveKit development server. It never captures a user's screen or uses app data.
+// media-smoke exercises the real provider and browser transport. It never
+// captures a user's screen or uses app data. The HTTP harness binds loopback only.
 package main
 
 import (
@@ -8,6 +8,7 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -18,10 +19,13 @@ import (
 
 func main() {
 	assets := flag.String("assets", "../../.media-smoke", "directory containing the smoke-test browser bundle")
+	configuredSFU := flag.Bool("configured-sfu", false, "explicitly test the SFU in LIVEKIT_URL/API_KEY/API_SECRET instead of local development")
 	flag.Parse()
-	// Intentionally fixed to loopback and disposable development credentials.
-	// This command must not mint credentials for a production SFU.
-	p, err := livekit.New(livekit.Config{URL: "ws://127.0.0.1:7880", APIKey: "devkey", APISecret: "secret"})
+	cfg := livekit.Config{URL: "ws://127.0.0.1:7880", APIKey: "devkey", APISecret: "secret"}
+	if *configuredSFU {
+		cfg = livekit.Config{URL: os.Getenv("LIVEKIT_URL"), APIKey: os.Getenv("LIVEKIT_API_KEY"), APISecret: os.Getenv("LIVEKIT_API_SECRET")}
+	}
+	p, err := livekit.New(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
