@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -46,6 +46,8 @@ import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
 import { useDetailHeader } from "../detailHeader";
+
+const DeviceLiveVideo = lazy(() => import("../components/LivePlayer/DeviceLiveVideo"));
 
 type Tab = "activity" | "communications" | "keystrokes" | "browser" | "screenshots" | "playback";
 const TABS: Tab[] = [
@@ -141,7 +143,7 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
   );
 }
 
-function LiveScreen({
+export function LegacyLiveScreen({
   presence,
 }: {
   presence: EmployeePresence | null;
@@ -852,7 +854,11 @@ export function EmployeeDetail() {
       </div>
 
       <div className="ad-command-deck">
-        <LiveScreen presence={presence} />
+        {presence?.device_id ? (
+          <Suspense fallback={<Spinner />}>
+            <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} />
+          </Suspense>
+        ) : <Notice kind="info">{t("detail.presence.waiting")}</Notice>}
         <div className="ad-command-deck__telemetry">
           <LivePresence presence={presence} />
           <LiveResources resources={presence?.resources} />

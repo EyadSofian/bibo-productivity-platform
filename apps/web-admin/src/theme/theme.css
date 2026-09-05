@@ -6223,3 +6223,11 @@ select.input:focus,
   .ops-hero__signal > strong { font-size: 42px; }
   .ops-person { padding-inline: 12px; }
 }
+
+.live-player { width: 100%; min-width: 0; }
+.live-player__stage { position: relative; aspect-ratio: 16 / 9; background: #10151e; border-radius: 14px; overflow: hidden; }
+.live-player__video { width: 100%; height: 100%; object-fit: contain; }
+.live-player__overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center; color: #fff; }
+.live-player__code { max-width: 100%; overflow-wrap: anywhere; font-size: 12px; }
+.live-player__badge { position: absolute; top: 12px; inset-inline-start: 12px; background: #126d44; color: white; padding: 4px 10px; border-radius: 20px; }
+.live-player__actions { padding-top: 12px; }

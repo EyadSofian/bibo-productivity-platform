@@ -225,11 +225,30 @@ func (s *Store) MediaSessionForAgent(ctx context.Context, agentUserID, sessionID
 	row := s.pool.QueryRow(ctx, `
 		SELECT`+mediaSessionColumns+`
 		  FROM media_sessions ms
-		  JOIN devices d ON d.id = ms.device_id
+		  JOIN devices d ON d.id = ms.device_id AND d.business_id = ms.business_id
+		  JOIN memberships member ON member.business_id = d.business_id AND member.user_id = d.user_id
 		 WHERE ms.id = $1
 		   AND d.user_id = $2
 		   AND d.deleted_at IS NULL
 		   AND d.monitoring_enabled`, sessionID, agentUserID)
+	m, err := scanMediaSession(row)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return MediaSession{}, ErrNotFound
+	}
+	return m, err
+}
+
+// PendingMediaSessionForAgent resolves demand through the enrolled device and
+// current membership. Caller-supplied business/user pairs are never trusted.
+func (s *Store) PendingMediaSessionForAgent(ctx context.Context, userID, deviceID string) (MediaSession, error) {
+	row := s.pool.QueryRow(ctx, `SELECT`+mediaSessionColumns+`
+	  FROM media_sessions ms
+	  JOIN devices d ON d.id = ms.device_id AND d.business_id = ms.business_id
+	  JOIN memberships member ON member.business_id = d.business_id AND member.user_id = d.user_id
+	 WHERE d.user_id = $1 AND d.id = $2 AND d.deleted_at IS NULL
+	   AND d.monitoring_enabled AND ms.kind = 'live'
+	   AND ms.state IN ('waiting_for_agent','negotiating','live','reconnecting')
+	 ORDER BY ms.started_at DESC LIMIT 1`, userID, deviceID)
 	m, err := scanMediaSession(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return MediaSession{}, ErrNotFound

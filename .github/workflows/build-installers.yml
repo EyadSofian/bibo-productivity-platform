@@ -51,6 +51,19 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify and stage Windows media publisher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:CARGO_TARGET_DIR = 'C:\media-build'
+          cargo test --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --all-targets
+          if ($LASTEXITCODE -ne 0) { throw "media publisher tests failed" }
+          cargo build --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --release --bin media-publisher
+          if ($LASTEXITCODE -ne 0) { throw "media publisher build failed" }
+          New-Item -ItemType Directory -Force apps/desktop/src-tauri/binaries | Out-Null
+          Copy-Item C:\media-build\release\media-publisher.exe apps/desktop/src-tauri/binaries/media-publisher-x86_64-pc-windows-msvc.exe
+          Remove-Item Env:CARGO_TARGET_DIR
+
       - name: Build installer
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

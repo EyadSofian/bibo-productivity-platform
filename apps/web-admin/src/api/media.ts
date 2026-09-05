@@ -1,4 +1,5 @@
 import { request } from "./client";
+import { isDemo } from "./demo";
 import { ApiError } from "./types";
 
 /**
@@ -47,6 +48,7 @@ export type MediaSession = {
 };
 
 export type MediaToken = {
+  url?: string;
   token: string;
   expires_at: string;
   room: string;
@@ -100,6 +102,11 @@ export function mediaErrorOf(error: unknown): MediaErrorDetail | null {
 
 /** Opens or joins the live session for a device. */
 export function startLiveSession(deviceId: string) {
+  if (isDemo()) {
+    return Promise.reject(new ApiError(503, "Video is unavailable in demo mode.", {
+      error: { code: "MEDIA_PROVIDER_UNCONFIGURED", message: "Video is unavailable in demo mode.", retryable: false },
+    }));
+  }
   return request<{ session: MediaSession }>(`/v1/devices/${deviceId}/media/live`, {
     method: "POST",
   });

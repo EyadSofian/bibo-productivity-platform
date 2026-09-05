@@ -1,0 +1,12 @@
+# The prebuilt libwebrtc that `webrtc-sys` downloads is built against the STATIC CRT
+# (/MT). Rust on MSVC defaults to the dynamic CRT (/MD), and mixing the two fails at
+# link time with a wall of:
+#
+#   LNK2038: mismatch detected for 'RuntimeLibrary':
+#            value 'MT_StaticRelease' doesn't match value 'MD_DynamicRelease'
+#   LNK1169: one or more multiply defined symbols found
+#
+# Linking the static CRT here matches libwebrtc and resolves it. This is a property
+# of the upstream binaries, not a preference of ours.
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

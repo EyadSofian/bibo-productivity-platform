@@ -3,6 +3,7 @@
 
 mod analytics;
 mod commands;
+mod media;
 mod obs;
 mod platform;
 mod server;
@@ -88,6 +89,8 @@ pub fn run() {
             commands::ping,
             commands::track_event,
             commands::set_paused,
+            commands::media_status,
+            commands::set_video_paused,
             commands::set_in_setup,
             commands::is_paused,
             commands::tracking_state,
@@ -228,6 +231,15 @@ pub fn run() {
             // Auth/session (task 51): load any persisted session from disk.
             let auth = Arc::new(sync::AuthState::load(data_dir.join("session.json")));
             app.manage(auth.clone());
+
+            let media_status = Arc::new(media::MediaStatus::default());
+            app.manage(media_status.clone());
+            media::start(media::MediaContext {
+                auth: auth.clone(),
+                settings: settings_state.clone(),
+                status: media_status,
+                control: control.clone(),
+            });
 
             // Sync worker (task 53): pushes pending rows to the backend in the
             // background. No-op while logged out / offline.

@@ -795,7 +795,7 @@ pub fn capture_remote_frame(control: &TrackerControl) -> Option<RemoteFrame> {
 /// and the entry only has to appear as a whole word in the reported app name —
 /// "Zalo" matches "zalo", "Zalo PC", and "zalo - the best app", while "LINE"
 /// does not match "Outline".
-fn should_skip(app_name: &str, skip_apps: &[String]) -> bool {
+pub(crate) fn should_skip(app_name: &str, skip_apps: &[String]) -> bool {
     let name = app_name.to_lowercase();
     skip_apps.iter().any(|s| {
         let pat = s.trim().to_lowercase();
@@ -1078,7 +1078,9 @@ mod tests {
         control.still_capture_enabled.store(true, Ordering::Relaxed);
         assert!(still_capture_permitted(&control));
 
-        control.still_capture_enabled.store(false, Ordering::Relaxed);
+        control
+            .still_capture_enabled
+            .store(false, Ordering::Relaxed);
         assert!(
             !still_capture_permitted(&control),
             "closing the pipeline mid-session must take effect immediately"
@@ -1090,11 +1092,8 @@ mod tests {
     /// unpaused device, the screen category allowed, the opt-in on.
     #[test]
     fn capture_once_writes_nothing_while_still_capture_is_retired() {
-        let dir = std::env::temp_dir().join(format!(
-            "ctracking-v02-{}-{}",
-            std::process::id(),
-            now_ts()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("ctracking-v02-{}-{}", std::process::id(), now_ts()));
         let db = Db::open_in_memory().expect("in-memory db");
         let control = TrackerControl::new();
         control.capture_screenshots.store(true, Ordering::Relaxed);

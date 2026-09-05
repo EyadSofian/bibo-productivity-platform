@@ -172,6 +172,23 @@ jobs:
       - name: Build desktop web assets
         run: pnpm --filter @ctracking/desktop build
 
+      - name: Verify and stage Windows media publisher
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:CARGO_TARGET_DIR = 'C:\media-build'
+          cargo test --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --all-targets
+          if ($LASTEXITCODE -ne 0) { throw "media publisher tests failed" }
+          cargo build --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --release --bin media-publisher
+          if ($LASTEXITCODE -ne 0) { throw "media publisher build failed" }
+          New-Item -ItemType Directory -Force apps/desktop/src-tauri/binaries | Out-Null
+          Copy-Item C:\media-build\release\media-publisher.exe apps/desktop/src-tauri/binaries/media-publisher-x86_64-pc-windows-msvc.exe
+          Remove-Item Env:CARGO_TARGET_DIR
+
+      - name: Test portable media protocol on macOS
+        if: runner.os == 'macOS'
+        run: cargo test --manifest-path apps/desktop/native/media-publisher/Cargo.toml --config apps/desktop/native/media-publisher/.cargo/config.toml --locked --all-targets
+
       - name: cargo check
         working-directory: apps/desktop/src-tauri
         run: cargo check --all-targets

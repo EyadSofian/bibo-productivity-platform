@@ -14,6 +14,7 @@ import (
 	"ctracking/backend/internal/handlers"
 	"ctracking/backend/internal/live"
 	"ctracking/backend/internal/media"
+	"ctracking/backend/internal/media/livekit"
 	"ctracking/backend/internal/middleware"
 	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/retention"
@@ -148,6 +149,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Video media control plane (docs/adr/0002-video-first-media-plane.md).
 	// Metadata, authorization and short-lived tokens only -- no media bytes.
 	authed.POST("/devices/:device_id/media/live", mediaH.StartLive)
+	authed.GET("/media/agent/session", mediaH.AgentSession)
 	authed.GET("/media/sessions/:session_id", mediaH.Session)
 	authed.POST("/media/sessions/:session_id/viewer-token", mediaH.ViewerToken)
 	authed.POST("/media/sessions/:session_id/stop", mediaH.Stop)
@@ -264,10 +266,17 @@ func staticSite(dir string) gin.HandlerFunc {
 // mediaProviderFor selects the SFU implementation.
 //
 // An unrecognised MEDIA_PROVIDER falls back to the unconfigured provider and
-// says so, rather than booting with no media plane and no explanation. There is
-// no real implementation to select yet; slice V05 adds one.
+// says so, rather than booting with no media plane and no explanation.
+// LiveKit is selected only when its required configuration is valid.
 func mediaProviderFor(cfg *config.Config) media.MediaProvider {
 	switch cfg.MediaProvider {
+	case "livekit":
+		p, err := livekit.New(livekit.Config{URL: cfg.LiveKitURL, APIKey: cfg.LiveKitAPIKey, APISecret: cfg.LiveKitAPISecret})
+		if err != nil {
+			obs.Warn("LiveKit configuration is incomplete; media is unavailable")
+			return media.NewUnconfigured()
+		}
+		return p
 	case "", "unconfigured":
 		return media.NewUnconfigured()
 	default:

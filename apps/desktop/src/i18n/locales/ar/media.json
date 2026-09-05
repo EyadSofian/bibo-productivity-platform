@@ -48,5 +48,9 @@
   "ui": {
     "brandAlt": "BiBoTracking",
     "stepOf": "الخطوة {{current}} من {{total}}"
-  }
+  },
+  "liveActive": "الشاشة تُعرض الآن",
+  "livePaused": "عرض الشاشة متوقف محليًا",
+  "liveStop": "إيقاف عرض الشاشة",
+  "liveResume": "السماح بعرض الشاشة"
 }

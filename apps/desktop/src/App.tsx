@@ -1,3 +1,4 @@
+import { VideoMonitoringStatus } from "./components/VideoMonitoringStatus";
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { call as invoke } from "./api";
 import { Sentry } from "./sentry";
@@ -377,6 +378,7 @@ function App() {
 
   return (
     <div className="app">
+      <VideoMonitoringStatus />
       <div className="app-titlebar" onMouseDown={dragWindow}>
         <span className="app-titlebar-title">BiBoTracking — {t(`nav.${screen}`)}</span>
         <AppTrayMenu status={status} onToggleTracking={toggleTracking} locked={trackingLocked} />

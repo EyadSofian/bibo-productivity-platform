@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import i18n from "../../i18n";
 import { ApiError } from "../../api/types";
@@ -68,6 +68,7 @@ beforeEach(async () => {
     can_publish: false,
     can_subscribe: true,
   });
+  mediaMocks.getMediaSession.mockResolvedValue({ session });
   mediaMocks.stopMediaSession.mockResolvedValue({ session: { ...session, state: "ended" } });
   // jsdom's HTMLMediaElement has no play(); the player calls it after binding.
   window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
@@ -211,8 +212,10 @@ describe("LivePlayer", () => {
       render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
 
       // Let the two awaited API calls settle under fake timers.
-      await vi.advanceTimersByTimeAsync(0);
-      await vi.advanceTimersByTimeAsync(16_000);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(16_000);
+      });
 
       expect(screen.getByText("The device did not start sending in time.")).toBeTruthy();
       expect(screen.getByText("TIMEOUT")).toBeTruthy();
@@ -252,4 +255,45 @@ describe("LivePlayer", () => {
 
     await i18n.changeLanguage("en");
   });
+});
+
+it("ends the backend session when its player is unmounted", async () => {
+ const transport = new ControlledTransport();
+ const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
+ await waitFor(() => expect(transport.connectCalls).toBe(1));
+ view.unmount();
+ await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1"));
+});
+it("ends a start response that arrives after the player has left", async () => {
+ let resolve!: (value: { session: typeof session }) => void;
+ mediaMocks.startLiveSession.mockReturnValueOnce(new Promise(r => { resolve = r; }));
+ const transport = new ControlledTransport();
+ const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
+ view.unmount();
+ await act(async () => { resolve({ session }); });
+ expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+ expect(transport.connectCalls).toBe(0);
+});
+
+it("surfaces a publisher failure that happens after starting", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.getMediaSession.mockResolvedValue({ session: { ...session, state: "failed", failure_code: "CAPTURE_FAILED" } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+  } finally { vi.useRealTimers(); }
+});
+
+it("can switch devices while the old start request is pending", async () => {
+  let resolve!: (value: { session: typeof session }) => void;
+  mediaMocks.startLiveSession.mockReturnValueOnce(new Promise(r => { resolve = r; }));
+  const transport = new ControlledTransport();
+  const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
+  view.rerender(<LivePlayer deviceId="device-2" transport={transport} autoStart />);
+  await waitFor(() => expect(mediaMocks.startLiveSession).toHaveBeenCalledWith("device-2"));
+  await act(async () => { resolve({ session: { ...session, id: "old-session" } }); });
+  expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("old-session");
+  expect(transport.connectCalls).toBe(1);
 });

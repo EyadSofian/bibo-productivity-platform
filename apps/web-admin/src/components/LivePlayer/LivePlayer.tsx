@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { mediaErrorOf, mintViewerToken, startLiveSession, stopMediaSession } from "../../api/media";
+import { getMediaSession, mediaErrorOf, mintViewerToken, startLiveSession, stopMediaSession } from "../../api/media";
 import type { MediaFailureCode, MediaSession } from "../../api/media";
 import type { MediaTransport, TransportState } from "../../media/transport";
 import { releaseStream } from "../../media/transport";
@@ -61,10 +61,12 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   // Guards every async continuation: a response that lands after the viewer
   // stopped must not restart what they just stopped.
   const runRef = useRef(0);
+  const sessionRef = useRef<MediaSession | null>(null);
+  const startingRef = useRef<number | null>(null);
+  const pollRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const [phase, setPhase] = useState<PlayerPhase>("idle");
   const [error, setError] = useState<PlayerError | null>(null);
-  const [session, setSession] = useState<MediaSession | null>(null);
 
   const clearTimer = () => {
     if (timeoutRef.current !== undefined) {
@@ -81,7 +83,13 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
 
   const teardown = useCallback(() => {
     runRef.current += 1;
+    startingRef.current = null;
+    clearTimeout(pollRef.current);
+    pollRef.current = undefined;
     clearTimer();
+    const previous = sessionRef.current;
+    sessionRef.current = null;
+    if (previous) void stopMediaSession(previous.id).catch(() => {});
     teardownRef.current?.();
     teardownRef.current = null;
     detachStream();
@@ -90,7 +98,8 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   const fail = useCallback((err: PlayerError) => {
     setError(err);
     setPhase("error");
-  }, []);
+    teardown();
+  }, [teardown]);
 
   // A failure code from the publisher is more specific than anything the viewer
   // could infer, so it becomes the message rather than a generic error.
@@ -145,6 +154,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
           armTimeout(run);
           break;
         case "closed":
+          teardown();
           setPhase((current) => (current === "error" ? current : "ended"));
           break;
         case "failed":
@@ -153,118 +163,151 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
           break;
       }
     },
-    [armTimeout],
+    [armTimeout, teardown],
   );
 
   const start = useCallback(async () => {
+    if (startingRef.current === runRef.current) return;
+    const previous = sessionRef.current;
+    sessionRef.current = null;
     teardown();
     const run = runRef.current;
-
-    setError(null);
-    setPhase("starting");
-    armTimeout(run);
-
-    let started: MediaSession;
+    startingRef.current = run;
     try {
-      started = (await startLiveSession(deviceId)).session;
-    } catch (err) {
+      if (previous) await stopMediaSession(previous.id).catch(() => {});
       if (runRef.current !== run) return;
-      clearTimer();
-      const detail = mediaErrorOf(err);
-      fail(
-        detail
-          ? {
-              code: detail.code,
-              message: t(`error.${detail.code}`, { defaultValue: detail.message }),
-              requestId: detail.request_id,
-              retryable: detail.retryable,
-            }
-          : { code: "UNKNOWN", message: t("error.unknown"), retryable: true },
-      );
-      return;
-    }
-    if (runRef.current !== run) return;
 
-    setSession(started);
-    onSession?.(started);
-    if (started.state === "failed") {
-      clearTimer();
-      failFromSession(started);
-      return;
-    }
-    setPhase("waiting_for_agent");
+      setError(null);
+      setPhase("starting");
+      armTimeout(run);
 
-    let token: Awaited<ReturnType<typeof mintViewerToken>>;
-    try {
-      token = await mintViewerToken(started.id);
-    } catch (err) {
-      if (runRef.current !== run) return;
-      clearTimer();
-      const detail = mediaErrorOf(err);
-      fail(
-        detail
-          ? {
-              code: detail.code,
-              message: t(`error.${detail.code}`, { defaultValue: detail.message }),
-              requestId: detail.request_id,
-              retryable: detail.retryable,
-            }
-          : { code: "UNKNOWN", message: t("error.unknown"), retryable: true },
-      );
-      return;
-    }
-    if (runRef.current !== run) return;
-
-    try {
-      const stop = await transport.connect(
-        { token: token.token, room: token.room, url: serverUrl },
-        {
-          onStream: (stream) => {
-            if (runRef.current !== run) {
-              releaseStream(stream);
-              return;
-            }
-            streamRef.current = stream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              // Autoplay can still be refused (a policy the page cannot see);
-              // muted playback is normally allowed, and a rejection must not
-              // throw into an unhandled promise.
-              void videoRef.current.play().catch(() => {});
-            }
-          },
-          onStreamLost: () => {
-            if (runRef.current !== run) return;
-            detachStream();
-            setPhase("reconnecting");
-            armTimeout(run);
-          },
-          onState: (state) => onTransportState(run, state),
-          onError: (err) => {
-            if (runRef.current !== run) return;
-            clearTimer();
-            fail({ code: "TRANSPORT_FAILED", message: err.message || t("error.transport"), retryable: true });
-          },
-        },
-      );
-      if (runRef.current !== run) {
-        stop();
+      let started: MediaSession;
+      try {
+        started = (await startLiveSession(deviceId)).session;
+      } catch (err) {
+        if (runRef.current !== run) return;
+        clearTimer();
+        const detail = mediaErrorOf(err);
+        fail(
+          detail
+            ? {
+                code: detail.code,
+                message: t(`error.${detail.code}`, { defaultValue: detail.message }),
+                requestId: detail.request_id,
+                retryable: detail.retryable,
+              }
+            : { code: "UNKNOWN", message: t("error.unknown"), retryable: true },
+        );
         return;
       }
-      teardownRef.current = stop;
-    } catch (err) {
+      if (runRef.current !== run) {
+        await stopMediaSession(started.id).catch(() => {});
+        return;
+      }
+      sessionRef.current = started;
+
+      onSession?.(started);
+      if (started.state === "failed") {
+        clearTimer();
+        failFromSession(started);
+        return;
+      }
+      setPhase("waiting_for_agent");
+
+      // Poll serially so publisher failures and policy stops reach the viewer.
+      const poll = async () => {
+        try {
+          const { session: latest } = await getMediaSession(started.id);
+          if (runRef.current !== run) return;
+          onSession?.(latest);
+          if (latest.state === "failed") { failFromSession(latest); return; }
+          if (latest.state === "ended" || latest.state === "ending") {
+            teardown();
+            setPhase("ended");
+            return;
+          }
+        } catch {
+          // Transport and its connection deadline handle transient API outages.
+        }
+        if (runRef.current === run) pollRef.current = setTimeout(poll, 1500);
+      };
+      pollRef.current = setTimeout(poll, 1500);
+
+      let token: Awaited<ReturnType<typeof mintViewerToken>>;
+      try {
+        token = await mintViewerToken(started.id);
+      } catch (err) {
+        if (runRef.current !== run) return;
+        clearTimer();
+        const detail = mediaErrorOf(err);
+        fail(
+          detail
+            ? {
+                code: detail.code,
+                message: t(`error.${detail.code}`, { defaultValue: detail.message }),
+                requestId: detail.request_id,
+                retryable: detail.retryable,
+              }
+            : { code: "UNKNOWN", message: t("error.unknown"), retryable: true },
+        );
+        return;
+      }
       if (runRef.current !== run) return;
-      clearTimer();
-      fail({
-        code: "TRANSPORT_FAILED",
-        message: err instanceof Error ? err.message : t("error.transport"),
-        retryable: true,
-      });
+
+      try {
+        const stop = await transport.connect(
+          { token: token.token, room: token.room, url: token.url ?? serverUrl },
+          {
+            onStream: (stream) => {
+              if (runRef.current !== run) {
+                releaseStream(stream);
+                return;
+              }
+              streamRef.current = stream;
+              if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                // Autoplay can still be refused (a policy the page cannot see);
+                // muted playback is normally allowed, and a rejection must not
+                // throw into an unhandled promise.
+                void videoRef.current.play().catch(() => {});
+              }
+            },
+            onStreamLost: () => {
+              if (runRef.current !== run) return;
+              detachStream();
+              setPhase("reconnecting");
+              armTimeout(run);
+            },
+            onState: (state) => onTransportState(run, state),
+            onError: (err) => {
+              if (runRef.current !== run) return;
+              clearTimer();
+              fail({ code: "TRANSPORT_FAILED", message: err.message || t("error.transport"), retryable: true });
+            },
+          },
+        );
+        if (runRef.current !== run) {
+          stop();
+          return;
+        }
+        teardownRef.current = stop;
+      } catch (err) {
+        if (runRef.current !== run) return;
+        clearTimer();
+        fail({
+          code: "TRANSPORT_FAILED",
+          message: err instanceof Error ? err.message : t("error.transport"),
+          retryable: true,
+        });
+      }
+    } finally {
+      if (startingRef.current === run) startingRef.current = null;
     }
   }, [armTimeout, deviceId, detachStream, fail, failFromSession, onSession, onTransportState, serverUrl, t, teardown, transport]);
 
   const stop = useCallback(async () => {
-    const current = session;
+    const current = sessionRef.current;
+    sessionRef.current = null;
     teardown();
     setPhase("idle");
     setError(null);
@@ -273,14 +316,13 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
       // is safe to call whenever the player goes away.
       try {
         const result = await stopMediaSession(current.id);
-        setSession(result.session);
         onSession?.(result.session);
       } catch {
         // A stop that fails changes nothing the viewer can act on: the local
         // teardown has already happened and the session expires on its own.
       }
     }
-  }, [onSession, session, teardown]);
+  }, [onSession, teardown]);
 
   useEffect(() => {
     if (autoStart) void start();
@@ -333,7 +375,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
           </button>
         ) : (
           <button type="button" className="bibo-btn bibo-btn--primary" onClick={() => void start()}>
-            {phase === "error" && error?.retryable === false ? t("action.start") : t("action.retry")}
+            {phase === "error" && error?.retryable ? t("action.retry") : t("action.start")}
           </button>
         )}
       </div>

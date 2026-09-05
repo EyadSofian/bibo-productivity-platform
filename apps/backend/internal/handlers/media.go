@@ -46,7 +46,29 @@ type sessionResponse struct {
 	Session store.MediaSession `json:"session"`
 }
 
+// AgentSession exposes only an existing, authorised device session. Remote
+// control is not armed by this video integration.
+func (h *MediaHandler) AgentSession(c *gin.Context) {
+	userID, _ := auth.UserID(c)
+	deviceID := c.Query("device_id")
+	if _, err := uuid.Parse(deviceID); err != nil {
+		mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "device_id must be a uuid", false)
+		return
+	}
+	session, err := h.store.PendingMediaSessionForAgent(c.Request.Context(), userID, deviceID)
+	if errors.Is(err, store.ErrNotFound) {
+		c.Status(http.StatusNoContent)
+		return
+	}
+	if err != nil {
+		mediaInternal(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"session_id": session.ID, "room": session.ProviderRoomID, "state": session.State, "control_armed": false})
+}
+
 type tokenResponse struct {
+	URL       string    `json:"url,omitempty"`
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 	Room      string    `json:"room"`
@@ -212,6 +234,7 @@ func (h *MediaHandler) ViewerToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tokenResponse{
 		Token:        token.Value,
+		URL:          token.URL,
 		ExpiresAt:    token.ExpiresAt,
 		Room:         session.ProviderRoomID,
 		CanPublish:   token.CanPublish,
@@ -245,8 +268,13 @@ func (h *MediaHandler) PublisherToken(c *gin.Context) {
 		mediaInternal(c, err)
 		return
 	}
-	if session.State.Terminal() {
+	if session.State.Terminal() || session.State == media.StateEnding {
 		mediaError(c, http.StatusConflict, CodeSessionEnded, "This session has ended.", false)
+		return
+	}
+
+	if session.State == media.StateRequested || session.State == media.StateAuthorizing {
+		mediaError(c, http.StatusConflict, CodeInvalidState, "The session is not authorized to publish yet.", true)
 		return
 	}
 
@@ -278,6 +306,7 @@ func (h *MediaHandler) PublisherToken(c *gin.Context) {
 
 	c.JSON(http.StatusOK, tokenResponse{
 		Token:        token.Value,
+		URL:          token.URL,
 		ExpiresAt:    token.ExpiresAt,
 		Room:         session.ProviderRoomID,
 		CanPublish:   token.CanPublish,
@@ -461,18 +490,18 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 		return
 	}
 
-	if err := h.provider.EndRoom(c.Request.Context(), session.ProviderRoomID); err != nil && !errors.Is(err, media.ErrRoomNotFound) {
-		// The room could not be closed, but the session must still end: leaving
-		// it open would keep the agent publishing to a room nobody watches.
-		h.audit(c, session.BusinessID, session.ID, store.AuditLiveSessionStop, store.OutcomeError,
-			map[string]any{"reason": "end_room_failed"})
-	}
-
+	// Persist the stop before calling an external provider. The agent polls this
+	// row and must stop even when the SFU is slow or unreachable.
 	ended, err := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, "")
 	if err != nil {
 		mediaInternal(c, err)
 		return
 	}
+	if err := h.provider.EndRoom(c.Request.Context(), session.ProviderRoomID); err != nil && !errors.Is(err, media.ErrRoomNotFound) {
+		h.audit(c, session.BusinessID, session.ID, store.AuditLiveSessionStop, store.OutcomeError,
+			map[string]any{"reason": "end_room_failed"})
+	}
+
 	h.audit(c, ended.BusinessID, ended.ID, store.AuditLiveSessionStop, store.OutcomeAllowed,
 		map[string]any{"device_id": ended.DeviceID})
 	c.JSON(http.StatusOK, sessionResponse{Session: ended})

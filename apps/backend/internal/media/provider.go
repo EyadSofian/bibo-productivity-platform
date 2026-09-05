@@ -96,6 +96,7 @@ type SubscriberTokenRequest struct {
 // Token is a short-lived credential for the media plane. It is a secret: never
 // log it, never store it, never put it in a URL.
 type Token struct {
+	URL       string
 	Value     string
 	ExpiresAt time.Time
 	// CanPublish and CanSubscribe describe what the value actually grants, so a

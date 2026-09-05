@@ -751,3 +751,15 @@ mod tests {
         std::fs::remove_dir_all(&dir).ok();
     }
 }
+
+#[tauri::command]
+pub fn media_status(status: State<Arc<crate::media::MediaStatus>>) -> serde_json::Value {
+    use std::sync::atomic::Ordering;
+    serde_json::json!({"active": status.active.load(Ordering::Acquire), "paused": status.stop_requested.load(Ordering::Acquire), "state": *status.state.lock().unwrap(), "error": *status.last_error.lock().unwrap()})
+}
+#[tauri::command]
+pub fn set_video_paused(status: State<Arc<crate::media::MediaStatus>>, paused: bool) {
+    status
+        .stop_requested
+        .store(paused, std::sync::atomic::Ordering::Release);
+}

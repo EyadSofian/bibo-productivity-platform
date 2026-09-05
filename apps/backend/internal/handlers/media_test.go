@@ -28,6 +28,7 @@ import (
 // handlers directly is what makes the auth, request-id and error-envelope
 // behaviour real rather than assumed.
 type mediaEnv struct {
+	handler  *MediaHandler
 	router   *gin.Engine
 	store    *store.Store
 	provider *mediafake.Provider
@@ -96,6 +97,7 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 		c.Next()
 	})
 	r.POST("/v1/devices/:device_id/media/live", h.StartLive)
+	r.GET("/v1/media/agent/session", h.AgentSession)
 	r.GET("/v1/media/sessions/:session_id", h.Session)
 	r.POST("/v1/media/sessions/:session_id/viewer-token", h.ViewerToken)
 	r.POST("/v1/media/sessions/:session_id/publisher-token", h.PublisherToken)
@@ -103,7 +105,7 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 	r.POST("/v1/agent/media/sessions/:session_id/state", h.AgentState)
 
 	return &mediaEnv{
-		router: r, store: st, provider: provider, pool: pool, ctx: ctx,
+		router: r, store: st, provider: provider, pool: pool, ctx: ctx, handler: h,
 		ownerID: owner.ID, employeeID: employee.ID, businessID: biz.ID,
 		deviceID: deviceID, intruderID: intruder.ID,
 	}
@@ -762,5 +764,105 @@ func TestIllegalPublisherTransitionIsRefusedAndAudited(t *testing.T) {
 	}
 	if !denied {
 		t.Error("the refused transition was not audited")
+	}
+}
+
+func TestAgentDemandIsBoundToDeviceAndCurrentMembership(t *testing.T) {
+	e := newMediaEnv(t)
+	id := e.startLive(t, e.ownerID)
+	path := "/v1/media/agent/session?device_id=" + e.deviceID
+	rec, body := e.call(t, http.MethodGet, path, e.employeeID)
+	if rec.Code != http.StatusOK || body["session_id"] != id || body["control_armed"] != false {
+		t.Fatalf("agent demand: %d %v", rec.Code, body)
+	}
+	rec, _ = e.call(t, http.MethodGet, path, e.intruderID)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("other tenant discovered demand: %d", rec.Code)
+	}
+	rec, _ = e.call(t, http.MethodGet, "/v1/media/agent/session?device_id=invalid", e.employeeID)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid device: %d", rec.Code)
+	}
+	if _, err := e.pool.Exec(e.ctx, "DELETE FROM memberships WHERE user_id=$1 AND business_id=$2", e.employeeID, e.businessID); err != nil {
+		t.Fatal(err)
+	}
+	rec, _ = e.call(t, http.MethodGet, path, e.employeeID)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("removed membership kept demand: %d", rec.Code)
+	}
+	rec, _ = e.call(t, http.MethodPost, "/v1/media/sessions/"+id+"/publisher-token", e.employeeID)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("removed membership received token: %d", rec.Code)
+	}
+}
+
+func TestEndingSessionCannotAuthorizeMoreCapture(t *testing.T) {
+	e := newMediaEnv(t)
+	id := e.startLive(t, e.ownerID)
+	if _, err := e.store.AdvanceMediaSession(e.ctx, id, media.StateEnding, ""); err != nil {
+		t.Fatal(err)
+	}
+	rec, _ := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("ending session still requested capture: %d", rec.Code)
+	}
+	rec, _ = e.call(t, http.MethodPost, "/v1/media/sessions/"+id+"/publisher-token", e.employeeID)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("ending session issued credentials: %d", rec.Code)
+	}
+}
+
+type blockedRoomStop struct {
+	media.MediaProvider
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (p *blockedRoomStop) EndRoom(ctx context.Context, room string) error {
+	close(p.entered)
+	select {
+	case <-p.release:
+		return p.MediaProvider.EndRoom(ctx, room)
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+func TestStopWithdrawsAgentDemandBeforeWaitingForProvider(t *testing.T) {
+	e := newMediaEnv(t)
+	id := e.startLive(t, e.ownerID)
+	provider := &blockedRoomStop{MediaProvider: e.provider, entered: make(chan struct{}), release: make(chan struct{})}
+	e.handler.provider = provider
+	done := make(chan int, 1)
+	go func() {
+		req := httptest.NewRequest(http.MethodPost, "/v1/media/sessions/"+id+"/stop", nil)
+		req.Header.Set("X-Test-User", e.ownerID)
+		rec := httptest.NewRecorder()
+		e.router.ServeHTTP(rec, req)
+		done <- rec.Code
+	}()
+	defer func() {
+		close(provider.release)
+		select {
+		case code := <-done:
+			if code != http.StatusOK {
+				t.Errorf("stop status: %d", code)
+			}
+		case <-time.After(3 * time.Second):
+			t.Error("stop did not finish")
+		}
+	}()
+	select {
+	case <-provider.entered:
+	case <-time.After(3 * time.Second):
+		t.Fatal("provider was not called")
+	}
+	rec, _ := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("agent still authorized while SFU is blocked: %d", rec.Code)
+	}
+	rec, _ = e.call(t, http.MethodPost, "/v1/media/sessions/"+id+"/publisher-token", e.employeeID)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("token granted during stop: %d", rec.Code)
 	}
 }

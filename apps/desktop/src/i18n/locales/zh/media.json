@@ -44,5 +44,9 @@
   "ui": {
     "brandAlt": "BiBoTracking",
     "stepOf": "第 {{current}} 步，共 {{total}} 步"
-  }
+  },
+  "liveActive": "Screen sharing is active",
+  "livePaused": "Screen sharing is paused locally",
+  "liveStop": "Stop screen sharing",
+  "liveResume": "Allow screen sharing"
 }

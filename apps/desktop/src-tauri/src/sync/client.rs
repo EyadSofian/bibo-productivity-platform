@@ -954,3 +954,149 @@ mod live_view_status_tests {
         assert_eq!(live_view_ttl(&invalid), 0);
     }
 }
+
+/// What the backend says this device should be doing.
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct AgentSession {
+    pub session_id: String,
+    pub state: String,
+    pub room: String,
+    /// Whether an operator has been authorised to drive this machine (V07).
+    ///
+    /// Defaults to **false** when the field is absent, so an older backend - or a
+    /// malformed response - can never be read as permission to accept input.
+    #[serde(default)]
+    pub control_armed: bool,
+}
+
+/// Short-lived publish credentials. Never logged, never written to disk.
+#[derive(Clone, serde::Deserialize)]
+pub struct PublisherToken {
+    #[serde(default)]
+    pub session_id: String,
+    pub url: String,
+    pub token: String,
+    pub room: String,
+}
+
+#[derive(serde::Serialize)]
+struct PublisherTokenReq<'a> {
+    session_id: &'a str,
+    device_id: &'a str,
+}
+
+impl BackendClient {
+    /// `GET /v1/media/agent/session` — is there a session this device should
+    /// publish for? `Ok(None)` on 204, which is the normal idle answer.
+    pub async fn agent_media_session(
+        &self,
+        device_id: &str,
+    ) -> Result<Option<AgentSession>, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url("/v1/media/agent/session"))
+                .query(&[("device_id", device_id)])
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if resp.status() == reqwest::StatusCode::NO_CONTENT {
+                return Ok(None);
+            }
+            // The media plane is optional; a 503 means it is switched off, which is
+            // not an error worth logging on every poll.
+            if resp.status() == reqwest::StatusCode::SERVICE_UNAVAILABLE {
+                return Ok(None);
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return resp.json().await.map(Some).map_err(|e| e.to_string());
+        }
+        Err("agent_media_session: unreachable retry exhaustion".into())
+    }
+
+    /// `POST /v1/media/sessions/:id/publisher-token` — exchange device identity for a
+    /// publish-only, short-TTL token. The value is returned to the caller and is
+    /// never logged here.
+    pub async fn media_publisher_token(
+        &self,
+        session_id: &str,
+        device_id: &str,
+    ) -> Result<PublisherToken, String> {
+        let body = PublisherTokenReq {
+            session_id,
+            device_id,
+        };
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/media/sessions/{session_id}/publisher-token")))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return resp.json().await.map_err(|e| e.to_string());
+        }
+        Err("media_publisher_token: unreachable retry exhaustion".into())
+    }
+
+    /// `POST /v1/agent/media/sessions/:id/state` — tell the backend what the
+    /// publisher is doing, so a device-side failure surfaces to the operator
+    /// instead of showing as an endless "waiting for agent".
+    pub async fn report_media_agent_state(
+        &self,
+        session_id: &str,
+        state: &str,
+        detail: &str,
+        metrics: Option<serde_json::Value>,
+    ) -> Result<(), String> {
+        let (state, failure_code) = match state {
+            "publishing" => ("live", ""),
+            "connecting" => ("negotiating", ""),
+            "reconnecting" => ("reconnecting", ""),
+            "capture_failed" => ("failed", "CAPTURE_FAILED"),
+            "encoder_failed" => ("failed", "ENCODER_FAILED"),
+            "connection_failed" => ("failed", "ICE_FAILED"),
+            "stopped" => ("ended", ""),
+            _ => return Ok(()),
+        };
+        let _ = (detail, metrics);
+        let body = serde_json::json!({"state": state, "failure_code": failure_code});
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .post(self.url(&format!("/v1/agent/media/sessions/{session_id}/state")))
+                .bearer_auth(&token)
+                .json(&body)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh().await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            return Ok(());
+        }
+        Err("report_media_agent_state: unreachable retry exhaustion".into())
+    }
+}

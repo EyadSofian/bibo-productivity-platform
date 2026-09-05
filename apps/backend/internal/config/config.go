@@ -36,7 +36,10 @@ type Config struct {
 	// MediaProvider names the SFU implementation. Empty (the default) selects
 	// the unconfigured provider, which fails every operation loudly rather than
 	// pretending to work. A real provider arrives in slice V05.
-	MediaProvider string
+	MediaProvider    string
+	LiveKitURL       string
+	LiveKitAPIKey    string
+	LiveKitAPISecret string
 	// MediaTokenTTLSeconds bounds how long a minted media token lives. Short by
 	// design: a leaked token is only useful for this long, and the client
 	// re-authorizes through the API to get another.
@@ -82,6 +85,9 @@ func Load() (*Config, error) {
 		LegacyStillCaptureEnabled: getenvBool("LEGACY_STILL_CAPTURE_ENABLED", false),
 
 		MediaProvider:        os.Getenv("MEDIA_PROVIDER"),
+		LiveKitURL:           os.Getenv("LIVEKIT_URL"),
+		LiveKitAPIKey:        os.Getenv("LIVEKIT_API_KEY"),
+		LiveKitAPISecret:     os.Getenv("LIVEKIT_API_SECRET"),
 		MediaTokenTTLSeconds: getenvInt("MEDIA_TOKEN_TTL_SECONDS", 120),
 
 		TrustedProxies:  getenvList("TRUSTED_PROXIES"),
