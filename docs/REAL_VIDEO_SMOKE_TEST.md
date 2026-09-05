@@ -78,21 +78,26 @@ decoded 640×360 frames. It requires no screen permissions. The interactive
 capture test remains separately ignored and cannot silently pass when its
 environment variables are missing.
 
-The `Verify and stage Windows media publisher` step passed on GitHub Actions run
-[33964591267](https://github.com/EyadSofian/bibo-productivity-platform/actions/runs/33964591267)
-at revision `a300d34`. This includes native unit tests, the real SFU/native decode
-test, and the release publisher build. Full desktop and installer outcomes must
-be checked separately in the run; this statement covers only the completed step.
+The full CI run
+[33977238220](https://github.com/EyadSofian/bibo-productivity-platform/actions/runs/33977238220)
+and installer run
+[33977238183](https://github.com/EyadSofian/bibo-productivity-platform/actions/runs/33977238183)
+passed at revision `d496de5`, version 1.5.11. Windows results include 53 native
+unit tests, the real SFU/native decode test, 103 desktop tests, and an actual
+NSIS installation. The installed automatic-start supervisor ran successfully;
+the installed publisher matched the build hash and its version command passed.
+macOS, web, backend and dependency checks also passed. None of these hosted
+Windows tests captures an interactive user's desktop.
 
 The last-viewer stop decision now uses the same database transaction/parent lock
 as viewer joins. A race-detector test runs concurrent join/leave 20 times and
 asserts either the join succeeds with its session alive or it is refused after
 the session ends. A successful join cannot be silently cut off by a stale count.
 
-Production was inspected read-only on 2026-09-05: `/healthz` reported schema 19;
+Before deployment, production was inspected read-only on 2026-09-05: `/healthz` reported schema 19;
 the Railway web service had no `MEDIA_PROVIDER` or `LIVEKIT_*` configuration.
 That deployment is distinct from this tested branch. Desktop release version is
-now 1.5.11 so an approved rollout can advance installed 1.5.10 clients.
+now 1.5.11.
 
 ## Deployed verification, later on 2026-09-05
 
@@ -115,3 +120,8 @@ Open the loopback URL it prints. After the browser reports PASS, stop the
 harness with Ctrl+C: it ends any remaining test sessions and archives its device.
 The isolated QA tenant remains as an audit record. Credentials stay in memory.
 It is not a load test and does not capture a screen or camera.
+
+The user confirmed on 2026-09-05 that the physical Windows device is currently
+unavailable. Real desktop capture, lock/unlock, sleep/resume, network recovery,
+local privacy stop and sustained performance on that device remain unverified.
+Recording/Video Moments and remote control remain unavailable in this version.
