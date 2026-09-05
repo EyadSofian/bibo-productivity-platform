@@ -76,5 +76,6 @@
   "screenshots": "Capturas de pantalla",
   "skipAppsCustom": "Personalizadas",
   "skipAppsAddAll": "Añadir todo",
-  "skipAppsRemoveAll": "Quitar todo"
+  "skipAppsRemoveAll": "Quitar todo",
+  "stillCaptureRetired": "⌬ La supervisión de pantalla ahora es vídeo: ya no se toman capturas periódicas, así que estos ajustes ya no se aplican. Las capturas anteriores al cambio se conservan hasta que expire su periodo de retención."
 }

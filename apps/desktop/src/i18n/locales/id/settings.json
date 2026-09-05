@@ -76,5 +76,6 @@
   "screenshots": "Tangkapan layar",
   "skipAppsCustom": "Kustom",
   "skipAppsAddAll": "Tambah semua",
-  "skipAppsRemoveAll": "Hapus semua"
+  "skipAppsRemoveAll": "Hapus semua",
+  "stillCaptureRetired": "⌬ Pemantauan layar kini berupa video — tangkapan layar berkala tidak lagi diambil, sehingga pengaturan ini tidak berlaku lagi. Tangkapan sebelum perubahan disimpan sampai masa retensinya berakhir."
 }

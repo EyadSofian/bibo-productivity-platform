@@ -1,0 +1,41 @@
+{
+  "videoLabel": "Pantalla en directo",
+  "phase": {
+    "idle": "Sin visualización.",
+    "starting": "Solicitando la sesión…",
+    "waiting_for_agent": "Esperando a que el dispositivo empiece a enviar…",
+    "connecting": "Conectando con el vídeo…",
+    "live": "En directo",
+    "reconnecting": "Conexión perdida: reconectando…",
+    "ended": "La sesión ha terminado.",
+    "error": "No se pudo iniciar la vista en directo."
+  },
+  "action": {
+    "start": "Iniciar vista en directo",
+    "stop": "Detener",
+    "retry": "Reintentar"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "No tienes permiso para ver este dispositivo.",
+    "MEDIA_DEVICE_NOT_FOUND": "Este dispositivo no está en tu cuenta.",
+    "MEDIA_SESSION_NOT_FOUND": "Esa sesión ya no existe.",
+    "MEDIA_AGENT_OFFLINE": "El dispositivo está desconectado. Estará disponible cuando vuelva.",
+    "MEDIA_MONITORING_DISABLED": "La supervisión está desactivada para este dispositivo.",
+    "MEDIA_SESSION_ENDED": "Esta sesión ha terminado. Inicia una nueva.",
+    "MEDIA_PROVIDER_UNCONFIGURED": "El vídeo en directo aún no está habilitado en este despliegue.",
+    "MEDIA_PROVIDER_ERROR": "El servicio de vídeo rechazó la solicitud.",
+    "unknown": "Algo falló al iniciar la vista en directo.",
+    "transport": "La conexión de vídeo falló."
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "La política de supervisión no permite ver este dispositivo ahora.",
+    "AGENT_OFFLINE": "El dispositivo se desconectó.",
+    "TOKEN_EXPIRED": "La credencial de la sesión caducó.",
+    "ICE_FAILED": "La red bloqueó la conexión de vídeo.",
+    "CAPTURE_FAILED": "El dispositivo no pudo capturar su pantalla.",
+    "ENCODER_FAILED": "El dispositivo no pudo codificar vídeo.",
+    "ROOM_FAILED": "El servicio de vídeo descartó la sesión.",
+    "TIMEOUT": "El dispositivo no empezó a enviar a tiempo.",
+    "unknown": "La sesión falló."
+  }
+}

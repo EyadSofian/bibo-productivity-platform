@@ -10,7 +10,9 @@
     "captureFailed": "Échec de la capture : {{error}}",
     "empty": "Aucune capture d'écran aujourd'hui. Autorisez l'enregistrement de l'écran dans l'onglet Autorisations, puis cliquez sur « Capturer maintenant ».",
     "shotTitle": "{{time}} · écran {{display}}",
-    "shotAlt": "capture d'écran {{time}}"
+    "shotAlt": "capture d'écran {{time}}",
+    "retired": "La surveillance d'écran est désormais vidéo : plus aucune capture n'est prise. Les images antérieures au changement restent listées ci-dessous.",
+    "emptyRetired": "Aucune capture n'a été prise sur cet appareil avant le passage de la surveillance d'écran à la vidéo."
   },
   "browser": {
     "visitedTitle": "Sites visités aujourd'hui",

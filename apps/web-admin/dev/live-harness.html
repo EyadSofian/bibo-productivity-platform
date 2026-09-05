@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Live player harness</title>
+    <style>
+      body { margin: 0; background: #0b0f14; color: #e6edf3; font: 14px system-ui, sans-serif; }
+      main { padding: 24px; max-width: 900px; margin: 0 auto; }
+      h1 { font-size: 18px; font-weight: 600; }
+      p { color: #8b98a5; line-height: 1.5; }
+      video { width: 100%; border-radius: 10px; background: #000; display: block; }
+      .row { display: flex; gap: 10px; margin: 16px 0; align-items: center; }
+      button { padding: 8px 14px; border-radius: 8px; border: 1px solid #2b3440;
+               background: #161b22; color: #e6edf3; cursor: pointer; }
+      code { background: #161b22; padding: 2px 6px; border-radius: 4px; }
+      #state { color: #7ee787; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Live player harness — synthetic publisher</h1>
+      <p>
+        Stands in for the Windows agent and the SFU. It runs the real
+        <code>SyntheticTransport</code> from the app source, so what you see below is a
+        genuine <code>MediaStream</code> bound to a <code>&lt;video&gt;</code> element —
+        not an image, and not a simulation of one.
+      </p>
+      <p>
+        What this proves: the rendering path, the stream binding, and teardown.
+        What it does not prove: signalling, ICE, TURN, or anything about Windows capture.
+      </p>
+      <p>
+        <strong>Frame rate caveat.</strong> The draw loop is a timer, so it keeps running
+        when the tab is hidden — but browsers throttle background timers to roughly
+        1&nbsp;Hz. A hidden tab therefore shows about 1&nbsp;fps no matter what
+        <code>fps</code> is set to. That is the browser, not the player: keep this tab
+        foregrounded when the rate matters.
+      </p>
+      <div class="row">
+        <button id="start">Start</button>
+        <button id="stop">Stop</button>
+        <span>state: <span id="state">idle</span></span>
+        <span>tracks: <span id="tracks">0</span></span>
+      </div>
+      <video id="video" autoplay playsinline muted></video>
+    </main>
+    <script type="module" src="./live-harness.ts"></script>
+  </body>
+</html>

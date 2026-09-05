@@ -9,6 +9,7 @@ import (
 
 	"ctracking/backend/internal/auth"
 	"ctracking/backend/internal/filestore"
+	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/store"
 
 	"github.com/gin-gonic/gin"
@@ -20,14 +21,23 @@ import (
 const maxScreenshotBytes = 200 * 1024
 
 // ScreenshotHandler ingests multipart screenshot uploads.
+//
+// This is the retired still-image pipeline (docs/adr/0002-video-first-media-plane.md).
+// With legacyEnabled false — the default, and the only production setting — nothing
+// reaches disk or Postgres: the submission is counted, logged, and discarded.
 type ScreenshotHandler struct {
 	store *store.Store
 	files *filestore.Store
+	// legacyEnabled re-opens ingest for one migration deploy. See
+	// config.LegacyStillCaptureEnabled; removed entirely in slice V12.
+	legacyEnabled bool
 }
 
-// NewScreenshotHandler wires the screenshot handler.
-func NewScreenshotHandler(s *store.Store, files *filestore.Store) *ScreenshotHandler {
-	return &ScreenshotHandler{store: s, files: files}
+// NewScreenshotHandler wires the screenshot handler. legacyEnabled must come from
+// config, never from a per-request or per-business value: this is a platform
+// migration switch, not a customer setting.
+func NewScreenshotHandler(s *store.Store, files *filestore.Store, legacyEnabled bool) *ScreenshotHandler {
+	return &ScreenshotHandler{store: s, files: files, legacyEnabled: legacyEnabled}
 }
 
 // Upload accepts a multipart screenshot (metadata fields + an "image" file part),
@@ -58,6 +68,29 @@ func (h *ScreenshotHandler) Upload(c *gin.Context) {
 		badRequest(c, "updated_at must be an integer")
 		return
 	}
+	// The still pipeline is retired. Acknowledge and discard BEFORE touching the
+	// image part, the business lookup, filestore or Postgres, so a submission from
+	// an agent that has not rolled forward yet cannot create a stored screenshot.
+	//
+	// Acknowledging rather than refusing is deliberate, and matches the remote-pause
+	// path below. The agent's sync worker does not mark a rejected shot as synced
+	// and does not stop retrying it (sync/worker.rs), so a 4xx would make every old
+	// agent re-upload the same image on every sync pass, forever. A discarded
+	// acknowledgement stops the retry loop and drains the outbox; the bytes are
+	// dropped either way.
+	if !h.legacyEnabled {
+		obs.RecordLegacyStillCaptureRejected()
+		legacyUploadLog.warn("still screenshot upload discarded: pipeline retired (adr/0002)",
+			"device", deviceID, "user", userID)
+		c.JSON(http.StatusOK, gin.H{
+			"accepted":              []string{clientUUID},
+			"monitoring_enabled":    true,
+			"still_capture_enabled": false,
+			"code":                  CodeLegacyCaptureDisabled,
+		})
+		return
+	}
+
 	var businessID *string
 	if v := c.PostForm("business_id"); v != "" {
 		businessID = &v

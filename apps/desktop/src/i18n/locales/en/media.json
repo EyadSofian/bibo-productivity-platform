@@ -10,7 +10,9 @@
     "captureFailed": "Capture failed: {{error}}",
     "empty": "No screenshots yet today. Grant Screen Recording on the Permissions tab, then click “Capture now”.",
     "shotTitle": "{{time}} · display {{display}}",
-    "shotAlt": "screenshot {{time}}"
+    "shotAlt": "screenshot {{time}}",
+    "retired": "Screen monitoring is video now — new screenshots are no longer captured. Images taken before the change are still listed below.",
+    "emptyRetired": "No screenshots were captured on this device before screen monitoring moved to video."
   },
   "browser": {
     "visitedTitle": "Places visited today",

@@ -120,6 +120,28 @@ export function updateBusinessSettings(id: string, patch: BusinessSettingsPatch)
   });
 }
 
+/**
+ * Deployment state from the unauthenticated health endpoint.
+ *
+ * `still_capture_enabled` is what the screenshot settings depend on: screen
+ * monitoring is video (docs/adr/0002-video-first-media-plane.md), so on every
+ * current deployment it is false and those settings no longer drive capture.
+ */
+export type PlatformState = {
+  version: string;
+  still_capture_enabled: boolean;
+};
+
+/**
+ * Reads deployment state. Callers must treat a failure as "still capture is
+ * retired": that is both the production value and the safe thing to tell an
+ * owner, since claiming capture is running when it might not be is the worse
+ * error of the two.
+ */
+export function getPlatformState() {
+  return request<PlatformState>("/healthz");
+}
+
 export function getPrivacyApps() {
   return request<{ categories: PrivacyAppCategory[] }>("/v1/public/screenshot-privacy-apps");
 }

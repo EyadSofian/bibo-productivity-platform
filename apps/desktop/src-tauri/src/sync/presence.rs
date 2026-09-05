@@ -107,6 +107,18 @@ async fn capture_requested_frame(
     use crate::platform::{permission_status, Permission, PermissionState};
     use crate::storage::SyncTable;
 
+    // The one-shot "live" frame is not live: it runs capture_once(), which stores
+    // a screenshot on disk, in the local database and then on the server. That
+    // pipeline is retired (docs/adr/0002), so the request is dropped here as well
+    // as inside capture_once -- this way the log names the real reason instead of
+    // reporting an empty capture.
+    if !crate::trackers::still_capture_permitted(&ctx.control) {
+        crate::log_info!(
+            "presence",
+            "one-shot capture ignored: still capture is retired (adr/0002)"
+        );
+        return;
+    }
     if !ctx.control.category_allowed("screen")
         || !ctx.control.capture_screenshots.load(Ordering::Relaxed)
         || permission_status(Permission::ScreenRecording) != PermissionState::Granted

@@ -10,7 +10,9 @@
     "captureFailed": "Penangkapan gagal: {{error}}",
     "empty": "Belum ada tangkapan layar hari ini. Berikan izin Perekaman Layar pada tab Izin, lalu klik “Tangkap sekarang”.",
     "shotTitle": "{{time}} · layar {{display}}",
-    "shotAlt": "tangkapan layar {{time}}"
+    "shotAlt": "tangkapan layar {{time}}",
+    "retired": "Pemantauan layar kini berupa video — tangkapan layar baru tidak lagi diambil. Gambar sebelum perubahan masih tercantum di bawah.",
+    "emptyRetired": "Tidak ada tangkapan layar di perangkat ini sebelum pemantauan layar beralih ke video."
   },
   "browser": {
     "visitedTitle": "Situs yang dikunjungi hari ini",

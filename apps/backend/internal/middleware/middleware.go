@@ -11,9 +11,12 @@ import (
 // CORS allows the web-admin origin with credentials and the headers we use.
 func CORS(allowedOrigin string) gin.HandlerFunc {
 	return cors.New(cors.Config{
-		AllowOrigins:     []string{allowedOrigin},
-		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowOrigins: []string{allowedOrigin},
+		AllowMethods: []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Type", "Authorization", HeaderRequestID},
+		// Exposed so the browser can read it off a failed response: an error the
+		// user reports is only traceable if the id reaches the UI.
+		ExposeHeaders:    []string{HeaderRequestID},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	})

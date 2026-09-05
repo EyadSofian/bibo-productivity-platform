@@ -20,11 +20,15 @@ import (
 type DeviceHandler struct {
 	store    *store.Store
 	commands *live.CommandBus
+	// legacyStillCapture gates RequestLiveCapture, which despite its name drives
+	// the RETAINED screenshot pipeline: the agent answers it by writing a stored
+	// screenshot, not by streaming. See config.LegacyStillCaptureEnabled.
+	legacyStillCapture bool
 }
 
 // NewDeviceHandler wires the device handler.
-func NewDeviceHandler(s *store.Store, bus *live.CommandBus) *DeviceHandler {
-	return &DeviceHandler{store: s, commands: bus}
+func NewDeviceHandler(s *store.Store, bus *live.CommandBus, legacyStillCapture bool) *DeviceHandler {
+	return &DeviceHandler{store: s, commands: bus, legacyStillCapture: legacyStillCapture}
 }
 
 // List returns the devices in one business the caller owns.
@@ -125,11 +129,32 @@ func (h *DeviceHandler) SetMonitoring(c *gin.Context) {
 
 // RequestLiveCapture asks an online managed device for one policy-compliant
 // frame. The next authenticated heartbeat consumes the request.
+//
+// The name is misleading and the behaviour is the reason this endpoint is retired:
+// the agent services it through capture_once(), which writes a PERMANENT
+// screenshot to local disk, the local database and then the server -- a button
+// labelled "live" that produced stored evidence. Video-first screen viewing is
+// GET /v1/devices/:device_id/live/stream, which stores nothing.
 func (h *DeviceHandler) RequestLiveCapture(c *gin.Context) {
 	ownerID, _ := auth.UserID(c)
 	deviceID := c.Param("device_id")
 	if _, err := uuid.Parse(deviceID); err != nil {
 		badRequest(c, "device_id must be a uuid")
+		return
+	}
+
+	// Refused outright rather than acknowledged-and-discarded: this caller is an
+	// owner or an API client, not an agent retry loop, so a plain permanent error
+	// is the honest answer. 410 says the endpoint is gone, not that this request
+	// was malformed or that retrying later might work.
+	if !h.legacyStillCapture {
+		obs.RecordLegacyStillCaptureRejected()
+		legacyLiveCaptureLog.warn("live-capture request refused: still capture retired (adr/0002)",
+			"owner", ownerID, "device", deviceID)
+		c.JSON(http.StatusGone, gin.H{
+			"error": "still-image capture is retired; use live video",
+			"code":  CodeLegacyCaptureDisabled,
+		})
 		return
 	}
 

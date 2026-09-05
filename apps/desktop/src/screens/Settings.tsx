@@ -43,6 +43,9 @@ export type AppSettings = {
   screenshot_mode: string;
   screenshot_skip_apps: string[];
   count_keystrokes: boolean;
+  /// The retired still-screenshot pipeline may run. Platform-controlled, not a
+  /// user preference; false on every current build.
+  still_capture_enabled: boolean;
   consented: boolean;
   local_only: boolean;
   onboarding_completed: boolean;
@@ -499,6 +502,16 @@ export function Settings({
       ) : (
         <>
           <Section title={t("screenshots")}>
+            {!settings.still_capture_enabled ? (
+              // Screen monitoring is video now, so periodic screenshots no
+              // longer run. The controls are hidden rather than disabled: a
+              // greyed-out interval picker still implies capture is happening
+              // on some schedule, and it is not happening at all.
+              <div className="muted" style={{ fontSize: 12, padding: "12px 2px" }}>
+                {t("stillCaptureRetired")}
+              </div>
+            ) : (
+            <>
             <Row title={t("captureScreenshots")}>
               <Switch
                 checked={settings.capture_screenshots}
@@ -564,6 +577,8 @@ export function Settings({
                   />
                 </Row>
               </>
+            )}
+            </>
             )}
           </Section>
 

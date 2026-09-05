@@ -26,11 +26,15 @@ type DBChecker interface {
 // HealthHandler serves the liveness/readiness endpoint.
 type HealthHandler struct {
 	db DBChecker
+	// legacyStillCapture mirrors config.LegacyStillCaptureEnabled. It is reported
+	// as deployment state, next to the build version: operators and the admin UI
+	// both need to know whether this deployment still accepts still images.
+	legacyStillCapture bool
 }
 
 // NewHealthHandler builds a HealthHandler over the given database checker.
-func NewHealthHandler(db DBChecker) *HealthHandler {
-	return &HealthHandler{db: db}
+func NewHealthHandler(db DBChecker, legacyStillCapture bool) *HealthHandler {
+	return &HealthHandler{db: db, legacyStillCapture: legacyStillCapture}
 }
 
 // Health reports build version and database state. It returns 503 when the
@@ -57,5 +61,15 @@ func (h *HealthHandler) Health(c *gin.Context) {
 		"version":        Version,
 		"database":       "ok",
 		"schema_version": schema,
+		// Non-zero means agents are still submitting still images, i.e. the
+		// video-first migration has not finished rolling out. Exposed here
+		// because the existing probes already read this endpoint and the
+		// backend has no metrics endpoint of its own. It is a bare count with
+		// no identifiers, so it stays safe on an unauthenticated route.
+		"legacy_still_capture_rejected": obs.LegacyStillCaptureRejected(),
+		// Whether this deployment still accepts still-image capture at all. The
+		// admin UI reads it so it can say plainly that the screenshot settings no
+		// longer drive anything, instead of showing live-looking controls.
+		"still_capture_enabled": h.legacyStillCapture,
 	})
 }

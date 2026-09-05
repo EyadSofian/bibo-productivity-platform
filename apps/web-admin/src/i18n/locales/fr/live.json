@@ -1,0 +1,41 @@
+{
+  "videoLabel": "Écran en direct",
+  "phase": {
+    "idle": "Aucune visualisation.",
+    "starting": "Demande de la session…",
+    "waiting_for_agent": "En attente de l'envoi par l'appareil…",
+    "connecting": "Connexion au flux vidéo…",
+    "live": "En direct",
+    "reconnecting": "Connexion perdue : reconnexion…",
+    "ended": "La session est terminée.",
+    "error": "Impossible de démarrer la vue en direct."
+  },
+  "action": {
+    "start": "Démarrer la vue en direct",
+    "stop": "Arrêter",
+    "retry": "Réessayer"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "Vous n'avez pas la permission de voir cet appareil.",
+    "MEDIA_DEVICE_NOT_FOUND": "Cet appareil n'est pas dans votre compte.",
+    "MEDIA_SESSION_NOT_FOUND": "Cette session n'existe plus.",
+    "MEDIA_AGENT_OFFLINE": "L'appareil est hors ligne. Il sera disponible à son retour.",
+    "MEDIA_MONITORING_DISABLED": "La surveillance est désactivée pour cet appareil.",
+    "MEDIA_SESSION_ENDED": "Cette session est terminée. Démarrez-en une nouvelle.",
+    "MEDIA_PROVIDER_UNCONFIGURED": "La vidéo en direct n'est pas encore activée sur ce déploiement.",
+    "MEDIA_PROVIDER_ERROR": "Le service vidéo a rejeté la demande.",
+    "unknown": "Une erreur est survenue au démarrage de la vue en direct.",
+    "transport": "La connexion vidéo a échoué."
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "La politique de surveillance n'autorise pas à voir cet appareil maintenant.",
+    "AGENT_OFFLINE": "L'appareil s'est déconnecté.",
+    "TOKEN_EXPIRED": "Les identifiants de session ont expiré.",
+    "ICE_FAILED": "Le réseau a bloqué la connexion vidéo.",
+    "CAPTURE_FAILED": "L'appareil n'a pas pu capturer son écran.",
+    "ENCODER_FAILED": "L'appareil n'a pas pu encoder la vidéo.",
+    "ROOM_FAILED": "Le service vidéo a abandonné la session.",
+    "TIMEOUT": "L'appareil n'a pas commencé à envoyer à temps.",
+    "unknown": "La session a échoué."
+  }
+}

@@ -37,6 +37,15 @@ pub struct Settings {
     /// Capture periodic screenshots. User opt-out (Settings). Default on.
     #[serde(default = "default_true")]
     pub capture_screenshots: bool,
+    /// The retired still-screenshot pipeline may run at all. Default **off**:
+    /// screen monitoring is video (docs/adr/0002-video-first-media-plane.md).
+    ///
+    /// Not user-editable and not covered by `allow_employee_override` -- only
+    /// `GET /v1/policy` can raise it, and only while the platform is migrating.
+    /// An existing settings.json with no such key deserializes to false, so an
+    /// upgraded device stops capturing without needing to reach the backend.
+    #[serde(default)]
+    pub still_capture_enabled: bool,
     /// "privacy" (frontmost window only — the default) | "normal" (one shot per
     /// display). Window shots fall back to full screen when the window can't be
     /// captured. Pre-rename values ("full_screen"/"active_window") still parse.
@@ -139,6 +148,7 @@ impl Default for Settings {
             hide_dock: false,
             remote_assist_preapproved: false,
             capture_screenshots: true,
+            still_capture_enabled: false,
             screenshot_mode: default_screenshot_mode(),
             screenshot_skip_apps: default_skip_apps(),
             count_keystrokes: true,
@@ -201,6 +211,12 @@ pub fn apply(s: &Settings, control: &crate::trackers::TrackerControl) {
     control
         .capture_screenshots
         .store(s.capture_screenshots && consent_ok, Relaxed);
+    // Deliberately not ANDed with consent: this is the platform's retirement
+    // switch, not a consent-gated capability. Consent can only ever narrow what
+    // is captured, and this is already false by default.
+    control
+        .still_capture_enabled
+        .store(s.still_capture_enabled, Relaxed);
     control
         .count_keystrokes
         .store(s.count_keystrokes && consent_ok, Relaxed);
@@ -249,6 +265,45 @@ mod tests {
         assert!(!s.domain_only);
         assert!(s.capture_browser_urls);
         assert!(!s.remote_assist_preapproved);
+    }
+
+    /// The upgrade path. A settings.json written by any earlier build has no
+    /// still_capture_enabled key, and that device must come up with the pipeline
+    /// already retired -- before it logs in, fetches a policy, or reaches the
+    /// network at all.
+    #[test]
+    fn settings_from_an_older_build_come_up_retired() {
+        let dir = std::env::temp_dir().join(format!(
+            "ctracking_v02_upgrade_{}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("settings.json");
+        // Deliberately a pre-V02 file: capture on, no still_capture_enabled key.
+        std::fs::write(
+            &path,
+            r#"{"theme":"system","idle_threshold_s":300,"screenshot_interval_s":300,
+                "screenshot_retention_days":30,"domain_only":false,
+                "capture_screenshots":true,"count_keystrokes":true}"#,
+        )
+        .unwrap();
+
+        let loaded = load(&path);
+        assert!(
+            loaded.capture_screenshots,
+            "the old opt-in should survive the upgrade unchanged"
+        );
+        assert!(
+            !loaded.still_capture_enabled,
+            "an upgraded device must not capture stills before hearing from the platform"
+        );
+
+        // And the value actually reaches the trackers, not just the struct.
+        let control = crate::trackers::TrackerControl::new();
+        apply(&loaded, &control);
+        assert!(!crate::trackers::still_capture_permitted(&control));
+
+        std::fs::remove_dir_all(&dir).ok();
     }
 
     #[test]

@@ -83,6 +83,11 @@ pub struct Policy {
     /// 'team' | 'family' — drives the onboarding copy (employee vs kid).
     #[serde(default)]
     pub kind: Option<String>,
+    /// Whether the retired still-screenshot pipeline may run. Absent on an older
+    /// backend, which is treated as "still retired": the agent never turns
+    /// capture back on because a field was missing from the response.
+    #[serde(default)]
+    pub still_capture_enabled: Option<bool>,
     /// "full_screen" | "active_window" — org-set screenshot capture mode.
     #[serde(default)]
     pub screenshot_mode: Option<String>,
@@ -886,6 +891,39 @@ async fn status_err(resp: reqwest::Response) -> String {
         format!("backend returned {status}")
     } else {
         format!("backend returned {status}: {body}")
+    }
+}
+
+#[cfg(test)]
+mod policy_tests {
+    use super::Policy;
+
+    /// A backend that predates V02 has no still_capture_enabled field. Silence
+    /// must read as "retired", never as "allowed" -- otherwise rolling the agent
+    /// forward before the backend would restore stored screenshots.
+    #[test]
+    fn absent_still_capture_field_is_not_permission() {
+        let policy: Policy = serde_json::from_str(
+            r#"{"managed":true,"allow_employee_override":false,"screenshot_interval_s":300}"#,
+        )
+        .expect("older policy payload should still parse");
+
+        assert_eq!(policy.still_capture_enabled, None);
+        assert!(
+            !policy.still_capture_enabled.unwrap_or(false),
+            "a missing field must resolve to retired"
+        );
+    }
+
+    #[test]
+    fn explicit_still_capture_field_is_honoured_both_ways() {
+        for (raw, want) in [("true", true), ("false", false)] {
+            let policy: Policy = serde_json::from_str(&format!(
+                r#"{{"managed":true,"allow_employee_override":false,"still_capture_enabled":{raw}}}"#
+            ))
+            .expect("policy payload should parse");
+            assert_eq!(policy.still_capture_enabled, Some(want));
+        }
     }
 }
 

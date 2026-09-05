@@ -215,3 +215,8 @@ packaged for the Web Store, and three production releases (1.2.0 → 1.3.0 → 1
 139. Block crawlers on staging: Disallow-all robots.txt + noindex meta — **Done**
 140. bibomon: custom single-binary monitoring replaces the 138 Grafana stack (agent on Oracle → mac server, dashboard + Telegram alerts) — **Done**
 141. Screenshot modes: active-window capture + app skip-list (e.g. Zalo), org-controlled via capture policy — **Implemented (QA pending)**
+142. BiBoTracker rename: Windows installer duplicate-install risk — **Open** (blocks the next Windows release)
+143. Video-first media plane (Engosoft): V01 media audit + ADR 0002 + V02–V14 backlog — **V01 done (docs only; no code changed)**
+144. V02: stop all new still-screenshot capture (kill switch, agent gate, video-first CI guard, read-only inventory) — **Implemented (Windows QA pending)**
+145. V03: media control plane — MediaProvider/RecordingStore contracts, media_* schema, session state machine, 7-permission RBAC, typed errors + request id, audit trail — **Implemented (no SFU yet)**
+146. V05 (partial): agent-state callback + LivePlayer (MediaStream → <video>) + synthetic publisher harness; agent/SFU half still open — **Implemented (agent-free parts)**

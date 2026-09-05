@@ -1,0 +1,41 @@
+{
+  "videoLabel": "Live screen",
+  "phase": {
+    "idle": "Not watching.",
+    "starting": "Requesting the session…",
+    "waiting_for_agent": "Waiting for the device to start sending…",
+    "connecting": "Connecting to the video stream…",
+    "live": "Live",
+    "reconnecting": "Connection lost — reconnecting…",
+    "ended": "The session has ended.",
+    "error": "Live view could not start."
+  },
+  "action": {
+    "start": "Start live view",
+    "stop": "Stop",
+    "retry": "Try again"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "You do not have permission to watch this device.",
+    "MEDIA_DEVICE_NOT_FOUND": "This device is not in your account.",
+    "MEDIA_SESSION_NOT_FOUND": "That session no longer exists.",
+    "MEDIA_AGENT_OFFLINE": "The device is offline. It will be available when it reconnects.",
+    "MEDIA_MONITORING_DISABLED": "Monitoring is turned off for this device.",
+    "MEDIA_SESSION_ENDED": "This session has ended. Start a new one.",
+    "MEDIA_PROVIDER_UNCONFIGURED": "Live video is not enabled on this deployment yet.",
+    "MEDIA_PROVIDER_ERROR": "The video service rejected the request.",
+    "unknown": "Something went wrong starting live view.",
+    "transport": "The video connection failed."
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "The monitoring policy does not allow watching this device right now.",
+    "AGENT_OFFLINE": "The device went offline.",
+    "TOKEN_EXPIRED": "The session credential expired.",
+    "ICE_FAILED": "The network blocked the video connection.",
+    "CAPTURE_FAILED": "The device could not capture its screen.",
+    "ENCODER_FAILED": "The device could not encode video.",
+    "ROOM_FAILED": "The video service dropped the session.",
+    "TIMEOUT": "The device did not start sending in time.",
+    "unknown": "The session failed."
+  }
+}

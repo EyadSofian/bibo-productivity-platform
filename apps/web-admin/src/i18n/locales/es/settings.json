@@ -90,5 +90,9 @@
     "title": "Cuenta",
     "email": "Correo electrónico",
     "displayName": "Nombre visible"
+  },
+  "stillCaptureRetired": {
+    "title": "Ya no se toman capturas de pantalla",
+    "desc": "La supervisión de pantalla ahora es vídeo. Estos ajustes siguen describiendo las capturas anteriores al cambio y su retención; ya no afectan a lo que se captura."
   }
 }

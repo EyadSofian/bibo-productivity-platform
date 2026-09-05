@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"ctracking/backend/internal/auth"
 	"ctracking/backend/internal/config"
 	"ctracking/backend/internal/filestore"
 	"ctracking/backend/internal/handlers"
 	"ctracking/backend/internal/live"
+	"ctracking/backend/internal/media"
 	"ctracking/backend/internal/middleware"
 	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/retention"
@@ -46,7 +48,9 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 		_ = r.SetTrustedProxies(nil)
 	}
 
-	r.Use(gin.Logger(), gin.Recovery(), middleware.CORS(cfg.AllowedOrigin))
+	// RequestID goes first so every later middleware, log line and error body
+	// carries the same id.
+	r.Use(middleware.RequestID(), gin.Logger(), gin.Recovery(), middleware.CORS(cfg.AllowedOrigin))
 
 	// Report panics to Sentry (then re-panic so gin.Recovery still returns 500).
 	// No-op when SENTRY_DSN is unset (the hub has no client).
@@ -54,13 +58,13 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 		r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 	}
 
-	r.GET("/healthz", handlers.NewHealthHandler(st).Health)
+	r.GET("/healthz", handlers.NewHealthHandler(st, cfg.LegacyStillCaptureEnabled).Health)
 
 	tok := auth.NewManager(cfg.JWTSecret)
 	authH := handlers.NewAuthHandler(st, tok)
-	ownerH := handlers.NewOwnerHandler(st)
+	ownerH := handlers.NewOwnerHandler(st, cfg.LegacyStillCaptureEnabled)
 	syncH := handlers.NewSyncHandler(st)
-	shotH := handlers.NewScreenshotHandler(st, files)
+	shotH := handlers.NewScreenshotHandler(st, files, cfg.LegacyStillCaptureEnabled)
 	reportsH := handlers.NewReportsHandler(st, files)
 	retentionH := handlers.NewRetentionHandler(st, ret)
 	// Live frames are ephemeral and stay out of Postgres; see internal/live.
@@ -70,7 +74,13 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	liveHub := live.NewHub()
 	liveCommands := live.NewCommandBus()
 
-	deviceH := handlers.NewDeviceHandler(st, liveCommands)
+	deviceH := handlers.NewDeviceHandler(st, liveCommands, cfg.LegacyStillCaptureEnabled)
+	// No SFU is wired up yet (slice V05): the unconfigured provider fails every
+	// operation with a typed error the handlers turn into
+	// MEDIA_PROVIDER_UNCONFIGURED, rather than silently doing nothing.
+	mediaProvider := mediaProviderFor(cfg)
+	mediaH := handlers.NewMediaHandler(st, mediaProvider,
+		time.Duration(cfg.MediaTokenTTLSeconds)*time.Second)
 	presenceH := handlers.NewPresenceHandler(st)
 	remoteAssistH := handlers.NewRemoteAssistHandler(st, liveHub, liveCommands)
 	liveViewH := handlers.NewLiveViewHandler(st, liveHub, liveCommands)
@@ -135,6 +145,17 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	authed.GET("/remote-assist/:session_id/frame", remoteAssistH.Frame)
 	// Server-push replacement for the dashboard's frame poll.
 	authed.GET("/remote-assist/:session_id/frames/stream", remoteAssistH.FrameStream)
+	// Video media control plane (docs/adr/0002-video-first-media-plane.md).
+	// Metadata, authorization and short-lived tokens only -- no media bytes.
+	authed.POST("/devices/:device_id/media/live", mediaH.StartLive)
+	authed.GET("/media/sessions/:session_id", mediaH.Session)
+	authed.POST("/media/sessions/:session_id/viewer-token", mediaH.ViewerToken)
+	authed.POST("/media/sessions/:session_id/stop", mediaH.Stop)
+	// Agent-authenticated: the store predicate requires the session's device to
+	// belong to the calling agent's own user, so this cannot mint a token for
+	// another device even with a valid agent credential.
+	authed.POST("/media/sessions/:session_id/publisher-token", mediaH.PublisherToken)
+
 	// Live view: the owner's frame stream, and the agent's command stream.
 	// Holding the first open is what keeps the agent capturing.
 	authed.GET("/devices/:device_id/live/stream", liveViewH.Stream)
@@ -170,6 +191,9 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	ingest.POST("/presence/heartbeat", presenceH.Heartbeat)
 	ingest.POST("/remote-assist/:session_id/frame", remoteAssistH.UploadFrame)
 	ingest.POST("/agent/live/frame", liveViewH.UploadFrame)
+	// A publisher reporting its own progress. Rate-limited with the other
+	// agent-push routes: a reconnect storm reports state on every attempt.
+	ingest.POST("/agent/media/sessions/:session_id/state", mediaH.AgentState)
 
 	// Owner read path (reporting).
 	authed.GET("/reports/employees", reportsH.Roster)
@@ -234,5 +258,21 @@ func staticSite(dir string) gin.HandlerFunc {
 			return
 		}
 		serve(c, marketingIndex)
+	}
+}
+
+// mediaProviderFor selects the SFU implementation.
+//
+// An unrecognised MEDIA_PROVIDER falls back to the unconfigured provider and
+// says so, rather than booting with no media plane and no explanation. There is
+// no real implementation to select yet; slice V05 adds one.
+func mediaProviderFor(cfg *config.Config) media.MediaProvider {
+	switch cfg.MediaProvider {
+	case "", "unconfigured":
+		return media.NewUnconfigured()
+	default:
+		obs.Warn("unknown MEDIA_PROVIDER; live video is disabled",
+			"provider", cfg.MediaProvider)
+		return media.NewUnconfigured()
 	}
 }

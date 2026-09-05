@@ -76,5 +76,6 @@
   "screenshots": "スクリーンショット",
   "skipAppsCustom": "カスタム",
   "skipAppsAddAll": "すべて追加",
-  "skipAppsRemoveAll": "すべて削除"
+  "skipAppsRemoveAll": "すべて削除",
+  "stillCaptureRetired": "⌬ 画面モニタリングは動画になりました。定期スクリーンショットは取得されないため、これらの設定は適用されません。変更前のスクリーンショットは保持期間が終わるまで保管されます。"
 }

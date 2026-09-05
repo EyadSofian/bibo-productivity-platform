@@ -10,7 +10,9 @@
     "captureFailed": "截图失败：{{error}}",
     "empty": "今天还没有截图。请在权限标签页授予屏幕录制权限，然后点击“立即截图”。",
     "shotTitle": "{{time}} · 显示器 {{display}}",
-    "shotAlt": "截图 {{time}}"
+    "shotAlt": "截图 {{time}}",
+    "retired": "屏幕监控现已改为视频，不再截取新的屏幕截图。变更前拍摄的图片仍显示在下方。",
+    "emptyRetired": "在屏幕监控改为视频之前，此设备未截取任何屏幕截图。"
   },
   "browser": {
     "visitedTitle": "今天访问的网站",

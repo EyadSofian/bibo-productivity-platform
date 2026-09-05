@@ -76,5 +76,6 @@
   "screenshots": "Screenshots",
   "skipAppsCustom": "Custom",
   "skipAppsAddAll": "Add all",
-  "skipAppsRemoveAll": "Remove all"
+  "skipAppsRemoveAll": "Remove all",
+  "stillCaptureRetired": "⌬ Screen monitoring is video now — periodic screenshots are no longer captured, so these settings no longer apply. Screenshots taken before the change are kept until their retention period ends."
 }

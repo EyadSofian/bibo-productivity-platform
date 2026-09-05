@@ -180,6 +180,10 @@ pub fn set_settings(
     let persisted = state.current.lock().unwrap().clone();
     value.locale = persisted.locale.clone();
     value.managed_locked = persisted.managed_locked;
+    // The still-capture retirement is not a user setting. Only apply_org_policy
+    // may change it, so a settings payload -- however it was constructed -- can
+    // never bring the stored-screenshot pipeline back (docs/adr/0002).
+    value.still_capture_enabled = persisted.still_capture_enabled;
     // When the org controls capture settings, ignore changes to those fields —
     // the rest (theme, dock, etc.) still apply.
     if state.managed.lock().unwrap().locked() {
@@ -225,9 +229,17 @@ pub async fn apply_org_policy(
 
     // Persist the lock itself even when the policy was just unlocked. It must
     // survive offline restarts, and a stale lock must clear after an admin change.
+    //
+    // The still-capture retirement rides along here, OUTSIDE the `locked` branch
+    // below, because it is a platform decision rather than an org preference:
+    // allow_employee_override must not be able to bring stored screenshots back.
+    // A backend that omits the field is read as "still retired" (None -> false),
+    // so an older server can never re-enable capture by silence.
     {
         let mut s = settings.current.lock().unwrap();
         s.managed_locked = status.locked();
+        s.still_capture_enabled = policy.still_capture_enabled.unwrap_or(false);
+        crate::settings::apply(&s, &control);
         let _ = crate::settings::save(&settings.path, &s);
     }
 

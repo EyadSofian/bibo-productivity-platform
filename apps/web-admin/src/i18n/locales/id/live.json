@@ -1,0 +1,41 @@
+{
+  "videoLabel": "Layar langsung",
+  "phase": {
+    "idle": "Tidak sedang menonton.",
+    "starting": "Meminta sesi…",
+    "waiting_for_agent": "Menunggu perangkat mulai mengirim…",
+    "connecting": "Menyambung ke aliran video…",
+    "live": "Langsung",
+    "reconnecting": "Koneksi terputus — menyambung ulang…",
+    "ended": "Sesi telah berakhir.",
+    "error": "Tampilan langsung tidak dapat dimulai."
+  },
+  "action": {
+    "start": "Mulai tampilan langsung",
+    "stop": "Hentikan",
+    "retry": "Coba lagi"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "Anda tidak punya izin untuk melihat perangkat ini.",
+    "MEDIA_DEVICE_NOT_FOUND": "Perangkat ini tidak ada di akun Anda.",
+    "MEDIA_SESSION_NOT_FOUND": "Sesi itu sudah tidak ada.",
+    "MEDIA_AGENT_OFFLINE": "Perangkat sedang offline. Akan tersedia saat tersambung kembali.",
+    "MEDIA_MONITORING_DISABLED": "Pemantauan dimatikan untuk perangkat ini.",
+    "MEDIA_SESSION_ENDED": "Sesi ini telah berakhir. Mulai yang baru.",
+    "MEDIA_PROVIDER_UNCONFIGURED": "Video langsung belum diaktifkan pada penerapan ini.",
+    "MEDIA_PROVIDER_ERROR": "Layanan video menolak permintaan.",
+    "unknown": "Terjadi kesalahan saat memulai tampilan langsung.",
+    "transport": "Koneksi video gagal."
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "Kebijakan pemantauan tidak mengizinkan melihat perangkat ini sekarang.",
+    "AGENT_OFFLINE": "Perangkat terputus.",
+    "TOKEN_EXPIRED": "Kredensial sesi kedaluwarsa.",
+    "ICE_FAILED": "Jaringan memblokir koneksi video.",
+    "CAPTURE_FAILED": "Perangkat tidak dapat menangkap layarnya.",
+    "ENCODER_FAILED": "Perangkat tidak dapat mengodekan video.",
+    "ROOM_FAILED": "Layanan video menghentikan sesi.",
+    "TIMEOUT": "Perangkat tidak mulai mengirim tepat waktu.",
+    "unknown": "Sesi gagal."
+  }
+}

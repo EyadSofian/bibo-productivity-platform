@@ -10,7 +10,9 @@
     "captureFailed": "Error en la captura: {{error}}",
     "empty": "Aún no hay capturas de pantalla hoy. Conceda la grabación de pantalla en la pestaña Permisos y, a continuación, haga clic en «Capturar ahora».",
     "shotTitle": "{{time}} · pantalla {{display}}",
-    "shotAlt": "captura de pantalla {{time}}"
+    "shotAlt": "captura de pantalla {{time}}",
+    "retired": "La supervisión de pantalla ahora es vídeo: ya no se toman capturas nuevas. Las imágenes anteriores al cambio siguen abajo.",
+    "emptyRetired": "No se tomó ninguna captura en este dispositivo antes de que la supervisión de pantalla pasara a vídeo."
   },
   "browser": {
     "visitedTitle": "Sitios visitados hoy",

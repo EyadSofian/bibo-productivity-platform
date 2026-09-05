@@ -76,5 +76,6 @@
   "screenshots": "Captures d'écran",
   "skipAppsCustom": "Personnalisées",
   "skipAppsAddAll": "Tout ajouter",
-  "skipAppsRemoveAll": "Tout retirer"
+  "skipAppsRemoveAll": "Tout retirer",
+  "stillCaptureRetired": "⌬ La surveillance d'écran est désormais vidéo : les captures périodiques ne sont plus prises, ces réglages ne s'appliquent donc plus. Les captures antérieures au changement sont conservées jusqu'à la fin de leur période de rétention."
 }

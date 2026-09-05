@@ -90,5 +90,9 @@
     "title": "Compte",
     "email": "E-mail",
     "displayName": "Nom affiché"
+  },
+  "stillCaptureRetired": {
+    "title": "Les captures d'écran ne sont plus prises",
+    "desc": "La surveillance d'écran est désormais vidéo. Ces réglages décrivent encore les captures antérieures au changement et leur rétention ; ils n'influencent plus ce qui est capturé."
   }
 }

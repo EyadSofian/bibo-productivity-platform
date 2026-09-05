@@ -89,6 +89,14 @@ async function parseBody(res: Response): Promise<unknown> {
 function errorMessage(body: unknown, fallback: string): string {
   if (body && typeof body === "object") {
     const b = body as Record<string, unknown>;
+    // The media control plane returns a typed envelope:
+    //   {"error": {"code", "message", "request_id", "retryable"}}
+    // Older endpoints return {"error": "message"}. Both are read here so a
+    // caller that only wants text does not have to know which surface it hit.
+    const err = b["error"];
+    if (err && typeof err === "object" && typeof (err as Record<string, unknown>).message === "string") {
+      return (err as Record<string, string>).message;
+    }
     for (const key of ["error", "message", "detail"]) {
       if (typeof b[key] === "string") return b[key] as string;
     }

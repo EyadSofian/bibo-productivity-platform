@@ -90,5 +90,9 @@
     "title": "Account",
     "email": "Email",
     "displayName": "Display name"
+  },
+  "stillCaptureRetired": {
+    "title": "Screenshots are no longer captured",
+    "desc": "Screen monitoring is video now. These settings still describe screenshots taken before the change and their retention; they no longer affect what is captured."
   }
 }

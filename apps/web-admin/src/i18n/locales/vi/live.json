@@ -1,0 +1,41 @@
+{
+  "videoLabel": "Màn hình trực tiếp",
+  "phase": {
+    "idle": "Không đang xem.",
+    "starting": "Đang yêu cầu phiên…",
+    "waiting_for_agent": "Đang chờ thiết bị bắt đầu gửi…",
+    "connecting": "Đang kết nối luồng video…",
+    "live": "Trực tiếp",
+    "reconnecting": "Mất kết nối — đang kết nối lại…",
+    "ended": "Phiên đã kết thúc.",
+    "error": "Không thể bắt đầu xem trực tiếp."
+  },
+  "action": {
+    "start": "Bắt đầu xem trực tiếp",
+    "stop": "Dừng",
+    "retry": "Thử lại"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "Bạn không có quyền xem thiết bị này.",
+    "MEDIA_DEVICE_NOT_FOUND": "Thiết bị này không thuộc tài khoản của bạn.",
+    "MEDIA_SESSION_NOT_FOUND": "Phiên đó không còn tồn tại.",
+    "MEDIA_AGENT_OFFLINE": "Thiết bị đang ngoại tuyến. Sẽ khả dụng khi kết nối lại.",
+    "MEDIA_MONITORING_DISABLED": "Giám sát đã tắt cho thiết bị này.",
+    "MEDIA_SESSION_ENDED": "Phiên này đã kết thúc. Hãy bắt đầu phiên mới.",
+    "MEDIA_PROVIDER_UNCONFIGURED": "Video trực tiếp chưa được bật trên bản triển khai này.",
+    "MEDIA_PROVIDER_ERROR": "Dịch vụ video đã từ chối yêu cầu.",
+    "unknown": "Đã xảy ra lỗi khi bắt đầu xem trực tiếp.",
+    "transport": "Kết nối video thất bại."
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "Chính sách giám sát không cho phép xem thiết bị này lúc này.",
+    "AGENT_OFFLINE": "Thiết bị đã ngoại tuyến.",
+    "TOKEN_EXPIRED": "Thông tin xác thực phiên đã hết hạn.",
+    "ICE_FAILED": "Mạng đã chặn kết nối video.",
+    "CAPTURE_FAILED": "Thiết bị không thể chụp màn hình.",
+    "ENCODER_FAILED": "Thiết bị không thể mã hóa video.",
+    "ROOM_FAILED": "Dịch vụ video đã ngắt phiên.",
+    "TIMEOUT": "Thiết bị không bắt đầu gửi kịp thời.",
+    "unknown": "Phiên đã thất bại."
+  }
+}

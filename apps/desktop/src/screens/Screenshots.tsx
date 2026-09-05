@@ -31,7 +31,16 @@ function hhmmss(ts: number) {
   return d.toLocaleTimeString();
 }
 
-export function Screenshots() {
+/**
+ * Local screenshot history.
+ *
+ * Capture itself is retired -- screen monitoring is video
+ * (docs/adr/0002-video-first-media-plane.md) -- so with `stillCaptureEnabled`
+ * false this screen is read-only: it still shows images captured before the
+ * change, but cannot take new ones. Existing images are deliberately left alone;
+ * deleting them is a separate, explicit decision (slice V12).
+ */
+export function Screenshots({ stillCaptureEnabled = false }: { stillCaptureEnabled?: boolean }) {
   const { t } = useTranslation("media");
   const [shots, setShots] = useState<Shot[]>([]);
   const [busy, setBusy] = useState(false);
@@ -78,19 +87,23 @@ export function Screenshots() {
       <div className="bb-shots-bar">
         <div className="bb-shots-bar__txt">
           <div className="bb-panel__title">{t("screenshots.title")}</div>
-          <div className="bb-panel__sub">{t("screenshots.intro")}</div>
+          <div className="bb-panel__sub">
+            {stillCaptureEnabled ? t("screenshots.intro") : t("screenshots.retired")}
+          </div>
         </div>
-        <button
-          className="bibo-btn bibo-btn--primary"
-          style={{ marginLeft: "auto" }}
-          onClick={captureNow}
-          disabled={busy}
-        >
-          <span style={{ display: "inline-flex", lineHeight: 0 }}>
-            <CameraIcon />
-          </span>
-          <span>{busy ? t("screenshots.capturing") : t("screenshots.captureNow")}</span>
-        </button>
+        {stillCaptureEnabled && (
+          <button
+            className="bibo-btn bibo-btn--primary"
+            style={{ marginLeft: "auto" }}
+            onClick={captureNow}
+            disabled={busy}
+          >
+            <span style={{ display: "inline-flex", lineHeight: 0 }}>
+              <CameraIcon />
+            </span>
+            <span>{busy ? t("screenshots.capturing") : t("screenshots.captureNow")}</span>
+          </button>
+        )}
       </div>
 
       {msg && (
@@ -102,7 +115,7 @@ export function Screenshots() {
       {shots.length === 0 ? (
         <Card>
           <div className="muted" style={{ fontSize: 12 }}>
-            {t("screenshots.empty")}
+            {stillCaptureEnabled ? t("screenshots.empty") : t("screenshots.emptyRetired")}
           </div>
         </Card>
       ) : (

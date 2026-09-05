@@ -76,5 +76,6 @@
   "screenshots": "Ảnh chụp màn hình",
   "skipAppsCustom": "Tùy chỉnh",
   "skipAppsAddAll": "Thêm tất cả",
-  "skipAppsRemoveAll": "Xóa tất cả"
+  "skipAppsRemoveAll": "Xóa tất cả",
+  "stillCaptureRetired": "⌬ Giám sát màn hình giờ là video — ảnh chụp định kỳ không còn được chụp nên các cài đặt này không còn hiệu lực. Ảnh chụp trước khi thay đổi được giữ đến hết thời hạn lưu trữ."
 }

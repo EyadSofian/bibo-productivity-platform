@@ -16,11 +16,15 @@ import (
 // OwnerHandler serves business + employee management for owners.
 type OwnerHandler struct {
 	store *store.Store
+	// legacyStillCapture is published to agents through GET /v1/policy so a
+	// managed device stops capturing stills on its next policy fetch. See
+	// config.LegacyStillCaptureEnabled.
+	legacyStillCapture bool
 }
 
 // NewOwnerHandler wires the owner handler.
-func NewOwnerHandler(s *store.Store) *OwnerHandler {
-	return &OwnerHandler{store: s}
+func NewOwnerHandler(s *store.Store, legacyStillCapture bool) *OwnerHandler {
+	return &OwnerHandler{store: s, legacyStillCapture: legacyStillCapture}
 }
 
 type createBusinessReq struct {
@@ -224,7 +228,7 @@ func (h *OwnerHandler) Policy(c *gin.Context) {
 	userID, _ := auth.UserID(c)
 	p, err := h.store.PolicyForUser(c.Request.Context(), userID)
 	if errors.Is(err, store.ErrAmbiguousBusiness) {
-		c.JSON(http.StatusOK, gin.H{"managed": false})
+		c.JSON(http.StatusOK, gin.H{"managed": false, "still_capture_enabled": h.stillCaptureEnabled()})
 		return
 	}
 	if err != nil {
@@ -232,7 +236,7 @@ func (h *OwnerHandler) Policy(c *gin.Context) {
 		return
 	}
 	if p == nil {
-		c.JSON(http.StatusOK, gin.H{"managed": false})
+		c.JSON(http.StatusOK, gin.H{"managed": false, "still_capture_enabled": h.stillCaptureEnabled()})
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
@@ -244,8 +248,21 @@ func (h *OwnerHandler) Policy(c *gin.Context) {
 		"kind":                      p.Kind,
 		"screenshot_mode":           p.ScreenshotMode,
 		"screenshot_skip_apps":      p.ScreenshotSkipApps,
+		"still_capture_enabled":     h.stillCaptureEnabled(),
 	})
 }
+
+// stillCaptureEnabled reports whether agents may still run the retired
+// screenshot pipeline. It rides the existing policy payload so a managed device
+// learns the platform decision on its normal policy fetch, with no new endpoint
+// and no extra round trip.
+//
+// Unlike every other field here it is NOT a business setting and is NOT subject
+// to allow_employee_override: a retired pipeline cannot be re-enabled by an
+// owner or by an employee. The agent's own default is off, so a device that
+// never reaches this endpoint -- standalone, offline, local-only -- also does
+// not capture.
+func (h *OwnerHandler) stillCaptureEnabled() bool { return h.legacyStillCapture }
 
 // requireOwner verifies the authenticated caller owns the :id business. It writes
 // the appropriate error response and returns false when not allowed.

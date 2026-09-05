@@ -501,7 +501,9 @@ function App() {
           )}
           {screen === "Dashboard" && <Dashboard />}
           {screen === "Activity" && <Activity />}
-          {screen === "Screenshots" && <Screenshots />}
+          {screen === "Screenshots" && (
+            <Screenshots stillCaptureEnabled={settings?.still_capture_enabled ?? false} />
+          )}
           {screen === "Browser" && <Browser />}
           {screen === "Permissions" && <Permissions />}
           {screen === "Settings" && (

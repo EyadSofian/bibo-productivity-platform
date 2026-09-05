@@ -89,5 +89,9 @@
     "title": "Akun",
     "email": "Email",
     "displayName": "Nama tampilan"
+  },
+  "stillCaptureRetired": {
+    "title": "Tangkapan layar tidak lagi diambil",
+    "desc": "Pemantauan layar kini berupa video. Pengaturan ini masih menjelaskan tangkapan layar sebelum perubahan dan masa retensinya; pengaturan ini tidak lagi memengaruhi apa yang diambil."
   }
 }

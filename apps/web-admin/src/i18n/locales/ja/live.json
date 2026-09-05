@@ -1,0 +1,41 @@
+{
+  "videoLabel": "ライブ画面",
+  "phase": {
+    "idle": "表示していません。",
+    "starting": "セッションを要求しています…",
+    "waiting_for_agent": "デバイスの送信開始を待っています…",
+    "connecting": "映像ストリームに接続しています…",
+    "live": "ライブ",
+    "reconnecting": "接続が切れました — 再接続しています…",
+    "ended": "セッションは終了しました。",
+    "error": "ライブ表示を開始できませんでした。"
+  },
+  "action": {
+    "start": "ライブ表示を開始",
+    "stop": "停止",
+    "retry": "再試行"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "このデバイスを表示する権限がありません。",
+    "MEDIA_DEVICE_NOT_FOUND": "このデバイスはアカウントにありません。",
+    "MEDIA_SESSION_NOT_FOUND": "そのセッションはもう存在しません。",
+    "MEDIA_AGENT_OFFLINE": "デバイスはオフラインです。再接続時に利用できます。",
+    "MEDIA_MONITORING_DISABLED": "このデバイスのモニタリングは無効です。",
+    "MEDIA_SESSION_ENDED": "このセッションは終了しました。新しく開始してください。",
+    "MEDIA_PROVIDER_UNCONFIGURED": "このデプロイではライブ映像がまだ有効化されていません。",
+    "MEDIA_PROVIDER_ERROR": "映像サービスがリクエストを拒否しました。",
+    "unknown": "ライブ表示の開始中に問題が発生しました。",
+    "transport": "映像接続に失敗しました。"
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "モニタリングポリシーにより、現在このデバイスは表示できません。",
+    "AGENT_OFFLINE": "デバイスがオフラインになりました。",
+    "TOKEN_EXPIRED": "セッション資格情報の有効期限が切れました。",
+    "ICE_FAILED": "ネットワークが映像接続をブロックしました。",
+    "CAPTURE_FAILED": "デバイスが画面を取得できませんでした。",
+    "ENCODER_FAILED": "デバイスが映像をエンコードできませんでした。",
+    "ROOM_FAILED": "映像サービスがセッションを切断しました。",
+    "TIMEOUT": "デバイスが時間内に送信を開始しませんでした。",
+    "unknown": "セッションが失敗しました。"
+  }
+}

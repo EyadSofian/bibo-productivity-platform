@@ -56,6 +56,18 @@ pub struct TrackerControl {
     pub extension_last_seen: AtomicI64,
     /// Capture periodic screenshots (user opt-out; Windows: also gated on consent).
     pub capture_screenshots: AtomicBool,
+    /// The retired still-screenshot pipeline may run at all.
+    ///
+    /// This is NOT a preference and NOT an opt-out -- those are
+    /// `capture_screenshots` and `monitoring_rules`. Screen monitoring is video
+    /// (docs/adr/0002-video-first-media-plane.md) and still images are no longer
+    /// a monitoring artifact, so this defaults to **false** and only the
+    /// platform, through `GET /v1/policy`, can raise it during the migration.
+    ///
+    /// It is deliberately independent of `managed_locked`: a device that is
+    /// unmanaged, offline, standalone, or has never reached the backend also
+    /// does not capture, because the default is off rather than on.
+    pub still_capture_enabled: AtomicBool,
     /// SHOT_MODE_PRIVACY | SHOT_MODE_NORMAL.
     pub screenshot_mode: AtomicU8,
     /// Skip the whole capture tick while any of these apps is frontmost
@@ -88,6 +100,7 @@ impl TrackerControl {
             capture_browser_urls: AtomicBool::new(true),
             extension_last_seen: AtomicI64::new(0),
             capture_screenshots: AtomicBool::new(true),
+            still_capture_enabled: AtomicBool::new(false),
             screenshot_mode: AtomicU8::new(SHOT_MODE_PRIVACY),
             screenshot_skip_apps: RwLock::new(default_privacy_apps_flat()),
             count_keystrokes: AtomicBool::new(true),
@@ -600,6 +613,15 @@ pub fn start_keyboard(db: Arc<Db>, control: Arc<TrackerControl>) {
 
 // ---------- screenshots (task 19) ----------
 
+/// Whether the retired still-screenshot pipeline may produce an image right now.
+///
+/// Checked on every capture attempt rather than once at startup, so a policy
+/// fetch that closes the pipeline stops capture without waiting for a restart.
+/// See `TrackerControl::still_capture_enabled`.
+pub fn still_capture_permitted(control: &TrackerControl) -> bool {
+    control.still_capture_enabled.load(Ordering::Relaxed)
+}
+
 /// Hard ceiling on a stored/uploaded screenshot. The backend enforces its own
 /// (larger) guard; we keep every shot comfortably under this. See docs/11.
 const SCREENSHOT_MAX_BYTES: usize = 50 * 1024;
@@ -850,6 +872,13 @@ fn capture_active_window(
 /// and record each shot in the DB. Returns how many shots were saved.
 /// Requires Screen Recording.
 pub fn capture_once(db: &Db, dir: &Path, control: &TrackerControl) -> usize {
+    // The authoritative gate. This function is the only place a still image is
+    // written to disk and to the local database, so the check lives here rather
+    // than only in its callers: a future caller cannot reintroduce stored
+    // screenshots by forgetting it.
+    if !still_capture_permitted(control) {
+        return 0;
+    }
     if let Err(e) = std::fs::create_dir_all(dir) {
         crate::log_warn!("screenshot", "create dir failed: {e}");
         return 0;
@@ -952,11 +981,20 @@ pub fn start_cleanup(db: Arc<Db>, control: Arc<TrackerControl>) {
 }
 
 /// Spawn the periodic screenshot taker. Permission-gated and pause-aware.
+///
+/// The loop itself is retired: `still_capture_enabled` defaults to false, so this
+/// thread parks on its interval and captures nothing unless the platform
+/// re-opens the legacy pipeline for a migration deploy. The thread is still
+/// spawned rather than skipped so that a policy fetch can take effect without a
+/// restart -- and so the gate is evaluated per tick, not once at startup.
 pub fn start_screenshots(db: Arc<Db>, control: Arc<TrackerControl>, dir: std::path::PathBuf) {
     use crate::platform::{permission_status, Permission, PermissionState};
     thread::spawn(move || loop {
         let interval = control.screenshot_interval_s.load(Ordering::Relaxed).max(5);
         thread::sleep(Duration::from_secs(interval));
+        if !still_capture_permitted(&control) {
+            continue;
+        }
         if !control.category_allowed("screen") {
             continue;
         }
@@ -1024,6 +1062,58 @@ fn run(db: Arc<Db>, control: Arc<TrackerControl>) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The retirement is a default, not a configuration step. A device that has
+    /// never contacted the backend -- fresh install, standalone, offline -- must
+    /// already be off, because it is the absence of a signal, not its presence,
+    /// that has to be safe.
+    #[test]
+    fn still_capture_is_off_until_the_platform_says_otherwise() {
+        let control = TrackerControl::new();
+        assert!(
+            !still_capture_permitted(&control),
+            "a new TrackerControl must not permit still capture"
+        );
+
+        control.still_capture_enabled.store(true, Ordering::Relaxed);
+        assert!(still_capture_permitted(&control));
+
+        control.still_capture_enabled.store(false, Ordering::Relaxed);
+        assert!(
+            !still_capture_permitted(&control),
+            "closing the pipeline mid-session must take effect immediately"
+        );
+    }
+
+    /// capture_once is the only writer of stored screenshots, so the gate has to
+    /// hold there even when every other condition would allow a capture: an
+    /// unpaused device, the screen category allowed, the opt-in on.
+    #[test]
+    fn capture_once_writes_nothing_while_still_capture_is_retired() {
+        let dir = std::env::temp_dir().join(format!(
+            "ctracking-v02-{}-{}",
+            std::process::id(),
+            now_ts()
+        ));
+        let db = Db::open_in_memory().expect("in-memory db");
+        let control = TrackerControl::new();
+        control.capture_screenshots.store(true, Ordering::Relaxed);
+        control.monitoring_enabled.store(true, Ordering::Relaxed);
+
+        let saved = capture_once(&db, &dir, &control);
+
+        assert_eq!(saved, 0, "capture_once saved {saved} shot(s) while retired");
+        assert!(
+            !dir.exists(),
+            "capture_once created {} -- it must return before touching the filesystem",
+            dir.display()
+        );
+        assert_eq!(
+            db.screenshots_between(0, i64::MAX).unwrap().len(),
+            0,
+            "a screenshot row was written while the pipeline is retired"
+        );
+    }
 
     fn win(app: &str, title: &str) -> ActiveWindowInfo {
         ActiveWindowInfo {

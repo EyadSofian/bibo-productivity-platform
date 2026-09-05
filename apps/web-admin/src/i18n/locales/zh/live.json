@@ -1,0 +1,41 @@
+{
+  "videoLabel": "实时屏幕",
+  "phase": {
+    "idle": "未在观看。",
+    "starting": "正在请求会话…",
+    "waiting_for_agent": "正在等待设备开始发送…",
+    "connecting": "正在连接视频流…",
+    "live": "直播中",
+    "reconnecting": "连接断开 — 正在重新连接…",
+    "ended": "会话已结束。",
+    "error": "无法启动实时画面。"
+  },
+  "action": {
+    "start": "开始实时查看",
+    "stop": "停止",
+    "retry": "重试"
+  },
+  "error": {
+    "MEDIA_FORBIDDEN": "您没有查看此设备的权限。",
+    "MEDIA_DEVICE_NOT_FOUND": "此设备不在您的账户中。",
+    "MEDIA_SESSION_NOT_FOUND": "该会话已不存在。",
+    "MEDIA_AGENT_OFFLINE": "设备已离线，重新连接后即可使用。",
+    "MEDIA_MONITORING_DISABLED": "此设备的监控已关闭。",
+    "MEDIA_SESSION_ENDED": "此会话已结束，请开始新的会话。",
+    "MEDIA_PROVIDER_UNCONFIGURED": "此部署尚未启用实时视频。",
+    "MEDIA_PROVIDER_ERROR": "视频服务拒绝了该请求。",
+    "unknown": "启动实时画面时出错。",
+    "transport": "视频连接失败。"
+  },
+  "failure": {
+    "DENIED_BY_POLICY": "监控策略当前不允许查看此设备。",
+    "AGENT_OFFLINE": "设备已离线。",
+    "TOKEN_EXPIRED": "会话凭据已过期。",
+    "ICE_FAILED": "网络阻止了视频连接。",
+    "CAPTURE_FAILED": "设备无法捕获其屏幕。",
+    "ENCODER_FAILED": "设备无法编码视频。",
+    "ROOM_FAILED": "视频服务中断了会话。",
+    "TIMEOUT": "设备未能及时开始发送。",
+    "unknown": "会话失败。"
+  }
+}

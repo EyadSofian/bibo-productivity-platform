@@ -106,10 +106,16 @@ jobs:
       - name: Build all workspaces
         run: pnpm -r --if-present build
 
-      # No workspace defines a `test` script yet; this is a no-op that starts
-      # exercising suites the moment Vitest lands (F1 web-admin, F4 extension).
-      - name: Test all workspaces
-        run: pnpm -r --if-present test
+      # Named explicitly rather than `pnpm -r --if-present test`. The recursive
+      # form reports success when it matches nothing, so a workspace whose suite
+      # silently stopped being picked up would still show a green gate -- which
+      # is exactly what was observed during the V01 audit. Adding a workspace
+      # with tests means adding a line here, and that is the point.
+      - name: Test web-admin
+        run: pnpm --filter @ctracking/web-admin test
+
+      - name: Test extension
+        run: pnpm --filter @ctracking/extension test
 
       - name: Validate extension manifest
         run: node .github/scripts/check-extension-manifest.mjs
@@ -120,6 +126,12 @@ jobs:
       # no test runner yet).
       - name: Check locale catalog parity
         run: node .github/scripts/check-locale-parity.mjs
+
+      # Screen monitoring is video (docs/adr/0002-video-first-media-plane.md).
+      # This is what stops a still-image path being reintroduced later by
+      # somebody who has no reason to know the decision was ever made.
+      - name: Video-first guard (no still screenshots)
+        run: node .github/scripts/check-no-still-capture.mjs
 
   # ---------------------------------------------------------------- desktop --
   # macOS and Windows only: the desktop app targets those two platforms, and

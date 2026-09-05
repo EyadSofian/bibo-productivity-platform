@@ -89,5 +89,9 @@
     "title": "Tài khoản",
     "email": "Email",
     "displayName": "Tên hiển thị"
+  },
+  "stillCaptureRetired": {
+    "title": "Ảnh chụp màn hình không còn được chụp",
+    "desc": "Giám sát màn hình giờ là video. Các cài đặt này vẫn mô tả ảnh chụp trước khi thay đổi và thời hạn lưu trữ của chúng; chúng không còn ảnh hưởng đến những gì được ghi lại."
   }
 }

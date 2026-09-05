@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"ctracking/backend/internal/obs"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -34,9 +36,14 @@ func (f *fakeDB) Health(ctx context.Context) (int64, error) {
 
 func callHealth(t *testing.T, db DBChecker) (*httptest.ResponseRecorder, map[string]any) {
 	t.Helper()
+	return callHealthWith(t, db, false)
+}
+
+func callHealthWith(t *testing.T, db DBChecker, legacyStillCapture bool) (*httptest.ResponseRecorder, map[string]any) {
+	t.Helper()
 	gin.SetMode(gin.TestMode)
 	r := gin.New()
-	r.GET("/healthz", NewHealthHandler(db).Health)
+	r.GET("/healthz", NewHealthHandler(db, legacyStillCapture).Health)
 
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/healthz", nil))
@@ -104,5 +111,31 @@ func TestHealthBoundsSlowDatabase(t *testing.T) {
 	}
 	if _, ok := db.gotCtx.Deadline(); !ok {
 		t.Fatal("probe context carried no deadline")
+	}
+}
+
+// The admin UI and the operator both read this endpoint to find out whether this
+// deployment still accepts still images, so both fields must be present and must
+// track the deployment rather than being hard-coded.
+func TestHealthReportsStillCaptureState(t *testing.T) {
+	obs.ResetCounters()
+
+	_, body := callHealthWith(t, &fakeDB{version: 9}, false)
+	if body["still_capture_enabled"] != false {
+		t.Errorf("still_capture_enabled = %v, want false", body["still_capture_enabled"])
+	}
+	if got := body["legacy_still_capture_rejected"]; got != float64(0) {
+		t.Errorf("legacy_still_capture_rejected = %v, want 0", got)
+	}
+
+	obs.RecordLegacyStillCaptureRejected()
+	obs.RecordLegacyStillCaptureRejected()
+
+	_, body = callHealthWith(t, &fakeDB{version: 9}, true)
+	if body["still_capture_enabled"] != true {
+		t.Errorf("still_capture_enabled = %v, want true", body["still_capture_enabled"])
+	}
+	if got := body["legacy_still_capture_rejected"]; got != float64(2) {
+		t.Errorf("legacy_still_capture_rejected = %v, want 2", got)
 	}
 }

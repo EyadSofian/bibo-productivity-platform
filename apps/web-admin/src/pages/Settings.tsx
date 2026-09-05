@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
-import { cleanupScreenshots, getPrivacyApps, updateBusinessSettings } from "../api/endpoints";
+import { cleanupScreenshots, getPlatformState, getPrivacyApps, updateBusinessSettings } from "../api/endpoints";
 import { ApiError, type BusinessSettingsPatch, type PrivacyAppCategory, type ScreenshotMode } from "../api/types";
 import { useAuth } from "../auth/AuthContext";
 import { Empty, Modal, Notice, Spinner } from "../components/ui";
@@ -119,10 +119,18 @@ export function Settings() {
   // The curated sensitive-app list (backend-served) rendered as suggestions.
   const [privacyApps, setPrivacyApps] = useState<PrivacyAppCategory[]>([]);
 
+  // Whether this deployment still captures still images at all. Defaults to
+  // "retired" and stays there if the probe fails: that is the production value,
+  // and wrongly claiming capture is running is the worse of the two errors.
+  const [stillCaptureEnabled, setStillCaptureEnabled] = useState(false);
+
   useEffect(() => {
     getPrivacyApps()
       .then((res) => setPrivacyApps(res.categories))
       .catch(() => {});
+    getPlatformState()
+      .then((state) => setStillCaptureEnabled(state.still_capture_enabled))
+      .catch(() => setStillCaptureEnabled(false));
   }, []);
 
   // Manual "clean up now".
@@ -245,6 +253,19 @@ export function Settings() {
         <>
           <div className="ad-set-sec">{t("sections.capture")}</div>
           <div className="set-group">
+            {!stillCaptureEnabled && (
+              // Screenshot capture is retired platform-wide. The controls below
+              // are left in place -- they still describe stored history and are
+              // replaced wholesale by the video policy in a later slice -- but an
+              // owner has to be told plainly that changing them no longer changes
+              // what is captured.
+              <div className="set-row" role="status">
+                <div>
+                  <div className="set-title">{t("stillCaptureRetired.title")}</div>
+                  <div className="set-desc">{t("stillCaptureRetired.desc")}</div>
+                </div>
+              </div>
+            )}
             <div className="set-row">
               <div>
                 <div className="set-title">{t("capturePolicy.title")}</div>

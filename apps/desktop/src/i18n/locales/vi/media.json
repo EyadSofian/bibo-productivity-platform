@@ -10,7 +10,9 @@
     "captureFailed": "Chụp thất bại: {{error}}",
     "empty": "Hôm nay chưa có ảnh chụp màn hình nào. Hãy cấp quyền Ghi màn hình trong tab Quyền, rồi nhấp “Chụp ngay”.",
     "shotTitle": "{{time}} · màn hình {{display}}",
-    "shotAlt": "ảnh chụp màn hình {{time}}"
+    "shotAlt": "ảnh chụp màn hình {{time}}",
+    "retired": "Giám sát màn hình giờ là video — không còn chụp ảnh màn hình mới. Ảnh chụp trước khi thay đổi vẫn được liệt kê bên dưới.",
+    "emptyRetired": "Không có ảnh chụp màn hình nào trên thiết bị này trước khi giám sát màn hình chuyển sang video."
   },
   "browser": {
     "visitedTitle": "Các trang đã ghé thăm hôm nay",

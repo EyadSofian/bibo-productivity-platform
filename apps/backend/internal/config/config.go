@@ -26,6 +26,22 @@ type Config struct {
 	LogMaxAgeDays  int    // delete rotated files older than this many days
 	KeepaliveToken string // secret for the CPU keep-alive endpoint; "" = disabled
 
+	// LegacyStillCaptureEnabled re-opens the retired still-screenshot pipeline.
+	// DEFAULT FALSE: the product is video-first (docs/adr/0002), and still images
+	// are no longer a monitoring artifact. It exists only so a migrating operator
+	// can re-enable ingest for one deploy while agents roll forward; it is
+	// removed outright in slice V12. Nothing else in the system may turn this on.
+	LegacyStillCaptureEnabled bool
+
+	// MediaProvider names the SFU implementation. Empty (the default) selects
+	// the unconfigured provider, which fails every operation loudly rather than
+	// pretending to work. A real provider arrives in slice V05.
+	MediaProvider string
+	// MediaTokenTTLSeconds bounds how long a minted media token lives. Short by
+	// design: a leaked token is only useful for this long, and the client
+	// re-authorizes through the API to get another.
+	MediaTokenTTLSeconds int
+
 	// TrustedProxies lists the proxy addresses/CIDRs whose X-Forwarded-For may be
 	// believed. EMPTY MEANS TRUST NOBODY, which is the safe default: gin's own
 	// default trusts every proxy, so any client could forge X-Forwarded-For and
@@ -63,6 +79,11 @@ func Load() (*Config, error) {
 		LogMaxAgeDays:  getenvInt("LOG_MAX_AGE_DAYS", 30),
 		KeepaliveToken: os.Getenv("KEEPALIVE_TOKEN"),
 
+		LegacyStillCaptureEnabled: getenvBool("LEGACY_STILL_CAPTURE_ENABLED", false),
+
+		MediaProvider:        os.Getenv("MEDIA_PROVIDER"),
+		MediaTokenTTLSeconds: getenvInt("MEDIA_TOKEN_TTL_SECONDS", 120),
+
 		TrustedProxies:  getenvList("TRUSTED_PROXIES"),
 		TrustedPlatform: os.Getenv("TRUSTED_PLATFORM"),
 	}
@@ -76,6 +97,13 @@ func Load() (*Config, error) {
 	}
 	if len(missing) > 0 {
 		return nil, fmt.Errorf("missing required env: %s", strings.Join(missing, ", "))
+	}
+
+	// A token TTL of zero or a negative one would mean tokens that never expire
+	// or are born expired. Clamp rather than fail: a bad value here must not
+	// stop the service booting, but must not widen the grant either.
+	if cfg.MediaTokenTTLSeconds < 30 || cfg.MediaTokenTTLSeconds > 900 {
+		cfg.MediaTokenTTLSeconds = 120
 	}
 	return cfg, nil
 }
@@ -101,6 +129,21 @@ func getenvList(key string) []string {
 		}
 	}
 	return out
+}
+
+// getenvBool reads a boolean env var. Only an explicit, unambiguous true value
+// enables the flag: anything unset, empty or unparseable keeps the fallback, so a
+// typo can never silently re-open the legacy capture path.
+func getenvBool(key string, fallback bool) bool {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return fallback
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return fallback
+	}
+	return b
 }
 
 func getenvInt(key string, fallback int) int {

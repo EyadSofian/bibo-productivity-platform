@@ -76,5 +76,6 @@
   "screenshots": "截图",
   "skipAppsCustom": "自定义",
   "skipAppsAddAll": "全部添加",
-  "skipAppsRemoveAll": "全部移除"
+  "skipAppsRemoveAll": "全部移除",
+  "stillCaptureRetired": "⌬ 屏幕监控现已改为视频，不再定期截图，因此这些设置不再生效。变更前的截图会保留至其保留期结束。"
 }
