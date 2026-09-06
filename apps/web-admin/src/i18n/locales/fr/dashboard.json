@@ -285,7 +285,8 @@
     "categories": {
       "applications": "Applications",
       "websites": "Sites web",
-      "screen": "Captures d’écran",
+      "screen": "Captures d'écran",
+      "recording": "Enregistrement vidéo de session",
       "keystrokes": "Comptes d’activité clavier"
     },
     "day": {

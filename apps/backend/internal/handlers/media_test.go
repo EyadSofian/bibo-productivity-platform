@@ -84,7 +84,7 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 	}
 
 	provider := mediafake.New()
-	h := NewMediaHandler(st, provider, 120*time.Second)
+	h := NewMediaHandler(st, provider, provider, 120*time.Second)
 
 	r := gin.New()
 	r.Use(middleware.RequestID())
@@ -97,6 +97,9 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 		c.Next()
 	})
 	r.POST("/v1/devices/:device_id/media/live", h.StartLive)
+	r.GET("/v1/employees/:employee_id/recordings", h.ListRecordings)
+	r.GET("/v1/recordings/:recording_id", h.Recording)
+	r.POST("/v1/recordings/:recording_id/playback-token", h.PlaybackToken)
 	r.GET("/v1/media/agent/session", h.AgentSession)
 	r.GET("/v1/media/sessions/:session_id", h.Session)
 	r.POST("/v1/media/sessions/:session_id/heartbeat", h.ViewerHeartbeat)
@@ -109,6 +112,21 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 		router: r, store: st, provider: provider, pool: pool, ctx: ctx, handler: h,
 		ownerID: owner.ID, employeeID: employee.ID, businessID: biz.ID,
 		deviceID: deviceID, intruderID: intruder.ID,
+	}
+}
+
+func TestRecordingListRequiresRecordingPermissionAndTenantMembership(t *testing.T) {
+	e := newMediaEnv(t)
+	path := "/v1/employees/" + e.employeeID + "/recordings"
+
+	if rec, body := e.call(t, http.MethodGet, path, e.ownerID); rec.Code != http.StatusOK {
+		t.Fatalf("owner list: status %d, body %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodGet, path, e.employeeID); rec.Code != http.StatusForbidden {
+		t.Fatalf("employee list: status %d, body %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodGet, path, e.intruderID); rec.Code != http.StatusNotFound {
+		t.Fatalf("other tenant list: status %d, body %v", rec.Code, body)
 	}
 }
 
@@ -660,6 +678,54 @@ func TestPublisherDrivesTheSessionToLive(t *testing.T) {
 	}
 	if tracks[0].Width != 1920 {
 		t.Errorf("track width = %d, want the re-reported 1920", tracks[0].Width)
+	}
+}
+
+func TestRecordingPolicyStartsEgressAndLiveViewerSharesItsRoom(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Recorded workday",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec, body := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("scheduled session: status %d body %v", rec.Code, body)
+	}
+	sessionID, _ := body["session_id"].(string)
+	session, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if session.Kind != media.KindRecording {
+		t.Fatalf("kind = %s", session.Kind)
+	}
+	if rec, tokenBody := e.call(t, http.MethodPost, "/v1/media/sessions/"+sessionID+"/publisher-token", e.employeeID); rec.Code != http.StatusOK {
+		t.Fatalf("publisher token: %d %v", rec.Code, tokenBody)
+	}
+	if rec, stateBody := e.reportState(t, sessionID, e.employeeID,
+		`{"state":"live","track":{"source":"screen","codec":"h264","width":1280,"height":720,"nominal_fps":15}}`); rec.Code != http.StatusOK {
+		t.Fatalf("recording live: %d %v", rec.Code, stateBody)
+	}
+	if len(e.provider.Recordings) != 1 {
+		t.Fatalf("egress jobs = %d, want 1", len(e.provider.Recordings))
+	}
+
+	rec, liveBody := e.call(t, http.MethodPost, "/v1/devices/"+e.deviceID+"/media/live", e.ownerID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("join recorded live: %d %v", rec.Code, liveBody)
+	}
+	joined := liveBody["session"].(map[string]any)
+	if joined["id"] != sessionID {
+		t.Fatalf("live opened %v instead of sharing recording %s", joined["id"], sessionID)
 	}
 }
 

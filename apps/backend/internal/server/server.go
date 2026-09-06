@@ -15,6 +15,7 @@ import (
 	"ctracking/backend/internal/live"
 	"ctracking/backend/internal/media"
 	"ctracking/backend/internal/media/livekit"
+	recordingstore "ctracking/backend/internal/media/s3store"
 	"ctracking/backend/internal/middleware"
 	"ctracking/backend/internal/obs"
 	"ctracking/backend/internal/retention"
@@ -80,7 +81,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// operation with a typed error the handlers turn into
 	// MEDIA_PROVIDER_UNCONFIGURED, rather than silently doing nothing.
 	mediaProvider := mediaProviderFor(cfg)
-	mediaH := handlers.NewMediaHandler(st, mediaProvider,
+	mediaH := handlers.NewMediaHandler(st, mediaProvider, recordingStoreFor(cfg),
 		time.Duration(cfg.MediaTokenTTLSeconds)*time.Second)
 	presenceH := handlers.NewPresenceHandler(st)
 	remoteAssistH := handlers.NewRemoteAssistHandler(st, liveHub, liveCommands)
@@ -149,6 +150,9 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	// Video media control plane (docs/adr/0002-video-first-media-plane.md).
 	// Metadata, authorization and short-lived tokens only -- no media bytes.
 	authed.POST("/devices/:device_id/media/live", mediaH.StartLive)
+	authed.GET("/employees/:employee_id/recordings", mediaH.ListRecordings)
+	authed.GET("/recordings/:recording_id", mediaH.Recording)
+	authed.POST("/recordings/:recording_id/playback-token", mediaH.PlaybackToken)
 	authed.GET("/media/agent/session", mediaH.AgentSession)
 	authed.GET("/media/sessions/:session_id", mediaH.Session)
 	authed.POST("/media/sessions/:session_id/heartbeat", mediaH.ViewerHeartbeat)
@@ -272,7 +276,12 @@ func staticSite(dir string) gin.HandlerFunc {
 func mediaProviderFor(cfg *config.Config) media.MediaProvider {
 	switch cfg.MediaProvider {
 	case "livekit":
-		p, err := livekit.New(livekit.Config{URL: cfg.LiveKitURL, APIKey: cfg.LiveKitAPIKey, APISecret: cfg.LiveKitAPISecret})
+		p, err := livekit.New(livekit.Config{
+			URL: cfg.LiveKitURL, APIKey: cfg.LiveKitAPIKey, APISecret: cfg.LiveKitAPISecret,
+			S3Endpoint: cfg.RecordingS3Endpoint, S3Bucket: cfg.RecordingS3Bucket,
+			S3Region: cfg.RecordingS3Region, S3AccessKey: cfg.RecordingS3AccessKey,
+			S3SecretKey: cfg.RecordingS3SecretKey, S3ForcePathStyle: cfg.RecordingS3ForcePathStyle,
+		})
 		if err != nil {
 			obs.Warn("LiveKit configuration is incomplete; media is unavailable")
 			return media.NewUnconfigured()
@@ -285,4 +294,17 @@ func mediaProviderFor(cfg *config.Config) media.MediaProvider {
 			"provider", cfg.MediaProvider)
 		return media.NewUnconfigured()
 	}
+}
+
+func recordingStoreFor(cfg *config.Config) media.RecordingStore {
+	s, err := recordingstore.New(recordingstore.Config{
+		Endpoint: cfg.RecordingS3Endpoint, Bucket: cfg.RecordingS3Bucket,
+		Region: cfg.RecordingS3Region, AccessKey: cfg.RecordingS3AccessKey,
+		SecretKey: cfg.RecordingS3SecretKey, ForcePathStyle: cfg.RecordingS3ForcePathStyle,
+	})
+	if err != nil {
+		obs.Warn("recording storage is incomplete; session recording is disabled")
+		return media.NewUnconfiguredStore()
+	}
+	return s
 }

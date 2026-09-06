@@ -14,7 +14,7 @@ import { Empty, Notice, Spinner } from "../components/ui";
 import { useBusinesses } from "../useBusinesses";
 import { localTimeZone, normalizeTimeZone } from "../timeZone";
 
-const CATEGORIES = ["applications", "websites", "screen", "keystrokes"] as const;
+const CATEGORIES = ["applications", "websites", "screen", "recording", "keystrokes"] as const;
 type Category = (typeof CATEGORIES)[number];
 type RuleDraft = {
   override: boolean;
@@ -77,7 +77,10 @@ function blankDraft(businessId: string): Draft {
     parentId: "",
     private: false,
     scope: `business:${businessId}`,
-    rules: Object.fromEntries(CATEGORIES.map((key) => [key, defaultRule()])) as Draft["rules"],
+    rules: Object.fromEntries(CATEGORIES.map((key) => [
+      key,
+      key === "recording" ? { ...defaultRule(), enabled: false } : defaultRule(),
+    ])) as Draft["rules"],
   };
 }
 

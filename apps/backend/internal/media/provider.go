@@ -108,12 +108,18 @@ type Token struct {
 // RecordingRequest starts an egress job against a room's screen track.
 type RecordingRequest struct {
 	Room string
+	// ParticipantIdentity is the device participant whose screen-share track is
+	// recorded. Selecting it explicitly prevents other room tracks entering the
+	// recording if the provider ever admits more participant kinds.
+	ParticipantIdentity string
 	// AssetID is the caller's identifier for the resulting recording, and is
 	// what the object key is derived from.
 	AssetID string
 	// Prefix is the object-storage key prefix. It is built from tenant, device,
 	// date and session ids so a key is never guessable.
 	Prefix string
+	// ObjectKey is the complete private MP4 destination for this chunk.
+	ObjectKey string
 }
 
 // RecordingJob is a started egress job.

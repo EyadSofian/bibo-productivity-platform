@@ -5,7 +5,8 @@ import type {
   KeystrokeBucket,
   ScreenshotMeta,
 } from "../../api/types";
-import { assemblePlaybackFrames, frameIndexAt, type PlaybackFrame } from "./PlaybackPanel";
+import { assemblePlaybackFrames, frameIndexAt, recordingAt, type PlaybackFrame } from "./PlaybackPanel";
+import type { RecordingAsset } from "../../api/media";
 
 function shot(ts: number, id = String(ts)): ScreenshotMeta {
   return {
@@ -86,5 +87,30 @@ describe("frameIndexAt", () => {
 
   it("survives an empty day", () => {
     expect(frameIndexAt([], 200)).toBe(0);
+  });
+});
+
+describe("recordingAt", () => {
+  const recordings = [
+    {
+      id: "first",
+      started_at: "2026-09-06T09:00:00Z",
+      ended_at: "2026-09-06T09:15:00Z",
+      duration_ms: 900_000,
+    },
+    {
+      id: "second",
+      started_at: "2026-09-06T09:15:01Z",
+      ended_at: "2026-09-06T09:30:01Z",
+      duration_ms: 900_000,
+    },
+  ] as RecordingAsset[];
+
+  it("selects the video chunk containing an app timeline timestamp", () => {
+    expect(recordingAt(recordings, Date.parse("2026-09-06T09:20:00Z") / 1000)?.id).toBe("second");
+  });
+
+  it("leaves a real recording gap empty", () => {
+    expect(recordingAt(recordings, Date.parse("2026-09-06T09:15:00.500Z") / 1000)).toBeNull();
   });
 });

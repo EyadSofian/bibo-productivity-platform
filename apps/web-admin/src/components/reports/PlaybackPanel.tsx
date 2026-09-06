@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchImageObjectUrl } from "../../api/client";
+import { listEmployeeRecordings, mintPlaybackToken, type RecordingAsset } from "../../api/media";
 import type {
   ActivityResponse,
   BrowserVisit,
   KeystrokeBucket,
   ScreenshotMeta,
 } from "../../api/types";
-import { fmtDuration, fmtTime } from "../../format";
+import { fmtTime } from "../../format";
 import { Empty, Spinner } from "../ui";
+import { UnifiedTimeline } from "./UnifiedTimeline";
 
 export type PlaybackFrame = ScreenshotMeta & {
   app: string | null;
@@ -77,14 +78,28 @@ export function frameIndexAt(frames: PlaybackFrame[], ts: number): number {
   return best;
 }
 
+export function recordingAt(recordings: RecordingAsset[], ts: number): RecordingAsset | null {
+  return recordings.find((item) => {
+    const start = Date.parse(item.started_at) / 1000;
+    const end = item.ended_at
+      ? Date.parse(item.ended_at) / 1000
+      : start + item.duration_ms / 1000;
+    return ts >= start && ts <= end;
+  }) ?? null;
+}
+
 export function PlaybackPanel({
-  shots,
+  employeeId,
+  from,
+  to,
   activity,
   visits,
   buckets,
   seekTo,
 }: {
-  shots: ScreenshotMeta[];
+  employeeId: string;
+  from: number;
+  to: number;
   activity: ActivityResponse;
   visits: BrowserVisit[];
   buckets: KeystrokeBucket[];
@@ -92,112 +107,89 @@ export function PlaybackPanel({
   seekTo?: number | null;
 }) {
   const { t } = useTranslation("reports");
-  const frames = useMemo(
-    () => assemblePlaybackFrames(shots, activity, visits, buckets),
-    [shots, activity, visits, buckets],
-  );
-  const [index, setIndex] = useState(0);
-  const [playing, setPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [recordings, setRecordings] = useState<RecordingAsset[] | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageError, setImageError] = useState(false);
-  const frame = frames[index];
+  const [absoluteTime, setAbsoluteTime] = useState(seekTo ?? from);
+  const desiredTime = useRef<number | null>(seekTo ?? null);
 
   useEffect(() => {
-    setIndex((current) => Math.min(current, Math.max(0, frames.length - 1)));
-  }, [frames.length]);
-
-  // Jumping in from the timeline stops playback: the operator asked to look at
-  // one moment, not to start a tour from it.
-  useEffect(() => {
-    if (seekTo == null || frames.length === 0) return;
-    setIndex(frameIndexAt(frames, seekTo));
-    setPlaying(false);
-  }, [seekTo, frames]);
-
-  useEffect(() => {
-    if (!frame) return;
     let alive = true;
-    let made: string | null = null;
-    setImageUrl(null);
-    setImageError(false);
-    fetchImageObjectUrl(frame.client_uuid)
-      .then((url) => {
-        made = url;
-        if (alive) setImageUrl(url);
-        else URL.revokeObjectURL(url);
+    setRecordings(null);
+    listEmployeeRecordings(employeeId, from, to)
+      .then(({ recordings: found }) => {
+        if (!alive) return;
+        setRecordings([...found].sort((a, b) => Date.parse(a.started_at) - Date.parse(b.started_at)));
       })
-      .catch(() => {
-        if (alive) setImageError(true);
-      });
-    return () => {
-      alive = false;
-      if (made) URL.revokeObjectURL(made);
-    };
-  }, [frame]);
+      .catch(() => { if (alive) { setRecordings([]); setVideoError(t("playback.videoUnavailable")); } });
+    return () => { alive = false; };
+  }, [employeeId, from, to, t]);
+
+  const seekAbsolute = (ts: number) => {
+    desiredTime.current = ts;
+    setAbsoluteTime(ts);
+    const target = recordingAt(recordings ?? [], ts);
+    if (target) {
+      if (target.id === selectedId && videoRef.current?.readyState) {
+        videoRef.current.currentTime = Math.max(0, ts - Date.parse(target.started_at) / 1000);
+      }
+      setSelectedId(target.id);
+    }
+  };
 
   useEffect(() => {
-    if (!playing || frames.length < 2) return;
-    const timer = window.setInterval(() => {
-      setIndex((current) => {
-        if (current >= frames.length - 1) {
-          setPlaying(false);
-          return current;
-        }
-        return current + 1;
-      });
-    }, Math.max(100, 1000 / speed));
-    return () => window.clearInterval(timer);
-  }, [playing, speed, frames.length]);
+    if (!recordings?.length) return;
+    const target = recordingAt(recordings, seekTo ?? from) ?? recordings.find((item) => item.status !== "failed") ?? recordings[0];
+    desiredTime.current = seekTo ?? Date.parse(target.started_at) / 1000;
+    setSelectedId(target.id);
+  }, [recordings, seekTo, from]);
 
-  if (!frame) return <Empty>{t("playback.empty")}</Empty>;
+  const selected = recordings?.find((item) => item.id === selectedId) ?? null;
+  useEffect(() => {
+    if (!selected) return;
+    let alive = true;
+    setVideoUrl(null);
+    setVideoError(null);
+    mintPlaybackToken(selected.id)
+      .then((token) => { if (alive) setVideoUrl(token.url); })
+      .catch(() => { if (alive) setVideoError(t(selected.status === "recording" || selected.status === "processing" ? "playback.processing" : "playback.videoUnavailable")); });
+    return () => { alive = false; };
+  }, [selected, t]);
+
+  const currentSample = activity.samples.find((item) => item.ts <= absoluteTime && item.ts + item.duration_s >= absoluteTime);
+  const currentVisit = visits.find((item) => item.ts <= absoluteTime && item.ts + Math.max(1, item.duration_s) >= absoluteTime);
+  const keyMinute = absoluteTime - absoluteTime % 60;
+  const currentKeys = buckets.find((item) => item.ts_bucket === keyMinute)?.count ?? 0;
+
+  if (recordings == null) return <Spinner label={t("playback.loadingVideo")} />;
+  if (recordings.length === 0) return <Empty>{t("playback.emptyVideo")}</Empty>;
 
   return (
     <div className="ad-playback">
       <div className="ad-playback__viewer">
         <div className="ad-playback__stage">
-          {imageUrl ? (
-            <img src={imageUrl} alt={t("playback.frameAlt", { time: fmtTime(frame.ts) })} />
-          ) : imageError ? (
-            <span className="ad-playback__unavailable">{t("screenshots.unavailable")}</span>
+          {videoUrl && selected ? (
+            <video
+              ref={videoRef}
+              src={videoUrl}
+              controls
+              playsInline
+              onLoadedMetadata={(event) => {
+                const wanted = desiredTime.current;
+                if (wanted != null) event.currentTarget.currentTime = Math.max(0, wanted - Date.parse(selected.started_at) / 1000);
+              }}
+              onTimeUpdate={(event) => setAbsoluteTime(Date.parse(selected.started_at) / 1000 + event.currentTarget.currentTime)}
+              onError={() => setVideoError(t("playback.videoUnavailable"))}
+            />
+          ) : videoError ? (
+            <span className="ad-playback__unavailable">{videoError}</span>
           ) : (
-            <Spinner label={t("playback.loadingFrame")} />
+            <Spinner label={t("playback.loadingVideo")} />
           )}
-          <span className="ad-playback__counter">
-            <bdi dir="ltr">
-              {index + 1} / {frames.length}
-            </bdi>
-          </span>
-          {frame.gapBeforeS > 0 ? (
-            <span className="ad-playback__gap">
-              {t("playback.gap", { duration: fmtDuration(frame.gapBeforeS) })}
-            </span>
-          ) : null}
-        </div>
-
-        <div className="ad-playback__controls">
-          <button
-            type="button"
-            className="ad-playback__play"
-            onClick={() => setPlaying((value) => !value)}
-          >
-            <span aria-hidden>{playing ? "Ⅱ" : "▶"}</span>
-            {playing ? t("playback.pause") : t("playback.play")}
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={frames.length - 1}
-            value={index}
-            aria-label={t("playback.scrub")}
-            onChange={(event) => {
-              setPlaying(false);
-              setIndex(Number(event.target.value));
-            }}
-          />
-          <strong className="ad-playback__time">
-            <bdi dir="ltr">{fmtTime(frame.ts)}</bdi>
-          </strong>
+          {selected ? <span className="ad-playback__counter"><bdi dir="ltr">{fmtTime(absoluteTime)}</bdi></span> : null}
         </div>
 
         <div className="ad-playback__speeds" aria-label={t("playback.speed")}>
@@ -207,13 +199,14 @@ export function PlaybackPanel({
               key={value}
               aria-pressed={speed === value}
               className={speed === value ? "on" : ""}
-              onClick={() => setSpeed(value)}
+              onClick={() => { setSpeed(value); if (videoRef.current) videoRef.current.playbackRate = value; }}
             >
               {value}×
             </button>
           ))}
-          <span>{t("playback.screenshotNotice")}</span>
+          <span>{t("playback.videoNotice")}</span>
         </div>
+        <UnifiedTimeline from={from} to={to} states={null} activity={activity} buckets={buckets} visits={visits} shots={null} onSeek={seekAbsolute} />
       </div>
 
       <aside className="ad-playback__meta">
@@ -221,35 +214,27 @@ export function PlaybackPanel({
         <dl>
           <div>
             <dt>{t("playback.app")}</dt>
-            <dd>{frame.app || "—"}</dd>
+            <dd>{currentSample?.app_name || "—"}</dd>
           </div>
           <div>
             <dt>{t("playback.window")}</dt>
-            <dd title={frame.windowTitle ?? undefined}>{frame.windowTitle || "—"}</dd>
+            <dd title={currentSample?.window_title}>{currentSample?.window_title || "—"}</dd>
           </div>
           <div>
             <dt>{t("playback.website")}</dt>
-            <dd>{frame.domain || "—"}</dd>
+            <dd>{currentVisit?.domain || "—"}</dd>
           </div>
           <div>
             <dt>{t("playback.url")}</dt>
             <dd>
-              <code dir="ltr" title={frame.url ?? undefined}>
-                {frame.url || "—"}
+              <code dir="ltr" title={currentVisit?.url}>
+                {currentVisit?.url || "—"}
               </code>
             </dd>
           </div>
           <div>
             <dt>{t("playback.keys")}</dt>
-            <dd>{frame.keyCount.toLocaleString()}</dd>
-          </div>
-          <div>
-            <dt>{t("playback.resolution")}</dt>
-            <dd>
-              <bdi dir="ltr">
-                {frame.width}×{frame.height}
-              </bdi>
-            </dd>
+            <dd>{currentKeys.toLocaleString()}</dd>
           </div>
         </dl>
       </aside>

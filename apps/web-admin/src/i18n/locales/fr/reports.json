@@ -48,6 +48,11 @@
     "close": "Fermer"
   },
   "playback": {
+    "emptyVideo": "Aucune vidéo enregistrée n’est encore disponible pour cette période.",
+    "loadingVideo": "Chargement de la vidéo enregistrée…",
+    "processing": "Ce segment vidéo est en cours de finalisation. Réessayez bientôt.",
+    "videoUnavailable": "Impossible de charger la vidéo enregistrée.",
+    "videoNotice": "Vidéo de session enregistrée — cliquez sur une application ou un site pour atteindre ce moment",
     "empty": "Aucune capture n’est disponible pour la lecture sur cette période.",
     "frameAlt": "Image de lecture à {{time}}",
     "loadingFrame": "Chargement de l’image…",

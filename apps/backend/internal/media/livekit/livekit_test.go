@@ -2,6 +2,7 @@ package livekit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -97,5 +98,70 @@ func TestRejectsUnsafeServerURLs(t *testing.T) {
 		if _, err := New(Config{URL: address, APIKey: "k", APISecret: "s"}); err == nil {
 			t.Fatalf("accepted unsafe URL %q", address)
 		}
+	}
+}
+
+func TestRecordingStartsPrivateScreenEgressAndStopsIt(t *testing.T) {
+	var startBody map[string]any
+	var stopped string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/twirp/livekit.Egress/StartEgress":
+			if err := json.NewDecoder(r.Body).Decode(&startBody); err != nil {
+				t.Fatal(err)
+			}
+			_, _ = w.Write([]byte(`{"egress_id":"EG_test","started_at":"1788696000000000000"}`))
+		case "/twirp/livekit.Egress/StopEgress":
+			var body map[string]string
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatal(err)
+			}
+			stopped = body["egress_id"]
+			_, _ = w.Write([]byte(`{"egress_id":"EG_test"}`))
+		default:
+			t.Fatalf("unexpected provider path %s", r.URL.Path)
+		}
+	}))
+	defer srv.Close()
+	p, err := New(Config{
+		URL: strings.Replace(srv.URL, "http://", "ws://", 1), APIKey: "key", APISecret: "secret",
+		S3Endpoint: "https://storage.example.test", S3Bucket: "private-recordings",
+		S3Region: "auto", S3AccessKey: "storage-key", S3SecretKey: "storage-secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	job, err := p.StartRecording(context.Background(), media.RecordingRequest{
+		Room: "opaque-room", ParticipantIdentity: "device-id", AssetID: "asset-id",
+		ObjectKey: "tenant/t/device/d/session/s/screen.mp4",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if job.ID != "EG_test" {
+		t.Fatalf("job id = %q", job.ID)
+	}
+	mediaSource := startBody["media"].(map[string]any)
+	participant := mediaSource["participant_video"].(map[string]any)
+	if participant["identity"] != "device-id" || participant["prefer_screen_share"] != true {
+		t.Fatalf("egress was not limited to the device screen: %#v", participant)
+	}
+	if _, exists := startBody["preset"]; exists {
+		t.Fatalf("screen recording sent an unsupported encoding preset: %#v", startBody["preset"])
+	}
+	outputs := startBody["outputs"].([]any)
+	file := outputs[0].(map[string]any)["file"].(map[string]any)
+	if file["filepath"] != "tenant/t/device/d/session/s/screen.mp4" || file["file_type"] != "MP4" {
+		t.Fatalf("wrong recording destination: %#v", file)
+	}
+	storage := startBody["storage"].(map[string]any)["s3"].(map[string]any)
+	if storage["bucket"] != "private-recordings" || storage["secret"] != "storage-secret" {
+		t.Fatal("private storage was not supplied to egress")
+	}
+	if err := p.StopRecording(context.Background(), job.ID); err != nil {
+		t.Fatal(err)
+	}
+	if stopped != job.ID {
+		t.Fatalf("stopped %q, want %q", stopped, job.ID)
 	}
 }

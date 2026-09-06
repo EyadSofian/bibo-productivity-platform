@@ -16,6 +16,7 @@ var (
 	_ media.MediaProvider  = (*media.Unconfigured)(nil)
 	_ media.MediaProvider  = (*mediafake.Provider)(nil)
 	_ media.RecordingStore = (*media.UnconfiguredStore)(nil)
+	_ media.RecordingStore = (*mediafake.Provider)(nil)
 )
 
 // providers runs the shared contract against every implementation, so a future

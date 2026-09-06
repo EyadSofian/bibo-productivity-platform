@@ -145,6 +145,21 @@ func (p *Provider) StopRecording(_ context.Context, recordingID string) error {
 	return nil
 }
 
+func (p *Provider) SignManifest(_ context.Context, assetID string, ttl time.Duration) (media.SignedPlayback, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	return media.SignedPlayback{
+		ManifestURL: "https://recordings.example.test/" + assetID,
+		ExpiresAt:   p.now().Add(ttl),
+	}, nil
+}
+
+func (p *Provider) DeleteAsset(_ context.Context, _ string) error { return nil }
+
+func (p *Provider) VerifyAsset(_ context.Context, _ string) (media.AssetVerification, error) {
+	return media.AssetVerification{Exists: true, ByteSize: 1024}, nil
+}
+
 func (p *Provider) EndRoom(_ context.Context, roomID string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()

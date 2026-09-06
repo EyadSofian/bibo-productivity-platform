@@ -76,7 +76,7 @@ describe("MonitoringProfiles", () => {
     const input = endpointMocks.createMonitoringProfile.mock.calls[0][0];
     expect(input.business_id).toBe("business-1");
     expect(input.assignments).toEqual([{ scope_type: "business", scope_id: "business-1" }]);
-    expect(input.details).toHaveLength(4);
+    expect(input.details).toHaveLength(5);
     expect(input.details[0]).toMatchObject({
       days_of_week: [1, 2, 3, 4, 5],
       start_minute: 540,

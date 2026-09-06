@@ -18,7 +18,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type Config struct{ URL, APIKey, APISecret string }
+type Config struct {
+	URL, APIKey, APISecret                                   string
+	S3Endpoint, S3Bucket, S3Region, S3AccessKey, S3SecretKey string
+	S3ForcePathStyle                                         bool
+}
 type Provider struct {
 	cfg  Config
 	http *http.Client
@@ -66,7 +70,7 @@ func (p *Provider) MintSubscriberToken(_ context.Context, req media.SubscriberTo
 	return p.sign(req.Identity, req.TTL, map[string]any{"room": req.Room, "roomJoin": true, "canPublish": false, "canSubscribe": true, "canPublishData": false})
 }
 
-func (p *Provider) call(ctx context.Context, method string, grant map[string]any, input any) error {
+func (p *Provider) callService(ctx context.Context, service, method string, grant map[string]any, input, output any) error {
 	tok, err := p.sign("backend-control-plane", 30*time.Second, grant)
 	if err != nil {
 		return err
@@ -76,7 +80,7 @@ func (p *Provider) call(ctx context.Context, method string, grant map[string]any
 		return err
 	}
 	base := strings.Replace(strings.Replace(p.cfg.URL, "wss://", "https://", 1), "ws://", "http://", 1)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/twirp/livekit.RoomService/"+method, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base+"/twirp/livekit."+service+"/"+method, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -87,14 +91,26 @@ func (p *Provider) call(ctx context.Context, method string, grant map[string]any
 		return fmt.Errorf("livekit: %s request failed", method)
 	}
 	defer res.Body.Close()
-	_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
 	if res.StatusCode == http.StatusNotFound {
+		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
 		return media.ErrRoomNotFound
 	}
 	if res.StatusCode != http.StatusOK {
+		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
 		return fmt.Errorf("livekit: %s returned HTTP %d", method, res.StatusCode)
 	}
+	if output != nil {
+		if err := json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(output); err != nil {
+			return fmt.Errorf("livekit: decode %s response: %w", method, err)
+		}
+	} else {
+		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
+	}
 	return nil
+}
+
+func (p *Provider) call(ctx context.Context, method string, grant map[string]any, input any) error {
+	return p.callService(ctx, "RoomService", method, grant, input, nil)
 }
 func (p *Provider) CreateRoom(ctx context.Context, spec media.RoomSpec) (media.Room, error) {
 	if spec.Name == "" || spec.MaxPublishers != 1 {
@@ -110,11 +126,51 @@ func (p *Provider) EndRoom(ctx context.Context, room string) error {
 	return p.call(ctx, "DeleteRoom", map[string]any{"roomCreate": true, "roomAdmin": true, "room": room}, map[string]any{"room": room})
 }
 
-// Recording stays unavailable until private storage and its lifecycle are wired.
-// A configured SFU alone must never start an untracked recording.
-func (*Provider) StartRecording(context.Context, media.RecordingRequest) (media.RecordingJob, error) {
-	return media.RecordingJob{}, media.ErrProviderUnconfigured
+func (p *Provider) StartRecording(ctx context.Context, req media.RecordingRequest) (media.RecordingJob, error) {
+	if req.Room == "" || req.ParticipantIdentity == "" || req.AssetID == "" || req.ObjectKey == "" {
+		return media.RecordingJob{}, errors.New("livekit: incomplete recording request")
+	}
+	if p.cfg.S3Endpoint == "" || p.cfg.S3Bucket == "" || p.cfg.S3AccessKey == "" || p.cfg.S3SecretKey == "" {
+		return media.RecordingJob{}, media.ErrProviderUnconfigured
+	}
+	region := p.cfg.S3Region
+	if region == "" {
+		region = "auto"
+	}
+	input := map[string]any{
+		"room_name": req.Room,
+		"media": map[string]any{"participant_video": map[string]any{
+			"identity": req.ParticipantIdentity, "prefer_screen_share": true,
+		}},
+		"outputs": []any{map[string]any{"file": map[string]any{
+			"file_type": "MP4", "filepath": req.ObjectKey,
+		}}},
+		"storage": map[string]any{"s3": map[string]any{
+			"access_key":       p.cfg.S3AccessKey,
+			"secret":           p.cfg.S3SecretKey,
+			"region":           region,
+			"endpoint":         p.cfg.S3Endpoint,
+			"bucket":           p.cfg.S3Bucket,
+			"force_path_style": p.cfg.S3ForcePathStyle,
+		}},
+	}
+	var out struct {
+		EgressID string `json:"egress_id"`
+	}
+	if err := p.callService(ctx, "Egress", "StartEgress", map[string]any{"roomRecord": true}, input, &out); err != nil {
+		return media.RecordingJob{}, err
+	}
+	if out.EgressID == "" {
+		return media.RecordingJob{}, errors.New("livekit: egress response has no id")
+	}
+	return media.RecordingJob{ID: out.EgressID, StartedAt: time.Now().UTC()}, nil
 }
-func (*Provider) StopRecording(context.Context, string) error { return media.ErrProviderUnconfigured }
+func (p *Provider) StopRecording(ctx context.Context, recordingID string) error {
+	if recordingID == "" {
+		return errors.New("livekit: recording id required")
+	}
+	var out map[string]any
+	return p.callService(ctx, "Egress", "StopEgress", map[string]any{"roomRecord": true}, map[string]any{"egress_id": recordingID}, &out)
+}
 
 var _ media.MediaProvider = (*Provider)(nil)

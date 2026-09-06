@@ -4200,7 +4200,8 @@ select.input:focus,
   border-radius: 12px;
   background: #0e1118;
 }
-.ad-playback__stage img {
+.ad-playback__stage img,
+.ad-playback__stage video {
   width: 100%;
   height: 100%;
   object-fit: contain;

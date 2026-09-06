@@ -479,6 +479,12 @@ func defaultMonitoringDetails() map[string]MonitoringDetail {
 			StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
 		}
 	}
+	// Recording is deliberately opt-in. Screen=true permits live video; this
+	// separate key decides whether private historical video is retained.
+	out["recording"] = MonitoringDetail{
+		TrackingKey: "recording", TrackingVal: json.RawMessage("false"), DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7},
+		StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+	}
 	return out
 }
 

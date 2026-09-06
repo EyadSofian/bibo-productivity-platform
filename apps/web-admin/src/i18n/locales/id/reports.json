@@ -48,6 +48,11 @@
     "close": "Tutup"
   },
   "playback": {
+    "emptyVideo": "Belum ada video rekaman untuk periode ini.",
+    "loadingVideo": "Memuat video rekaman…",
+    "processing": "Potongan video ini sedang diselesaikan. Coba lagi sebentar lagi.",
+    "videoUnavailable": "Video rekaman tidak dapat dimuat.",
+    "videoNotice": "Video sesi rekaman — klik blok aplikasi atau situs untuk menuju waktu tersebut",
     "empty": "Tidak ada tangkapan layar untuk diputar dalam rentang ini.",
     "frameAlt": "Bingkai pemutaran pada {{time}}",
     "loadingFrame": "Memuat bingkai…",

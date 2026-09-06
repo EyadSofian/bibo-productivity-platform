@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -22,18 +23,22 @@ import (
 // happened. The bytes go agent → SFU → viewer, and separately to the recorder,
 // without passing through this process (docs/adr/0002-video-first-media-plane.md).
 type MediaHandler struct {
-	store    *store.Store
-	provider media.MediaProvider
-	tokenTTL time.Duration
+	store      *store.Store
+	provider   media.MediaProvider
+	recordings media.RecordingStore
+	tokenTTL   time.Duration
 	// roomEmptyTimeout is how long the provider keeps a room with nobody in it.
 	roomEmptyTimeout time.Duration
 }
 
+const recordingChunkDuration = 15 * time.Minute
+
 // NewMediaHandler wires the control plane.
-func NewMediaHandler(s *store.Store, provider media.MediaProvider, tokenTTL time.Duration) *MediaHandler {
+func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings media.RecordingStore, tokenTTL time.Duration) *MediaHandler {
 	return &MediaHandler{
 		store:            s,
 		provider:         provider,
+		recordings:       recordings,
 		tokenTTL:         tokenTTL,
 		roomEmptyTimeout: 60 * time.Second,
 	}
@@ -57,17 +62,96 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 	}
 	session, err := h.store.PendingMediaSessionForAgent(c.Request.Context(), userID, deviceID)
 	if errors.Is(err, store.ErrNotFound) {
-		c.Status(http.StatusNoContent)
-		return
+		session, err = h.openScheduledRecording(c, userID, deviceID)
+		if errors.Is(err, store.ErrNotFound) {
+			c.Status(http.StatusNoContent)
+			return
+		}
 	}
 	if err != nil {
 		mediaInternal(c, err)
 		return
 	}
-	if h.expireUnwatched(c, session) {
+	if session.Kind == media.KindRecording {
+		active, policyErr := h.recordingPolicyActive(c, userID, deviceID)
+		if policyErr != nil {
+			mediaInternal(c, policyErr)
+			return
+		}
+		if !active || time.Since(session.StartedAt) >= recordingChunkDuration {
+			h.stopRecording(c, session)
+			if !active {
+				c.Status(http.StatusNoContent)
+				return
+			}
+			session, err = h.openScheduledRecording(c, userID, deviceID)
+			if err != nil {
+				mediaInternal(c, err)
+				return
+			}
+		}
+	} else if h.expireUnwatched(c, session) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"session_id": session.ID, "room": session.ProviderRoomID, "state": session.State, "control_armed": false})
+}
+
+func (h *MediaHandler) recordingPolicyActive(c *gin.Context, userID, deviceID string) (bool, error) {
+	resolved, err := h.store.ResolveMonitoringProfile(c.Request.Context(), userID, deviceID)
+	if err != nil {
+		return false, err
+	}
+	for _, detail := range resolved.Details {
+		if detail.TrackingKey != "recording" {
+			continue
+		}
+		var enabled bool
+		if err := json.Unmarshal(detail.TrackingVal, &enabled); err != nil || !enabled {
+			return false, nil
+		}
+		return store.ScheduleActiveAt(detail.DaysOfWeek, detail.StartMinute, detail.EndMinute, detail.Timezone, time.Now())
+	}
+	return false, nil
+}
+
+func (h *MediaHandler) openScheduledRecording(c *gin.Context, userID, deviceID string) (store.MediaSession, error) {
+	active, err := h.recordingPolicyActive(c, userID, deviceID)
+	if err != nil {
+		return store.MediaSession{}, err
+	}
+	if !active {
+		return store.MediaSession{}, store.ErrNotFound
+	}
+	target, err := h.store.MediaDeviceTargetFor(c.Request.Context(), userID, deviceID)
+	if err != nil || !target.MonitoringEnabled || target.EmployeeID == "" {
+		return store.MediaSession{}, store.ErrNotFound
+	}
+	session, created, err := h.store.OpenMediaSession(c.Request.Context(), store.NewMediaSession{
+		BusinessID: target.BusinessID, EmployeeID: target.EmployeeID, DeviceID: target.DeviceID,
+		Kind: media.KindRecording, Provider: h.provider.Name(), ProviderRoomID: uuid.NewString(),
+		PolicySnapshot: h.policySnapshot(c, userID, deviceID),
+	})
+	if err != nil {
+		return store.MediaSession{}, err
+	}
+	if !created {
+		return session, nil
+	}
+	if _, err := h.provider.CreateRoom(c.Request.Context(), media.RoomSpec{
+		Name: session.ProviderRoomID, EmptyTimeout: h.roomEmptyTimeout, MaxPublishers: 1,
+	}); err != nil {
+		h.failSession(c, session, media.FailRoomFailed)
+		return store.MediaSession{}, err
+	}
+	if session, err = h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateAuthorizing, ""); err != nil {
+		return store.MediaSession{}, err
+	}
+	if session, err = h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateWaitingForAgent, ""); err != nil {
+		return store.MediaSession{}, err
+	}
+	h.auditAs(c, "system", "recording-scheduler", session.BusinessID, session.ID,
+		store.AuditRecordingStart, store.OutcomeAllowed, map[string]any{"device_id": deviceID})
+	return session, nil
 }
 
 func (h *MediaHandler) expireUnwatched(c *gin.Context, session store.MediaSession) bool {
@@ -135,6 +219,18 @@ func (h *MediaHandler) StartLive(c *gin.Context) {
 		h.audit(c, target.BusinessID, "", store.AuditLiveSessionStart, store.OutcomeDenied,
 			map[string]any{"device_id": deviceID, "reason": string(media.FailAgentOffline)})
 		mediaError(c, http.StatusConflict, CodeAgentOffline, "The device is offline.", true)
+		return
+	}
+
+	// Continuous recording already has the device publishing. A live viewer
+	// subscribes to that same room and leaves the recording lifecycle alone.
+	if recording, recErr := h.store.OpenRecordingMediaSessionFor(c.Request.Context(), deviceID); recErr == nil {
+		h.audit(c, recording.BusinessID, recording.ID, store.AuditLiveSessionJoin, store.OutcomeAllowed,
+			map[string]any{"device_id": deviceID, "kind": string(media.KindRecording)})
+		c.JSON(http.StatusOK, sessionResponse{Session: recording})
+		return
+	} else if !errors.Is(recErr, store.ErrNotFound) {
+		mediaInternal(c, recErr)
 		return
 	}
 
@@ -458,10 +554,21 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 			obs.Warn("media track not recorded", "err", err, "session", updated.ID)
 		}
 	}
+	if to == media.StateLive && updated.Kind == media.KindRecording {
+		if err := h.startRecording(c, updated); err != nil {
+			_ = h.provider.EndRoom(c.Request.Context(), updated.ProviderRoomID)
+			_, _ = h.store.AdvanceMediaSession(c.Request.Context(), updated.ID, media.StateFailed, media.FailEncoderFailed)
+			h.providerError(c, err)
+			return
+		}
+	}
 
 	h.auditAs(c, "agent", session.DeviceID, session.BusinessID, session.ID,
 		store.AuditAgentState, store.OutcomeAllowed,
 		map[string]any{"state": string(to), "failure_code": string(failure)})
+	if updated.Kind == media.KindRecording && to.Terminal() {
+		h.stopRecording(c, updated)
+	}
 
 	c.JSON(http.StatusOK, sessionResponse{Session: updated})
 }
@@ -508,6 +615,15 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 	if !h.require(c, userID, session.BusinessID, media.PermLiveViewStart, store.AuditLiveSessionStop) {
 		return
 	}
+	if session.Kind == media.KindRecording {
+		if err := h.store.LeaveViewerSession(c.Request.Context(), session.ID, userID, "viewer_left"); err != nil {
+			mediaInternal(c, err)
+			return
+		}
+		h.audit(c, session.BusinessID, session.ID, store.AuditLiveSessionLeave, store.OutcomeAllowed, nil)
+		c.JSON(http.StatusOK, sessionResponse{Session: session})
+		return
+	}
 
 	updated, remaining, ended, err := h.store.LeaveMediaViewerAndMaybeEnd(c.Request.Context(), session.ID, userID)
 	if err != nil {
@@ -539,6 +655,51 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 	h.audit(c, updated.BusinessID, updated.ID, store.AuditLiveSessionStop, store.OutcomeAllowed,
 		map[string]any{"device_id": updated.DeviceID})
 	c.JSON(http.StatusOK, sessionResponse{Session: updated})
+}
+
+func (h *MediaHandler) startRecording(c *gin.Context, session store.MediaSession) error {
+	objectKey := "tenant/" + session.BusinessID + "/device/" + session.DeviceID + "/date/" +
+		time.Now().UTC().Format("2006-01-02") + "/session/" + session.ID + "/screen.mp4"
+	asset, err := h.store.CreateRecordingAsset(c.Request.Context(), session, objectKey, "s3")
+	if err != nil {
+		return err
+	}
+	if asset.ProviderRecordingID != "" {
+		return nil
+	}
+	job, err := h.provider.StartRecording(c.Request.Context(), media.RecordingRequest{
+		Room: session.ProviderRoomID, ParticipantIdentity: session.DeviceID,
+		AssetID: asset.ID, Prefix: "", ObjectKey: objectKey,
+	})
+	if err != nil {
+		_ = h.store.FailRecordingAsset(c.Request.Context(), asset.ID)
+		return err
+	}
+	return h.store.StartRecordingAsset(c.Request.Context(), asset.ID, job.ID)
+}
+
+func (h *MediaHandler) stopRecording(c *gin.Context, session store.MediaSession) {
+	asset, err := h.store.RecordingAssetForSession(c.Request.Context(), session.ID)
+	if !session.State.Terminal() {
+		_, _ = h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, "")
+	}
+	h.auditAs(c, "system", "recording-scheduler", session.BusinessID, session.ID,
+		store.AuditRecordingStop, store.OutcomeAllowed, map[string]any{"device_id": session.DeviceID})
+	// Finalizing an MP4 can take longer than the agent's two-second authorization
+	// poll. The database stop is already committed, so finish provider teardown
+	// in the background and let the agent move to its next chunk immediately.
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if err == nil && asset.ProviderRecordingID != "" {
+			if stopErr := h.provider.StopRecording(ctx, asset.ProviderRecordingID); stopErr != nil {
+				_ = h.store.FailRecordingAsset(ctx, asset.ID)
+			} else {
+				_ = h.store.ProcessRecordingAsset(ctx, asset.ID, time.Now().UTC())
+			}
+		}
+		_ = h.provider.EndRoom(ctx, session.ProviderRoomID)
+	}()
 }
 
 // memberSession loads a session the caller's tenant owns, writing the error

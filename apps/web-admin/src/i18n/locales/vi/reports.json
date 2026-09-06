@@ -48,6 +48,11 @@
     "close": "Đóng"
   },
   "playback": {
+    "emptyVideo": "Chưa có video ghi lại cho khoảng thời gian này.",
+    "loadingVideo": "Đang tải video đã ghi…",
+    "processing": "Đoạn video này đang được hoàn tất. Hãy thử lại sau ít phút.",
+    "videoUnavailable": "Không thể tải video đã ghi.",
+    "videoNotice": "Video phiên đã ghi — nhấp vào ứng dụng hoặc trang web để chuyển đến thời điểm đó",
     "empty": "Không có ảnh chụp màn hình để phát lại trong khoảng này.",
     "frameAlt": "Khung phát lại lúc {{time}}",
     "loadingFrame": "Đang tải khung…",

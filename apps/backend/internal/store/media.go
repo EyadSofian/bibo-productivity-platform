@@ -197,6 +197,13 @@ func (s *Store) openMediaSessionFor(ctx context.Context, deviceID string, kind m
 	return m, err
 }
 
+// OpenRecordingMediaSessionFor returns a device's current continuous recording
+// session. Live viewers join this room instead of making the agent publish the
+// same screen twice.
+func (s *Store) OpenRecordingMediaSessionFor(ctx context.Context, deviceID string) (MediaSession, error) {
+	return s.openMediaSessionFor(ctx, deviceID, media.KindRecording)
+}
+
 // MediaSessionForMember reads a session, scoped to a business the caller belongs
 // to. A caller outside the tenant gets ErrNotFound, which is the same answer they
 // get for a session that does not exist: the API must not confirm that another
@@ -246,9 +253,9 @@ func (s *Store) PendingMediaSessionForAgent(ctx context.Context, userID, deviceI
 	  JOIN devices d ON d.id = ms.device_id AND d.business_id = ms.business_id
 	  JOIN memberships member ON member.business_id = d.business_id AND member.user_id = d.user_id
 	 WHERE d.user_id = $1 AND d.id = $2 AND d.deleted_at IS NULL
-	   AND d.monitoring_enabled AND ms.kind = 'live'
+	   AND d.monitoring_enabled AND ms.kind IN ('recording','live')
 	   AND ms.state IN ('waiting_for_agent','negotiating','live','reconnecting')
-	 ORDER BY ms.started_at DESC LIMIT 1`, userID, deviceID)
+	 ORDER BY CASE ms.kind WHEN 'recording' THEN 0 ELSE 1 END, ms.started_at DESC LIMIT 1`, userID, deviceID)
 	m, err := scanMediaSession(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return MediaSession{}, ErrNotFound
@@ -483,6 +490,10 @@ const (
 	AuditPublisherTokenMint = "publisher_token.mint"
 	AuditSessionRead        = "media_session.read"
 	AuditAgentState         = "agent.state"
+	AuditRecordingStart     = "recording.start"
+	AuditRecordingStop      = "recording.stop"
+	AuditRecordingView      = "recording.view"
+	AuditPlaybackTokenMint  = "recording.playback_token.mint"
 )
 
 // Audit outcomes.

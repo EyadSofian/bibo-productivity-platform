@@ -65,6 +65,7 @@ export type MediaErrorCode =
   | "MEDIA_MONITORING_DISABLED"
   | "MEDIA_SESSION_ENDED"
   | "MEDIA_INVALID_STATE"
+  | "MEDIA_RECORDING_NOT_READY"
   | "MEDIA_PROVIDER_UNCONFIGURED"
   | "MEDIA_PROVIDER_ERROR"
   | "MEDIA_INVALID_REQUEST"
@@ -134,4 +135,37 @@ export function stopMediaSession(sessionId: string) {
   return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/stop`, {
     method: "POST",
   });
+}
+
+export type RecordingAsset = {
+  id: string;
+  business_id: string;
+  media_session_id: string;
+  employee_id: string;
+  device_id: string;
+  status: "pending" | "recording" | "processing" | "ready" | "failed";
+  format: "mp4" | "hls" | "fmp4" | "webm";
+  duration_ms: number;
+  byte_size: number;
+  started_at: string;
+  ended_at?: string;
+};
+
+export type PlaybackToken = {
+  recording_id: string;
+  url: string;
+  expires_at: string;
+  started_at: string;
+  ended_at?: string;
+  duration_ms: number;
+};
+
+export function listEmployeeRecordings(employeeId: string, from: number, to: number) {
+  return request<{ recordings: RecordingAsset[] }>(`/v1/employees/${employeeId}/recordings`, {
+    query: { from, to },
+  });
+}
+
+export function mintPlaybackToken(recordingId: string) {
+  return request<PlaybackToken>(`/v1/recordings/${recordingId}/playback-token`, { method: "POST" });
 }

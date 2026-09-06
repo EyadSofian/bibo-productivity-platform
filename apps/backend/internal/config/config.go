@@ -36,10 +36,16 @@ type Config struct {
 	// MediaProvider names the SFU implementation. Empty (the default) selects
 	// the unconfigured provider, which fails every operation loudly rather than
 	// pretending to work. A real provider arrives in slice V05.
-	MediaProvider    string
-	LiveKitURL       string
-	LiveKitAPIKey    string
-	LiveKitAPISecret string
+	MediaProvider             string
+	LiveKitURL                string
+	LiveKitAPIKey             string
+	LiveKitAPISecret          string
+	RecordingS3Endpoint       string
+	RecordingS3Bucket         string
+	RecordingS3Region         string
+	RecordingS3AccessKey      string
+	RecordingS3SecretKey      string
+	RecordingS3ForcePathStyle bool
 	// MediaTokenTTLSeconds bounds how long a minted media token lives. Short by
 	// design: a leaked token is only useful for this long, and the client
 	// re-authorizes through the API to get another.
@@ -84,11 +90,17 @@ func Load() (*Config, error) {
 
 		LegacyStillCaptureEnabled: getenvBool("LEGACY_STILL_CAPTURE_ENABLED", false),
 
-		MediaProvider:        os.Getenv("MEDIA_PROVIDER"),
-		LiveKitURL:           os.Getenv("LIVEKIT_URL"),
-		LiveKitAPIKey:        os.Getenv("LIVEKIT_API_KEY"),
-		LiveKitAPISecret:     os.Getenv("LIVEKIT_API_SECRET"),
-		MediaTokenTTLSeconds: getenvInt("MEDIA_TOKEN_TTL_SECONDS", 120),
+		MediaProvider:             os.Getenv("MEDIA_PROVIDER"),
+		LiveKitURL:                os.Getenv("LIVEKIT_URL"),
+		LiveKitAPIKey:             os.Getenv("LIVEKIT_API_KEY"),
+		LiveKitAPISecret:          os.Getenv("LIVEKIT_API_SECRET"),
+		MediaTokenTTLSeconds:      getenvInt("MEDIA_TOKEN_TTL_SECONDS", 120),
+		RecordingS3Endpoint:       os.Getenv("RECORDING_S3_ENDPOINT"),
+		RecordingS3Bucket:         os.Getenv("RECORDING_S3_BUCKET"),
+		RecordingS3Region:         getenv("RECORDING_S3_REGION", "auto"),
+		RecordingS3AccessKey:      os.Getenv("RECORDING_S3_ACCESS_KEY"),
+		RecordingS3SecretKey:      os.Getenv("RECORDING_S3_SECRET_KEY"),
+		RecordingS3ForcePathStyle: getenvBool("RECORDING_S3_FORCE_PATH_STYLE", false),
 
 		TrustedProxies:  getenvList("TRUSTED_PROXIES"),
 		TrustedPlatform: os.Getenv("TRUSTED_PLATFORM"),

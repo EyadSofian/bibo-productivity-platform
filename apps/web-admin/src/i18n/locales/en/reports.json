@@ -48,6 +48,11 @@
     "close": "Close"
   },
   "playback": {
+    "emptyVideo": "No recorded video is available in this period yet.",
+    "loadingVideo": "Loading recorded video…",
+    "processing": "This video chunk is being finalized. Try again shortly.",
+    "videoUnavailable": "The recorded video could not be loaded.",
+    "videoNotice": "Recorded session video — click any app or website block to jump to that moment",
     "empty": "No screenshots are available for playback in this range.",
     "frameAlt": "Playback frame at {{time}}",
     "loadingFrame": "Loading frame…",

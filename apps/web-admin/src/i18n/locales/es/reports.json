@@ -48,6 +48,11 @@
     "close": "Cerrar"
   },
   "playback": {
+    "emptyVideo": "Todavía no hay vídeo grabado disponible para este periodo.",
+    "loadingVideo": "Cargando vídeo grabado…",
+    "processing": "Este fragmento de vídeo se está finalizando. Inténtalo de nuevo en breve.",
+    "videoUnavailable": "No se pudo cargar el vídeo grabado.",
+    "videoNotice": "Vídeo de sesión grabado: pulsa una aplicación o sitio para saltar a ese momento",
     "empty": "No hay capturas disponibles para reproducir en este intervalo.",
     "frameAlt": "Fotograma de reproducción a las {{time}}",
     "loadingFrame": "Cargando fotograma…",

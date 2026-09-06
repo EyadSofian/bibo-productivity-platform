@@ -991,9 +991,11 @@ export function EmployeeDetail() {
                       (shots ? <ScreenshotGallery shots={shots} /> : <Spinner />)}
                   </div>
                 )}
-                {tab === "playback" && activity && keystrokes && visits && shots ? (
+                {tab === "playback" && activity && keystrokes && visits ? (
                   <PlaybackPanel
-                    shots={shots}
+                    employeeId={id}
+                    from={rangeUnix.from}
+                    to={rangeUnix.to}
                     activity={activity}
                     visits={visits}
                     buckets={keystrokes}
