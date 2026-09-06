@@ -220,9 +220,12 @@ pub fn start(ctx: MediaContext) {
 }
 
 fn capture_allowed(ctx: &MediaContext) -> bool {
+    // Managed session video has its own server policy. The legacy
+    // `capture_screenshots` preference only controls the retired still-image
+    // pipeline; tying video to it leaves the media supervisor unable to poll on
+    // upgraded devices that previously opted out of screenshots.
     if ctx.status.stop_requested.load(Ordering::Acquire)
         || !ctx.control.category_allowed("screen")
-        || !ctx.control.capture_screenshots.load(Ordering::Acquire)
         || ctx.auth.session().is_none()
     {
         return false;

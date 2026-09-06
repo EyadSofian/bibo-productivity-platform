@@ -273,10 +273,8 @@ mod tests {
     /// network at all.
     #[test]
     fn settings_from_an_older_build_come_up_retired() {
-        let dir = std::env::temp_dir().join(format!(
-            "ctracking_v02_upgrade_{}",
-            std::process::id()
-        ));
+        let dir =
+            std::env::temp_dir().join(format!("ctracking_v02_upgrade_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("settings.json");
         // Deliberately a pre-V02 file: capture on, no still_capture_enabled key.
