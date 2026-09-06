@@ -31,7 +31,10 @@ type MediaHandler struct {
 	roomEmptyTimeout time.Duration
 }
 
-const recordingChunkDuration = 15 * time.Minute
+// Short chunks make a finished, independently seekable recording available to
+// reviewers within minutes while bounding the amount lost to a network or
+// recorder failure.
+const recordingChunkDuration = 5 * time.Minute
 
 // NewMediaHandler wires the control plane.
 func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings media.RecordingStore, tokenTTL time.Duration) *MediaHandler {
