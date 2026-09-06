@@ -32,6 +32,24 @@
   ${If} ${FileExists} "$INSTDIR\${BIBO_AGENT_BINARY}"
     !insertmacro BIBO_RUN_AGENT_ADMIN "stop-before-install" "--stop-supervisor-service"
   ${EndIf}
+
+  ; Closing the app window only hides it to the tray. During an update that can
+  ; leave the old, interactive ctracking.exe alive after its supervisor service
+  ; stops. The repaired service then sees that stale process and deliberately
+  ; avoids launching the newly installed binary, so the device keeps reporting
+  ; its previous version and cannot use new capabilities. End every old visible
+  ; agent after the service has stopped and before files are replaced. taskkill's
+  ; non-zero "not found" result is harmless on a clean first install.
+  nsExec::ExecToStack '"$SYSDIR\taskkill.exe" /F /IM "${BIBO_AGENT_BINARY}"'
+  Pop $R8
+  Pop $R9
+  DetailPrint "BiBoTracking stop visible agents before install: exit=$R8"
+  FileOpen $R7 "${BIBO_INSTALL_LOG}" a
+  ${IfNot} ${Errors}
+    FileWrite $R7 "stop-visible-agents-before-install: exit=$R8$\r$\n"
+    FileClose $R7
+  ${EndIf}
+
   Pop $R9
   Pop $R8
   Pop $R7

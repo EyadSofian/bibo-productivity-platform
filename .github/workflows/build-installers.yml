@@ -74,6 +74,36 @@ jobs:
           --bundles ${{ matrix.bundle }}
           --config src-tauri/tauri.railway.conf.json
 
+      - name: Reproduce upgrade with the old visible agent still running
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $oldInstaller = Join-Path $env:RUNNER_TEMP "BiBoTracking_1.5.10_x64-setup.exe"
+          Invoke-WebRequest -Uri "https://web-production-25e92.up.railway.app/download/BiBoTracking_1.5.10_x64-setup.exe" -OutFile $oldInstaller
+          $expected = "25D50355442033148F1A3CEA44CEE999B2ADCB4AC5A5599374A987736B90E8B7"
+          if ((Get-FileHash $oldInstaller -Algorithm SHA256).Hash -ne $expected) {
+            throw "Pinned 1.5.10 installer checksum mismatch"
+          }
+
+          $oldInstall = Start-Process -FilePath $oldInstaller -ArgumentList "/S" -PassThru -Wait
+          if ($oldInstall.ExitCode -ne 0) {
+            throw "1.5.10 setup exited with code $($oldInstall.ExitCode)"
+          }
+
+          $oldAgent = Join-Path $env:ProgramFiles "BiBoTracking\ctracking.exe"
+          if (-not (Test-Path $oldAgent)) {
+            throw "1.5.10 agent was not installed"
+          }
+          Start-Process -FilePath $oldAgent | Out-Null
+          Start-Sleep -Seconds 3
+          $stale = Get-Process -Name "ctracking" -ErrorAction SilentlyContinue |
+            Where-Object { $_.SessionId -ne 0 } |
+            Select-Object -First 1
+          if (-not $stale) {
+            throw "Unable to reproduce the stale interactive 1.5.10 agent"
+          }
+          "BIBO_STALE_AGENT_PID=$($stale.Id)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Smoke-test Windows managed-agent installation
         if: runner.os == 'Windows'
         shell: pwsh
@@ -97,6 +127,14 @@ jobs:
 
           if ($process.ExitCode -ne 0) {
             throw "NSIS installer exited with code $($process.ExitCode)"
+          }
+
+          if (Get-Process -Id $env:BIBO_STALE_AGENT_PID -ErrorAction SilentlyContinue) {
+            throw "The old interactive agent survived the in-place upgrade"
+          }
+
+          if (-not (Select-String -Path $installerLog -Pattern "stop-visible-agents-before-install: exit=0" -Quiet)) {
+            throw "The installer did not terminate the stale interactive agent"
           }
 
           $service = Get-Service -Name "BiBoTrackingSupervisor" -ErrorAction Stop
