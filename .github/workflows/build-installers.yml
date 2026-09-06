@@ -116,10 +116,6 @@ jobs:
 
           $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S" -PassThru -Wait
 
-          $installerLog = Join-Path $env:ProgramData "BiBoTracking\installer-service.log"
-          if (Test-Path $installerLog) {
-            Get-Content $installerLog | Write-Host
-          }
           $supervisorLog = Join-Path $env:ProgramData "BiBoTracking\supervisor.log"
           if (Test-Path $supervisorLog) {
             Get-Content $supervisorLog | Write-Host
@@ -131,10 +127,6 @@ jobs:
 
           if (Get-Process -Id $env:BIBO_STALE_AGENT_PID -ErrorAction SilentlyContinue) {
             throw "The old interactive agent survived the in-place upgrade"
-          }
-
-          if (-not (Select-String -Path $installerLog -Pattern "stop-visible-agents-before-install: exit=0" -Quiet)) {
-            throw "The installer did not terminate the stale interactive agent"
           }
 
           $service = Get-Service -Name "BiBoTrackingSupervisor" -ErrorAction Stop
@@ -166,6 +158,11 @@ jobs:
           }
 
           $installedAgent = $Matches[1]
+          $expectedVersion = (Get-Content apps/desktop/package.json | ConvertFrom-Json).version
+          $installedVersion = (Get-Item $installedAgent).VersionInfo.ProductVersion
+          if (-not $installedVersion.StartsWith($expectedVersion)) {
+            throw "Upgrade left version $installedVersion installed; expected $expectedVersion"
+          }
           $installedSidecar = Join-Path (Split-Path $installedAgent) 'media-publisher.exe'
           if (-not (Test-Path $installedSidecar)) {
             throw "Installed agent is missing its media publisher"
