@@ -68,14 +68,25 @@ button.onclick = async () => {
     }
     if (colours.size < 2) throw new Error("Received video is frozen");
     report(`PASS: remote decoded pixels change (${colours.size} samples)`);
+    const recording = await fetch("/record", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ room: c.room }),
+    });
+    if (!recording.ok) throw new Error(`Recording start returned ${recording.status}: ${await recording.text()}`);
+    report("PASS: LiveKit Egress accepted the screen recording");
+    await new Promise(resolve => setTimeout(resolve, 5000));
     let publisherDisconnected = false;
     publisher.on(RoomEvent.Disconnected, () => { publisherDisconnected = true; });
     const stopped = await fetch("/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ room: c.room }) });
     if (!stopped.ok) throw new Error(`Room deletion returned ${stopped.status}`);
+    const result: { recording_bytes: number } = await stopped.json();
+    if (!(result.recording_bytes > 0)) throw new Error("Private recording object is empty");
+    report(`PASS: private MP4 finalized (${result.recording_bytes} bytes)`);
     stopSucceeded = true;
     await until(() => closed && lost && publisherDisconnected, "server-driven disconnect and video removal");
     report("PASS: backend stop disconnects both peers and clears the viewer");
-    report("RESULT: PASS — real SFU + H.264 + production browser transport. Actual Windows screen capture remains a separate check.");
+    report("RESULT: PASS — real SFU + Egress + private MP4 storage + H.264 browser transport.");
     document.body.dataset.result = "passed";
   } catch (error) {
     report(`RESULT: FAIL — ${error instanceof Error ? error.message : "Unknown failure"}`);

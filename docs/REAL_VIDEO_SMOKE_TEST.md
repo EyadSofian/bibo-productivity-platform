@@ -26,9 +26,11 @@ the production backend and the test page is outside the deployed admin bundle.
 
 The test checks actual room creation by our Go provider, server-recognized
 publisher permissions, H.264 through the SFU, at least 15 decoded frames in the
-production browser adapter, changing decoded pixels, and room deletion causing
-both clients to disconnect and the viewer to clear its stream. It always stops
-local tracks and disconnects. Abandoned rooms are deleted after two minutes.
+production browser adapter, and changing decoded pixels. When private S3
+configuration is supplied, it also starts LiveKit Egress, waits for a non-empty
+MP4 in the private bucket, and deletes the synthetic artifact. Room deletion
+must disconnect both clients and clear the viewer stream. It always stops local
+tracks and disconnects. Abandoned rooms are deleted after two minutes.
 
 The PostgreSQL/control-plane integration also runs against the actual SFU:
 
@@ -55,10 +57,10 @@ matches the staged executable and can start without needing a desktop capture.
 Use `scripts/verify-windows-install.ps1` on an interactive Windows machine for
 the installed capture test.
 
-To validate a newly provisioned cloud SFU, explicitly run
+To validate a newly provisioned cloud SFU and recording bucket, explicitly run
 `go run ./cmd/media-smoke --configured-sfu` with `LIVEKIT_URL`, `LIVEKIT_API_KEY`,
-and `LIVEKIT_API_SECRET` provided securely through its environment. No other app
-configuration or database is needed. Only synthetic video is sent. The harness
+`LIVEKIT_API_SECRET`, and the `RECORDING_S3_*` variables provided securely through
+its environment. No database is needed. Only synthetic video is sent. The harness
 still binds loopback and accepts only same-origin requests; it does not expose
 an unauthenticated credential endpoint to the network. Do not paste secrets into
 commands, browser URLs, logs, source files, or this document.
@@ -121,7 +123,7 @@ harness with Ctrl+C: it ends any remaining test sessions and archives its device
 The isolated QA tenant remains as an audit record. Credentials stay in memory.
 It is not a load test and does not capture a screen or camera.
 
-The user confirmed on 2026-09-05 that the physical Windows device is currently
-unavailable. Real desktop capture, lock/unlock, sleep/resume, network recovery,
-local privacy stop and sustained performance on that device remain unverified.
-Recording/Video Moments and remote control remain unavailable in this version.
+On 2026-09-06, the production LiveKit Egress and private Railway bucket test
+passed with a 291,007-byte MP4 produced from the synthetic screen track. The
+physical Windows agent is online on version 1.5.12 but was locked during this
+check, so its first employee recording still requires an unlocked session.

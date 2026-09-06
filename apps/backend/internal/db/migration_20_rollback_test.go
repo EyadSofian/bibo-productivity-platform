@@ -43,15 +43,19 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 	}
 
 	// The Down section of 00020_media_control_plane.sql, verbatim, plus the
-	// goose bookkeeping the migrator would remove.
+	// later tables that reference it and the goose bookkeeping the migrator
+	// would remove. This keeps the rollback exercise valid as new dependent
+	// migrations are added.
 	for _, stmt := range []string{
+		`DROP TABLE recording_gaps`,
+		`DROP TABLE recording_assets`,
 		`DROP INDEX idx_viewer_sessions_lease`,
 		`ALTER TABLE viewer_sessions DROP COLUMN last_seen_at`,
 		`DROP TABLE media_audit_events`,
 		`DROP TABLE viewer_sessions`,
 		`DROP TABLE media_tracks`,
 		`DROP TABLE media_sessions`,
-		`DELETE FROM goose_db_version WHERE version_id IN (20,21)`,
+		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22)`,
 	} {
 		if _, err := pool.Exec(ctx, stmt); err != nil {
 			t.Fatalf("rollback %q: %v", stmt, err)
