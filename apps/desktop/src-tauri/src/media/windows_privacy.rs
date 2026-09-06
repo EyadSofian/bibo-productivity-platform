@@ -3,21 +3,16 @@
 use windows::core::PWSTR;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::System::RemoteDesktop::{
-    WTSActive, WTSFreeMemory, WTSQuerySessionInformationW, WTSSessionInfoEx, WTSINFOEXW,
-    WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION, WTS_SESSIONSTATE_UNLOCK,
+    WTSActive, WTSConnectState, WTSFreeMemory, WTSQuerySessionInformationW, WTS_CONNECTSTATE_CLASS,
+    WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION,
 };
 use windows::Win32::System::StationsAndDesktops::{
     CloseDesktop, GetUserObjectInformationW, OpenInputDesktop, DESKTOP_CONTROL_FLAGS,
     DESKTOP_READOBJECTS, UOI_NAME,
 };
 
-fn session_allowed(info: &WTSINFOEXW) -> bool {
-    if info.Level != 1 {
-        return false;
-    }
-    // Level was checked before reading the tagged Windows union.
-    let session = unsafe { info.Data.WTSInfoExLevel1 };
-    session.SessionState == WTSActive && session.SessionFlags == WTS_SESSIONSTATE_UNLOCK as i32
+fn session_allowed(state: WTS_CONNECTSTATE_CLASS) -> bool {
+    state == WTSActive
 }
 
 pub fn capture_allowed() -> bool {
@@ -27,15 +22,15 @@ pub fn capture_allowed() -> bool {
         let queried = WTSQuerySessionInformationW(
             WTS_CURRENT_SERVER_HANDLE,
             WTS_CURRENT_SESSION,
-            WTSSessionInfoEx,
+            WTSConnectState,
             &mut buffer,
             &mut bytes,
         )
         .is_ok();
         let active = queried
             && !buffer.is_null()
-            && bytes as usize >= std::mem::size_of::<WTSINFOEXW>()
-            && session_allowed(&*buffer.0.cast::<WTSINFOEXW>());
+            && bytes as usize >= std::mem::size_of::<WTS_CONNECTSTATE_CLASS>()
+            && session_allowed(*buffer.0.cast::<WTS_CONNECTSTATE_CLASS>());
         if !buffer.is_null() {
             WTSFreeMemory(buffer.0.cast());
         }
@@ -68,28 +63,11 @@ pub fn capture_allowed() -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use windows::Win32::System::RemoteDesktop::{
-        WTSDisconnected, WTSINFOEX_LEVEL1_W, WTSINFOEX_LEVEL_W,
-    };
+    use windows::Win32::System::RemoteDesktop::WTSDisconnected;
+
     #[test]
-    fn only_connected_unlocked_sessions_allow_capture() {
-        let mut info = WTSINFOEXW {
-            Level: 1,
-            Data: WTSINFOEX_LEVEL_W {
-                WTSInfoExLevel1: WTSINFOEX_LEVEL1_W {
-                    SessionState: WTSActive,
-                    SessionFlags: WTS_SESSIONSTATE_UNLOCK as i32,
-                    ..Default::default()
-                },
-            },
-        };
-        assert!(session_allowed(&info));
-        info.Data.WTSInfoExLevel1.SessionFlags = 0;
-        assert!(!session_allowed(&info));
-        info.Data.WTSInfoExLevel1.SessionFlags = WTS_SESSIONSTATE_UNLOCK as i32;
-        info.Data.WTSInfoExLevel1.SessionState = WTSDisconnected;
-        assert!(!session_allowed(&info));
-        info.Level = 0;
-        assert!(!session_allowed(&info));
+    fn only_an_active_interactive_session_allows_capture() {
+        assert!(session_allowed(WTSActive));
+        assert!(!session_allowed(WTSDisconnected));
     }
 }
