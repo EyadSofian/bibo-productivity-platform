@@ -5,6 +5,7 @@
   "remoteAssist": { "title": "Asistencia remota activa", "subtitle": "{{owner}} puede ver y controlar esta pantalla", "stop": "Detener acceso", "stopping": "Deteniendo…" },
   "nav": {
     "Dashboard": "Panel",
+    "Tasks": "Tareas",
     "Activity": "Actividad",
     "Screenshots": "Capturas de pantalla",
     "Browser": "Navegador",

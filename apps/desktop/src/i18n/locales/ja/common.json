@@ -5,6 +5,7 @@
   "remoteAssist": { "title": "リモートアシストが有効です", "subtitle": "{{owner}} がこの画面を表示・操作できます", "stop": "アクセスを停止", "stopping": "停止中…" },
   "nav": {
     "Dashboard": "ダッシュボード",
+    "Tasks": "タスク",
     "Activity": "アクティビティ",
     "Screenshots": "スクリーンショット",
     "Browser": "ブラウザ",

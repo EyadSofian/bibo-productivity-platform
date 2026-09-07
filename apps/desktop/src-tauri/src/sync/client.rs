@@ -104,6 +104,37 @@ pub struct PrivacyAppCategory {
     pub apps: Vec<String>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EmployeeTask {
+    pub id: String,
+    pub title: String,
+    pub description: String,
+    pub status: String,
+    pub priority: String,
+    pub estimated_minutes: Option<i64>,
+    pub due_at: Option<String>,
+    pub started_at: Option<String>,
+    pub completed_at: Option<String>,
+    pub tracked_seconds: i64,
+    #[serde(default)]
+    pub active_session_id: String,
+}
+
+#[derive(Deserialize)]
+struct TasksResp {
+    tasks: Vec<EmployeeTask>,
+}
+
+#[derive(Deserialize)]
+struct TaskResp {
+    task: EmployeeTask,
+}
+
+#[derive(Serialize)]
+struct StartTaskReq<'a> {
+    device_id: &'a str,
+}
+
 #[derive(Deserialize)]
 struct PrivacyAppsResp {
     categories: Vec<PrivacyAppCategory>,
@@ -435,6 +466,58 @@ impl BackendClient {
             return resp.json().await.map_err(|e| e.to_string());
         }
         Err("fetch_policy: unreachable retry exhaustion".into())
+    }
+
+    pub async fn tasks_mine(&self) -> Result<Vec<EmployeeTask>, String> {
+        let mut token = self.access_token()?;
+        for attempt in 0..2 {
+            let resp = self
+                .http
+                .get(self.url("/v1/tasks/mine"))
+                .bearer_auth(&token)
+                .send()
+                .await
+                .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh(&token).await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: TasksResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(parsed.tasks);
+        }
+        Err("tasks_mine: unreachable retry exhaustion".into())
+    }
+
+    pub async fn task_action(
+        &self,
+        task_id: &str,
+        action: &str,
+        device_id: &str,
+    ) -> Result<EmployeeTask, String> {
+        let mut token = self.access_token()?;
+        let path = format!("/v1/tasks/{task_id}/{action}");
+        for attempt in 0..2 {
+            let request = self.http.post(self.url(&path)).bearer_auth(&token);
+            let resp = if action == "start" {
+                request.json(&StartTaskReq { device_id }).send().await
+            } else {
+                request.send().await
+            }
+            .map_err(net_err)?;
+            if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
+                token = self.refresh(&token).await?;
+                continue;
+            }
+            if !resp.status().is_success() {
+                return Err(status_err(resp).await);
+            }
+            let parsed: TaskResp = resp.json().await.map_err(|e| e.to_string())?;
+            return Ok(parsed.task);
+        }
+        Err("task_action: unreachable retry exhaustion".into())
     }
 
     /// Fetch the F41 profile resolved for this exact installation. The server

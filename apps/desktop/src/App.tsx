@@ -14,6 +14,7 @@ import { Permissions } from "./screens/Permissions";
 import { Screenshots } from "./screens/Screenshots";
 import { Browser } from "./screens/Browser";
 import { Activity } from "./screens/Activity";
+import { Tasks } from "./screens/Tasks";
 import { Settings, type AppSettings, type CaptureManaged } from "./screens/Settings";
 import { Login, type Session } from "./screens/Login";
 import { Welcome } from "./screens/Welcome";
@@ -24,6 +25,7 @@ import { AppTrayMenu } from "./components/AppTrayMenu";
 type Screen =
   | "Dashboard"
   | "Activity"
+  | "Tasks"
   | "Screenshots"
   | "Browser"
   | "Permissions"
@@ -31,6 +33,7 @@ type Screen =
 
 const NAV: Screen[] = [
   "Dashboard",
+  "Tasks",
   "Activity",
   "Screenshots",
   "Browser",
@@ -55,6 +58,9 @@ const GridIcon = () => (
 );
 const ActivityIcon = () => (
   <svg {...svgProps} aria-hidden><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+);
+const TasksIcon = () => (
+  <svg {...svgProps} aria-hidden><rect x="3" y="4" width="18" height="16" rx="2" /><path d="m8 10 2 2 4-4" /><path d="M8 16h8" /></svg>
 );
 const CameraNavIcon = () => (
   <svg {...svgProps} aria-hidden>
@@ -88,6 +94,7 @@ const UserIcon = () => (
 );
 const NAV_ICON: Record<Screen, () => ReactElement> = {
   Dashboard: GridIcon,
+  Tasks: TasksIcon,
   Activity: ActivityIcon,
   Screenshots: CameraNavIcon,
   Browser: GlobeNavIcon,
@@ -502,6 +509,7 @@ function App() {
             </div>
           )}
           {screen === "Dashboard" && <Dashboard />}
+          {screen === "Tasks" && <Tasks />}
           {screen === "Activity" && <Activity />}
           {screen === "Screenshots" && (
             <Screenshots stillCaptureEnabled={settings?.still_capture_enabled ?? false} />

@@ -30,5 +30,6 @@
     "busiest": "最活跃时段：{{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} 次按键",
     "privacy": "🔒 仅统计次数 — 绝不记录实际按键。"
-  }
+  },
+  "tasks": { "loading": "正在加载任务…", "eyebrow": "当前工作会话", "noActiveTitle": "选择正在处理的任务", "noActiveHelp": "开始任务会创建计时会话，并关联活动与视频。", "activeHelp": "在暂停或完成前，活动与视频将关联到此任务。", "tracked": "此任务已记录", "empty": "目前没有分配给你的任务。", "actual": "已记录", "estimate": "预计", "due": "截止", "start": "开始任务", "resume": "继续", "pause": "暂停", "complete": "完成", "done": "已完成", "priority": { "low": "低", "normal": "普通", "high": "高", "urgent": "紧急" }, "status": { "assigned": "已分配", "in_progress": "进行中", "paused": "已暂停", "completed": "已完成" } }
 }

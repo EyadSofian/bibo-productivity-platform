@@ -345,5 +345,6 @@
     "cancel": "Batal",
     "saving": "Menyimpan…",
     "save": "Simpan"
-  }
+  },
+  "tasks": { "eyebrow": "PELAKSANAAN KERJA", "title": "Tugas", "subtitle": "Tetapkan pekerjaan dan lihat waktu terukur untuk setiap hasil.", "new": "Tugas baru", "loading": "Memuat tugas…", "noBusiness": "Pilih bisnis terlebih dahulu.", "active": "Aktif sekarang", "open": "Terbuka", "completed": "Selesai", "empty": "Belum ada tugas.", "noEmployees": "Buat karyawan sebelum menetapkan pekerjaan.", "errorLoad": "Tidak dapat memuat tugas.", "errorCreate": "Tidak dapat membuat tugas.", "noDescription": "Tanpa deskripsi", "tracked": "Tercatat", "estimate": "Estimasi", "due": "Tenggat", "createTitle": "Buat tugas", "name": "Nama tugas", "description": "Deskripsi", "workType": "Jenis pekerjaan pembanding", "workTypeHint": "mis. fitur frontend", "assignee": "Karyawan", "priorityLabel": "Prioritas", "estimateMinutes": "Perkiraan menit", "dueAt": "Tenggat", "cancel": "Batal", "saving": "Membuat…", "create": "Buat tugas", "loadingEvidence": "Memuat bukti…", "coverage": "Cakupan bukti", "baseline": "Sampel acuan", "evidenceTimeline": "Linimasa bukti", "noEvidence": "Belum ada bukti aktivitas.", "openVideo": "Buka momen ini", "videoPending": "Video diproses", "priority": { "low": "Rendah", "normal": "Normal", "high": "Tinggi", "urgent": "Mendesak" }, "status": { "assigned": "Ditugaskan", "in_progress": "Dikerjakan", "paused": "Dijeda", "completed": "Selesai", "cancelled": "Dibatalkan" } }
 }

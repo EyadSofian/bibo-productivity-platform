@@ -30,5 +30,6 @@
     "busiest": "Jendela tersibuk: {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} ketikan",
     "privacy": "🔒 Hanya menghitung jumlah — tombol sebenarnya tidak pernah direkam."
-  }
+  },
+  "tasks": { "loading": "Memuat tugas…", "eyebrow": "Sesi kerja saat ini", "noActiveTitle": "Pilih tugas yang sedang dikerjakan", "noActiveHelp": "Memulai tugas membuka sesi terukur dan menghubungkan aktivitas serta video.", "activeHelp": "Aktivitas dan video tertaut ke tugas ini sampai dijeda atau diselesaikan.", "tracked": "tercatat pada tugas", "empty": "Belum ada tugas yang diberikan.", "actual": "Tercatat", "estimate": "Estimasi", "due": "Tenggat", "start": "Mulai tugas", "resume": "Lanjutkan", "pause": "Jeda", "complete": "Selesaikan", "done": "Selesai", "priority": { "low": "Rendah", "normal": "Normal", "high": "Tinggi", "urgent": "Mendesak" }, "status": { "assigned": "Ditugaskan", "in_progress": "Dikerjakan", "paused": "Dijeda", "completed": "Selesai" } }
 }

@@ -90,6 +90,7 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 	liveViewH := handlers.NewLiveViewHandler(st, liveHub, liveCommands)
 	monitoringProfileH := handlers.NewMonitoringProfileHandler(st)
 	organizationH := handlers.NewOrganizationHandler(st)
+	taskH := handlers.NewTaskHandler(st)
 	downloadsH := handlers.NewDownloadsHandler(st, cfg.StaticDir)
 	keepaliveH := handlers.NewKeepaliveHandler(cfg.KeepaliveToken)
 
@@ -192,6 +193,18 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 	authed.PUT("/job-roles/:item_id", organizationH.UpdateJobRole)
 	authed.DELETE("/job-roles/:item_id", organizationH.DeleteJobRole)
 	authed.PUT("/businesses/:id/employees/:employee_id/organization", organizationH.AssignEmployee)
+
+	// Task execution is the boundary that gives activity and video a work context.
+	// Owners assign work; employees control only their own measured sessions.
+	authed.GET("/businesses/:id/tasks", taskH.ListBusiness)
+	authed.POST("/tasks", taskH.Create)
+	authed.GET("/tasks/mine", taskH.ListMine)
+	authed.POST("/tasks/:task_id/start", taskH.Start)
+	authed.POST("/tasks/:task_id/pause", taskH.Pause)
+	authed.POST("/tasks/:task_id/complete", taskH.Complete)
+	authed.POST("/tasks/:task_id/cancel", taskH.Cancel)
+	authed.GET("/tasks/:task_id/timeline", taskH.Timeline)
+	authed.GET("/tasks/:task_id/analysis", taskH.Analysis)
 
 	// Capture policy for the desktop (employee's org settings).
 	authed.GET("/policy", ownerH.Policy)

@@ -345,5 +345,6 @@
     "cancel": "Cancelar",
     "saving": "Guardando…",
     "save": "Guardar"
-  }
+  },
+  "tasks": { "eyebrow": "EJECUCIÓN DEL TRABAJO", "title": "Tareas", "subtitle": "Asigna trabajo y consulta el tiempo medido para cada resultado.", "new": "Nueva tarea", "loading": "Cargando tareas…", "noBusiness": "Selecciona una empresa.", "active": "Activas ahora", "open": "Abiertas", "completed": "Completadas", "empty": "Aún no hay tareas.", "noEmployees": "Crea un empleado antes de asignar trabajo.", "errorLoad": "No se pudieron cargar las tareas.", "errorCreate": "No se pudo crear la tarea.", "noDescription": "Sin descripción", "tracked": "Registrado", "estimate": "Estimación", "due": "Vence", "createTitle": "Crear tarea", "name": "Nombre", "description": "Descripción", "workType": "Tipo de trabajo comparable", "workTypeHint": "p. ej., función frontend", "assignee": "Responsable", "priorityLabel": "Prioridad", "estimateMinutes": "Minutos estimados", "dueAt": "Fecha límite", "cancel": "Cancelar", "saving": "Creando…", "create": "Crear tarea", "loadingEvidence": "Cargando evidencia…", "coverage": "Cobertura", "baseline": "Muestras de referencia", "evidenceTimeline": "Cronología de evidencia", "noEvidence": "Aún no hay evidencia de actividad.", "openVideo": "Abrir este momento", "videoPending": "Vídeo en proceso", "priority": { "low": "Baja", "normal": "Normal", "high": "Alta", "urgent": "Urgente" }, "status": { "assigned": "Asignada", "in_progress": "En curso", "paused": "Pausada", "completed": "Completada", "cancelled": "Cancelada" } }
 }

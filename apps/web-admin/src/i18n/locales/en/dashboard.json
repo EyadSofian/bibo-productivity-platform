@@ -345,5 +345,22 @@
     "cancel": "Cancel",
     "saving": "Saving…",
     "save": "Save"
+  },
+  "tasks": {
+    "eyebrow": "WORK EXECUTION",
+    "title": "Tasks",
+    "subtitle": "Assign work and see the measured time employees spend on each outcome.",
+    "new": "New task", "loading": "Loading tasks…", "noBusiness": "Select a business first.",
+    "active": "Active now", "open": "Open", "completed": "Completed",
+    "empty": "No tasks yet. Create the first assignment.", "noEmployees": "Create an employee before assigning work.",
+    "errorLoad": "Could not load tasks.", "errorCreate": "Could not create the task.",
+    "noDescription": "No description", "tracked": "Tracked", "estimate": "Estimate", "due": "Due",
+    "createTitle": "Create task", "name": "Task name", "description": "Description", "workType": "Comparable work type", "workTypeHint": "e.g. frontend feature", "assignee": "Assignee",
+    "priorityLabel": "Priority", "estimateMinutes": "Estimated minutes", "dueAt": "Due date", "cancel": "Cancel",
+    "saving": "Creating…", "create": "Create task", "loadingEvidence": "Loading task evidence…",
+    "coverage": "Evidence coverage", "baseline": "Baseline samples", "evidenceTimeline": "Evidence timeline",
+    "noEvidence": "No activity evidence was recorded inside this task yet.", "openVideo": "Open at this moment", "videoPending": "Video processing",
+    "priority": { "low": "Low", "normal": "Normal", "high": "High", "urgent": "Urgent" },
+    "status": { "assigned": "Assigned", "in_progress": "In progress", "paused": "Paused", "completed": "Completed", "cancelled": "Cancelled" }
   }
 }

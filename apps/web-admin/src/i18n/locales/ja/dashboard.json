@@ -345,5 +345,6 @@
     "cancel": "キャンセル",
     "saving": "保存中…",
     "save": "保存"
-  }
+  },
+  "tasks": { "eyebrow": "作業実行", "title": "タスク", "subtitle": "作業を割り当て、各成果に費やした時間を確認します。", "new": "新規タスク", "loading": "読み込み中…", "noBusiness": "会社を選択してください。", "active": "現在作業中", "open": "未完了", "completed": "完了", "empty": "タスクはありません。", "noEmployees": "作業を割り当てる前に従業員を作成してください。", "errorLoad": "タスクを読み込めませんでした。", "errorCreate": "タスクを作成できませんでした。", "noDescription": "説明なし", "tracked": "記録", "estimate": "見積り", "due": "期限", "createTitle": "タスク作成", "name": "タスク名", "description": "説明", "workType": "比較する作業タイプ", "workTypeHint": "例：フロントエンド機能", "assignee": "担当者", "priorityLabel": "優先度", "estimateMinutes": "見積り時間（分）", "dueAt": "期限", "cancel": "キャンセル", "saving": "作成中…", "create": "作成", "loadingEvidence": "証拠を読み込み中…", "coverage": "証拠の範囲", "baseline": "基準サンプル", "evidenceTimeline": "証拠タイムライン", "noEvidence": "活動証拠はまだありません。", "openVideo": "この時点を開く", "videoPending": "動画処理中", "priority": { "low": "低", "normal": "通常", "high": "高", "urgent": "緊急" }, "status": { "assigned": "割当済み", "in_progress": "進行中", "paused": "一時停止", "completed": "完了", "cancelled": "キャンセル" } }
 }

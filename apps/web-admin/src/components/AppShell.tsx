@@ -52,6 +52,14 @@ const MembersIcon = () => (
   </RailIcon>
 );
 
+const TasksIcon = () => (
+  <RailIcon>
+    <rect x="3" y="4" width="18" height="16" rx="2" />
+    <path d="m8 10 2 2 4-4" />
+    <path d="M8 16h8" />
+  </RailIcon>
+);
+
 const DevicesIcon = () => (
   <RailIcon>
     <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" />
@@ -278,6 +286,7 @@ export function AppShell() {
   const NAV = [
     { to: "/", label: t("nav.dashboard"), end: true, icon: <DashboardIcon /> },
     { to: "/employees", label: terms.many, end: false, icon: <MembersIcon /> },
+    { to: "/tasks", label: t("nav.tasks"), end: false, icon: <TasksIcon /> },
     { to: "/devices", label: t("nav.devices"), end: false, icon: <DevicesIcon /> },
     { to: "/monitoring", label: t("nav.monitoring"), end: false, icon: <MonitoringIcon /> },
     { to: "/organization", label: t("nav.organization"), end: false, icon: <OrganizationIcon /> },

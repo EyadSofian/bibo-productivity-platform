@@ -345,5 +345,22 @@
     "cancel": "إلغاء",
     "saving": "جارٍ الحفظ…",
     "save": "حفظ"
+  },
+  "tasks": {
+    "eyebrow": "تنفيذ العمل",
+    "title": "المهام",
+    "subtitle": "اسند العمل وشاهد الوقت الفعلي الذي يستغرقه كل موظف في كل نتيجة.",
+    "new": "مهمة جديدة", "loading": "جارٍ تحميل المهام…", "noBusiness": "اختر الشركة أولًا.",
+    "active": "يعمل الآن", "open": "مفتوحة", "completed": "مكتملة",
+    "empty": "لا توجد مهام بعد. أنشئ أول مهمة.", "noEmployees": "أنشئ موظفًا قبل إسناد العمل.",
+    "errorLoad": "تعذر تحميل المهام.", "errorCreate": "تعذر إنشاء المهمة.",
+    "noDescription": "بدون وصف", "tracked": "الوقت الفعلي", "estimate": "المتوقع", "due": "التسليم",
+    "createTitle": "إنشاء مهمة", "name": "اسم المهمة", "description": "الوصف", "workType": "نوع العمل للمقارنة العادلة", "workTypeHint": "مثال: تطوير واجهة", "assignee": "الموظف",
+    "priorityLabel": "الأولوية", "estimateMinutes": "الدقائق المتوقعة", "dueAt": "موعد التسليم", "cancel": "إلغاء",
+    "saving": "جارٍ الإنشاء…", "create": "إنشاء المهمة", "loadingEvidence": "جارٍ تحميل أدلة المهمة…",
+    "coverage": "تغطية الأدلة", "baseline": "عينات المقارنة", "evidenceTimeline": "الخط الزمني للأدلة",
+    "noEvidence": "لا توجد أدلة نشاط مسجلة داخل وقت هذه المهمة بعد.", "openVideo": "افتح الفيديو عند هذه اللحظة", "videoPending": "الفيديو قيد المعالجة",
+    "priority": { "low": "منخفضة", "normal": "عادية", "high": "عالية", "urgent": "عاجلة" },
+    "status": { "assigned": "مسندة", "in_progress": "قيد التنفيذ", "paused": "متوقفة مؤقتًا", "completed": "مكتملة", "cancelled": "ملغاة" }
   }
 }

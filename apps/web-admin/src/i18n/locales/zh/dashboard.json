@@ -345,5 +345,6 @@
     "cancel": "取消",
     "saving": "正在保存…",
     "save": "保存"
-  }
+  },
+  "tasks": { "eyebrow": "工作执行", "title": "任务", "subtitle": "分配工作并查看每项成果的实际用时。", "new": "新建任务", "loading": "正在加载…", "noBusiness": "请先选择企业。", "active": "正在进行", "open": "未完成", "completed": "已完成", "empty": "还没有任务。", "noEmployees": "请先创建员工。", "errorLoad": "无法加载任务。", "errorCreate": "无法创建任务。", "noDescription": "无描述", "tracked": "已记录", "estimate": "预计", "due": "截止", "createTitle": "创建任务", "name": "任务名称", "description": "描述", "workType": "可比较的工作类型", "workTypeHint": "例如：前端功能", "assignee": "负责人", "priorityLabel": "优级", "estimateMinutes": "预计分钟", "dueAt": "截止日期", "cancel": "取消", "saving": "正在创建…", "create": "创建任务", "loadingEvidence": "正在加载证据…", "coverage": "证据覆盖", "baseline": "基准样本", "evidenceTimeline": "证据时间线", "noEvidence": "暂无活动证据。", "openVideo": "打开此时刻", "videoPending": "视频处理中", "priority": { "low": "低", "normal": "普通", "high": "高", "urgent": "紧急" }, "status": { "assigned": "已分配", "in_progress": "进行中", "paused": "已暂停", "completed": "已完成", "cancelled": "已取消" } }
 }

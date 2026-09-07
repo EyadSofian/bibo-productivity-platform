@@ -480,7 +480,7 @@ fn err<E: std::fmt::Display>(e: E) -> String {
 // ---------- auth / session (task 51) ----------
 
 use crate::sync::auth::{AuthState, Session};
-use crate::sync::client::{BackendClient, PublicBusiness};
+use crate::sync::client::{BackendClient, EmployeeTask, PublicBusiness};
 
 /// The backend base URL (compile-time default; env override for dev).
 fn backend_url() -> String {
@@ -536,6 +536,38 @@ pub fn logout(
 #[tauri::command]
 pub fn current_session(auth: State<Arc<AuthState>>) -> Option<Session> {
     auth.session()
+}
+
+#[tauri::command]
+pub async fn tasks_mine(auth: State<'_, Arc<AuthState>>) -> Result<Vec<EmployeeTask>, String> {
+    BackendClient::new(backend_url(), auth.inner().clone())
+        .tasks_mine()
+        .await
+}
+
+#[tauri::command]
+pub async fn task_action(
+    task_id: String,
+    action: String,
+    app: tauri::AppHandle,
+    auth: State<'_, Arc<AuthState>>,
+    settings: State<'_, Arc<crate::settings::SettingsState>>,
+    media: State<'_, Arc<crate::media::MediaStatus>>,
+) -> Result<EmployeeTask, String> {
+    if action != "start" && action != "pause" && action != "complete" {
+        return Err("unknown task action".to_string());
+    }
+    let device_id = settings.current.lock().unwrap().device_id.clone();
+    let task = BackendClient::new(backend_url(), auth.inner().clone())
+        .task_action(&task_id, &action, &device_id)
+        .await?;
+    if action == "start" {
+        crate::tray::set_paused(&app, false);
+        media
+            .stop_requested
+            .store(false, std::sync::atomic::Ordering::Release);
+    }
+    Ok(task)
 }
 
 // ---------- sync status (task 53) ----------

@@ -100,6 +100,80 @@ export interface OrganizationItemInput {
   description: string;
 }
 
+export type TaskStatus = "assigned" | "in_progress" | "paused" | "completed" | "cancelled";
+export type TaskPriority = "low" | "normal" | "high" | "urgent";
+
+export interface WorkTask {
+  id: string;
+  business_id: string;
+  assignee_user_id: string;
+  assignee_name: string;
+  title: string;
+  description: string;
+  work_type: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  estimated_minutes: number | null;
+  due_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  tracked_seconds: number;
+  active_session_id?: string;
+}
+
+export interface CreateTaskInput {
+  business_id: string;
+  assignee_user_id: string;
+  title: string;
+  description: string;
+  work_type?: string;
+  priority: TaskPriority;
+  estimated_minutes: number | null;
+  due_at: string | null;
+}
+
+export interface TaskTimelineEvent {
+  kind: "app" | "browser";
+  ts: number;
+  duration_s: number;
+  app_name?: string;
+  title?: string;
+  url?: string;
+  recording_id?: string;
+  video_offset_ms?: number;
+}
+
+export interface TaskTimeline {
+  task: WorkTask;
+  work_sessions: Array<{ id: string; started_at: string; ended_at?: string; end_reason?: string }>;
+  events: TaskTimelineEvent[];
+  applications: Array<{ app_name: string; seconds: number }>;
+}
+
+export interface TaskInsight {
+  code: string;
+  tone: "positive" | "neutral" | "watch";
+  title: string;
+  detail: string;
+  evidence: Record<string, unknown>;
+}
+
+export interface TaskAnalysis {
+  task_id: string;
+  generated_at: string;
+  tracked_seconds: number;
+  observed_active_seconds: number;
+  evidence_coverage_pct: number;
+  distinct_apps: number;
+  baseline_scope: string;
+  baseline_samples: number;
+  baseline_median_seconds: number | null;
+  variance_pct: number | null;
+  insights: TaskInsight[];
+}
+
 export interface CreateEmployeeResponse {
   employee: Employee;
   business: Business;

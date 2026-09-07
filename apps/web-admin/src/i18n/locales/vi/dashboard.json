@@ -345,5 +345,6 @@
     "cancel": "Hủy",
     "saving": "Đang lưu…",
     "save": "Lưu"
-  }
+  },
+  "tasks": { "eyebrow": "THỰC HIỆN CÔNG VIỆC", "title": "Công việc", "subtitle": "Giao việc và xem thời gian đo được cho từng kết quả.", "new": "Công việc mới", "loading": "Đang tải…", "noBusiness": "Chọn doanh nghiệp trước.", "active": "Đang làm", "open": "Đang mở", "completed": "Đã hoàn tất", "empty": "Chưa có công việc.", "noEmployees": "Tạo nhân viên trước khi giao việc.", "errorLoad": "Không thể tải công việc.", "errorCreate": "Không thể tạo công việc.", "noDescription": "Không có mô tả", "tracked": "Đã ghi", "estimate": "Ước tính", "due": "Hạn", "createTitle": "Tạo công việc", "name": "Tên", "description": "Mô tả", "workType": "Loại công việc so sánh", "workTypeHint": "ví dụ: tính năng frontend", "assignee": "Nhân viên", "priorityLabel": "Ưu tiên", "estimateMinutes": "Số phút ước tính", "dueAt": "Hạn", "cancel": "Hủy", "saving": "Đang tạo…", "create": "Tạo", "loadingEvidence": "Đang tải bằng chứng…", "coverage": "Phạm vi bằng chứng", "baseline": "Mẫu cơ sở", "evidenceTimeline": "Dòng thời gian bằng chứng", "noEvidence": "Chưa có bằng chứng hoạt động.", "openVideo": "Mở thời điểm này", "videoPending": "Video đang xử lý", "priority": { "low": "Thấp", "normal": "Bình thường", "high": "Cao", "urgent": "Khẩn cấp" }, "status": { "assigned": "Đã giao", "in_progress": "Đang làm", "paused": "Tạm dừng", "completed": "Đã hoàn tất", "cancelled": "Đã hủy" } }
 }

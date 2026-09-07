@@ -618,13 +618,15 @@ export function EmployeeDetail() {
 
   // Single-day view by default; switch to "range" for a custom span.
   const [mode, setMode] = useState<"day" | "range">("day");
-  const [day, setDay] = useState(() => isoDate(new Date()));
+  const initialSeek = Number(params.get("at"));
+  const hasInitialSeek = Number.isFinite(initialSeek) && initialSeek > 0;
+  const [day, setDay] = useState(() => isoDate(hasInitialSeek ? new Date(initialSeek * 1000) : new Date()));
   const [from, setFrom] = useState(() => isoDate(new Date()));
   const [to, setTo] = useState(() => isoDate(new Date()));
 
-  const [tab, setTab] = useState<Tab>("activity");
+  const [tab, setTab] = useState<Tab>(params.get("tab") === "playback" ? "playback" : "activity");
   // Set by a timeline click: switches to the player and points it at a moment.
-  const [seekTo, setSeekTo] = useState<number | null>(null);
+  const [seekTo, setSeekTo] = useState<number | null>(hasInitialSeek ? initialSeek : null);
 
   const [employee, setEmployee] = useState<ReportEmployee | null>(null);
   const [presence, setPresence] = useState<EmployeePresence | null>(null);

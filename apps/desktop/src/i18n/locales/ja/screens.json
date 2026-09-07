@@ -30,5 +30,6 @@
     "busiest": "最も活発な時間帯: {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} 打鍵",
     "privacy": "🔒 件数のみを記録します — 実際のキーは一切記録されません。"
-  }
+  },
+  "tasks": { "loading": "タスクを読み込み中…", "eyebrow": "現在の作業セッション", "noActiveTitle": "作業するタスクを選択", "noActiveHelp": "タスクを開始すると計測セッションが始まり、アクティビティと動画が関連付けられます。", "activeHelp": "一時停止または完了するまで、アクティビティと動画がこのタスクに関連付けられます。", "tracked": "このタスクの記録時間", "empty": "割り当てられたタスクはありません。", "actual": "記録", "estimate": "見積り", "due": "期限", "start": "開始", "resume": "再開", "pause": "一時停止", "complete": "完了", "done": "完了済み", "priority": { "low": "低", "normal": "通常", "high": "高", "urgent": "緊急" }, "status": { "assigned": "割当済み", "in_progress": "進行中", "paused": "一時停止", "completed": "完了" } }
 }

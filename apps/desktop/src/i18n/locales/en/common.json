@@ -5,6 +5,7 @@
   "remoteAssist": { "title": "Remote assistance active", "subtitle": "{{owner}} can see and control this screen", "stop": "Stop access", "stopping": "Stopping…" },
   "nav": {
     "Dashboard": "Dashboard",
+    "Tasks": "Tasks",
     "Activity": "Activity",
     "Screenshots": "Screenshots",
     "Browser": "Browser",

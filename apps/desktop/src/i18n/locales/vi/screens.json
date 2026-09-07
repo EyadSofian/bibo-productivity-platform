@@ -30,5 +30,6 @@
     "busiest": "Khung cao điểm: {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} lần gõ phím",
     "privacy": "🔒 Chỉ đếm số lần — phím thực tế không bao giờ được ghi lại."
-  }
+  },
+  "tasks": { "loading": "Đang tải công việc…", "eyebrow": "Phiên làm việc hiện tại", "noActiveTitle": "Chọn công việc đang thực hiện", "noActiveHelp": "Bắt đầu công việc sẽ mở phiên đo lường và liên kết hoạt động cùng video.", "activeHelp": "Hoạt động và video được liên kết với công việc này cho đến khi tạm dừng hoặc hoàn tất.", "tracked": "đã ghi cho công việc", "empty": "Chưa có công việc nào được giao.", "actual": "Đã ghi", "estimate": "Ước tính", "due": "Hạn", "start": "Bắt đầu", "resume": "Tiếp tục", "pause": "Tạm dừng", "complete": "Hoàn tất", "done": "Đã hoàn tất", "priority": { "low": "Thấp", "normal": "Bình thường", "high": "Cao", "urgent": "Khẩn cấp" }, "status": { "assigned": "Đã giao", "in_progress": "Đang làm", "paused": "Tạm dừng", "completed": "Đã hoàn tất" } }
 }

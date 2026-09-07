@@ -5,6 +5,7 @@
   "remoteAssist": { "title": "المساعدة عن بُعد نشطة", "subtitle": "يمكن لـ {{owner}} مشاهدة هذه الشاشة والتحكم بها", "stop": "إيقاف الوصول", "stopping": "جارٍ الإيقاف…" },
   "nav": {
     "Dashboard": "لوحة التحكم",
+    "Tasks": "المهام",
     "Activity": "النشاط",
     "Screenshots": "لقطات الشاشة",
     "Browser": "المتصفح",

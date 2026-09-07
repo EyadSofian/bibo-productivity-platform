@@ -30,5 +30,24 @@
     "busiest": "Busiest window: {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} keypresses",
     "privacy": "🔒 Counts only — actual keys are never recorded."
+  },
+  "tasks": {
+    "loading": "Loading tasks…",
+    "eyebrow": "Current work session",
+    "noActiveTitle": "Choose what you are working on",
+    "noActiveHelp": "Starting a task begins its measured work session and gives your activity and video the right context.",
+    "activeHelp": "Activity and recorded video are now linked to this task until you pause or complete it.",
+    "tracked": "tracked on this task",
+    "empty": "No tasks are assigned to you yet.",
+    "actual": "Tracked",
+    "estimate": "Estimate",
+    "due": "Due",
+    "start": "Start task",
+    "resume": "Resume",
+    "pause": "Pause",
+    "complete": "Complete",
+    "done": "Completed",
+    "priority": { "low": "Low", "normal": "Normal", "high": "High", "urgent": "Urgent" },
+    "status": { "assigned": "Assigned", "in_progress": "In progress", "paused": "Paused", "completed": "Completed" }
   }
 }

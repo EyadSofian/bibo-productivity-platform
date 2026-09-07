@@ -48,6 +48,10 @@ import type {
   Organization,
   OrganizationItemInput,
   OsStateReport,
+  WorkTask,
+  CreateTaskInput,
+  TaskTimeline,
+  TaskAnalysis,
 } from "./types";
 
 // ---------- public ----------
@@ -208,6 +212,28 @@ export function assignEmployeeOrganization(businessId: string, employeeId: strin
     method: "PUT",
     body: { department_id, job_role_id },
   });
+}
+
+// ---------- tasks ----------
+export function listTasks(businessId: string) {
+  if (isDemo()) return Promise.resolve({ tasks: [] as WorkTask[] });
+  return request<{ tasks: WorkTask[] }>(`/v1/businesses/${businessId}/tasks`);
+}
+
+export function createTask(input: CreateTaskInput) {
+  return request<{ task: WorkTask }>("/v1/tasks", { method: "POST", body: input });
+}
+
+export function cancelTask(taskId: string) {
+  return request<{ task: WorkTask }>(`/v1/tasks/${taskId}/cancel`, { method: "POST" });
+}
+
+export function getTaskTimeline(taskId: string) {
+  return request<TaskTimeline>(`/v1/tasks/${taskId}/timeline`);
+}
+
+export function getTaskAnalysis(taskId: string) {
+  return request<TaskAnalysis>(`/v1/tasks/${taskId}/analysis`);
 }
 
 // ---------- reports ----------

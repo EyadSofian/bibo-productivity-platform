@@ -115,6 +115,8 @@ pub fn run() {
             commands::login,
             commands::logout,
             commands::current_session,
+            commands::tasks_mine,
+            commands::task_action,
             commands::sync_status,
             commands::apply_org_policy,
             commands::capture_policy,

@@ -90,6 +90,7 @@ type MediaSession struct {
 	EndedAt        *time.Time      `json:"ended_at,omitempty"`
 	FailureCode    string          `json:"failure_code,omitempty"`
 	CreatedBy      string          `json:"created_by,omitempty"`
+	WorkSessionID  string          `json:"work_session_id,omitempty"`
 
 	// ProviderRoomID is the opaque room name. It is NOT serialized to API
 	// clients: a viewer needs a token, not a room name, and handing out room
@@ -114,14 +115,14 @@ type NewMediaSession struct {
 const mediaSessionColumns = `
 	ms.id, ms.business_id, ms.employee_id, ms.device_id, ms.kind, ms.state, ms.provider,
 	ms.provider_room_id, ms.policy_snapshot, ms.started_at, ms.ended_at, ms.failure_code,
-	ms.created_by`
+	ms.created_by, ms.work_session_id`
 
 func scanMediaSession(row pgx.Row) (MediaSession, error) {
 	var m MediaSession
-	var employeeID, failureCode, createdBy *string
+	var employeeID, failureCode, createdBy, workSessionID *string
 	err := row.Scan(&m.ID, &m.BusinessID, &employeeID, &m.DeviceID, &m.Kind, &m.State,
 		&m.Provider, &m.ProviderRoomID, &m.PolicySnapshot, &m.StartedAt, &m.EndedAt,
-		&failureCode, &createdBy)
+		&failureCode, &createdBy, &workSessionID)
 	if err != nil {
 		return MediaSession{}, err
 	}
@@ -133,6 +134,9 @@ func scanMediaSession(row pgx.Row) (MediaSession, error) {
 	}
 	if createdBy != nil {
 		m.CreatedBy = *createdBy
+	}
+	if workSessionID != nil {
+		m.WorkSessionID = *workSessionID
 	}
 	return m, nil
 }
@@ -163,8 +167,11 @@ func (s *Store) OpenMediaSession(ctx context.Context, in NewMediaSession) (Media
 	row := s.pool.QueryRow(ctx, `
 		INSERT INTO media_sessions
 			(business_id, employee_id, device_id, kind, state, provider,
-			 provider_room_id, policy_snapshot, created_by)
-		VALUES ($1, $2, $3, $4, 'requested', $5, $6, $7, $8)
+			 provider_room_id, policy_snapshot, created_by, work_session_id)
+		VALUES ($1, $2, $3, $4, 'requested', $5, $6, $7, $8,
+		        (SELECT id FROM task_work_sessions
+		          WHERE employee_user_id=$2 AND business_id=$1 AND ended_at IS NULL
+		          ORDER BY started_at DESC LIMIT 1))
 		RETURNING`+unaliased(mediaSessionColumns),
 		in.BusinessID, nullableID(in.EmployeeID), in.DeviceID, in.Kind, in.Provider,
 		in.ProviderRoomID, in.PolicySnapshot, nullableID(in.CreatedBy))

@@ -30,5 +30,6 @@
     "busiest": "Franja más activa: {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} pulsaciones",
     "privacy": "🔒 Solo cuenta — las teclas reales nunca se registran."
-  }
+  },
+  "tasks": { "loading": "Cargando tareas…", "eyebrow": "Sesión de trabajo actual", "noActiveTitle": "Elige en qué estás trabajando", "noActiveHelp": "Iniciar una tarea abre una sesión medida y vincula la actividad y el vídeo.", "activeHelp": "La actividad y el vídeo están vinculados a esta tarea hasta pausarla o completarla.", "tracked": "registrado en esta tarea", "empty": "Todavía no tienes tareas asignadas.", "actual": "Registrado", "estimate": "Estimación", "due": "Vence", "start": "Iniciar tarea", "resume": "Reanudar", "pause": "Pausar", "complete": "Completar", "done": "Completada", "priority": { "low": "Baja", "normal": "Normal", "high": "Alta", "urgent": "Urgente" }, "status": { "assigned": "Asignada", "in_progress": "En curso", "paused": "Pausada", "completed": "Completada" } }
 }

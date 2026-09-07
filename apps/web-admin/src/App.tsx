@@ -16,6 +16,7 @@ const Devices = lazy(() => import("./pages/Devices").then((m) => ({ default: m.D
 const MonitoringProfiles = lazy(() => import("./pages/MonitoringProfiles").then((m) => ({ default: m.MonitoringProfiles })));
 const Organization = lazy(() => import("./pages/Organization").then((m) => ({ default: m.Organization })));
 const Employees = lazy(() => import("./pages/Employees").then((m) => ({ default: m.Employees })));
+const Tasks = lazy(() => import("./pages/Tasks").then((m) => ({ default: m.Tasks })));
 const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.Settings })));
 
 function PageFallback() {
@@ -40,6 +41,7 @@ export default function App() {
               >
                 <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
                 <Route path="employees" element={<Suspense fallback={<PageFallback />}><Employees /></Suspense>} />
+                <Route path="tasks" element={<Suspense fallback={<PageFallback />}><Tasks /></Suspense>} />
                 <Route path="employees/:id" element={<Suspense fallback={<PageFallback />}><EmployeeDetail /></Suspense>} />
                 <Route path="devices" element={<Suspense fallback={<PageFallback />}><Devices /></Suspense>} />
                 <Route path="monitoring" element={<Suspense fallback={<PageFallback />}><MonitoringProfiles /></Suspense>} />

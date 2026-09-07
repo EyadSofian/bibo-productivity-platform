@@ -5,6 +5,7 @@
   "remoteAssist": { "title": "Hỗ trợ từ xa đang hoạt động", "subtitle": "{{owner}} có thể xem và điều khiển màn hình này", "stop": "Dừng truy cập", "stopping": "Đang dừng…" },
   "nav": {
     "Dashboard": "Bảng điều khiển",
+    "Tasks": "Công việc",
     "Activity": "Hoạt động",
     "Screenshots": "Ảnh chụp màn hình",
     "Browser": "Trình duyệt",

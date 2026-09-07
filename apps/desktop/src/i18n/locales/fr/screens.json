@@ -30,5 +30,6 @@
     "busiest": "Tranche la plus active : {{time}}",
     "slotDetail": "{{time}} · {{formattedCount}} frappes",
     "privacy": "🔒 Décompte uniquement — les touches réelles ne sont jamais enregistrées."
-  }
+  },
+  "tasks": { "loading": "Chargement des tâches…", "eyebrow": "Session de travail actuelle", "noActiveTitle": "Choisissez votre tâche", "noActiveHelp": "Démarrer une tâche ouvre une session mesurée et relie l’activité et la vidéo.", "activeHelp": "L’activité et la vidéo sont liées à cette tâche jusqu’à sa pause ou sa fin.", "tracked": "suivi sur cette tâche", "empty": "Aucune tâche ne vous est encore assignée.", "actual": "Suivi", "estimate": "Estimation", "due": "Échéance", "start": "Démarrer", "resume": "Reprendre", "pause": "Pause", "complete": "Terminer", "done": "Terminée", "priority": { "low": "Basse", "normal": "Normale", "high": "Haute", "urgent": "Urgente" }, "status": { "assigned": "Assignée", "in_progress": "En cours", "paused": "En pause", "completed": "Terminée" } }
 }
