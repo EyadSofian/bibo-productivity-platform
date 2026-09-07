@@ -55,7 +55,10 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 		`DROP TABLE viewer_sessions`,
 		`DROP TABLE media_tracks`,
 		`DROP TABLE media_sessions`,
-		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22)`,
+		`DROP TABLE task_events`,
+		`DROP TABLE task_work_sessions`,
+		`DROP TABLE tasks`,
+		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22,23)`,
 	} {
 		if _, err := pool.Exec(ctx, stmt); err != nil {
 			t.Fatalf("rollback %q: %v", stmt, err)
