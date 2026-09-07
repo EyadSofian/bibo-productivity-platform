@@ -26,6 +26,10 @@ type Device struct {
 	// column — the inventory is far more legible with a name than a user UUID.
 	UserDisplayName string `json:"user_display_name"`
 	UserLogin       string `json:"user_login"`
+	// Presence and video health are separate signals. A healthy heartbeat must
+	// never be presented as proof that screen recording is flowing.
+	RecordingState     *string    `json:"recording_state"`
+	RecordingStartedAt *time.Time `json:"recording_started_at"`
 }
 
 // LiveCaptureRequest is a one-shot request for the managed agent to take and
@@ -37,13 +41,14 @@ type LiveCaptureRequest struct {
 
 const deviceCols = `d.id, d.business_id, d.user_id, d.label, d.os, d.agent_version,
 	d.monitoring_enabled, d.last_seen_at, d.disabled_at, d.deleted_at,
-	COALESCE(u.display_name, ''), COALESCE(u.email, u.username, '')`
+	COALESCE(u.display_name, ''), COALESCE(u.email, u.username, ''),
+	recording.state, recording.started_at`
 
 func scanDevice(row pgx.Row) (Device, error) {
 	var d Device
 	err := row.Scan(&d.ID, &d.BusinessID, &d.UserID, &d.Label, &d.OS, &d.AgentVersion,
 		&d.MonitoringEnabled, &d.LastSeenAt, &d.DisabledAt, &d.DeletedAt,
-		&d.UserDisplayName, &d.UserLogin)
+		&d.UserDisplayName, &d.UserLogin, &d.RecordingState, &d.RecordingStartedAt)
 	return d, err
 }
 
@@ -58,6 +63,13 @@ func (s *Store) ListDevices(ctx context.Context, ownerID, businessID string, inc
 		  FROM devices d
 		  JOIN businesses b ON b.id = d.business_id
 		  JOIN users u ON u.id = d.user_id
+		  LEFT JOIN LATERAL (
+		    SELECT ms.state::text, ms.started_at
+		      FROM media_sessions ms
+		     WHERE ms.device_id=d.id AND ms.kind='recording'
+		       AND ms.state NOT IN ('ended','failed')
+		     ORDER BY ms.started_at DESC LIMIT 1
+		  ) recording ON true
 		 WHERE d.business_id = $1
 		   AND b.owner_user_id = $2
 		   AND ($3 OR d.deleted_at IS NULL)

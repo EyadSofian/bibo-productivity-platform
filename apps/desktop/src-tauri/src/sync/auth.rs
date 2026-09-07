@@ -30,6 +30,11 @@ pub struct Session {
 pub struct AuthState {
     path: PathBuf,
     current: Mutex<Option<Session>>,
+    // Every background worker shares this state. When an access token expires,
+    // only one of them may exchange the refresh token; the rest reuse the token
+    // it wrote. Without this gate, the sync, presence, command and media loops
+    // stampede /auth/refresh at the same instant.
+    refresh: tokio::sync::Mutex<()>,
 }
 
 impl AuthState {
@@ -43,6 +48,7 @@ impl AuthState {
         AuthState {
             path,
             current: Mutex::new(current),
+            refresh: tokio::sync::Mutex::new(()),
         }
     }
 
@@ -75,6 +81,47 @@ impl AuthState {
         Ok(())
     }
 
+    /// Serialize refreshes across all HTTP clients in this process.
+    pub(crate) async fn refresh_guard(&self) -> tokio::sync::MutexGuard<'_, ()> {
+        self.refresh.lock().await
+    }
+
+    /// Adopt a token written by another process instance, if one completed a
+    /// refresh after this process loaded its in-memory session. The Windows
+    /// supervisor and an already-open tray process can briefly overlap during
+    /// an upgrade; the persisted session is their hand-off point.
+    pub(crate) fn adopt_persisted_after(&self, rejected: &str) -> Option<String> {
+        let persisted = read_file(&self.path)?;
+        if persisted.access_token == rejected {
+            return None;
+        }
+        let access = persisted.access_token.clone();
+        *self.current.lock().unwrap() = Some(persisted);
+        Some(access)
+    }
+
+    /// Clear an expired session only if it still contains the rejected access
+    /// token. Another worker may already have refreshed while this request was
+    /// in flight; clearing that newer session would strand just one subsystem
+    /// on an old in-memory credential until the app is restarted.
+    pub(crate) fn clear_if_access_token(&self, rejected: &str) -> Result<bool, String> {
+        let mut guard = self.current.lock().unwrap();
+        if !guard
+            .as_ref()
+            .is_some_and(|session| session.access_token == rejected)
+        {
+            return Ok(false);
+        }
+        match std::fs::remove_file(&self.path) {
+            Ok(()) => {}
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+            Err(e) => return Err(e.to_string()),
+        }
+        *guard = None;
+        crate::obs::clear_user();
+        Ok(true)
+    }
+
     /// Forget the session everywhere (logout).
     pub fn clear(&self) -> Result<(), String> {
         match std::fs::remove_file(&self.path) {
@@ -104,4 +151,55 @@ fn write_file(path: &PathBuf, session: &Session) -> Result<(), String> {
         let _ = std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_state(name: &str) -> (PathBuf, AuthState) {
+        let path = std::env::temp_dir().join(format!(
+            "ctracking-auth-{name}-{}.json",
+            uuid::Uuid::new_v4()
+        ));
+        let state = AuthState::load(path.clone());
+        (path, state)
+    }
+
+    fn session(access: &str) -> Session {
+        Session {
+            access_token: access.into(),
+            refresh_token: format!("refresh-{access}"),
+            email: "employee@example.com".into(),
+            business_id: None,
+        }
+    }
+
+    #[test]
+    fn stale_refresh_failure_cannot_clear_a_newer_session() {
+        let (path, state) = test_state("generation");
+        state.store(session("old")).unwrap();
+        state
+            .update_tokens("new".into(), "refresh-new".into())
+            .unwrap();
+
+        assert!(!state.clear_if_access_token("old").unwrap());
+        assert_eq!(state.session().unwrap().access_token, "new");
+        assert!(path.exists());
+        let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn overlapping_process_adopts_the_token_persisted_by_its_peer() {
+        let (path, first) = test_state("handoff");
+        first.store(session("old")).unwrap();
+        let second = AuthState::load(path.clone());
+        first
+            .update_tokens("new".into(), "refresh-new".into())
+            .unwrap();
+
+        assert_eq!(second.adopt_persisted_after("old").as_deref(), Some("new"));
+        assert_eq!(second.session().unwrap().access_token, "new");
+        let _ = std::fs::remove_file(path);
+    }
 }

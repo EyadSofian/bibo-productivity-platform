@@ -23,6 +23,8 @@ const employeeDevice: Device = {
   os: "macOS 15.3",
   agent_version: "1.5.1",
   monitoring_enabled: true,
+  recording_state: "live",
+  recording_started_at: new Date().toISOString(),
   last_seen_at: new Date().toISOString(),
   disabled_at: null,
   deleted_at: null,

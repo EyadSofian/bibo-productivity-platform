@@ -82,7 +82,7 @@ func main() {
 	// timeout instead, never with WriteTimeout.
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: server.New(cfg, st, files, ret),
+		Handler: server.New(sweepCtx, cfg, st, files, ret),
 	}
 
 	go func() {

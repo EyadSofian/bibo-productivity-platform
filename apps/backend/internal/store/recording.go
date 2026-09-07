@@ -90,7 +90,7 @@ func (s *Store) ProcessRecordingAsset(ctx context.Context, assetID string, ended
 
 func (s *Store) ReadyRecordingAsset(ctx context.Context, assetID string, byteSize int64) error {
 	_, err := s.pool.Exec(ctx, `UPDATE recording_assets
-		SET status='ready', byte_size=$2 WHERE id=$1 AND status IN ('processing','recording','pending')`, assetID, byteSize)
+		SET status='ready', byte_size=$2 WHERE id=$1 AND status IN ('processing','recording','pending','failed')`, assetID, byteSize)
 	return err
 }
 

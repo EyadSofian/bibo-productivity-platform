@@ -340,6 +340,49 @@ struct ActiveSession {
     control_armed: bool,
     // Held so the pipe stays open for the lifetime of the session.
     _server: pipe::PipeServer,
+    // Windows kills every process in this job if the agent exits unexpectedly.
+    // This closes the one lifecycle hole a named-pipe EOF alone cannot cover.
+    _job: KillOnCloseJob,
+}
+
+#[cfg(windows)]
+struct KillOnCloseJob(windows::Win32::Foundation::HANDLE);
+
+#[cfg(windows)]
+impl Drop for KillOnCloseJob {
+    fn drop(&mut self) {
+        let _ = unsafe { windows::Win32::Foundation::CloseHandle(self.0) };
+    }
+}
+
+#[cfg(windows)]
+fn contain_sidecar(child: &std::process::Child) -> Result<KillOnCloseJob, String> {
+    use std::os::windows::io::AsRawHandle;
+    use windows::core::PCWSTR;
+    use windows::Win32::Foundation::HANDLE;
+    use windows::Win32::System::JobObjects::{
+        AssignProcessToJobObject, CreateJobObjectW, JobObjectExtendedLimitInformation,
+        SetInformationJobObject, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
+        JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+    };
+
+    let job = unsafe { CreateJobObjectW(None, PCWSTR::null()) }
+        .map_err(|e| format!("create publisher job: {e}"))?;
+    let owned = KillOnCloseJob(job);
+    let mut limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+    limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    unsafe {
+        SetInformationJobObject(
+            job,
+            JobObjectExtendedLimitInformation,
+            (&limits as *const JOBOBJECT_EXTENDED_LIMIT_INFORMATION).cast(),
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        )
+        .map_err(|e| format!("configure publisher job: {e}"))?;
+        AssignProcessToJobObject(job, HANDLE(child.as_raw_handle()))
+            .map_err(|e| format!("contain publisher process: {e}"))?;
+    }
+    Ok(owned)
 }
 
 #[cfg(windows)]
@@ -458,6 +501,14 @@ async fn start_session(
         .arg(&name)
         .spawn()
         .map_err(|e| format!("spawn sidecar: {e}"))?;
+    let job = match contain_sidecar(&child) {
+        Ok(job) => job,
+        Err(error) => {
+            let _ = child.kill();
+            let _ = child.wait();
+            return Err(error);
+        }
+    };
 
     // The sidecar connects immediately; if it cannot, do not leave it running.
     if let Err(e) = server.wait_for_client_while(Duration::from_secs(5), || {
@@ -517,6 +568,7 @@ async fn start_session(
         // Remote input remains disabled in this live-video integration.
         control_armed: false,
         _server: server,
+        _job: job,
     })
 }
 

@@ -3,8 +3,9 @@
 use windows::core::PWSTR;
 use windows::Win32::Foundation::HANDLE;
 use windows::Win32::System::RemoteDesktop::{
-    WTSActive, WTSConnectState, WTSFreeMemory, WTSQuerySessionInformationW, WTS_CONNECTSTATE_CLASS,
-    WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION,
+    WTSActive, WTSConnectState, WTSFreeMemory, WTSQuerySessionInformationW, WTSSessionInfoEx,
+    WTSINFOEXW, WTS_CONNECTSTATE_CLASS, WTS_CURRENT_SERVER_HANDLE, WTS_CURRENT_SESSION,
+    WTS_SESSIONSTATE_UNLOCK,
 };
 use windows::Win32::System::StationsAndDesktops::{
     CloseDesktop, GetUserObjectInformationW, OpenInputDesktop, DESKTOP_CONTROL_FLAGS,
@@ -13,6 +14,40 @@ use windows::Win32::System::StationsAndDesktops::{
 
 fn session_allowed(state: WTS_CONNECTSTATE_CLASS) -> bool {
     state == WTSActive
+}
+
+fn session_flags_allowed(flags: i32) -> bool {
+    flags == WTS_SESSIONSTATE_UNLOCK as i32
+}
+
+/// `WTSActive` only means that the user owns the console session; it remains
+/// active while the workstation is locked. `WTSSessionInfoEx.SessionFlags` is
+/// the Windows signal that distinguishes the unlocked desktop from the lock
+/// screen. Fail closed if the extended query is unavailable or malformed.
+unsafe fn session_unlocked() -> bool {
+    let mut buffer = PWSTR::null();
+    let mut bytes = 0;
+    let queried = WTSQuerySessionInformationW(
+        WTS_CURRENT_SERVER_HANDLE,
+        WTS_CURRENT_SESSION,
+        WTSSessionInfoEx,
+        &mut buffer,
+        &mut bytes,
+    )
+    .is_ok();
+    let unlocked =
+        if queried && !buffer.is_null() && bytes as usize >= std::mem::size_of::<WTSINFOEXW>() {
+            let info = &*buffer.0.cast::<WTSINFOEXW>();
+            info.Level == 1
+                && session_allowed(info.Data.WTSInfoExLevel1.SessionState)
+                && session_flags_allowed(info.Data.WTSInfoExLevel1.SessionFlags)
+        } else {
+            false
+        };
+    if !buffer.is_null() {
+        WTSFreeMemory(buffer.0.cast());
+    }
+    unlocked
 }
 
 pub fn capture_allowed() -> bool {
@@ -35,6 +70,9 @@ pub fn capture_allowed() -> bool {
             WTSFreeMemory(buffer.0.cast());
         }
         if !active {
+            return false;
+        }
+        if !session_unlocked() {
             return false;
         }
 
@@ -69,5 +107,12 @@ mod tests {
     fn only_an_active_interactive_session_allows_capture() {
         assert!(session_allowed(WTSActive));
         assert!(!session_allowed(WTSDisconnected));
+    }
+
+    #[test]
+    fn only_the_unlocked_session_flag_allows_capture() {
+        assert!(session_flags_allowed(WTS_SESSIONSTATE_UNLOCK as i32));
+        assert!(!session_flags_allowed(0));
+        assert!(!session_flags_allowed(-1));
     }
 }

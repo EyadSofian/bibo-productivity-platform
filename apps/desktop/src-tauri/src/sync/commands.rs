@@ -185,7 +185,7 @@ async fn connect_and_read(
 
     if response.status() == reqwest::StatusCode::UNAUTHORIZED {
         let client = BackendClient::new(base_url.to_string(), ctx.auth.clone());
-        token = client.refresh().await?;
+        token = client.refresh(&token).await?;
         response = http
             .get(&url)
             .bearer_auth(&token)

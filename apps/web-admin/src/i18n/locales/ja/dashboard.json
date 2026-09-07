@@ -222,6 +222,9 @@
     "unnamed": "名称未設定のデバイス",
     "live": "オンライン",
     "offline": "オフライン",
+    "videoLive": "録画中",
+    "videoStarting": "開始中",
+    "videoInactive": "有効な録画なし",
     "never": "なし",
     "errorLoad": "デバイスを読み込めませんでした。",
     "errorToggle": "そのデバイスの監視状態を変更できませんでした。",
@@ -234,6 +237,7 @@
       "os": "OS",
       "agent": "エージェント",
       "lastSeen": "最終確認",
+      "video": "ビデオ",
       "monitoring": "監視",
       "actions": "操作"
     }

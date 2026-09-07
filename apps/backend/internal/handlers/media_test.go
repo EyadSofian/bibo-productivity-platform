@@ -729,6 +729,82 @@ func TestRecordingPolicyStartsEgressAndLiveViewerSharesItsRoom(t *testing.T) {
 	}
 }
 
+func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Five minute chunks",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec, body := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("open recording: %d %v", rec.Code, body)
+	}
+	oldID := body["session_id"].(string)
+	e.call(t, http.MethodPost, "/v1/media/sessions/"+oldID+"/publisher-token", e.employeeID)
+	if rec, body = e.reportState(t, oldID, e.employeeID,
+		`{"state":"live","track":{"source":"screen","codec":"h264","width":1280,"height":720,"nominal_fps":15}}`); rec.Code != http.StatusOK {
+		t.Fatalf("start recording: %d %v", rec.Code, body)
+	}
+	if _, err := e.pool.Exec(e.ctx, `UPDATE media_sessions SET started_at=now()-interval '6 minutes' WHERE id=$1`, oldID); err != nil {
+		t.Fatal(err)
+	}
+
+	// No agent request drives this transition.
+	e.handler.sweepExpiredRecordings(e.ctx)
+	old, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, oldID)
+	if err != nil || old.State != media.StateEnded {
+		t.Fatalf("expired chunk state=%s err=%v", old.State, err)
+	}
+
+	deadline := time.Now().Add(time.Second)
+	for len(e.provider.StoppedRecordings) == 0 && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if len(e.provider.StoppedRecordings) != 1 {
+		t.Fatalf("provider recording was not stopped: %v", e.provider.StoppedRecordings)
+	}
+
+	rec, body = e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusOK || body["session_id"] == oldID {
+		t.Fatalf("next chunk was not opened: %d %v", rec.Code, body)
+	}
+}
+
+func TestRecordingListReconcilesACompletedObject(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	session, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset, err := e.store.CreateRecordingAsset(e.ctx, session, "tenant/test/screen.mp4", "s3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ProcessRecordingAsset(e.ctx, asset.ID, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+
+	rec, body := e.call(t, http.MethodGet, "/v1/employees/"+e.employeeID+"/recordings", e.ownerID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list: %d %v", rec.Code, body)
+	}
+	items := body["recordings"].([]any)
+	got := items[0].(map[string]any)
+	if got["status"] != "ready" || got["byte_size"] != float64(1024) {
+		t.Fatalf("reconciled recording = %v", got)
+	}
+}
+
 // A failure with no code produces "it didn't work" with nothing to act on.
 func TestPublisherFailureRequiresAKnownCode(t *testing.T) {
 	e := newMediaEnv(t)

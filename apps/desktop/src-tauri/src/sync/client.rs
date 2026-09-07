@@ -368,12 +368,21 @@ impl BackendClient {
     /// `POST /v1/auth/refresh`. Updates the stored tokens in place on success.
     /// Returns the new access token. Caller (the 401 retry path) re-issues the
     /// original request with it.
-    pub(crate) async fn refresh(&self) -> Result<String, String> {
-        let refresh_token = self
+    pub(crate) async fn refresh(&self, rejected_access: &str) -> Result<String, String> {
+        let _guard = self.auth.refresh_guard().await;
+        if let Some(access) = self.auth.adopt_persisted_after(rejected_access) {
+            return Ok(access);
+        }
+        let current = self
             .auth
             .session()
-            .map(|s| s.refresh_token)
             .ok_or_else(|| "not logged in".to_string())?;
+        // A different worker completed the refresh while we waited for the
+        // gate. Reuse its token instead of making another network request.
+        if current.access_token != rejected_access {
+            return Ok(current.access_token);
+        }
+        let refresh_token = current.refresh_token;
         let resp = self
             .http
             .post(self.url("/v1/auth/refresh"))
@@ -384,9 +393,20 @@ impl BackendClient {
             .await
             .map_err(net_err)?;
         if !resp.status().is_success() {
-            // Refresh itself failed (expired/revoked) → force logout so the UI prompts.
-            let _ = self.auth.clear();
-            return Err("session expired, please sign in again".to_string());
+            let status = resp.status();
+            // Only a definitive rejection invalidates the saved login. Network,
+            // rate-limit and server failures are retryable and must not sign a
+            // running employee out behind the scenes.
+            if matches!(
+                status,
+                reqwest::StatusCode::UNAUTHORIZED | reqwest::StatusCode::FORBIDDEN
+            ) {
+                let _ = self.auth.clear_if_access_token(rejected_access);
+                crate::log_warn!("auth", "refresh token rejected with status {status}");
+                return Err("session expired, please sign in again".to_string());
+            }
+            crate::log_warn!("auth", "token refresh failed with status {status}");
+            return Err(status_err(resp).await);
         }
         let t: TokenResp = resp.json().await.map_err(|e| e.to_string())?;
         self.auth
@@ -406,7 +426,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -434,7 +454,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -505,7 +525,7 @@ impl BackendClient {
             let status = resp.status();
             if status == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
                 crate::log_info!("sync", "POST /v1/sync/batch -> 401, refreshing token");
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !status.is_success() {
@@ -557,7 +577,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -588,7 +608,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if resp.status() == reqwest::StatusCode::NO_CONTENT {
@@ -620,7 +640,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -646,7 +666,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -669,7 +689,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -697,7 +717,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -730,7 +750,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -767,7 +787,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             // 409 is the backend saying the last viewer left. 403 means the
@@ -800,7 +820,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if resp.status() == reqwest::StatusCode::FORBIDDEN {
@@ -864,7 +884,7 @@ impl BackendClient {
                 .map_err(net_err)?;
 
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -1003,7 +1023,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if resp.status() == reqwest::StatusCode::NO_CONTENT {
@@ -1045,7 +1065,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {
@@ -1089,7 +1109,7 @@ impl BackendClient {
                 .await
                 .map_err(net_err)?;
             if resp.status() == reqwest::StatusCode::UNAUTHORIZED && attempt == 0 {
-                token = self.refresh().await?;
+                token = self.refresh(&token).await?;
                 continue;
             }
             if !resp.status().is_success() {

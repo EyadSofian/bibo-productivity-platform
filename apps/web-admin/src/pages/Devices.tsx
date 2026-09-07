@@ -210,6 +210,7 @@ export function Devices() {
                 <th>{t("devices.table.os")}</th>
                 <th>{t("devices.table.agent")}</th>
                 <th>{t("devices.table.lastSeen")}</th>
+                <th>{t("devices.table.video")}</th>
                 <th className="r">{t("devices.table.monitoring")}</th>
                 <th className="r">{t("devices.table.actions")}</th>
               </tr>
@@ -244,6 +245,16 @@ export function Devices() {
                     <td><bdi dir="ltr">{d.os || "—"}</bdi></td>
                     <td><bdi dir="ltr">{d.agent_version || "—"}</bdi></td>
                     <td>{relativeTime(d.last_seen_at, i18n.language, t("devices.never"))}</td>
+                    <td>
+                      <span className={`ad-live ad-live--${d.recording_state === "live" ? "on" : "off"}`}>
+                        <span className="ad-live__dot" aria-hidden="true" />
+                        {d.recording_state === "live"
+                          ? t("devices.videoLive")
+                          : d.recording_state
+                            ? t("devices.videoStarting")
+                            : t("devices.videoInactive")}
+                      </span>
+                    </td>
                     <td className="r">
                       {d.deleted_at ? (
                         <span className="ad-switchstate">{t("devices.archived")}</span>

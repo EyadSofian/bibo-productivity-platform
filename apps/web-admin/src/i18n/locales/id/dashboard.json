@@ -222,6 +222,9 @@
     "unnamed": "Perangkat tanpa nama",
     "live": "Aktif",
     "offline": "Luring",
+    "videoLive": "Sedang merekam",
+    "videoStarting": "Memulai",
+    "videoInactive": "Tidak ada perekaman aktif",
     "never": "Tidak pernah",
     "errorLoad": "Tidak dapat memuat perangkat.",
     "errorToggle": "Tidak dapat mengubah pemantauan untuk perangkat itu.",
@@ -234,6 +237,7 @@
       "os": "OS",
       "agent": "Agen",
       "lastSeen": "Terakhir terlihat",
+      "video": "Video",
       "monitoring": "Pemantauan",
       "actions": "Tindakan"
     }

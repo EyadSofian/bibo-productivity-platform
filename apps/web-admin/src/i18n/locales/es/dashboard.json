@@ -222,6 +222,9 @@
     "unnamed": "Dispositivo sin nombre",
     "live": "En línea",
     "offline": "Desconectado",
+    "videoLive": "Grabando",
+    "videoStarting": "Iniciando",
+    "videoInactive": "Sin grabación activa",
     "never": "Nunca",
     "errorLoad": "No se pudieron cargar los dispositivos.",
     "errorToggle": "No se pudo cambiar la supervisión de ese dispositivo.",
@@ -234,6 +237,7 @@
       "os": "SO",
       "agent": "Agente",
       "lastSeen": "Última conexión",
+      "video": "Vídeo",
       "monitoring": "Supervisión",
       "actions": "Acciones"
     }

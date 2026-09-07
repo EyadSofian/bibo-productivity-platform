@@ -2,6 +2,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -27,7 +28,7 @@ import (
 
 // New builds the Gin engine with all routes registered. The store, file store, and
 // retention service are shared with the caller (which also runs the retention sweeper).
-func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *retention.Service) *gin.Engine {
+func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filestore.Store, ret *retention.Service) *gin.Engine {
 	// Route gin's own output (access logs, route table, debug warnings) into the same
 	// captured stream as obs/log so every line lands in the log file too.
 	gin.DefaultWriter = obs.Writer()
@@ -83,6 +84,7 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 	mediaProvider := mediaProviderFor(cfg)
 	mediaH := handlers.NewMediaHandler(st, mediaProvider, recordingStoreFor(cfg),
 		time.Duration(cfg.MediaTokenTTLSeconds)*time.Second)
+	mediaH.StartRecordingMaintenance(ctx, 10*time.Second)
 	presenceH := handlers.NewPresenceHandler(st)
 	remoteAssistH := handlers.NewRemoteAssistHandler(st, liveHub, liveCommands)
 	liveViewH := handlers.NewLiveViewHandler(st, liveHub, liveCommands)
@@ -113,10 +115,15 @@ func New(cfg *config.Config, st *store.Store, files *filestore.Store, ret *reten
 		v1.POST("/keepalive", keepaliveH.Burn)
 	}
 
-	// Auth endpoints, rate-limited to throttle credential guessing.
-	a := v1.Group("/auth", middleware.LoginRateLimit())
-	a.POST("/register", authH.Register)
-	a.POST("/login", authH.Login)
+	// Password-bearing endpoints are rate-limited to throttle credential
+	// guessing. Refresh uses a signed high-entropy token and is deliberately
+	// outside that small burst budget: all agent workers can observe the same
+	// 15-minute expiry at once, and throttling them used to break only some
+	// subsystems while the device still appeared online.
+	a := v1.Group("/auth")
+	authLimiter := middleware.LoginRateLimit()
+	a.POST("/register", authLimiter, authH.Register)
+	a.POST("/login", authLimiter, authH.Login)
 	a.POST("/refresh", authH.Refresh)
 
 	// Protected routes. Owner/sync/report routes register under this group in

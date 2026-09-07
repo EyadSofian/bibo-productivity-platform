@@ -341,6 +341,7 @@ export function demoDevices(): Device[] {
     const r = seeded(m.id + ":device");
     const id = `demo-device-${m.id}`;
     const enabled = demoDeviceState.get(id) ?? true;
+    const online = m.ageMin < 2;
     return {
       id,
       business_id: DEMO_BUSINESS_ID,
@@ -349,6 +350,8 @@ export function demoDevices(): Device[] {
       os: DEMO_OS[i % DEMO_OS.length],
       agent_version: r() > 0.5 ? "0.4.1" : "0.4.0",
       monitoring_enabled: enabled,
+      recording_state: enabled && online ? "live" : null,
+      recording_started_at: enabled && online ? new Date(Date.now() - 180_000).toISOString() : null,
       last_seen_at: new Date((nowS() - m.ageMin * 60) * 1000).toISOString(),
       disabled_at: enabled ? null : new Date(nowS() * 1000).toISOString(),
       deleted_at: demoDeviceArchivedState.get(id) ? new Date(nowS() * 1000).toISOString() : null,

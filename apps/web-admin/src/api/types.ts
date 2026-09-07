@@ -247,6 +247,8 @@ export type Device = {
   deleted_at: string | null;
   user_display_name: string;
   user_login: string;
+  recording_state: string | null;
+  recording_started_at: string | null;
 };
 
 export type MonitoringScopeType = "business" | "department" | "employee" | "device";

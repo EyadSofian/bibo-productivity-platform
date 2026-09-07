@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"sync"
 	"time"
 
 	"ctracking/backend/internal/auth"
@@ -39,7 +41,40 @@ func (h *MediaHandler) ListRecordings(c *gin.Context) {
 		mediaInternal(c, err)
 		return
 	}
+	h.reconcileRecordingAssets(c.Request.Context(), assets)
 	c.JSON(http.StatusOK, gin.H{"recordings": assets})
+}
+
+// Reconcile provider output while the timeline is already being loaded. This
+// recovers assets finalized after a backend restart, so "processing" cannot be
+// a permanent state merely because the original goroutine no longer exists.
+func (h *MediaHandler) reconcileRecordingAssets(ctx context.Context, assets []store.RecordingAsset) {
+	var wg sync.WaitGroup
+	for index := range assets {
+		if assets[index].Status != "processing" {
+			continue
+		}
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			verifyCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			verification, err := h.recordings.VerifyAsset(verifyCtx, assets[index].ManifestKey)
+			cancel()
+			if err == nil && verification.Exists && verification.ByteSize > 0 {
+				if h.store.ReadyRecordingAsset(ctx, assets[index].ID, verification.ByteSize) == nil {
+					assets[index].Status = "ready"
+					assets[index].ByteSize = verification.ByteSize
+				}
+				return
+			}
+			if assets[index].EndedAt != nil && time.Since(*assets[index].EndedAt) >= recordingFinalizeDeadline {
+				if h.store.FailRecordingAsset(ctx, assets[index].ID) == nil {
+					assets[index].Status = "failed"
+				}
+			}
+		}(index)
+	}
+	wg.Wait()
 }
 
 func (h *MediaHandler) Recording(c *gin.Context) {

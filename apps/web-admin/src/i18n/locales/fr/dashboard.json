@@ -222,6 +222,9 @@
     "unnamed": "Appareil sans nom",
     "live": "En ligne",
     "offline": "Hors ligne",
+    "videoLive": "Enregistrement",
+    "videoStarting": "Démarrage",
+    "videoInactive": "Aucun enregistrement actif",
     "never": "Jamais",
     "errorLoad": "Impossible de charger les appareils.",
     "errorToggle": "Impossible de modifier la surveillance de cet appareil.",
@@ -234,6 +237,7 @@
       "os": "SE",
       "agent": "Agent",
       "lastSeen": "Dernière activité",
+      "video": "Vidéo",
       "monitoring": "Surveillance",
       "actions": "Actions"
     }

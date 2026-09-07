@@ -222,6 +222,9 @@
     "unnamed": "未命名设备",
     "live": "在线",
     "offline": "离线",
+    "videoLive": "正在录制",
+    "videoStarting": "正在启动",
+    "videoInactive": "无活动录制",
     "never": "从未",
     "errorLoad": "无法加载设备。",
     "errorToggle": "无法更改该设备的监控状态。",
@@ -234,6 +237,7 @@
       "os": "操作系统",
       "agent": "代理",
       "lastSeen": "最后在线",
+      "video": "视频",
       "monitoring": "监控",
       "actions": "操作"
     }

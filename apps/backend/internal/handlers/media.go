@@ -35,6 +35,7 @@ type MediaHandler struct {
 // reviewers within minutes while bounding the amount lost to a network or
 // recorder failure.
 const recordingChunkDuration = 5 * time.Minute
+const recordingFinalizeDeadline = 45 * time.Minute
 
 // NewMediaHandler wires the control plane.
 func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings media.RecordingStore, tokenTTL time.Duration) *MediaHandler {
@@ -44,6 +45,50 @@ func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings me
 		recordings:       recordings,
 		tokenTTL:         tokenTTL,
 		roomEmptyTimeout: 60 * time.Second,
+	}
+}
+
+// StartRecordingMaintenance makes the five-minute boundary a server guarantee.
+// The agent poll remains the fast path, while this sweeper closes an expired
+// room even if authentication or the device network is unhealthy.
+func (h *MediaHandler) StartRecordingMaintenance(ctx context.Context, interval time.Duration) {
+	if interval <= 0 {
+		interval = 10 * time.Second
+	}
+	go func() {
+		h.sweepExpiredRecordings(ctx)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				h.sweepExpiredRecordings(ctx)
+			}
+		}
+	}()
+}
+
+func (h *MediaHandler) sweepExpiredRecordings(ctx context.Context) {
+	sessions, err := h.store.RecordingSessionsStartedBefore(ctx, time.Now().UTC().Add(-recordingChunkDuration))
+	if err != nil {
+		obs.Warn("recording rotation sweep failed", "err", err)
+		return
+	}
+	for _, session := range sessions {
+		updated, err := h.store.AdvanceMediaSession(ctx, session.ID, media.StateEnded, "")
+		if err != nil {
+			// A request or agent callback may have won this race.
+			continue
+		}
+		_ = h.store.RecordMediaAudit(ctx, store.MediaAuditEvent{
+			BusinessID: updated.BusinessID, MediaSessionID: updated.ID,
+			ActorType: "system", ActorID: "recording-scheduler",
+			Action: store.AuditRecordingStop, Outcome: store.OutcomeAllowed,
+			Metadata: map[string]any{"device_id": updated.DeviceID, "reason": "chunk_duration"},
+		})
+		h.finalizeRecording(updated)
 	}
 }
 
@@ -684,25 +729,58 @@ func (h *MediaHandler) startRecording(c *gin.Context, session store.MediaSession
 func (h *MediaHandler) stopRecording(c *gin.Context, session store.MediaSession) {
 	asset, err := h.store.RecordingAssetForSession(c.Request.Context(), session.ID)
 	if !session.State.Terminal() {
-		_, _ = h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, "")
+		if ended, endErr := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, ""); endErr == nil {
+			session = ended
+		}
 	}
 	h.auditAs(c, "system", "recording-scheduler", session.BusinessID, session.ID,
 		store.AuditRecordingStop, store.OutcomeAllowed, map[string]any{"device_id": session.DeviceID})
+	h.finalizeRecordingAsset(session, asset, err)
+}
+
+func (h *MediaHandler) finalizeRecording(session store.MediaSession) {
+	asset, err := h.store.RecordingAssetForSession(context.Background(), session.ID)
+	h.finalizeRecordingAsset(session, asset, err)
+}
+
+func (h *MediaHandler) finalizeRecordingAsset(session store.MediaSession, asset store.RecordingAsset, assetErr error) {
 	// Finalizing an MP4 can take longer than the agent's two-second authorization
 	// poll. The database stop is already committed, so finish provider teardown
 	// in the background and let the agent move to its next chunk immediately.
 	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		if err == nil && asset.ProviderRecordingID != "" {
-			if stopErr := h.provider.StopRecording(ctx, asset.ProviderRecordingID); stopErr != nil {
-				_ = h.store.FailRecordingAsset(ctx, asset.ID)
-			} else {
-				_ = h.store.ProcessRecordingAsset(ctx, asset.ID, time.Now().UTC())
-			}
+		endedAt := time.Now().UTC()
+		if session.EndedAt != nil {
+			endedAt = *session.EndedAt
 		}
-		_ = h.provider.EndRoom(ctx, session.ProviderRoomID)
+		stopCtx, cancelStop := context.WithTimeout(context.Background(), 2*time.Minute)
+		if assetErr == nil && asset.ProviderRecordingID != "" {
+			if stopErr := h.provider.StopRecording(stopCtx, asset.ProviderRecordingID); stopErr != nil {
+				obs.Warn("recording provider stop did not confirm", "recording_id", asset.ID, "err", stopErr)
+			}
+			_ = h.store.ProcessRecordingAsset(context.Background(), asset.ID, endedAt)
+			go h.waitForRecordingAsset(asset, endedAt)
+		}
+		cancelStop()
+		roomCtx, cancelRoom := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancelRoom()
+		_ = h.provider.EndRoom(roomCtx, session.ProviderRoomID)
 	}()
+}
+
+func (h *MediaHandler) waitForRecordingAsset(asset store.RecordingAsset, started time.Time) {
+	deadline := started.Add(recordingFinalizeDeadline)
+	for time.Now().Before(deadline) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		verification, err := h.recordings.VerifyAsset(ctx, asset.ManifestKey)
+		cancel()
+		if err == nil && verification.Exists && verification.ByteSize > 0 {
+			_ = h.store.ReadyRecordingAsset(context.Background(), asset.ID, verification.ByteSize)
+			return
+		}
+		time.Sleep(15 * time.Second)
+	}
+	_ = h.store.FailRecordingAsset(context.Background(), asset.ID)
+	obs.Warn("recording asset did not finalize before deadline", "recording_id", asset.ID)
 }
 
 // memberSession loads a session the caller's tenant owns, writing the error

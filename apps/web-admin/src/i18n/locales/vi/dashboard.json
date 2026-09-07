@@ -222,6 +222,9 @@
     "unnamed": "Thiết bị chưa đặt tên",
     "live": "Trực tuyến",
     "offline": "Ngoại tuyến",
+    "videoLive": "Đang ghi hình",
+    "videoStarting": "Đang bắt đầu",
+    "videoInactive": "Không có bản ghi đang hoạt động",
     "never": "Chưa bao giờ",
     "errorLoad": "Không thể tải danh sách thiết bị.",
     "errorToggle": "Không thể thay đổi giám sát cho thiết bị đó.",
@@ -234,6 +237,7 @@
       "os": "HĐH",
       "agent": "Tác nhân",
       "lastSeen": "Lần cuối",
+      "video": "Video",
       "monitoring": "Giám sát",
       "actions": "Thao tác"
     }

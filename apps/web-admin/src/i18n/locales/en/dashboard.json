@@ -222,6 +222,9 @@
     "unnamed": "Unnamed device",
     "live": "Live",
     "offline": "Offline",
+    "videoLive": "Recording",
+    "videoStarting": "Starting",
+    "videoInactive": "No active recording",
     "never": "Never",
     "errorLoad": "Could not load devices.",
     "errorToggle": "Could not change monitoring for that device.",
@@ -234,6 +237,7 @@
       "os": "OS",
       "agent": "Agent",
       "lastSeen": "Last seen",
+      "video": "Video",
       "monitoring": "Monitoring",
       "actions": "Actions"
     }

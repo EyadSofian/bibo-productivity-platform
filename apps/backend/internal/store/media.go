@@ -204,6 +204,31 @@ func (s *Store) OpenRecordingMediaSessionFor(ctx context.Context, deviceID strin
 	return s.openMediaSessionFor(ctx, deviceID, media.KindRecording)
 }
 
+// RecordingSessionsStartedBefore returns open recording chunks that exceeded
+// their server-side lease. Rotation must not depend on the desktop agent making
+// another authenticated request: an expired agent token used to leave one
+// egress job running for almost an hour.
+func (s *Store) RecordingSessionsStartedBefore(ctx context.Context, before time.Time) ([]MediaSession, error) {
+	rows, err := s.pool.Query(ctx, `SELECT`+mediaSessionColumns+`
+		FROM media_sessions ms
+		WHERE ms.kind='recording' AND ms.state NOT IN ('ended','failed')
+		  AND ms.started_at <= $1
+		ORDER BY ms.started_at`, before)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var sessions []MediaSession
+	for rows.Next() {
+		session, err := scanMediaSession(rows)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, session)
+	}
+	return sessions, rows.Err()
+}
+
 // MediaSessionForMember reads a session, scoped to a business the caller belongs
 // to. A caller outside the tenant gets ErrNotFound, which is the same answer they
 // get for a session that does not exist: the API must not confirm that another
