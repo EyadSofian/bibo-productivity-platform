@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "Cette session n'existe plus.",
     "MEDIA_AGENT_OFFLINE": "L'appareil est hors ligne. Il sera disponible à son retour.",
     "MEDIA_MONITORING_DISABLED": "La surveillance est désactivée pour cet appareil.",
+    "MEDIA_OUTSIDE_SCHEDULE": "La vue en direct est en dehors des heures de surveillance de l'écran de cet appareil.",
     "MEDIA_SESSION_ENDED": "Cette session est terminée. Démarrez-en une nouvelle.",
     "MEDIA_PROVIDER_UNCONFIGURED": "La vidéo en direct n'est pas encore activée sur ce déploiement.",
     "MEDIA_PROVIDER_ERROR": "Le service vidéo a rejeté la demande.",

@@ -151,21 +151,30 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 }
 
 func (h *MediaHandler) recordingPolicyActive(c *gin.Context, userID, deviceID string) (bool, error) {
+	enabled, active, err := h.monitoringKeyPolicy(c, userID, deviceID, "recording")
+	return enabled && active, err
+}
+
+// monitoringKeyPolicy mirrors the schedule enforced by the desktop agent. A
+// live request must not create a room while the agent is correctly refusing to
+// capture outside its screen-monitoring hours.
+func (h *MediaHandler) monitoringKeyPolicy(c *gin.Context, userID, deviceID, key string) (bool, bool, error) {
 	resolved, err := h.store.ResolveMonitoringProfile(c.Request.Context(), userID, deviceID)
 	if err != nil {
-		return false, err
+		return false, false, err
 	}
 	for _, detail := range resolved.Details {
-		if detail.TrackingKey != "recording" {
+		if detail.TrackingKey != key {
 			continue
 		}
 		var enabled bool
 		if err := json.Unmarshal(detail.TrackingVal, &enabled); err != nil || !enabled {
-			return false, nil
+			return false, false, nil
 		}
-		return store.ScheduleActiveAt(detail.DaysOfWeek, detail.StartMinute, detail.EndMinute, detail.Timezone, time.Now())
+		active, err := store.ScheduleActiveAt(detail.DaysOfWeek, detail.StartMinute, detail.EndMinute, detail.Timezone, time.Now())
+		return true, active, err
 	}
-	return false, nil
+	return false, false, nil
 }
 
 func (h *MediaHandler) openScheduledRecording(c *gin.Context, userID, deviceID string) (store.MediaSession, error) {
@@ -277,6 +286,25 @@ func (h *MediaHandler) StartLive(c *gin.Context) {
 			map[string]any{"device_id": deviceID, "reason": string(media.FailDeniedByPolicy)})
 		mediaError(c, http.StatusConflict, CodeMonitoringDisabled,
 			"Monitoring is turned off for this device.", false)
+		return
+	}
+	screenEnabled, screenActive, err := h.monitoringKeyPolicy(c, userID, deviceID, "screen")
+	if err != nil {
+		mediaInternal(c, err)
+		return
+	}
+	if !screenEnabled {
+		h.audit(c, target.BusinessID, "", store.AuditLiveSessionStart, store.OutcomeDenied,
+			map[string]any{"device_id": deviceID, "reason": string(media.FailDeniedByPolicy)})
+		mediaError(c, http.StatusConflict, CodeMonitoringDisabled,
+			"Screen monitoring is turned off for this device.", false)
+		return
+	}
+	if !screenActive {
+		h.audit(c, target.BusinessID, "", store.AuditLiveSessionStart, store.OutcomeDenied,
+			map[string]any{"device_id": deviceID, "reason": "outside_screen_schedule"})
+		mediaError(c, http.StatusConflict, CodeOutsideSchedule,
+			"Live view is outside this device's scheduled screen-monitoring hours.", false)
 		return
 	}
 	if !target.Online {

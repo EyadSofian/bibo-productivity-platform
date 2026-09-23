@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "لم تعد هذه الجلسة موجودة.",
     "MEDIA_AGENT_OFFLINE": "الجهاز غير متصل. سيتاح عند عودته.",
     "MEDIA_MONITORING_DISABLED": "المراقبة معطّلة لهذا الجهاز.",
+    "MEDIA_OUTSIDE_SCHEDULE": "العرض المباشر خارج ساعات مراقبة الشاشة المحددة لهذا الجهاز.",
     "MEDIA_SESSION_ENDED": "انتهت هذه الجلسة. ابدأ واحدة جديدة.",
     "MEDIA_PROVIDER_UNCONFIGURED": "الفيديو المباشر غير مفعّل على هذا النشر بعد.",
     "MEDIA_PROVIDER_ERROR": "رفضت خدمة الفيديو الطلب.",

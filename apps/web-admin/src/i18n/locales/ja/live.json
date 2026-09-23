@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "そのセッションはもう存在しません。",
     "MEDIA_AGENT_OFFLINE": "デバイスはオフラインです。再接続時に利用できます。",
     "MEDIA_MONITORING_DISABLED": "このデバイスのモニタリングは無効です。",
+    "MEDIA_OUTSIDE_SCHEDULE": "ライブ表示は、このデバイスの画面監視時間外です。",
     "MEDIA_SESSION_ENDED": "このセッションは終了しました。新しく開始してください。",
     "MEDIA_PROVIDER_UNCONFIGURED": "このデプロイではライブ映像がまだ有効化されていません。",
     "MEDIA_PROVIDER_ERROR": "映像サービスがリクエストを拒否しました。",

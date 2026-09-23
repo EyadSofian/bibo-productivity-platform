@@ -36,11 +36,14 @@ const (
 	CodeAgentOffline = "MEDIA_AGENT_OFFLINE"
 	// CodeMonitoringDisabled: the owner turned monitoring off for this device.
 	CodeMonitoringDisabled = "MEDIA_MONITORING_DISABLED"
+	// CodeOutsideSchedule: screen monitoring is enabled, but its configured
+	// hours do not include the current time.
+	CodeOutsideSchedule = "MEDIA_OUTSIDE_SCHEDULE"
 	// CodeSessionEnded: the session is terminal; a token cannot be minted.
 	CodeSessionEnded = "MEDIA_SESSION_ENDED"
 	// CodeInvalidState: the requested transition is illegal from where the
 	// session actually is.
-	CodeInvalidState = "MEDIA_INVALID_STATE"
+	CodeInvalidState      = "MEDIA_INVALID_STATE"
 	CodeRecordingNotReady = "MEDIA_RECORDING_NOT_READY"
 	// CodeProviderUnconfigured: no SFU is wired up yet (slice V05). Distinct
 	// from a provider error: nothing is broken, the feature is not deployed.

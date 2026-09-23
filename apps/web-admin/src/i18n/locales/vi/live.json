@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "Phiên đó không còn tồn tại.",
     "MEDIA_AGENT_OFFLINE": "Thiết bị đang ngoại tuyến. Sẽ khả dụng khi kết nối lại.",
     "MEDIA_MONITORING_DISABLED": "Giám sát đã tắt cho thiết bị này.",
+    "MEDIA_OUTSIDE_SCHEDULE": "Chế độ xem trực tiếp nằm ngoài giờ giám sát màn hình của thiết bị này.",
     "MEDIA_SESSION_ENDED": "Phiên này đã kết thúc. Hãy bắt đầu phiên mới.",
     "MEDIA_PROVIDER_UNCONFIGURED": "Video trực tiếp chưa được bật trên bản triển khai này.",
     "MEDIA_PROVIDER_ERROR": "Dịch vụ video đã từ chối yêu cầu.",

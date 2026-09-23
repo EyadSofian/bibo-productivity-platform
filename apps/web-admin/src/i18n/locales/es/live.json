@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "Esa sesión ya no existe.",
     "MEDIA_AGENT_OFFLINE": "El dispositivo está desconectado. Estará disponible cuando vuelva.",
     "MEDIA_MONITORING_DISABLED": "La supervisión está desactivada para este dispositivo.",
+    "MEDIA_OUTSIDE_SCHEDULE": "La vista en directo está fuera del horario de supervisión de pantalla de este dispositivo.",
     "MEDIA_SESSION_ENDED": "Esta sesión ha terminado. Inicia una nueva.",
     "MEDIA_PROVIDER_UNCONFIGURED": "El vídeo en directo aún no está habilitado en este despliegue.",
     "MEDIA_PROVIDER_ERROR": "El servicio de vídeo rechazó la solicitud.",

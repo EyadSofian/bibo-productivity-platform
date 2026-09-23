@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "Sesi itu sudah tidak ada.",
     "MEDIA_AGENT_OFFLINE": "Perangkat sedang offline. Akan tersedia saat tersambung kembali.",
     "MEDIA_MONITORING_DISABLED": "Pemantauan dimatikan untuk perangkat ini.",
+    "MEDIA_OUTSIDE_SCHEDULE": "Tampilan langsung berada di luar jadwal pemantauan layar perangkat ini.",
     "MEDIA_SESSION_ENDED": "Sesi ini telah berakhir. Mulai yang baru.",
     "MEDIA_PROVIDER_UNCONFIGURED": "Video langsung belum diaktifkan pada penerapan ini.",
     "MEDIA_PROVIDER_ERROR": "Layanan video menolak permintaan.",

@@ -21,6 +21,7 @@
     "MEDIA_SESSION_NOT_FOUND": "该会话已不存在。",
     "MEDIA_AGENT_OFFLINE": "设备已离线，重新连接后即可使用。",
     "MEDIA_MONITORING_DISABLED": "此设备的监控已关闭。",
+    "MEDIA_OUTSIDE_SCHEDULE": "当前时间不在此设备的屏幕监控时段内，无法查看实时画面。",
     "MEDIA_SESSION_ENDED": "此会话已结束，请开始新的会话。",
     "MEDIA_PROVIDER_UNCONFIGURED": "此部署尚未启用实时视频。",
     "MEDIA_PROVIDER_ERROR": "视频服务拒绝了该请求。",

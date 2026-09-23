@@ -606,6 +606,45 @@ func TestMonitoringDisabledIsNotRetryable(t *testing.T) {
 	}
 }
 
+// A presence heartbeat does not mean the agent may capture. The live endpoint
+// must reject requests outside the screen schedule before creating a room.
+func TestLiveOutsideScreenScheduleIsRejectedWithoutRoom(t *testing.T) {
+	e := newMediaEnv(t)
+	today := (int(time.Now().UTC().Weekday())+6)%7 + 1 // ISO weekday
+	tomorrow := int16(today%7 + 1)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Screen tomorrow only",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "screen", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{tomorrow}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "device", ScopeID: e.deviceID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rec, body := e.call(t, http.MethodPost, "/v1/devices/"+e.deviceID+"/media/live", e.ownerID)
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body = %v", rec.Code, body)
+	}
+	errBody := errorBody(t, body)
+	if errBody["code"] != CodeOutsideSchedule || errBody["retryable"] != false {
+		t.Fatalf("unexpected refusal = %v", errBody)
+	}
+	if rooms := e.provider.RoomCount(); rooms != 0 {
+		t.Fatalf("outside-hours request created %d rooms", rooms)
+	}
+	var sessions int
+	if err := e.pool.QueryRow(e.ctx, `SELECT count(*) FROM media_sessions WHERE device_id=$1`, e.deviceID).Scan(&sessions); err != nil {
+		t.Fatal(err)
+	}
+	if sessions != 0 {
+		t.Fatalf("outside-hours request created %d sessions", sessions)
+	}
+}
+
 // addOwner grants a second user the owner role in a business. Written as SQL in
 // the test rather than as a store method: co-ownership is not a product feature
 // yet, and inventing an API for it here would be inventing a product decision.
