@@ -67,6 +67,7 @@ export type MediaErrorCode =
   | "MEDIA_SESSION_ENDED"
   | "MEDIA_INVALID_STATE"
   | "MEDIA_RECORDING_NOT_READY"
+  | "MEDIA_RECORDING_EXPIRED"
   | "MEDIA_PROVIDER_UNCONFIGURED"
   | "MEDIA_PROVIDER_ERROR"
   | "MEDIA_INVALID_REQUEST"
@@ -150,7 +151,36 @@ export type RecordingAsset = {
   byte_size: number;
   started_at: string;
   ended_at?: string;
+  retention_until?: string;
 };
+
+export type RecordingSummaryItem = {
+  id: string;
+  employee_id: string;
+  employee_name: string;
+  status: RecordingAsset["status"];
+  failure_code: string;
+  byte_size: number;
+  started_at: string;
+  ended_at?: string;
+  retention_until?: string;
+};
+
+export type RecordingSummary = {
+  ready: number;
+  recording: number;
+  processing: number;
+  failed: number;
+  stale: number;
+  recent: RecordingSummaryItem[];
+};
+
+export function getRecordingSummary(businessId: string) {
+  if (isDemo()) {
+    return Promise.resolve({ window_days: 30, summary: { ready: 0, recording: 0, processing: 0, failed: 0, stale: 0, recent: [] } as RecordingSummary });
+  }
+  return request<{ window_days: number; summary: RecordingSummary }>(`/v1/businesses/${businessId}/recordings/summary`);
+}
 
 export type PlaybackToken = {
   recording_id: string;

@@ -58,7 +58,7 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 		`DROP TABLE task_events`,
 		`DROP TABLE task_work_sessions`,
 		`DROP TABLE tasks`,
-		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22,23)`,
+		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22,23,24)`,
 	} {
 		if _, err := pool.Exec(ctx, stmt); err != nil {
 			t.Fatalf("rollback %q: %v", stmt, err)
@@ -77,6 +77,10 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 	var leases int
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='viewer_sessions' AND column_name='last_seen_at'`).Scan(&leases); err != nil || leases != 1 {
 		t.Fatalf("viewer lease migration did not reapply: count=%d err=%v", leases, err)
+	}
+	var recoveryColumns int
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM information_schema.columns WHERE table_schema='public' AND table_name='recording_assets' AND column_name='last_checked_at'`).Scan(&recoveryColumns); err != nil || recoveryColumns != 1 {
+		t.Fatalf("recording recovery migration did not reapply: count=%d err=%v", recoveryColumns, err)
 	}
 }
 

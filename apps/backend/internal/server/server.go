@@ -159,6 +159,7 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 	// Metadata, authorization and short-lived tokens only -- no media bytes.
 	authed.POST("/devices/:device_id/media/live", mediaH.StartLive)
 	authed.GET("/employees/:employee_id/recordings", mediaH.ListRecordings)
+	authed.GET("/businesses/:id/recordings/summary", mediaH.RecordingSummary)
 	authed.GET("/recordings/:recording_id", mediaH.Recording)
 	authed.POST("/recordings/:recording_id/playback-token", mediaH.PlaybackToken)
 	authed.GET("/media/agent/session", mediaH.AgentSession)

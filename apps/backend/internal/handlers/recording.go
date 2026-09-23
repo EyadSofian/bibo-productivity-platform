@@ -45,18 +45,41 @@ func (h *MediaHandler) ListRecordings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"recordings": assets})
 }
 
+// RecordingSummary exposes upload outcomes without exposing object keys or
+// signed URLs. Only members with recordings.view may inspect this business.
+func (h *MediaHandler) RecordingSummary(c *gin.Context) {
+	userID, _ := auth.UserID(c)
+	businessID := c.Param("id")
+	if _, err := uuid.Parse(businessID); err != nil {
+		mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "business id must be a uuid", false)
+		return
+	}
+	if !h.require(c, userID, businessID, media.PermRecordingsView, store.AuditRecordingView) {
+		return
+	}
+	summary, err := h.store.RecordingSummaryForBusiness(c.Request.Context(), businessID, time.Now().UTC().Add(-30*24*time.Hour))
+	if err != nil {
+		mediaInternal(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"window_days": 30, "summary": summary})
+}
+
 // Reconcile provider output while the timeline is already being loaded. This
 // recovers assets finalized after a backend restart, so "processing" cannot be
 // a permanent state merely because the original goroutine no longer exists.
 func (h *MediaHandler) reconcileRecordingAssets(ctx context.Context, assets []store.RecordingAsset) {
 	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8)
 	for index := range assets {
 		if assets[index].Status != "processing" {
 			continue
 		}
+		sem <- struct{}{}
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
+			defer func() { <-sem }()
 			verifyCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 			verification, err := h.recordings.VerifyAsset(verifyCtx, assets[index].ManifestKey)
 			cancel()
@@ -67,7 +90,7 @@ func (h *MediaHandler) reconcileRecordingAssets(ctx context.Context, assets []st
 				}
 				return
 			}
-			if assets[index].EndedAt != nil && time.Since(*assets[index].EndedAt) >= recordingFinalizeDeadline {
+			if err == nil && assets[index].EndedAt != nil && time.Since(*assets[index].EndedAt) >= recordingFinalizeDeadline {
 				if h.store.FailRecordingAsset(ctx, assets[index].ID) == nil {
 					assets[index].Status = "failed"
 				}
@@ -96,6 +119,10 @@ func (h *MediaHandler) PlaybackToken(c *gin.Context) {
 		return
 	}
 	if !h.require(c, userID, asset.BusinessID, media.PermRecordingsView, store.AuditPlaybackTokenMint) {
+		return
+	}
+	if asset.RetentionUntil != nil && !time.Now().Before(*asset.RetentionUntil) {
+		mediaError(c, http.StatusGone, CodeRecordingExpired, "This recording has reached its retention deadline.", false)
 		return
 	}
 	verification, err := h.recordings.VerifyAsset(c.Request.Context(), asset.ManifestKey)

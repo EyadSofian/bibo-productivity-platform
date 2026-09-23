@@ -48,6 +48,20 @@
       "workforce": "Nhân sự",
       "rosterTitle": "Trạng thái vận hành đầy đủ",
       "autoRefresh": "Tự động cập nhật mỗi 15 giây"
+    },
+    "simple": {
+      "eyebrow": "TỔNG QUAN NHÓM", "title": "Nhóm của bạn hôm nay", "subtitle": "{{name}} · nhân viên, thời gian hoạt động và trạng thái video trong một nơi.",
+      "updated": "Cập nhật lúc {{time}}", "allEmployees": "Tất cả nhân viên", "noBusiness": "Thêm nhân viên đầu tiên để tạo nhóm.",
+      "overview": "Tổng quan hôm nay", "online": "Đang trực tuyến", "onlineHelp": "Nhân viên đang kết nối với ứng dụng", "activeTime": "Thời gian làm việc", "activeTimeHelp": "Tổng thời gian hoạt động hôm nay",
+      "videosReady": "Video sẵn sàng", "needsReview": "Cần kiểm tra", "lastSevenDays": "30 ngày qua",
+      "teamTitle": "Nhân viên", "teamHelp": "Ai đang kết nối và ứng dụng đang mở", "noEmployees": "Chưa có nhân viên.", "lastSeen": "Kết nối lần cuối {{time}}"
+    },
+    "video": {
+      "title": "Trạng thái ghi hình", "subtitle": "Kiểm tra xem từng video đã đến kho lưu trữ riêng hay chưa.", "error": "Không thể tải trạng thái ghi hình.",
+      "ready": "Sẵn sàng", "inProgress": "Đang xử lý", "failed": "Thất bại", "stale": "{{count}} video đã xử lý quá lâu.",
+      "empty": "Chưa có lần ghi hình nào.", "unknownEmployee": "Nhân viên không xác định", "retention": "Video sẵn sàng được lưu riêng trong 30 ngày, sau đó tự động xóa.",
+      "status": { "pending": "Đang bắt đầu", "recording": "Đang ghi", "processing": "Đang tải lên", "ready": "Sẵn sàng", "failed": "Thất bại" },
+      "failure": {"encoderFailed": "Không thể khởi động bộ mã hóa", "captureFailed": "Không thể ghi màn hình", "providerFailed": "Dịch vụ video không khả dụng", "unknownFailed": "Không thể hoàn tất ghi hình"}
     }
   },
   "employees": {

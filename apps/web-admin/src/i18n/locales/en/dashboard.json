@@ -48,6 +48,20 @@
       "workforce": "Workforce",
       "rosterTitle": "Full operating status",
       "autoRefresh": "Auto-refreshes every 15 seconds"
+    },
+    "simple": {
+      "eyebrow": "TEAM OVERVIEW", "title": "Your team today", "subtitle": "{{name}} · people, active time, and video status in one place.",
+      "updated": "Updated {{time}}", "allEmployees": "All employees", "noBusiness": "Add your first employee to create a team.",
+      "overview": "Today's overview", "online": "Online now", "onlineHelp": "Employees connected to the app", "activeTime": "Active work time", "activeTimeHelp": "Combined active time today",
+      "videosReady": "Videos ready", "needsReview": "Needs review", "lastSevenDays": "Last 30 days",
+      "teamTitle": "Employees", "teamHelp": "Who is connected and what is open now", "noEmployees": "No employees yet.", "lastSeen": "Last seen {{time}}"
+    },
+    "video": {
+      "title": "Recording status", "subtitle": "See whether each video reached private storage.", "error": "Could not load recording status.",
+      "ready": "Ready", "inProgress": "In progress", "failed": "Failed", "stale": "{{count}} video(s) have been processing for too long.",
+      "empty": "No recording attempts yet.", "unknownEmployee": "Unknown employee", "retention": "Ready videos are kept privately for 30 days, then deleted automatically.",
+      "status": { "pending": "Starting", "recording": "Recording", "processing": "Finalizing upload", "ready": "Ready", "failed": "Failed" },
+      "failure": {"encoderFailed": "Device encoder could not start", "captureFailed": "Screen capture failed", "providerFailed": "Video service unavailable", "unknownFailed": "Recording could not finish"}
     }
   },
   "employees": {

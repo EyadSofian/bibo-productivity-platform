@@ -37,11 +37,10 @@ type MediaHandler struct {
 const recordingChunkDuration = 5 * time.Minute
 const recordingFinalizeDeadline = 45 * time.Minute
 
-// Provider failures are normally quota or regional-capacity failures. Retrying
-// on every one-second agent poll only creates failed rows and extra rooms; a
-// bounded cooldown keeps telemetry healthy while still recovering without an
-// operator after a transient outage or a plan upgrade.
-const recordingProviderRetryCooldown = 15 * time.Minute
+// Provider, capture and encoder failures must not turn the agent's fast poll
+// into a stream of failed sessions. A bounded cooldown still allows recovery
+// after a transient outage, driver restart or provider plan change.
+const recordingFailureRetryCooldown = 15 * time.Minute
 
 // NewMediaHandler wires the control plane.
 func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings media.RecordingStore, tokenTTL time.Duration) *MediaHandler {
@@ -74,6 +73,88 @@ func (h *MediaHandler) StartRecordingMaintenance(ctx context.Context, interval t
 			}
 		}
 	}()
+	go func() {
+		h.sweepRecordingAssets(ctx)
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				h.sweepRecordingAssets(ctx)
+			}
+		}
+	}()
+}
+
+// Recover finalization after a deployment/restart, then enforce the 30-day
+// object retention policy. Each pass is bounded so one bad provider cannot
+// monopolize the server's housekeeping goroutine.
+func (h *MediaHandler) sweepRecordingAssets(ctx context.Context) {
+	const batchSize = 10
+	candidates, err := h.store.RecordingAssetsNeedingRecovery(ctx, batchSize)
+	if err != nil {
+		obs.Warn("recording recovery list failed", "err", err)
+		return
+	}
+	for _, asset := range candidates {
+		if ctx.Err() != nil {
+			return
+		}
+		if asset.Status != "processing" {
+			if asset.ProviderRecordingID != "" {
+				stopCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+				if err := h.provider.StopRecording(stopCtx, asset.ProviderRecordingID); err != nil {
+					obs.Warn("recording recovery stop failed", "recording_id", asset.ID, "err", err)
+				}
+				cancel()
+			}
+			if err := h.store.ProcessRecordingAsset(ctx, asset.ID, asset.EndedAt); err != nil {
+				obs.Warn("recording recovery state failed", "recording_id", asset.ID, "err", err)
+				continue
+			}
+		}
+		verifyCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+		verification, err := h.recordings.VerifyAsset(verifyCtx, asset.ManifestKey)
+		cancel()
+		if err == nil && verification.Exists && verification.ByteSize > 0 {
+			if err := h.store.ReadyRecordingAsset(ctx, asset.ID, verification.ByteSize); err != nil {
+				obs.Warn("recording recovery ready update failed", "recording_id", asset.ID, "err", err)
+			}
+		} else if time.Since(asset.EndedAt) >= recordingFinalizeDeadline && err == nil {
+			if err := h.store.FailRecordingAsset(ctx, asset.ID); err != nil {
+				obs.Warn("recording recovery failure update failed", "recording_id", asset.ID, "err", err)
+			}
+		}
+	}
+	due, err := h.store.RecordingAssetsDueForDeletion(ctx, batchSize)
+	if err != nil {
+		obs.Warn("recording retention list failed", "err", err)
+		return
+	}
+	for _, asset := range due {
+		if ctx.Err() != nil {
+			return
+		}
+		deleteCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+		err := h.recordings.DeleteAsset(deleteCtx, asset.ManifestKey)
+		if err == nil {
+			var verification media.AssetVerification
+			verification, err = h.recordings.VerifyAsset(deleteCtx, asset.ManifestKey)
+			if err == nil && verification.Exists {
+				err = errors.New("object still exists after delete")
+			}
+		}
+		cancel()
+		if err != nil {
+			obs.Warn("recording retention delete failed", "recording_id", asset.ID, "err", err)
+			continue
+		}
+		if err := h.store.MarkRecordingAssetDeleted(ctx, asset.ID); err != nil {
+			obs.Warn("recording retention state failed", "recording_id", asset.ID, "err", err)
+		}
+	}
 }
 
 func (h *MediaHandler) sweepExpiredRecordings(ctx context.Context) {
@@ -189,14 +270,14 @@ func (h *MediaHandler) openScheduledRecording(c *gin.Context, userID, deviceID s
 	if err != nil || !target.MonitoringEnabled || target.EmployeeID == "" {
 		return store.MediaSession{}, store.ErrNotFound
 	}
-	providerCoolingDown, err := h.store.RecentRecordingProviderFailure(
+	failureCoolingDown, err := h.store.RecentRecordingFailure(
 		c.Request.Context(), target.BusinessID, target.DeviceID,
-		time.Now().UTC().Add(-recordingProviderRetryCooldown),
+		time.Now().UTC().Add(-recordingFailureRetryCooldown),
 	)
 	if err != nil {
 		return store.MediaSession{}, err
 	}
-	if providerCoolingDown {
+	if failureCoolingDown {
 		return store.MediaSession{}, store.ErrNotFound
 	}
 	session, created, err := h.store.OpenMediaSession(c.Request.Context(), store.NewMediaSession{
@@ -801,30 +882,15 @@ func (h *MediaHandler) finalizeRecordingAsset(session store.MediaSession, asset 
 			if stopErr := h.provider.StopRecording(stopCtx, asset.ProviderRecordingID); stopErr != nil {
 				obs.Warn("recording provider stop did not confirm", "recording_id", asset.ID, "err", stopErr)
 			}
-			_ = h.store.ProcessRecordingAsset(context.Background(), asset.ID, endedAt)
-			go h.waitForRecordingAsset(asset, endedAt)
+			if err := h.store.ProcessRecordingAsset(context.Background(), asset.ID, endedAt); err != nil {
+				obs.Warn("recording state update failed", "recording_id", asset.ID, "err", err)
+			}
 		}
 		cancelStop()
 		roomCtx, cancelRoom := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancelRoom()
 		_ = h.provider.EndRoom(roomCtx, session.ProviderRoomID)
 	}()
-}
-
-func (h *MediaHandler) waitForRecordingAsset(asset store.RecordingAsset, started time.Time) {
-	deadline := started.Add(recordingFinalizeDeadline)
-	for time.Now().Before(deadline) {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		verification, err := h.recordings.VerifyAsset(ctx, asset.ManifestKey)
-		cancel()
-		if err == nil && verification.Exists && verification.ByteSize > 0 {
-			_ = h.store.ReadyRecordingAsset(context.Background(), asset.ID, verification.ByteSize)
-			return
-		}
-		time.Sleep(15 * time.Second)
-	}
-	_ = h.store.FailRecordingAsset(context.Background(), asset.ID)
-	obs.Warn("recording asset did not finalize before deadline", "recording_id", asset.ID)
 }
 
 // memberSession loads a session the caller's tenant owns, writing the error

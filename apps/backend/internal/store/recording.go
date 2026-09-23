@@ -29,6 +29,37 @@ type RecordingAsset struct {
 	RetentionUntil      *time.Time `json:"retention_until,omitempty"`
 }
 
+// RecordingRecoveryCandidate is the minimum metadata needed to resume a
+// finalization interrupted by a backend restart.
+type RecordingRecoveryCandidate struct {
+	ID                  string
+	ManifestKey         string
+	ProviderRecordingID string
+	Status              string
+	EndedAt             time.Time
+}
+
+type RecordingSummary struct {
+	Ready      int64                  `json:"ready"`
+	Recording  int64                  `json:"recording"`
+	Processing int64                  `json:"processing"`
+	Failed     int64                  `json:"failed"`
+	Stale      int64                  `json:"stale"`
+	Recent     []RecordingSummaryItem `json:"recent"`
+}
+
+type RecordingSummaryItem struct {
+	ID             string     `json:"id"`
+	EmployeeID     string     `json:"employee_id"`
+	EmployeeName   string     `json:"employee_name"`
+	Status         string     `json:"status"`
+	FailureCode    string     `json:"failure_code"`
+	ByteSize       int64      `json:"byte_size"`
+	StartedAt      time.Time  `json:"started_at"`
+	EndedAt        *time.Time `json:"ended_at,omitempty"`
+	RetentionUntil *time.Time `json:"retention_until,omitempty"`
+}
+
 const recordingColumns = `
 	ra.id, ra.business_id, ra.media_session_id, ms.employee_id, ms.device_id,
 	ra.status, ra.format, ra.storage_provider, ra.manifest_key,
@@ -82,24 +113,130 @@ func (s *Store) StartRecordingAsset(ctx context.Context, assetID, providerID str
 
 func (s *Store) ProcessRecordingAsset(ctx context.Context, assetID string, endedAt time.Time) error {
 	_, err := s.pool.Exec(ctx, `UPDATE recording_assets
-		SET status=CASE WHEN status='failed' THEN status ELSE 'processing' END,
+		SET status='processing',
 		    ended_at=$2, duration_ms=GREATEST(0, extract(epoch FROM ($2-started_at))*1000)::bigint
-		WHERE id=$1`, assetID, endedAt)
+		WHERE id=$1 AND status IN ('pending','recording','processing')`, assetID, endedAt)
 	return err
 }
 
 func (s *Store) ReadyRecordingAsset(ctx context.Context, assetID string, byteSize int64) error {
 	_, err := s.pool.Exec(ctx, `UPDATE recording_assets
-		SET status='ready', byte_size=$2 WHERE id=$1 AND status IN ('processing','recording','pending','failed')`, assetID, byteSize)
+		SET status='ready', byte_size=$2,
+		    retention_until=COALESCE(ended_at,now()) + interval '30 days'
+		WHERE id=$1 AND status IN ('processing','recording','pending','failed')
+		  AND (retention_until IS NULL OR retention_until > now())`, assetID, byteSize)
 	return err
 }
 
 func (s *Store) FailRecordingAsset(ctx context.Context, assetID string) error {
 	_, err := s.pool.Exec(ctx, `UPDATE recording_assets
 		SET status='failed', ended_at=COALESCE(ended_at,now()),
+		    retention_until=COALESCE(ended_at,now()) + interval '30 days',
 		    duration_ms=GREATEST(0, extract(epoch FROM (COALESCE(ended_at,now())-started_at))*1000)::bigint
-		WHERE id=$1`, assetID)
+		WHERE id=$1 AND status IN ('pending','recording','processing')`, assetID)
 	return err
+}
+
+// RecordingAssetsNeedingRecovery includes unfinished assets whose original
+// finalizer may have vanished with a process restart. It is bounded per sweep.
+func (s *Store) RecordingAssetsNeedingRecovery(ctx context.Context, limit int) ([]RecordingRecoveryCandidate, error) {
+	rows, err := s.pool.Query(ctx, `
+		WITH selected AS (
+			SELECT ra.id FROM recording_assets ra
+			JOIN media_sessions ms ON ms.id=ra.media_session_id
+			WHERE (ra.status='processing'
+			   OR (ra.status IN ('pending','recording') AND ms.state IN ('ended','failed')))
+			  AND (ra.last_checked_at IS NULL OR ra.last_checked_at < now()-interval '1 minute')
+			ORDER BY ra.last_checked_at NULLS FIRST, COALESCE(ra.ended_at, ms.ended_at, ra.started_at)
+			LIMIT $1 FOR UPDATE OF ra SKIP LOCKED
+		), claimed AS (
+			UPDATE recording_assets ra SET last_checked_at=now()
+			FROM selected WHERE ra.id=selected.id
+			RETURNING ra.id,ra.manifest_key,ra.provider_recording_id,ra.status,ra.ended_at,ra.media_session_id
+		)
+		SELECT claimed.id, claimed.manifest_key, COALESCE(claimed.provider_recording_id,''),
+		       claimed.status, COALESCE(claimed.ended_at, ms.ended_at, now())
+		FROM claimed JOIN media_sessions ms ON ms.id=claimed.media_session_id`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RecordingRecoveryCandidate{}
+	for rows.Next() {
+		var item RecordingRecoveryCandidate
+		if err := rows.Scan(&item.ID, &item.ManifestKey, &item.ProviderRecordingID, &item.Status, &item.EndedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) RecordingAssetsDueForDeletion(ctx context.Context, limit int) ([]RecordingRecoveryCandidate, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT id, manifest_key FROM recording_assets
+		 WHERE status IN ('ready','failed') AND retention_until <= now()
+		 ORDER BY retention_until LIMIT $1`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []RecordingRecoveryCandidate{}
+	for rows.Next() {
+		var item RecordingRecoveryCandidate
+		if err := rows.Scan(&item.ID, &item.ManifestKey); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	return out, rows.Err()
+}
+
+func (s *Store) MarkRecordingAssetDeleted(ctx context.Context, assetID string) error {
+	_, err := s.pool.Exec(ctx, `UPDATE recording_assets SET status='deleted'
+		WHERE id=$1 AND status IN ('ready','failed') AND retention_until <= now()`, assetID)
+	return err
+}
+
+// RecordingSummaryForBusiness is one bounded overview query plus the latest
+// handful of rows; the dashboard never calls the per-employee list N times.
+func (s *Store) RecordingSummaryForBusiness(ctx context.Context, businessID string, since time.Time) (RecordingSummary, error) {
+	var out RecordingSummary
+	err := s.pool.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE status='ready'),
+		       count(*) FILTER (WHERE status='recording'),
+		       count(*) FILTER (WHERE status='processing'),
+		       count(*) FILTER (WHERE status='failed'),
+		       count(*) FILTER (WHERE status='processing' AND ended_at < now()-interval '45 minutes')
+		  FROM recording_assets
+		 WHERE business_id=$1 AND started_at >= $2`, businessID, since).Scan(
+		&out.Ready, &out.Recording, &out.Processing, &out.Failed, &out.Stale)
+	if err != nil {
+		return out, err
+	}
+	rows, err := s.pool.Query(ctx, `
+		SELECT ra.id, COALESCE(ms.employee_id::text,''), COALESCE(u.display_name,''),
+		       ra.status, COALESCE(ms.failure_code,''), ra.byte_size,
+		       ra.started_at, ra.ended_at, ra.retention_until
+		  FROM recording_assets ra
+		  JOIN media_sessions ms ON ms.id=ra.media_session_id
+		  LEFT JOIN users u ON u.id=ms.employee_id
+		 WHERE ra.business_id=$1 AND ra.status <> 'deleted' AND ra.started_at >= $2
+		 ORDER BY ra.started_at DESC LIMIT 8`, businessID, since)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	out.Recent = []RecordingSummaryItem{}
+	for rows.Next() {
+		var item RecordingSummaryItem
+		if err := rows.Scan(&item.ID, &item.EmployeeID, &item.EmployeeName, &item.Status,
+			&item.FailureCode, &item.ByteSize, &item.StartedAt, &item.EndedAt, &item.RetentionUntil); err != nil {
+			return out, err
+		}
+		out.Recent = append(out.Recent, item)
+	}
+	return out, rows.Err()
 }
 
 func (s *Store) RecordingForMember(ctx context.Context, userID, recordingID string) (RecordingAsset, error) {

@@ -48,6 +48,20 @@
       "workforce": "员工",
       "rosterTitle": "完整运行状态",
       "autoRefresh": "每15秒自动刷新"
+    },
+    "simple": {
+      "eyebrow": "团队概览", "title": "今日团队", "subtitle": "{{name}} · 在同一页面查看员工、活跃时间和视频状态。",
+      "updated": "更新于 {{time}}", "allEmployees": "所有员工", "noBusiness": "添加第一位员工以创建团队。",
+      "overview": "今日概览", "online": "当前在线", "onlineHelp": "已连接应用的员工", "activeTime": "活跃工作时间", "activeTimeHelp": "今日活跃时间总计",
+      "videosReady": "视频已就绪", "needsReview": "需要检查", "lastSevenDays": "最近30天",
+      "teamTitle": "员工", "teamHelp": "查看连接状态和当前打开的应用", "noEmployees": "暂无员工。", "lastSeen": "上次连接 {{time}}"
+    },
+    "video": {
+      "title": "录制状态", "subtitle": "查看每段视频是否已保存到私有存储。", "error": "无法加载录制状态。",
+      "ready": "已就绪", "inProgress": "处理中", "failed": "失败", "stale": "{{count}} 段视频处理时间过长。",
+      "empty": "暂无录制尝试。", "unknownEmployee": "未知员工", "retention": "已就绪的视频会私密保存30天，之后自动删除。",
+      "status": { "pending": "正在开始", "recording": "录制中", "processing": "上传中", "ready": "已就绪", "failed": "失败" },
+      "failure": {"encoderFailed": "设备编码器无法启动", "captureFailed": "屏幕采集失败", "providerFailed": "视频服务不可用", "unknownFailed": "录制无法完成"}
     }
   },
   "employees": {

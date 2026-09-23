@@ -45,6 +45,7 @@ const (
 	// session actually is.
 	CodeInvalidState      = "MEDIA_INVALID_STATE"
 	CodeRecordingNotReady = "MEDIA_RECORDING_NOT_READY"
+	CodeRecordingExpired  = "MEDIA_RECORDING_EXPIRED"
 	// CodeProviderUnconfigured: no SFU is wired up yet (slice V05). Distinct
 	// from a provider error: nothing is broken, the feature is not deployed.
 	CodeProviderUnconfigured = "MEDIA_PROVIDER_UNCONFIGURED"

@@ -48,6 +48,20 @@
       "workforce": "Tenaga kerja",
       "rosterTitle": "Status operasional lengkap",
       "autoRefresh": "Diperbarui otomatis setiap 15 detik"
+    },
+    "simple": {
+      "eyebrow": "RINGKASAN TIM", "title": "Tim Anda hari ini", "subtitle": "{{name}} · karyawan, waktu aktif, dan status video dalam satu tempat.",
+      "updated": "Diperbarui {{time}}", "allEmployees": "Semua karyawan", "noBusiness": "Tambahkan karyawan pertama untuk membuat tim.",
+      "overview": "Ringkasan hari ini", "online": "Online sekarang", "onlineHelp": "Karyawan yang terhubung ke aplikasi", "activeTime": "Waktu kerja aktif", "activeTimeHelp": "Total waktu aktif hari ini",
+      "videosReady": "Video siap", "needsReview": "Perlu ditinjau", "lastSevenDays": "30 hari terakhir",
+      "teamTitle": "Karyawan", "teamHelp": "Siapa yang terhubung dan aplikasi yang sedang terbuka", "noEmployees": "Belum ada karyawan.", "lastSeen": "Terakhir terhubung {{time}}"
+    },
+    "video": {
+      "title": "Status rekaman", "subtitle": "Lihat apakah setiap video sampai ke penyimpanan privat.", "error": "Status rekaman tidak dapat dimuat.",
+      "ready": "Siap", "inProgress": "Diproses", "failed": "Gagal", "stale": "{{count}} video terlalu lama diproses.",
+      "empty": "Belum ada percobaan perekaman.", "unknownEmployee": "Karyawan tidak dikenal", "retention": "Video siap disimpan secara privat selama 30 hari lalu dihapus otomatis.",
+      "status": { "pending": "Memulai", "recording": "Merekam", "processing": "Mengunggah", "ready": "Siap", "failed": "Gagal" },
+      "failure": {"encoderFailed": "Encoder perangkat gagal dimulai", "captureFailed": "Gagal menangkap layar", "providerFailed": "Layanan video tidak tersedia", "unknownFailed": "Rekaman tidak dapat diselesaikan"}
     }
   },
   "employees": {

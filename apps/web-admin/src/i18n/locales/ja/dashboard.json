@@ -48,6 +48,20 @@
       "workforce": "従業員",
       "rosterTitle": "全体の稼働状況",
       "autoRefresh": "15秒ごとに自動更新"
+    },
+    "simple": {
+      "eyebrow": "チームの概要", "title": "今日のチーム", "subtitle": "{{name}} · 従業員、稼働時間、動画の状態を一画面で確認できます。",
+      "updated": "{{time}} に更新", "allEmployees": "全従業員", "noBusiness": "最初の従業員を追加してチームを作成してください。",
+      "overview": "今日の概要", "online": "現在オンライン", "onlineHelp": "アプリに接続中の従業員", "activeTime": "稼働時間", "activeTimeHelp": "今日のアクティブ時間の合計",
+      "videosReady": "準備完了の動画", "needsReview": "確認が必要", "lastSevenDays": "過去30日間",
+      "teamTitle": "従業員", "teamHelp": "接続状況と現在開いているアプリ", "noEmployees": "従業員はまだいません。", "lastSeen": "最終接続 {{time}}"
+    },
+    "video": {
+      "title": "録画の状態", "subtitle": "各動画が非公開ストレージに保存されたか確認できます。", "error": "録画の状態を読み込めませんでした。",
+      "ready": "準備完了", "inProgress": "処理中", "failed": "失敗", "stale": "{{count}} 件の動画の処理が長時間続いています。",
+      "empty": "録画の試行はまだありません。", "unknownEmployee": "不明な従業員", "retention": "準備完了の動画は非公開で30日間保存され、その後自動削除されます。",
+      "status": { "pending": "開始中", "recording": "録画中", "processing": "アップロード中", "ready": "準備完了", "failed": "失敗" },
+      "failure": {"encoderFailed": "端末のエンコーダーを開始できません", "captureFailed": "画面の取得に失敗しました", "providerFailed": "動画サービスを利用できません", "unknownFailed": "録画を完了できません"}
     }
   },
   "employees": {

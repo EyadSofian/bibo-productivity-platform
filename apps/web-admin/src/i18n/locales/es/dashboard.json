@@ -48,6 +48,20 @@
       "workforce": "Personal",
       "rosterTitle": "Estado operativo completo",
       "autoRefresh": "Actualización automática cada 15 segundos"
+    },
+    "simple": {
+      "eyebrow": "RESUMEN DEL EQUIPO", "title": "Tu equipo hoy", "subtitle": "{{name}} · personas, tiempo activo y estado de los vídeos en un solo lugar.",
+      "updated": "Actualizado a las {{time}}", "allEmployees": "Todos los empleados", "noBusiness": "Añade tu primer empleado para crear un equipo.",
+      "overview": "Resumen de hoy", "online": "Conectados ahora", "onlineHelp": "Empleados conectados a la aplicación", "activeTime": "Tiempo de trabajo activo", "activeTimeHelp": "Tiempo activo total de hoy",
+      "videosReady": "Vídeos listos", "needsReview": "Requieren revisión", "lastSevenDays": "Últimos 30 días",
+      "teamTitle": "Empleados", "teamHelp": "Quién está conectado y qué tiene abierto", "noEmployees": "Aún no hay empleados.", "lastSeen": "Última conexión {{time}}"
+    },
+    "video": {
+      "title": "Estado de las grabaciones", "subtitle": "Comprueba si cada vídeo llegó al almacenamiento privado.", "error": "No se pudo cargar el estado de las grabaciones.",
+      "ready": "Listos", "inProgress": "En curso", "failed": "Fallidos", "stale": "{{count}} vídeo(s) llevan demasiado tiempo procesándose.",
+      "empty": "Todavía no hay intentos de grabación.", "unknownEmployee": "Empleado desconocido", "retention": "Los vídeos listos se guardan de forma privada durante 30 días y luego se eliminan automáticamente.",
+      "status": { "pending": "Iniciando", "recording": "Grabando", "processing": "Subiendo", "ready": "Listo", "failed": "Fallido" },
+      "failure": {"encoderFailed": "No se pudo iniciar el codificador", "captureFailed": "Falló la captura de pantalla", "providerFailed": "Servicio de vídeo no disponible", "unknownFailed": "No se pudo completar la grabación"}
     }
   },
   "employees": {

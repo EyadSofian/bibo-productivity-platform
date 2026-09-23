@@ -1,310 +1,142 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Trans, useTranslation } from "react-i18next";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import { getRecordingSummary, type RecordingSummary } from "../api/media";
 import { reportEmployees } from "../api/endpoints";
 import type { ReportEmployee } from "../api/types";
 import { Empty, Notice, Spinner } from "../components/ui";
 import { fmtRelative } from "../format";
 import { useBusinesses } from "../useBusinesses";
-import { memberTerms } from "../terms";
-import { useAuth } from "../auth/AuthContext";
-
-function fmtClock(seconds: number): string {
-  const safe = Math.max(0, Math.floor(seconds || 0));
-  const hours = Math.floor(safe / 3600);
-  const minutes = Math.floor((safe % 3600) / 60);
-  return `${hours}:${String(minutes).padStart(2, "0")}`;
-}
+import "./Dashboard.css";
 
 type Status = "active" | "idle" | "offline";
 
-function memberStatus(lastSeen: number | null): Status {
-  if (!lastSeen) return "offline";
-  const ageSeconds = Date.now() / 1000 - lastSeen;
-  if (ageSeconds < 5 * 60) return "active";
-  if (ageSeconds < 30 * 60) return "idle";
+function rosterStatus(employee: ReportEmployee): Status {
+  if (employee.presence_state === "offline") return "offline";
+  if (employee.presence_state === "idle") return "idle";
+  if (employee.presence_state === "active" || employee.presence_state === "online") return "active";
   return "offline";
 }
 
-function rosterStatus(employee: ReportEmployee): Status {
-  if (employee.presence_state === "active" || employee.presence_state === "idle") {
-    return employee.presence_state;
-  }
-  return memberStatus(employee.last_seen);
+function duration(seconds: number): string {
+  const safe = Math.max(0, Math.floor(seconds || 0));
+  return `${Math.floor(safe / 3600)}:${String(Math.floor((safe % 3600) / 60)).padStart(2, "0")}`;
 }
 
 function initials(name: string): string {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?";
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "?";
 }
 
-function focusTone(percent: number | null): "good" | "watch" | "low" | "muted" {
-  if (percent == null) return "muted";
-  if (percent >= 75) return "good";
-  if (percent >= 55) return "watch";
-  return "low";
-}
-
-function Icon({ children }: { children: ReactNode }) {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      {children}
-    </svg>
-  );
-}
-
-const ClockIcon = <Icon><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></Icon>;
-const PeopleIcon = <Icon><circle cx="9" cy="8" r="3" /><path d="M3.5 19v-1.5A4.5 4.5 0 0 1 8 13h2a4.5 4.5 0 0 1 4.5 4.5V19M16 5.5a3 3 0 0 1 0 5.8M18 13.5a4 4 0 0 1 2.5 3.7V19" /></Icon>;
-const FocusIcon = <Icon><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 2v2M12 20v2M2 12h2M20 12h2" /></Icon>;
-const CameraIcon = <Icon><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" /><circle cx="12" cy="13" r="3" /></Icon>;
-const ArrowIcon = <Icon><path d="M5 12h13M13 7l5 5-5 5" /></Icon>;
-
-type Delta = { value: number; direction: "up" | "down" | "flat" };
-
-function delta(today: number, yesterday: number): Delta | null {
-  if (yesterday <= 0) return null;
-  const value = Math.round(Math.abs(((today - yesterday) / yesterday) * 100));
-  return { value, direction: today === yesterday ? "flat" : today > yesterday ? "up" : "down" };
-}
-
-function OpsMetric({
-  icon,
-  label,
-  value,
-  detail,
-  change,
-  tone,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: ReactNode;
-  detail: string;
-  change?: Delta | null;
-  tone: "ink" | "mint" | "amber" | "blue";
-}) {
-  return (
-    <article className={`ops-metric ops-metric--${tone}`}>
-      <div className="ops-metric__icon">{icon}</div>
-      <div className="ops-metric__copy">
-        <span>{label}</span>
-        <strong dir="ltr">{value}</strong>
-      </div>
-      <div className="ops-metric__foot">
-        <small>{detail}</small>
-        {change ? (
-          <span className={`ops-delta ops-delta--${change.direction}`} dir="ltr">
-            {change.direction === "up" ? "↗" : change.direction === "down" ? "↘" : "→"} {change.value}%
-          </span>
-        ) : null}
-      </div>
-    </article>
-  );
+function failureReason(code: string): string {
+  if (code === "ENCODER_FAILED") return "encoderFailed";
+  if (code === "CAPTURE_FAILED") return "captureFailed";
+  if (code === "ROOM_FAILED" || code === "PROVIDER_UNAVAILABLE") return "providerFailed";
+  return "unknownFailed";
 }
 
 export function Dashboard() {
-  const { t } = useTranslation("dashboard");
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { t, i18n } = useTranslation("dashboard");
   const { businesses, selected, selectedId, loading: businessLoading } = useBusinesses();
-  const terms = memberTerms(selected?.kind);
-  const [rows, setRows] = useState<ReportEmployee[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [employees, setEmployees] = useState<ReportEmployee[]>([]);
+  const [recordings, setRecordings] = useState<RecordingSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [rosterError, setRosterError] = useState(false);
+  const [videoError, setVideoError] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   useEffect(() => {
     if (!selectedId) {
-      setRows([]);
+      setEmployees([]); setRecordings(null); setLoading(false);
       return;
     }
     let cancelled = false;
-    const refresh = (initial = false) => {
-      if (initial) setLoading(true);
-      setError(null);
-      reportEmployees(selectedId)
-        .then((result) => {
-          if (cancelled) return;
-          setRows(result.employees);
-          setLastRefresh(new Date());
-        })
-        .catch(() => !cancelled && setError(t("dashboard.errorRoster")))
-        .finally(() => initial && !cancelled && setLoading(false));
+    let timer: number | undefined;
+    const refresh = async () => {
+      const [rosterResult, recordingResult] = await Promise.allSettled([
+        reportEmployees(selectedId), getRecordingSummary(selectedId),
+      ]);
+      if (cancelled) return;
+      if (rosterResult.status === "fulfilled") {
+        setEmployees(rosterResult.value.employees); setRosterError(false);
+      } else setRosterError(true);
+      if (recordingResult.status === "fulfilled") {
+        setRecordings(recordingResult.value.summary); setVideoError(false);
+      } else setVideoError(true);
+      setLastRefresh(new Date()); setLoading(false);
+      timer = window.setTimeout(refresh, 30_000);
     };
-    refresh(true);
-    const timer = window.setInterval(() => refresh(), 15_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [selectedId, t]);
+    setLoading(true); setEmployees([]); setRecordings(null);
+    void refresh();
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
+  }, [selectedId]);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const sorted = useMemo(() => {
+    const order: Record<Status, number> = { active: 0, idle: 1, offline: 2 };
+    return [...employees].sort((a, b) => order[rosterStatus(a)] - order[rosterStatus(b)] || a.display_name.localeCompare(b.display_name));
+  }, [employees]);
+  const online = employees.filter((employee) => rosterStatus(employee) !== "offline").length;
+  const activeTime = employees.reduce((sum, employee) => sum + employee.active_today_s, 0);
+  const needsReview = (recordings?.failed ?? 0) + (recordings?.stale ?? 0);
 
-  const metrics = useMemo(() => {
-    const totalRecorded = rows.reduce((sum, employee) => sum + employee.active_today_s, 0);
-    const totalYesterday = rows.reduce((sum, employee) => sum + employee.active_yesterday_s, 0);
-    const screenshots = rows.reduce((sum, employee) => sum + employee.screenshots_today, 0);
-    const screenshotsYesterday = rows.reduce((sum, employee) => sum + employee.screenshots_yesterday, 0);
-    const statuses = rows.map(rosterStatus);
-    const active = statuses.filter((status) => status === "active").length;
-    const idle = statuses.filter((status) => status === "idle").length;
-    const offline = statuses.filter((status) => status === "offline").length;
-    const focusValues = rows
-      .map((employee) => employee.focus_pct_today)
-      .filter((value): value is number => value != null);
-    const averageFocus = focusValues.length
-      ? Math.round(focusValues.reduce((sum, value) => sum + value, 0) / focusValues.length)
-      : null;
-    return { totalRecorded, totalYesterday, screenshots, screenshotsYesterday, active, idle, offline, averageFocus };
-  }, [rows]);
+  return <main className="ad-wrap ops-lite">
+    <header className="ops-lite__header">
+      <div><span className="ops-lite__eyebrow">{t("dashboard.simple.eyebrow")}</span><h1>{t("dashboard.simple.title")}</h1><p>{t("dashboard.simple.subtitle", { name: selected?.name ?? "Engosoft" })}</p></div>
+      <div className="ops-lite__header-actions">
+        <span className="ops-lite__refresh">{lastRefresh ? t("dashboard.simple.updated", { time: lastRefresh.toLocaleTimeString(i18n.language, { hour: "numeric", minute: "2-digit" }) }) : t("dashboard.loadingRoster")}</span>
+        <Link className="ops-lite__button" to="/employees">{t("dashboard.simple.allEmployees")} <span aria-hidden>→</span></Link>
+      </div>
+    </header>
 
-  const sortedRows = useMemo(() => {
-    const weight: Record<Status, number> = { active: 0, idle: 1, offline: 2 };
-    return [...rows].sort((a, b) => {
-      const stateOrder = weight[rosterStatus(a)] - weight[rosterStatus(b)];
-      return stateOrder || b.active_today_s - a.active_today_s;
-    });
-  }, [rows]);
+    {businessLoading || loading ? <Spinner label={t("dashboard.loadingRoster")} /> : null}
+    {!businessLoading && businesses.length === 0 ? <Empty>{t("dashboard.simple.noBusiness")}</Empty> : null}
+    {rosterError ? <Notice kind="danger">{t("dashboard.errorRoster")}</Notice> : null}
 
-  const maxActive = Math.max(1, ...rows.map((employee) => employee.active_today_s));
-  const onlineCount = metrics.active + metrics.idle;
-  const activeShare = rows.length ? Math.round((metrics.active / rows.length) * 100) : 0;
-  const idleShare = rows.length ? Math.round((metrics.idle / rows.length) * 100) : 0;
-  const offlineShare = Math.max(0, 100 - activeShare - idleShare);
+    {selectedId ? <>
+      <section className="ops-lite__metrics" aria-label={t("dashboard.simple.overview")}>
+        <div className="ops-lite__metric"><span>{t("dashboard.simple.online")}</span><strong>{online}<small> / {employees.length}</small></strong><p>{t("dashboard.simple.onlineHelp")}</p></div>
+        <div className="ops-lite__metric"><span>{t("dashboard.simple.activeTime")}</span><strong dir="ltr">{duration(activeTime)}</strong><p>{t("dashboard.simple.activeTimeHelp")}</p></div>
+        <div className="ops-lite__metric"><span>{t("dashboard.simple.videosReady")}</span><strong>{videoError ? "—" : recordings?.ready ?? 0}</strong><p>{t("dashboard.simple.lastSevenDays")}</p></div>
+        <div className={`ops-lite__metric${needsReview ? " ops-lite__metric--alert" : ""}`}><span>{t("dashboard.simple.needsReview")}</span><strong>{videoError ? "—" : needsReview}</strong><p>{t("dashboard.simple.lastSevenDays")}</p></div>
+      </section>
 
-  return (
-    <div className="ad-wrap ops-dashboard">
-      <header className="ops-hero">
-        <div className="ops-hero__copy">
-          <span className="ops-kicker"><i aria-hidden />{t("dashboard.ops.eyebrow")}</span>
-          <h1>{t("dashboard.ops.headline")}</h1>
-          <p>{t("dashboard.ops.subtitle", { name: selected?.name ?? "Engosoft", count: rows.length, members: terms.many })}</p>
-          <div className="ops-hero__actions">
-            <Link className="ops-action ops-action--primary" to="/employees">{t("dashboard.ops.openWorkforce")}{ArrowIcon}</Link>
-            <Link className="ops-action" to="/devices">{t("devices.title")}</Link>
-          </div>
-        </div>
-        <div className="ops-hero__signal" aria-label={t("dashboard.statRecorded")}>
-          <span>{t("dashboard.statRecorded")}</span>
-          <strong dir="ltr">{fmtClock(metrics.totalRecorded)}</strong>
-          <div className="ops-hero__signalbar"><i style={{ width: `${Math.min(100, rows.length ? (metrics.totalRecorded / (rows.length * 8 * 3600)) * 100 : 0)}%` }} /></div>
-          <small>{onlineCount} {t("dashboard.ops.reportingNow")} · {lastRefresh ? t("dashboard.ops.updatedNow") : t("dashboard.loadingRoster")}</small>
-        </div>
-      </header>
+      <div className="ops-lite__columns">
+        <section className="ops-lite__panel ops-lite__team">
+          <div className="ops-lite__panel-head"><div><h2>{t("dashboard.simple.teamTitle")}</h2><p>{t("dashboard.simple.teamHelp")}</p></div><Link to="/employees">{t("dashboard.ops.viewAll")}</Link></div>
+          {sorted.length === 0 && !loading && !rosterError ? <div className="ops-lite__empty">{t("dashboard.simple.noEmployees")}</div> : null}
+          <div className="ops-lite__people">{sorted.map((employee) => {
+            const status = rosterStatus(employee);
+            return <Link className="ops-lite__person" key={employee.id} to={`/employees/${employee.id}?business=${selectedId}`}>
+              <span className={`ops-lite__avatar ops-lite__avatar--${status}`}>{initials(employee.display_name)}</span>
+              <span className="ops-lite__person-name"><strong>{employee.display_name}</strong><small>{status === "offline" ? t("dashboard.simple.lastSeen", { time: fmtRelative(employee.last_seen) }) : employee.current_app || t("dashboard.noCurrentApp")}</small></span>
+              <span className={`ops-lite__status ops-lite__status--${status}`}>{t(`dashboard.states.${status}`)}</span>
+              <span className="ops-lite__time" dir="ltr">{duration(employee.active_today_s)}</span>
+            </Link>;
+          })}</div>
+        </section>
 
-      {businessLoading ? <Spinner label={t("dashboard.loadingBusinesses")} /> : null}
-      {!businessLoading && businesses.length === 0 ? (
-        <Empty>
-          <Trans i18nKey="dashboard.noBusinesses" t={t} values={{ members: terms.many, member: terms.lowerOne }} components={[<Link to="/employees" />]} />
-        </Empty>
-      ) : null}
-      {error ? <Notice kind="danger">{error}</Notice> : null}
-      {loading ? <Spinner label={t("dashboard.loadingRoster")} /> : null}
-      {!loading && !error && selectedId && rows.length === 0 ? <Empty>{t("dashboard.noActivity", { members: terms.lowerMany })}</Empty> : null}
-
-      {rows.length > 0 ? (
-        <>
-          <section className="ops-metrics" aria-label={t("dashboard.ops.overview")}>
-            <OpsMetric icon={ClockIcon} label={t("dashboard.statRecorded")} value={fmtClock(metrics.totalRecorded)} detail={t("dashboard.todayLabel")} change={delta(metrics.totalRecorded, metrics.totalYesterday)} tone="ink" />
-            <OpsMetric icon={PeopleIcon} label={t("dashboard.statActive")} value={`${onlineCount}/${rows.length}`} detail={t("dashboard.ops.activeIdle", { active: metrics.active, idle: metrics.idle })} tone="mint" />
-            <OpsMetric icon={FocusIcon} label={t("dashboard.statFocus")} value={metrics.averageFocus == null ? "—" : `${metrics.averageFocus}%`} detail={t("dashboard.todayLabel")} tone="amber" />
-            <OpsMetric icon={CameraIcon} label={t("dashboard.statScreenshots")} value={metrics.screenshots} detail={t("dashboard.todayLabel")} change={delta(metrics.screenshots, metrics.screenshotsYesterday)} tone="blue" />
-          </section>
-
-          <section className="ops-grid">
-            <article className="ops-panel ops-pulse">
-              <div className="ops-panel__head">
-                <div><span>{t("dashboard.ops.teamPulse")}</span><h2>{t("dashboard.ops.presenceMix")}</h2></div>
-                <small>{rows.length}</small>
-              </div>
-              <div className="ops-pulse__body">
-                <div className="ops-donut" style={{ background: `conic-gradient(var(--ops-mint) 0 ${activeShare}%, var(--ops-amber) ${activeShare}% ${activeShare + idleShare}%, var(--ops-offline) ${activeShare + idleShare}% 100%)` }}>
-                  <span><strong>{onlineCount}</strong><small>{t("dashboard.ops.online")}</small></span>
-                </div>
-                <div className="ops-legend">
-                  {(["active", "idle", "offline"] as const).map((status) => {
-                    const count = status === "active" ? metrics.active : status === "idle" ? metrics.idle : metrics.offline;
-                    const share = status === "active" ? activeShare : status === "idle" ? idleShare : offlineShare;
-                    return <div key={status} className={`ops-legend__row ops-legend__row--${status}`}><i aria-hidden /><span>{t(`dashboard.states.${status}`)}</span><strong>{count}</strong><small>{share}%</small></div>;
-                  })}
-                </div>
-              </div>
-            </article>
-
-            <article className="ops-panel ops-now">
-              <div className="ops-panel__head">
-                <div><span>{t("dashboard.ops.liveDesk")}</span><h2>{t("dashboard.table.currentNow")}</h2></div>
-                <Link to="/employees">{t("dashboard.ops.viewAll")}{ArrowIcon}</Link>
-              </div>
-              <div className="ops-now__list">
-                {sortedRows.slice(0, 5).map((employee) => {
-                  const status = rosterStatus(employee);
-                  const focus = employee.focus_pct_today;
-                  return (
-                    <button key={employee.id} type="button" className="ops-person" onClick={() => navigate(`/employees/${employee.id}?business=${selectedId}`)}>
-                      <span className={`ops-avatar ops-avatar--${status}`}>{initials(employee.display_name)}<i aria-hidden /></span>
-                      <span className="ops-person__identity"><strong>{employee.display_name}</strong><small>{employee.current_window_title || employee.current_app || t("dashboard.noCurrentApp")}</small></span>
-                      <span className="ops-person__app"><strong>{employee.current_app || t(`dashboard.states.${status}`)}</strong><small>{status === "offline" ? fmtRelative(employee.last_seen) : t(`dashboard.states.${status}`)}</small></span>
-                      <span className={`ops-focus ops-focus--${focusTone(focus)}`}><strong>{focus == null ? "—" : `${focus}%`}</strong><small>{t("dashboard.table.focus")}</small></span>
-                      <span className="ops-chevron">{ArrowIcon}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </article>
-          </section>
-
-          <section className="ops-panel ops-roster">
-            <div className="ops-panel__head ops-roster__head">
-              <div><span>{t("dashboard.ops.workforce")}</span><h2>{t("dashboard.ops.rosterTitle")}</h2></div>
-              <small>{t("dashboard.ops.autoRefresh")}</small>
+        <section className="ops-lite__panel ops-lite__videos">
+          <div className="ops-lite__panel-head"><div><h2>{t("dashboard.video.title")}</h2><p>{t("dashboard.video.subtitle")}</p></div></div>
+          {videoError ? <Notice kind="danger">{t("dashboard.video.error")}</Notice> : null}
+          {recordings ? <>
+            <div className="ops-lite__video-totals">
+              <span>{t("dashboard.video.ready")}: <strong>{recordings.ready}</strong></span>
+              <span>{t("dashboard.video.inProgress")}: <strong>{recordings.recording + recordings.processing}</strong></span>
+              <span className={recordings.failed ? "ops-lite__danger" : ""}>{t("dashboard.video.failed")}: <strong>{recordings.failed}</strong></span>
             </div>
-            <div className="ops-roster__scroll">
-              <table>
-                <thead><tr><th>{t("dashboard.table.name")}</th><th>{t("dashboard.table.currentNow")}</th><th>{t("dashboard.table.onlineFor")}</th><th>{t("dashboard.table.activeToday")}</th><th>{t("dashboard.table.focus")}</th><th aria-label={t("dashboard.view")} /></tr></thead>
-                <tbody>
-                  {sortedRows.map((employee) => {
-                    const status = rosterStatus(employee);
-                    const isSelf = employee.role === "owner" || employee.id === user?.id;
-                    const focus = employee.focus_pct_today;
-                    const activeWidth = (employee.active_today_s / maxActive) * 100;
-                    return (
-                      <tr key={employee.id} onClick={() => navigate(`/employees/${employee.id}?business=${selectedId}`)}>
-                        <td><div className="ops-name"><span className={`ops-avatar ops-avatar--${status}`}>{initials(employee.display_name)}<i aria-hidden /></span><span><strong>{employee.display_name}{isSelf ? <em>{t("dashboard.selfBadge")}</em> : null}</strong><small>{employee.email || employee.username}</small></span></div></td>
-                        <td><div className="ops-current"><span className={`ops-state ops-state--${status}`}>{t(`dashboard.states.${status}`)}</span><strong>{employee.current_app || t("dashboard.noCurrentApp")}</strong><small title={employee.current_window_title ?? undefined}>{employee.current_window_title || "—"}</small></div></td>
-                        <td className="ops-mono">{employee.session_started_at && status !== "offline" ? <bdi dir="ltr">{fmtClock(now - employee.session_started_at)}</bdi> : fmtRelative(employee.last_seen)}</td>
-                        <td><div className="ops-activebar"><strong dir="ltr">{fmtClock(employee.active_today_s)}</strong><span><i style={{ width: `${activeWidth}%` }} /></span></div></td>
-                        <td><span className={`ops-focus ops-focus--${focusTone(focus)}`}><strong>{focus == null ? "—" : `${focus}%`}</strong></span></td>
-                        <td>
-                          <button
-                            type="button"
-                            className="ops-rowlink"
-                            aria-label={`${t("dashboard.view")} ${employee.display_name}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              navigate(`/employees/${employee.id}?business=${selectedId}`);
-                            }}
-                          >
-                            <span className="ops-table-arrow">{ArrowIcon}</span>
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </>
-      ) : null}
-    </div>
-  );
+            {recordings.stale > 0 ? <p className="ops-lite__video-alert">{t("dashboard.video.stale", { count: recordings.stale })}</p> : null}
+            <div className="ops-lite__video-list">{recordings.recent.length === 0 ? <p className="ops-lite__empty">{t("dashboard.video.empty")}</p> : recordings.recent.map((item) => {
+              const seek = Math.floor(Date.parse(item.started_at) / 1000);
+              const size = item.status === "ready" ? ` · ${(item.byte_size / (1024 * 1024)).toFixed(1)} MB` : "";
+              return <Link key={item.id} className="ops-lite__video-item" to={item.employee_id ? `/employees/${item.employee_id}?business=${selectedId}&tab=playback&at=${seek}` : "/employees"}>
+                <span className={`ops-lite__video-dot ops-lite__video-dot--${item.status}`} aria-hidden />
+                <span className="ops-lite__video-copy"><strong>{item.employee_name || t("dashboard.video.unknownEmployee")}</strong><small>{new Date(item.started_at).toLocaleString(i18n.language, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}{size}{item.status === "failed" ? ` · ${t(`dashboard.video.failure.${failureReason(item.failure_code)}`)}` : ""}</small></span>
+                <span className={`ops-lite__video-state ops-lite__video-state--${item.status}`}>{t(`dashboard.video.status.${item.status}`)}</span>
+              </Link>;
+            })}</div>
+            <p className="ops-lite__retention">{t("dashboard.video.retention")}</p>
+          </> : null}
+        </section>
+      </div>
+    </> : null}
+  </main>;
 }

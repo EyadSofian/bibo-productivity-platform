@@ -99,6 +99,7 @@ func newMediaEnv(t *testing.T) *mediaEnv {
 	})
 	r.POST("/v1/devices/:device_id/media/live", h.StartLive)
 	r.GET("/v1/employees/:employee_id/recordings", h.ListRecordings)
+	r.GET("/v1/businesses/:id/recordings/summary", h.RecordingSummary)
 	r.GET("/v1/recordings/:recording_id", h.Recording)
 	r.POST("/v1/recordings/:recording_id/playback-token", h.PlaybackToken)
 	r.GET("/v1/media/agent/session", h.AgentSession)
@@ -892,6 +893,156 @@ func TestRecordingListReconcilesACompletedObject(t *testing.T) {
 	got := items[0].(map[string]any)
 	if got["status"] != "ready" || got["byte_size"] != float64(1024) {
 		t.Fatalf("reconciled recording = %v", got)
+	}
+}
+
+func TestRecordingMaintenanceRecoversMissingAndDeletesExpiredObjects(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	session, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key := "tenant/test/recovery.mp4"
+	asset, err := e.store.CreateRecordingAsset(e.ctx, session, key, "s3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ProcessRecordingAsset(e.ctx, asset.ID, time.Now().UTC().Add(-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	e.provider.MissingAssets[key] = true
+	e.handler.sweepRecordingAssets(e.ctx)
+	asset, err = e.store.RecordingAssetForSession(e.ctx, sessionID)
+	if err != nil || asset.Status != "failed" {
+		t.Fatalf("recovered missing object: status=%q err=%v", asset.Status, err)
+	}
+	if asset.RetentionUntil == nil {
+		t.Fatal("failed asset has no retention deadline")
+	}
+
+	// A late object is recoverable before expiry; expiry deletes bytes first and
+	// only then marks metadata deleted.
+	e.provider.MissingAssets[key] = false
+	if err := e.store.ReadyRecordingAsset(e.ctx, asset.ID, 1024); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(e.ctx, `UPDATE recording_assets SET retention_until=now()-interval '1 minute' WHERE id=$1`, asset.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.handler.sweepRecordingAssets(e.ctx)
+	asset, err = e.store.RecordingAssetForSession(e.ctx, sessionID)
+	if err != nil || asset.Status != "deleted" {
+		t.Fatalf("expired asset: status=%q err=%v", asset.Status, err)
+	}
+	if len(e.provider.DeletedAssets) != 1 || e.provider.DeletedAssets[0] != key {
+		t.Fatalf("deleted objects = %v", e.provider.DeletedAssets)
+	}
+}
+
+func TestRecordingSummaryIsTenantScopedAndShowsUploadStatus(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	session, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset, err := e.store.CreateRecordingAsset(e.ctx, session, "tenant/test/summary.mp4", "s3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ProcessRecordingAsset(e.ctx, asset.ID, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ReadyRecordingAsset(e.ctx, asset.ID, 1024); err != nil {
+		t.Fatal(err)
+	}
+	path := "/v1/businesses/" + e.businessID + "/recordings/summary"
+	if rec, _ := e.call(t, http.MethodGet, path, e.employeeID); rec.Code != http.StatusForbidden {
+		t.Fatalf("employee summary status = %d", rec.Code)
+	}
+	if rec, _ := e.call(t, http.MethodGet, path, e.intruderID); rec.Code != http.StatusForbidden {
+		t.Fatalf("other tenant summary status = %d", rec.Code)
+	}
+	rec, body := e.call(t, http.MethodGet, path, e.ownerID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("owner summary = %d %v", rec.Code, body)
+	}
+	summary := body["summary"].(map[string]any)
+	if summary["ready"] != float64(1) || summary["failed"] != float64(0) {
+		t.Fatalf("summary counts = %v", summary)
+	}
+	recent := summary["recent"].([]any)[0].(map[string]any)
+	if recent["byte_size"] != float64(1024) || recent["retention_until"] == nil {
+		t.Fatalf("recent upload metadata = %v", recent)
+	}
+	if _, leaked := recent["manifest_key"]; leaked {
+		t.Fatal("private object key leaked")
+	}
+}
+
+func TestExpiredRecordingCannotMintPlaybackToken(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	session, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	asset, err := e.store.CreateRecordingAsset(e.ctx, session, "tenant/test/expired.mp4", "s3")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ProcessRecordingAsset(e.ctx, asset.ID, time.Now().UTC()); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.ReadyRecordingAsset(e.ctx, asset.ID, 1024); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(e.ctx, `UPDATE recording_assets SET retention_until=now()-interval '1 minute' WHERE id=$1`, asset.ID); err != nil {
+		t.Fatal(err)
+	}
+	rec, body := e.call(t, http.MethodPost, "/v1/recordings/"+asset.ID+"/playback-token", e.ownerID)
+	if rec.Code != http.StatusGone {
+		t.Fatalf("expired playback status = %d, body = %v", rec.Code, body)
+	}
+	if code := errorBody(t, body)["code"]; code != CodeRecordingExpired {
+		t.Fatalf("code = %v", code)
+	}
+}
+
+func TestEncoderFailureCooldownPreventsRecordingRetryStorm(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID, Name: "Recorded workday",
+		Details: []store.MonitoringDetail{{TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC"}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rec, body := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("first recording = %d %v", rec.Code, body)
+	}
+	sessionID := body["session_id"].(string)
+	if rec, body = e.reportState(t, sessionID, e.employeeID,
+		`{"state":"failed","failure_code":"ENCODER_FAILED"}`); rec.Code != http.StatusOK {
+		t.Fatalf("report encoder failure = %d %v", rec.Code, body)
+	}
+	var sessionsBefore int
+	if err := e.pool.QueryRow(e.ctx, `SELECT count(*) FROM media_sessions WHERE device_id=$1 AND kind='recording'`, e.deviceID).Scan(&sessionsBefore); err != nil {
+		t.Fatal(err)
+	}
+	if rec, body = e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID); rec.Code != http.StatusNoContent {
+		t.Fatalf("cooldown status = %d %v", rec.Code, body)
+	}
+	var sessionsAfter int
+	if err := e.pool.QueryRow(e.ctx, `SELECT count(*) FROM media_sessions WHERE device_id=$1 AND kind='recording'`, e.deviceID).Scan(&sessionsAfter); err != nil {
+		t.Fatal(err)
+	}
+	if sessionsAfter != sessionsBefore {
+		t.Fatalf("recording sessions: before %d, after %d", sessionsBefore, sessionsAfter)
 	}
 }
 

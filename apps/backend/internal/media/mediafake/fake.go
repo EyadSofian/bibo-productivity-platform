@@ -32,6 +32,10 @@ type Provider struct {
 	Recordings map[string]media.RecordingRequest
 	// StoppedRecordings names every recording StopRecording was called on.
 	StoppedRecordings []string
+	DeletedAssets     []string
+	MissingAssets     map[string]bool
+	FailDeleteAsset   error
+	FailVerifyAsset   error
 
 	// FailCreateRoom, when set, is returned by CreateRoom. Lets a test drive the
 	// ROOM_FAILED path without inventing a broken provider.
@@ -53,10 +57,11 @@ type Provider struct {
 func New() *Provider {
 	base := time.Now().UTC().Truncate(time.Second)
 	return &Provider{
-		Rooms:      map[string]media.Room{},
-		Recordings: map[string]media.RecordingRequest{},
-		now:        func() time.Time { return base },
-		name:       "fake",
+		Rooms:         map[string]media.Room{},
+		Recordings:    map[string]media.RecordingRequest{},
+		MissingAssets: map[string]bool{},
+		now:           func() time.Time { return base },
+		name:          "fake",
 	}
 }
 
@@ -160,9 +165,26 @@ func (p *Provider) SignManifest(_ context.Context, assetID string, ttl time.Dura
 	}, nil
 }
 
-func (p *Provider) DeleteAsset(_ context.Context, _ string) error { return nil }
+func (p *Provider) DeleteAsset(_ context.Context, key string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.FailDeleteAsset != nil {
+		return p.FailDeleteAsset
+	}
+	p.DeletedAssets = append(p.DeletedAssets, key)
+	p.MissingAssets[key] = true
+	return nil
+}
 
-func (p *Provider) VerifyAsset(_ context.Context, _ string) (media.AssetVerification, error) {
+func (p *Provider) VerifyAsset(_ context.Context, key string) (media.AssetVerification, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.FailVerifyAsset != nil {
+		return media.AssetVerification{}, p.FailVerifyAsset
+	}
+	if p.MissingAssets[key] {
+		return media.AssetVerification{Exists: false}, nil
+	}
 	return media.AssetVerification{Exists: true, ByteSize: 1024}, nil
 }
 

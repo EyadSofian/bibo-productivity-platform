@@ -48,6 +48,20 @@
       "workforce": "Équipe",
       "rosterTitle": "État opérationnel complet",
       "autoRefresh": "Actualisation automatique toutes les 15 secondes"
+    },
+    "simple": {
+      "eyebrow": "VUE DE L’ÉQUIPE", "title": "Votre équipe aujourd’hui", "subtitle": "{{name}} · employés, temps actif et état des vidéos au même endroit.",
+      "updated": "Mis à jour à {{time}}", "allEmployees": "Tous les employés", "noBusiness": "Ajoutez votre premier employé pour créer une équipe.",
+      "overview": "Vue du jour", "online": "Connectés maintenant", "onlineHelp": "Employés connectés à l’application", "activeTime": "Temps de travail actif", "activeTimeHelp": "Temps actif cumulé aujourd’hui",
+      "videosReady": "Vidéos prêtes", "needsReview": "À vérifier", "lastSevenDays": "30 derniers jours",
+      "teamTitle": "Employés", "teamHelp": "Qui est connecté et quelle application est ouverte", "noEmployees": "Aucun employé pour le moment.", "lastSeen": "Dernière connexion {{time}}"
+    },
+    "video": {
+      "title": "État des enregistrements", "subtitle": "Vérifiez si chaque vidéo a atteint le stockage privé.", "error": "Impossible de charger l’état des enregistrements.",
+      "ready": "Prêtes", "inProgress": "En cours", "failed": "Échecs", "stale": "{{count}} vidéo(s) sont en traitement depuis trop longtemps.",
+      "empty": "Aucune tentative d’enregistrement.", "unknownEmployee": "Employé inconnu", "retention": "Les vidéos prêtes sont conservées 30 jours en privé, puis supprimées automatiquement.",
+      "status": { "pending": "Démarrage", "recording": "Enregistrement", "processing": "Envoi", "ready": "Prête", "failed": "Échec" },
+      "failure": {"encoderFailed": "L’encodeur de l’appareil n’a pas démarré", "captureFailed": "Échec de la capture d’écran", "providerFailed": "Service vidéo indisponible", "unknownFailed": "L’enregistrement n’a pas pu se terminer"}
     }
   },
   "employees": {
