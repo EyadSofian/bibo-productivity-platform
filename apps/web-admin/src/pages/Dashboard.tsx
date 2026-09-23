@@ -127,11 +127,14 @@ export function Dashboard() {
             <div className="ops-lite__video-list">{recordings.recent.length === 0 ? <p className="ops-lite__empty">{t("dashboard.video.empty")}</p> : recordings.recent.map((item) => {
               const seek = Math.floor(Date.parse(item.started_at) / 1000);
               const size = item.status === "ready" ? ` · ${(item.byte_size / (1024 * 1024)).toFixed(1)} MB` : "";
-              return <Link key={item.id} className="ops-lite__video-item" to={item.employee_id ? `/employees/${item.employee_id}?business=${selectedId}&tab=playback&at=${seek}` : "/employees"}>
+              const contents = <>
                 <span className={`ops-lite__video-dot ops-lite__video-dot--${item.status}`} aria-hidden />
                 <span className="ops-lite__video-copy"><strong>{item.employee_name || t("dashboard.video.unknownEmployee")}</strong><small>{new Date(item.started_at).toLocaleString(i18n.language, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}{size}{item.status === "failed" ? ` · ${t(`dashboard.video.failure.${failureReason(item.failure_code)}`)}` : ""}</small></span>
                 <span className={`ops-lite__video-state ops-lite__video-state--${item.status}`}>{t(`dashboard.video.status.${item.status}`)}</span>
-              </Link>;
+              </>;
+              return item.status === "ready" && item.employee_id
+                ? <Link key={item.id} className="ops-lite__video-item" to={`/employees/${item.employee_id}?business=${selectedId}&tab=playback&at=${seek}`}>{contents}</Link>
+                : <div key={item.id} className="ops-lite__video-item">{contents}</div>;
             })}</div>
             <p className="ops-lite__retention">{t("dashboard.video.retention")}</p>
           </> : null}
