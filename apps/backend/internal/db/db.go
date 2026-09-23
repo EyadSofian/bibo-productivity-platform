@@ -47,6 +47,20 @@ func Migrate(dsn string) error {
 		return fmt.Errorf("open sql db for migrations: %w", err)
 	}
 	defer sqlDB.Close()
+	// Multiple app replicas (and concurrent test binaries) can start together.
+	// Goose's version check is not itself a cross-process migration lock.
+	lockConn, err := sqlDB.Conn(context.Background())
+	if err != nil {
+		return fmt.Errorf("connect for migration lock: %w", err)
+	}
+	defer lockConn.Close()
+	const migrationLockID int64 = 0x62_69_62_6F // "bibo"
+	if _, err := lockConn.ExecContext(context.Background(), `SELECT pg_advisory_lock($1)`, migrationLockID); err != nil {
+		return fmt.Errorf("lock migrations: %w", err)
+	}
+	defer func() {
+		_, _ = lockConn.ExecContext(context.Background(), `SELECT pg_advisory_unlock($1)`, migrationLockID)
+	}()
 
 	goose.SetBaseFS(migrationsFS)
 	if err := goose.SetDialect("postgres"); err != nil {

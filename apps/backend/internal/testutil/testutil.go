@@ -25,9 +25,11 @@ const batchLockID = 0x62_74_72_6B // "btrk"
 const lockWait = 60 * time.Second
 
 var (
-	initOnce sync.Once
-	shared   *pgxpool.Pool
-	initErr  error
+	initOnce    sync.Once
+	migrateOnce sync.Once
+	shared      *pgxpool.Pool
+	initErr     error
+	migrateErr  error
 )
 
 // Pool returns a migrated, empty database. Every table is truncated before the
@@ -46,9 +48,6 @@ func Pool(t *testing.T) *pgxpool.Pool {
 	}
 
 	initOnce.Do(func() {
-		if initErr = db.Migrate(dsn); initErr != nil {
-			return
-		}
 		shared, initErr = db.Connect(context.Background(), dsn)
 	})
 	if initErr != nil {
@@ -56,6 +55,13 @@ func Pool(t *testing.T) *pgxpool.Pool {
 	}
 
 	lock(t, shared)
+	// The database rollback test holds this same lock while changing schema.
+	// Taking it before migrations prevents a second package from migrating a
+	// half-rolled-back schema while `go test ./...` runs packages concurrently.
+	migrateOnce.Do(func() { migrateErr = db.Migrate(dsn) })
+	if migrateErr != nil {
+		t.Fatalf("migrate test database: %v", migrateErr)
+	}
 	truncateAll(t, shared)
 	return shared
 }
