@@ -38,6 +38,9 @@ type Provider struct {
 	FailCreateRoom error
 	// FailMintToken, when set, is returned by both token minters.
 	FailMintToken error
+	// FailStartRecording simulates a provider quota or capacity rejection after
+	// the publisher is already live.
+	FailStartRecording error
 
 	now  func() time.Time
 	seq  int
@@ -132,6 +135,9 @@ func (p *Provider) MintSubscriberToken(_ context.Context, req media.SubscriberTo
 func (p *Provider) StartRecording(_ context.Context, req media.RecordingRequest) (media.RecordingJob, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+	if p.FailStartRecording != nil {
+		return media.RecordingJob{}, p.FailStartRecording
+	}
 	p.seq++
 	id := "fake-recording-" + req.AssetID
 	p.Recordings[id] = req

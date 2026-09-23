@@ -37,6 +37,12 @@ type MediaHandler struct {
 const recordingChunkDuration = 5 * time.Minute
 const recordingFinalizeDeadline = 45 * time.Minute
 
+// Provider failures are normally quota or regional-capacity failures. Retrying
+// on every one-second agent poll only creates failed rows and extra rooms; a
+// bounded cooldown keeps telemetry healthy while still recovering without an
+// operator after a transient outage or a plan upgrade.
+const recordingProviderRetryCooldown = 15 * time.Minute
+
 // NewMediaHandler wires the control plane.
 func NewMediaHandler(s *store.Store, provider media.MediaProvider, recordings media.RecordingStore, tokenTTL time.Duration) *MediaHandler {
 	return &MediaHandler{
@@ -172,6 +178,16 @@ func (h *MediaHandler) openScheduledRecording(c *gin.Context, userID, deviceID s
 	}
 	target, err := h.store.MediaDeviceTargetFor(c.Request.Context(), userID, deviceID)
 	if err != nil || !target.MonitoringEnabled || target.EmployeeID == "" {
+		return store.MediaSession{}, store.ErrNotFound
+	}
+	providerCoolingDown, err := h.store.RecentRecordingProviderFailure(
+		c.Request.Context(), target.BusinessID, target.DeviceID,
+		time.Now().UTC().Add(-recordingProviderRetryCooldown),
+	)
+	if err != nil {
+		return store.MediaSession{}, err
+	}
+	if providerCoolingDown {
 		return store.MediaSession{}, store.ErrNotFound
 	}
 	session, created, err := h.store.OpenMediaSession(c.Request.Context(), store.NewMediaSession{
@@ -605,7 +621,7 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 	if to == media.StateLive && updated.Kind == media.KindRecording {
 		if err := h.startRecording(c, updated); err != nil {
 			_ = h.provider.EndRoom(c.Request.Context(), updated.ProviderRoomID)
-			_, _ = h.store.AdvanceMediaSession(c.Request.Context(), updated.ID, media.StateFailed, media.FailEncoderFailed)
+			_, _ = h.store.AdvanceMediaSession(c.Request.Context(), updated.ID, media.StateFailed, media.FailProviderUnavailable)
 			h.providerError(c, err)
 			return
 		}
@@ -835,7 +851,13 @@ func (h *MediaHandler) providerError(c *gin.Context, err error) {
 			"Live video is not available on this deployment yet.", false)
 		return
 	}
-	mediaInternal(c, err)
+	obs.Error("media provider error",
+		"err", err,
+		"path", c.FullPath(),
+		"method", c.Request.Method,
+		"request_id", requestIDFor(c))
+	mediaError(c, http.StatusServiceUnavailable, CodeProviderError,
+		"The video provider is temporarily unavailable. Recording will retry later.", true)
 }
 
 // failSession marks a session failed on a best-effort basis. The caller is

@@ -57,6 +57,11 @@ const (
 	// FailEncoderFailed: the agent could not encode, including a hardware
 	// encoder that disappeared mid-session.
 	FailEncoderFailed FailureCode = "ENCODER_FAILED"
+	// FailProviderUnavailable: the managed recorder rejected or could not start
+	// an egress job. Keep this distinct from ENCODER_FAILED: the latter is a
+	// device problem, while retrying a provider quota/capacity failure every
+	// second creates a session storm without producing video.
+	FailProviderUnavailable FailureCode = "PROVIDER_UNAVAILABLE"
 	// FailRoomFailed: the provider rejected or lost the room.
 	FailRoomFailed FailureCode = "ROOM_FAILED"
 	// FailTimeout: a state was held longer than its budget without progressing.
@@ -67,7 +72,7 @@ const (
 // UI copy. A code the UI has no message for is a bug the tests catch here.
 var AllFailureCodes = []FailureCode{
 	FailDeniedByPolicy, FailAgentOffline, FailTokenExpired, FailICEFailed,
-	FailCaptureFailed, FailEncoderFailed, FailRoomFailed, FailTimeout,
+	FailCaptureFailed, FailEncoderFailed, FailProviderUnavailable, FailRoomFailed, FailTimeout,
 }
 
 // ValidFailureCode reports whether code is one the contract defines.

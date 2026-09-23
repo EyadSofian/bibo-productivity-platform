@@ -191,6 +191,26 @@ func (s *Store) OpenMediaSession(ctx context.Context, in NewMediaSession) (Media
 	return created, true, nil
 }
 
+// RecentRecordingProviderFailure reports whether the recorder failed recently
+// for this exact tenant/device. The scheduled recorder calls this before opening
+// another room so a provider quota or capacity failure cannot turn the agent's
+// one-second poll into dozens of failed sessions.
+func (s *Store) RecentRecordingProviderFailure(ctx context.Context, businessID, deviceID string, since time.Time) (bool, error) {
+	var recent bool
+	err := s.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			  FROM media_sessions
+			 WHERE business_id = $1
+			   AND device_id = $2
+			   AND kind = 'recording'
+			   AND state = 'failed'
+			   AND failure_code = $3
+			   AND ended_at >= $4
+		)`, businessID, deviceID, media.FailProviderUnavailable, since).Scan(&recent)
+	return recent, err
+}
+
 func (s *Store) openMediaSessionFor(ctx context.Context, deviceID string, kind media.Kind) (MediaSession, error) {
 	row := s.pool.QueryRow(ctx, `
 		SELECT`+mediaSessionColumns+`

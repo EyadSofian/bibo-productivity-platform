@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -726,6 +727,56 @@ func TestRecordingPolicyStartsEgressAndLiveViewerSharesItsRoom(t *testing.T) {
 	joined := liveBody["session"].(map[string]any)
 	if joined["id"] != sessionID {
 		t.Fatalf("live opened %v instead of sharing recording %s", joined["id"], sessionID)
+	}
+}
+
+func TestRecordingProviderFailureUsesCooldownInsteadOfRetryStorm(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Recorded workday",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	e.provider.FailStartRecording = errors.New("provider quota exhausted")
+	rec, body := e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("scheduled session: status %d body %v", rec.Code, body)
+	}
+	sessionID := body["session_id"].(string)
+	if rec, _ = e.call(t, http.MethodPost, "/v1/media/sessions/"+sessionID+"/publisher-token", e.employeeID); rec.Code != http.StatusOK {
+		t.Fatalf("publisher token: status %d", rec.Code)
+	}
+	rec, body = e.reportState(t, sessionID, e.employeeID,
+		`{"state":"live","track":{"source":"screen","codec":"h264","width":1280,"height":720,"nominal_fps":15}}`)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("provider failure: status %d body %v", rec.Code, body)
+	}
+	if code := errorBody(t, body)["code"]; code != CodeProviderError {
+		t.Fatalf("provider failure code = %v, want %s", code, CodeProviderError)
+	}
+	failed, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, sessionID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if failed.FailureCode != string(media.FailProviderUnavailable) {
+		t.Fatalf("failure_code = %q, want %q", failed.FailureCode, media.FailProviderUnavailable)
+	}
+
+	roomsBefore := e.provider.RoomCount()
+	rec, body = e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("cooldown poll: status %d body %v", rec.Code, body)
+	}
+	if got := e.provider.RoomCount(); got != roomsBefore {
+		t.Fatalf("cooldown created another room: before=%d after=%d", roomsBefore, got)
 	}
 }
 
