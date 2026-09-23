@@ -114,8 +114,9 @@ sidecar must never outlive the agent and keep capturing.
   `agent_ipc::tests::no_event_variant_can_carry_a_token`.
 - **No files written.** No JPEG/PNG/WebP, no frame dumps, no scratch images. Frames go
   to a sink and are dropped.
-- **Interactive session only.** No service mode, no hidden capture. The cursor is
-  captured and the app shows a persistent monitoring indicator.
+- **Interactive session only.** No service mode. DXGI avoids the Windows yellow
+  capture border; the cursor is composited into the stream and the app exposes a
+  monitoring status and local stop control.
 - **Immediate stop.** `stop()` is checked before every frame is delivered, so session
   end, policy stop and emergency stop all take effect at once. Verified under the
   500ms budget by `capture_delivers_frames_and_stops_promptly`.

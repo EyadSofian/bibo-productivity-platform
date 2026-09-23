@@ -270,16 +270,16 @@ mod tests {
     use super::*;
     use crate::metrics::{EncoderKind, Metrics};
 
-    /// A Start command that says nothing about the indicator must NOT be read as
-    /// permission to hide the OS capture border. Capture becoming quieter through
-    /// a missing field is exactly the failure this default exists to prevent.
+    /// Old agents omit this compatibility field. The DXGI capture backend does
+    /// not draw an operating-system border, so omission must keep deserializing
+    /// without changing the rest of the shipping capture profile.
     #[test]
-    fn a_start_without_the_indicator_flag_keeps_the_os_capture_border() {
+    fn a_start_without_the_compatibility_indicator_field_still_parses() {
         let cfg: PublishConfig =
             serde_json::from_str(r#"{"url":"wss://x","token":"t","room":"r"}"#).unwrap();
         assert!(
             !cfg.indicator_shown,
-            "missing indicator_shown must default to false, i.e. keep the border"
+            "missing indicator_shown must keep its backwards-compatible default"
         );
     }
 
