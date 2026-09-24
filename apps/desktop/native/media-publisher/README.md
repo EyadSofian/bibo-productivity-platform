@@ -24,7 +24,7 @@ sensitive to backend behaviour.
 | Component | Version | Why pinned |
 |---|---|---|
 | `windows-capture` | **2.0.1** | benchmark and monitor enumeration |
-| `windows` | **0.62** | Microsoft's official Win32 bindings (GDI, process timing) |
+| `windows` | **0.62** | Microsoft's official Win32 bindings (process timing) |
 | Rust toolchain | **stable-x86_64-pc-windows-msvc** | MSVC only. The GNU toolchain cannot link the Tauri test cdylib (`ld: export ordinal too large`) |
 | MSVC | 14.44.35207 | verified build machine |
 | Windows SDK | 10.0.22621 / 10.0.26100 | verified build machine |
@@ -72,7 +72,7 @@ media-publisher --selftest                                     # local capture c
 connects to nothing — it exists to verify the capture path on a machine with no
 backend.
 
-A successful GDI selftest reports frames at no more than five fps, in this shape:
+A successful Windows Graphics Capture selftest reports frames at the configured rate, in this shape:
 
 ```json
 {"event":"selftest_done","metrics":{"frames_captured":15,"width":1920,"height":1080,

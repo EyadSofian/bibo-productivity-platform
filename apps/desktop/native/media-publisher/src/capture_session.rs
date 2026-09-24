@@ -1,40 +1,42 @@
-//! Borderless desktop capture through the Windows GDI desktop surface.
+//! Screen capture through Windows Graphics Capture.
 //!
-//! Windows Graphics Capture draws a coloured privacy border unless a packaged
-//! application has requested the restricted borderless capability. The shipping
-//! agent is installed through MSI/NSIS, so it copies the interactive desktop
-//! surface directly. This also avoids a DXGI initialisation hang that Windows can
-//! leave behind immediately after sleep or a graphics-driver reset. The desktop
-//! app still exposes its own monitoring state and local stop control.
+//! It is the resilient path after Windows sleep or display-driver recovery. Windows
+//! shows its own yellow privacy border while the screen is shared.
+//!
+//! Properties this module guarantees:
+//!
+//! - Runs in the **interactive user session**. There is no service mode and no hidden
+//!   capture path (ADR 0002, invariant 6).
+//! - The **cursor is captured**, because the operator must see what the person sees.
+//! - The frame rate is capped **at the source**, so frames we would discard are never
+//!   produced - this is where WGC's CPU advantage over DXGI comes from.
+//! - **Nothing is ever written to disk.** Frames are handed to a sink and dropped.
+//! - `stop()` takes effect immediately, which is what session end, policy stop and
+//!   emergency stop all require.
 
-use std::ffi::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
-use std::sync::{mpsc, Arc};
-use std::thread::{self, JoinHandle};
-use std::time::{Duration, Instant};
+use std::sync::Arc;
+use std::time::Duration;
+
+use windows_capture::capture::{CaptureControl, Context, GraphicsCaptureApiHandler};
+use windows_capture::frame::Frame;
+use windows_capture::graphics_capture_api::InternalCaptureControl;
+use windows_capture::monitor::Monitor;
+use windows_capture::settings::{
+    ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
+    MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
+};
 
 use crate::metrics::Metrics;
-use windows::Win32::Graphics::Gdi::{
-    BitBlt, CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, GetDC, ReleaseDC,
-    SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, CAPTUREBLT, DIB_RGB_COLORS, HBITMAP, HDC,
-    HGDIOBJ, SRCCOPY,
-};
-use windows::Win32::UI::WindowsAndMessaging::{
-    DrawIconEx, GetCursorInfo, GetIconInfo, GetSystemMetrics, CURSORINFO, CURSOR_SHOWING,
-    DI_NORMAL, HICON, ICONINFO, SM_CXSCREEN, SM_CYSCREEN,
-};
-use windows_capture::monitor::Monitor;
 
 /// What to capture and how fast.
 #[derive(Debug, Clone, Copy)]
 pub struct CaptureConfig {
     /// Monitor index; 0 is primary.
     pub monitor: u32,
-    /// Target frame rate. Desktop updates above this rate are discarded before
-    /// they are copied to CPU memory.
+    /// Target frame rate, applied as a source-side minimum update interval.
     pub fps: u32,
-    /// Compatibility field retained on the sidecar wire protocol. Visibility is
-    /// provided by the desktop UI/tray rather than a WGC border.
+    /// Compatibility field; the OS capture border is always enabled.
     pub indicator_shown: bool,
 }
 
@@ -49,6 +51,9 @@ impl Default for CaptureConfig {
 }
 
 /// One captured frame, borrowed for the duration of the sink call.
+///
+/// Borrowed rather than owned so the common path copies nothing: a sink that only
+/// needs to hand the bytes to an encoder never allocates.
 pub struct CapturedFrame<'a> {
     pub width: u32,
     pub height: u32,
@@ -56,17 +61,20 @@ pub struct CapturedFrame<'a> {
     pub bgra: &'a [u8],
 }
 
-/// Receives frames on the capture thread.
+/// Receives frames. Called on the capture thread, so it must not block for long:
+/// WGC delivers the next frame on the same thread.
 pub type FrameSink = Box<dyn FnMut(&CapturedFrame<'_>) + Send + 'static>;
 
 #[derive(Debug)]
 pub enum CaptureError {
+    NoSuchMonitor(u32),
     Start(String),
 }
 
 impl std::fmt::Display for CaptureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::NoSuchMonitor(i) => write!(f, "monitor {i} not found"),
             Self::Start(e) => write!(f, "capture failed to start: {e}"),
         }
     }
@@ -74,205 +82,165 @@ impl std::fmt::Display for CaptureError {
 
 impl std::error::Error for CaptureError {}
 
-/// A reusable top-down 32-bit DIB. Drawing the system cursor through GDI keeps
-/// the streamed image faithful on adapters that expose the pointer separately
-/// from the duplicated desktop surface.
-struct CursorCompositor {
-    dc: HDC,
-    bitmap: HBITMAP,
-    previous: HGDIOBJ,
-    bits: *mut u8,
-    len: usize,
-    monitor_left: i32,
-    monitor_top: i32,
+struct Flags {
+    sink: FrameSink,
+    metrics: Arc<Metrics>,
+    stop: Arc<AtomicBool>,
+    /// Reused between frames so the un-padded copy allocates once, not per frame.
+    scratch: Vec<u8>,
+    finished: Arc<AtomicBool>,
 }
 
-impl CursorCompositor {
-    fn new(width: u32, height: u32, monitor_left: i32, monitor_top: i32) -> Result<Self, String> {
-        let dc = unsafe { CreateCompatibleDC(None) };
-        if dc.0.is_null() {
-            return Err("CreateCompatibleDC returned null".into());
-        }
+struct Handler {
+    flags: Flags,
+}
 
-        let mut info = BITMAPINFO::default();
-        info.bmiHeader = BITMAPINFOHEADER {
-            biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
-            biWidth: width as i32,
-            // Negative height creates a top-down DIB matching the captured BGRA rows.
-            biHeight: -(height as i32),
-            biPlanes: 1,
-            biBitCount: 32,
-            biCompression: BI_RGB.0,
-            biSizeImage: width.saturating_mul(height).saturating_mul(4),
-            ..Default::default()
-        };
-        let mut bits: *mut c_void = std::ptr::null_mut();
-        let bitmap =
-            unsafe { CreateDIBSection(Some(dc), &info, DIB_RGB_COLORS, &mut bits, None, 0) }
-                .map_err(|error| {
-                    unsafe {
-                        let _ = DeleteDC(dc);
-                    }
-                    format!("CreateDIBSection: {error}")
-                })?;
-        if bits.is_null() {
-            unsafe {
-                let _ = DeleteObject(HGDIOBJ(bitmap.0));
-                let _ = DeleteDC(dc);
-            }
-            return Err("CreateDIBSection returned null pixels".into());
-        }
-        let previous = unsafe { SelectObject(dc, HGDIOBJ(bitmap.0)) };
-        if previous.0.is_null() {
-            unsafe {
-                let _ = DeleteObject(HGDIOBJ(bitmap.0));
-                let _ = DeleteDC(dc);
-            }
-            return Err("SelectObject returned null".into());
-        }
+impl GraphicsCaptureApiHandler for Handler {
+    type Flags = Flags;
+    type Error = Box<dyn std::error::Error + Send + Sync>;
 
-        Ok(Self {
-            dc,
-            bitmap,
-            previous,
-            bits: bits.cast(),
-            len: width as usize * height as usize * 4,
-            monitor_left,
-            monitor_top,
-        })
+    fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
+        Ok(Self { flags: ctx.flags })
     }
 
-    // A fresh GDI copy is produced even when the desktop is static, so every
-    // newly attached viewer receives a frame.
-    fn capture_static_desktop(&mut self, width: u32, height: u32) -> Result<&[u8], String> {
-        let screen = unsafe { GetDC(None) };
-        if screen.0.is_null() {
-            return Err("GetDC returned null".into());
+    fn on_frame_arrived(
+        &mut self,
+        frame: &mut Frame,
+        capture_control: InternalCaptureControl,
+    ) -> Result<(), Self::Error> {
+        // Checked first so a stop request is honoured even under a frame backlog.
+        if self.flags.stop.load(Ordering::Relaxed) {
+            capture_control.stop();
+            return Ok(());
         }
-        let copied = unsafe {
-            BitBlt(
-                self.dc,
-                0,
-                0,
-                width as i32,
-                height as i32,
-                Some(screen),
-                self.monitor_left,
-                self.monitor_top,
-                SRCCOPY | CAPTUREBLT,
-            )
+
+        let (w, h) = (frame.width(), frame.height());
+        let buffer = match frame.buffer() {
+            Ok(b) => b,
+            Err(_) => {
+                self.flags
+                    .metrics
+                    .capture_errors
+                    .fetch_add(1, Ordering::Relaxed);
+                return Ok(());
+            }
         };
-        unsafe { ReleaseDC(None, screen) };
-        copied.map_err(|error| format!("BitBlt static frame: {error}"))?;
-        Ok(self.draw_cursor())
+
+        // GPU textures are row-padded; encoders want tight rows. as_nopadding_buffer
+        // reuses our scratch buffer when a copy is needed and borrows when it is not.
+        let scratch = std::mem::take(&mut self.flags.scratch);
+        let mut scratch = scratch;
+        let bgra = buffer.as_nopadding_buffer(&mut scratch);
+
+        self.flags.metrics.set_resolution(w, h);
+        self.flags
+            .metrics
+            .frames_captured
+            .fetch_add(1, Ordering::Relaxed);
+        (self.flags.sink)(&CapturedFrame {
+            width: w,
+            height: h,
+            bgra,
+        });
+
+        self.flags.scratch = scratch;
+        Ok(())
     }
 
-    fn draw_cursor(&mut self) -> &[u8] {
-        let pixels = unsafe { std::slice::from_raw_parts_mut(self.bits, self.len) };
-        let mut cursor = CURSORINFO {
-            cbSize: std::mem::size_of::<CURSORINFO>() as u32,
-            ..Default::default()
-        };
-        if unsafe { GetCursorInfo(&mut cursor) }.is_err() || cursor.flags != CURSOR_SHOWING {
-            return pixels;
-        }
-
-        let icon = HICON(cursor.hCursor.0);
-        let mut icon_info = ICONINFO::default();
-        if unsafe { GetIconInfo(icon, &mut icon_info) }.is_err() {
-            return pixels;
-        }
-        let x = cursor.ptScreenPos.x - self.monitor_left - icon_info.xHotspot as i32;
-        let y = cursor.ptScreenPos.y - self.monitor_top - icon_info.yHotspot as i32;
-        let _ = unsafe { DrawIconEx(self.dc, x, y, icon, 0, 0, 0, None, DI_NORMAL) };
-
-        unsafe {
-            if !icon_info.hbmMask.0.is_null() {
-                let _ = DeleteObject(HGDIOBJ(icon_info.hbmMask.0));
-            }
-            if !icon_info.hbmColor.0.is_null() {
-                let _ = DeleteObject(HGDIOBJ(icon_info.hbmColor.0));
-            }
-        }
-        pixels
+    fn on_closed(&mut self) -> Result<(), Self::Error> {
+        // The capture item went away (monitor unplugged, session switch). The
+        // supervisor decides whether to restart; we only record it.
+        self.flags
+            .metrics
+            .capture_errors
+            .fetch_add(1, Ordering::Relaxed);
+        self.flags.finished.store(true, Ordering::Release);
+        Ok(())
     }
 }
 
-impl Drop for CursorCompositor {
-    fn drop(&mut self) {
-        unsafe {
-            let _ = SelectObject(self.dc, self.previous);
-            let _ = DeleteObject(HGDIOBJ(self.bitmap.0));
-            let _ = DeleteDC(self.dc);
-        }
-    }
-}
-
-/// A running capture. Dropping it stops and joins the worker.
+/// A running capture. Dropping it stops the capture.
 pub struct CaptureSession {
-    worker: Option<JoinHandle<()>>,
+    control: Option<CaptureControl<Handler, Box<dyn std::error::Error + Send + Sync>>>,
     stop: Arc<AtomicBool>,
     finished: Arc<AtomicBool>,
 }
 
 impl CaptureSession {
+    /// Starts capturing on a background thread.
+    ///
+    /// Returns once capture has been handed to its own thread, so the caller keeps
+    /// control and can stop at any time.
     pub fn start(
         cfg: CaptureConfig,
         metrics: Arc<Metrics>,
         sink: FrameSink,
     ) -> Result<Self, CaptureError> {
+        let monitor = if cfg.monitor == 0 {
+            Monitor::primary().map_err(|_| CaptureError::NoSuchMonitor(0))?
+        } else {
+            // from_index is 1-based in windows-capture; our config is 0-based.
+            Monitor::from_index(cfg.monitor as usize + 1)
+                .map_err(|_| CaptureError::NoSuchMonitor(cfg.monitor))?
+        };
+
         let stop = Arc::new(AtomicBool::new(false));
-        let worker_stop = Arc::clone(&stop);
         let finished = Arc::new(AtomicBool::new(false));
-        let worker_finished = Arc::clone(&finished);
-        let (started_tx, started_rx) = mpsc::sync_channel::<Result<(), String>>(1);
+        let fps = cfg.fps.max(1);
 
-        let worker = thread::Builder::new()
-            .name("borderless-dxgi-capture".into())
-            .spawn(move || {
-                let result = run_capture(cfg, metrics, worker_stop, sink, &started_tx);
-                if let Err(error) = result {
-                    let _ = started_tx.try_send(Err(error));
-                }
-                worker_finished.store(true, Ordering::Release);
-            })
-            .map_err(|error| CaptureError::Start(error.to_string()))?;
+        // Keep the OS capture border even when the app window is hidden.
+        let border = DrawBorderSettings::WithBorder;
 
-        match started_rx.recv_timeout(Duration::from_secs(5)) {
-            Ok(Ok(())) => Ok(Self {
-                worker: Some(worker),
-                stop,
-                finished,
-            }),
-            Ok(Err(error)) => {
-                let _ = worker.join();
-                Err(CaptureError::Start(error))
-            }
-            Err(error) => {
-                stop.store(true, Ordering::Release);
-                let _ = worker.join();
-                Err(CaptureError::Start(format!(
-                    "capture startup timed out: {error}"
-                )))
-            }
-        }
+        let settings = Settings::new(
+            monitor,
+            // The operator sees what the person sees.
+            CursorCaptureSettings::WithCursor,
+            border,
+            SecondaryWindowSettings::Default,
+            MinimumUpdateIntervalSettings::Custom(Duration::from_micros(
+                1_000_000 / u64::from(fps),
+            )),
+            DirtyRegionSettings::Default,
+            ColorFormat::Bgra8,
+            Flags {
+                sink,
+                metrics,
+                stop: Arc::clone(&stop),
+                scratch: Vec::new(),
+                finished: Arc::clone(&finished),
+            },
+        );
+
+        let control = Handler::start_free_threaded(settings)
+            .map_err(|e| CaptureError::Start(format!("{e:?}")))?;
+
+        Ok(Self {
+            control: Some(control),
+            stop,
+            finished,
+        })
     }
 
+    /// True once the capture thread has finished.
     pub fn is_finished(&self) -> bool {
-        self.worker.as_ref().is_none_or(JoinHandle::is_finished)
+        self.control
+            .as_ref()
+            .is_none_or(CaptureControl::is_finished)
     }
 
-    /// A capture worker can die after startup (for example, DXGI recovery
-    /// fails after sleep). The sidecar watches this flag while its command pipe
-    /// is blocked waiting for input.
+    /// Lets the sidecar supervisor detect a capture item that closed after startup.
     pub fn finished_flag(&self) -> Arc<AtomicBool> {
         Arc::clone(&self.finished)
     }
 
+    /// Stops capture. Idempotent, and safe to call from any thread.
+    ///
+    /// The flag is set first so an in-flight frame callback returns without
+    /// delivering, which is what emergency stop needs.
     pub fn stop(&mut self) {
-        self.stop.store(true, Ordering::Release);
-        if let Some(worker) = self.worker.take() {
-            let _ = worker.join();
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(control) = self.control.take() {
+            let _ = control.stop();
         }
     }
 }
@@ -281,62 +249,6 @@ impl Drop for CaptureSession {
     fn drop(&mut self) {
         self.stop();
     }
-}
-
-fn run_capture(
-    cfg: CaptureConfig,
-    metrics: Arc<Metrics>,
-    stop: Arc<AtomicBool>,
-    mut sink: FrameSink,
-    started: &mpsc::SyncSender<Result<(), String>>,
-) -> Result<(), String> {
-    if cfg.monitor != 0 {
-        return Err(format!(
-            "monitor {} is unavailable for GDI capture",
-            cfg.monitor
-        ));
-    }
-    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-    let height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
-    if width <= 0 || height <= 0 {
-        return Err("primary desktop has no captureable geometry".into());
-    }
-    let (width, height, left, top) = (width as u32, height as u32, 0, 0);
-    let mut cursor = CursorCompositor::new(width, height, left, top)?;
-    let _ = cfg.indicator_shown;
-    started
-        .send(Ok(()))
-        .map_err(|_| "capture caller closed during startup".to_string())?;
-
-    // BitBlt copies the whole desktop into system memory. Five frames per
-    // second keeps the live view responsive without saturating a post-sleep
-    // graphics stack or needlessly consuming the employee's CPU.
-    let frame_interval = Duration::from_micros(1_000_000 / u64::from(cfg.fps.clamp(1, 5)));
-    let mut next_frame = Instant::now();
-
-    while !stop.load(Ordering::Acquire) {
-        let now = Instant::now();
-        if now < next_frame {
-            thread::sleep((next_frame - now).min(Duration::from_millis(20)));
-            continue;
-        }
-        next_frame = now + frame_interval;
-        match cursor.capture_static_desktop(width, height) {
-            Ok(bgra) => {
-                metrics.set_resolution(width, height);
-                metrics.frames_captured.fetch_add(1, Ordering::Relaxed);
-                sink(&CapturedFrame {
-                    width,
-                    height,
-                    bgra,
-                });
-            }
-            Err(_) => {
-                metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-            }
-        }
-    }
-    Ok(())
 }
 
 /// Number of monitors currently attached, for multi-monitor planning.
@@ -353,17 +265,22 @@ mod tests {
 
     #[test]
     fn default_config_is_the_shipping_profile() {
-        let config = CaptureConfig::default();
-        assert_eq!((config.monitor, config.fps), (0, 15));
+        let c = CaptureConfig::default();
+        assert_eq!((c.monitor, c.fps), (0, 15));
     }
 
     #[test]
     fn monitor_count_is_at_least_one_on_a_real_desktop() {
+        // The build machine always has a display; a zero here means enumeration
+        // broke rather than that the machine is headless.
         assert!(monitor_count() >= 1, "expected at least one monitor");
     }
 
+    /// Capture must actually produce frames with the cursor setting we ship.
     #[test]
     fn capture_delivers_frames_and_stops_promptly() {
+        use std::sync::atomic::AtomicU32;
+
         let metrics = Arc::new(Metrics::new());
         let count: FrameCounter = Arc::new(AtomicU32::new(0));
         let seen = Arc::clone(&count);
@@ -371,27 +288,48 @@ mod tests {
         let dims_sink = Arc::clone(&dims);
 
         let mut session = CaptureSession::start(
-            CaptureConfig::default(),
+            CaptureConfig {
+                monitor: 0,
+                fps: 15,
+                indicator_shown: false,
+            },
             Arc::clone(&metrics),
-            Box::new(move |frame| {
+            Box::new(move |f| {
                 seen.fetch_add(1, Ordering::Relaxed);
-                if let Ok(mut dimensions) = dims_sink.lock() {
-                    *dimensions = (frame.width, frame.height);
+                if let Ok(mut d) = dims_sink.lock() {
+                    *d = (f.width, f.height);
                 }
-                assert_eq!(frame.bgra.len(), (frame.width * frame.height * 4) as usize);
+                // A frame must be a full BGRA image, not a partial row.
+                assert_eq!(f.bgra.len(), (f.width * f.height * 4) as usize);
             }),
         )
         .expect("capture should start on a machine with a display");
 
-        thread::sleep(Duration::from_millis(1500));
+        // Give WGC time to deliver a few frames at 15fps.
+        std::thread::sleep(Duration::from_millis(1500));
+
         let before = count.load(Ordering::Relaxed);
         assert!(before > 0, "no frames captured in 1.5s");
 
-        let started = Instant::now();
+        let t0 = std::time::Instant::now();
         session.stop();
-        assert!(started.elapsed() < Duration::from_millis(500));
-        thread::sleep(Duration::from_millis(200));
-        assert_eq!(before, count.load(Ordering::Relaxed));
+        let stop_ms = t0.elapsed().as_millis();
+
+        // Emergency stop has a 500ms budget (V07); capture teardown must fit inside it.
+        assert!(
+            stop_ms < 500,
+            "stop took {stop_ms}ms, over the 500ms budget"
+        );
+
+        std::thread::sleep(Duration::from_millis(300));
+        let after = count.load(Ordering::Relaxed);
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(
+            after,
+            count.load(Ordering::Relaxed),
+            "frames still arriving after stop()"
+        );
+
         assert!(metrics.snapshot().frames_captured > 0);
     }
 }
