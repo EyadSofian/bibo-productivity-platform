@@ -1,10 +1,11 @@
-//! Borderless desktop capture through DXGI Desktop Duplication.
+//! Borderless desktop capture through the Windows GDI desktop surface.
 //!
 //! Windows Graphics Capture draws a coloured privacy border unless a packaged
 //! application has requested the restricted borderless capability. The shipping
-//! agent is installed through MSI/NSIS, so scheduled capture uses the desktop
-//! duplication API instead. The desktop app still exposes its own monitoring
-//! state and local stop control.
+//! agent is installed through MSI/NSIS, so it copies the interactive desktop
+//! surface directly. This also avoids a DXGI initialisation hang that Windows can
+//! leave behind immediately after sleep or a graphics-driver reset. The desktop
+//! app still exposes its own monitoring state and local stop control.
 
 use std::ffi::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
@@ -12,6 +13,7 @@ use std::sync::{mpsc, Arc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
+use crate::metrics::Metrics;
 use windows::Win32::Graphics::Gdi::{
     BitBlt, CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, GetDC, ReleaseDC,
     SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, CAPTUREBLT, DIB_RGB_COLORS, HBITMAP, HDC,
@@ -21,12 +23,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
     DrawIconEx, GetCursorInfo, GetIconInfo, GetSystemMetrics, CURSORINFO, CURSOR_SHOWING,
     DI_NORMAL, HICON, ICONINFO, SM_CXSCREEN, SM_CYSCREEN,
 };
-use windows_capture::dxgi_duplication_api::{
-    DxgiDuplicationApi, DxgiDuplicationFormat, Error as DxgiError,
-};
 use windows_capture::monitor::Monitor;
-
-use crate::metrics::Metrics;
 
 /// What to capture and how fast.
 #[derive(Debug, Clone, Copy)]
@@ -64,14 +61,12 @@ pub type FrameSink = Box<dyn FnMut(&CapturedFrame<'_>) + Send + 'static>;
 
 #[derive(Debug)]
 pub enum CaptureError {
-    NoSuchMonitor(u32),
     Start(String),
 }
 
 impl std::fmt::Display for CaptureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::NoSuchMonitor(i) => write!(f, "monitor {i} not found"),
             Self::Start(e) => write!(f, "capture failed to start: {e}"),
         }
     }
@@ -147,19 +142,8 @@ impl CursorCompositor {
         })
     }
 
-    fn compose<'a>(&'a mut self, frame: &[u8]) -> &'a [u8] {
-        if frame.len() != self.len {
-            return &[];
-        }
-        let pixels = unsafe { std::slice::from_raw_parts_mut(self.bits, self.len) };
-        pixels.copy_from_slice(frame);
-
-        self.draw_cursor()
-    }
-
-    // Desktop Duplication reports Timeout while the desktop is static. An
-    // initial frame is still needed for a new viewer, and a slow heartbeat
-    // keeps the encoded track alive if nothing on screen changes.
+    // A fresh GDI copy is produced even when the desktop is static, so every
+    // newly attached viewer receives a frame.
     fn capture_static_desktop(&mut self, width: u32, height: u32) -> Result<&[u8], String> {
         let screen = unsafe { GetDC(None) };
         if screen.0.is_null() {
@@ -299,14 +283,6 @@ impl Drop for CaptureSession {
     }
 }
 
-fn monitor_for(index: u32) -> Result<Monitor, CaptureError> {
-    if index == 0 {
-        Monitor::primary().map_err(|_| CaptureError::NoSuchMonitor(0))
-    } else {
-        Monitor::from_index(index as usize + 1).map_err(|_| CaptureError::NoSuchMonitor(index))
-    }
-}
-
 fn run_capture(
     cfg: CaptureConfig,
     metrics: Arc<Metrics>,
@@ -314,125 +290,50 @@ fn run_capture(
     mut sink: FrameSink,
     started: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
-    let monitor = monitor_for(cfg.monitor).map_err(|error| error.to_string())?;
-    let mut capture =
-        DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8]).ok();
-    let geometry = capture.as_mut().and_then(|api| {
-        unsafe { api.output().GetDesc1() }.ok().map(|output| {
-            (
-                api.width(),
-                api.height(),
-                output.DesktopCoordinates.left,
-                output.DesktopCoordinates.top,
-            )
-        })
-    });
-    let (width, height, left, top) = if let Some(geometry) = geometry {
-        geometry
-    } else if cfg.monitor == 0 {
-        // DXGI can refuse duplication immediately after sleep or an adapter
-        // reset. GDI can still copy the unlocked primary desktop in that case.
-        capture = None;
-        metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-        let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
-        let height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
-        if width <= 0 || height <= 0 {
-            return Err("primary desktop has no captureable geometry".into());
-        }
-        (width as u32, height as u32, 0, 0)
-    } else {
-        return Err("DXGI cannot open the requested monitor".into());
-    };
+    if cfg.monitor != 0 {
+        return Err(format!(
+            "monitor {} is unavailable for GDI capture",
+            cfg.monitor
+        ));
+    }
+    let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+    let height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+    if width <= 0 || height <= 0 {
+        return Err("primary desktop has no captureable geometry".into());
+    }
+    let (width, height, left, top) = (width as u32, height as u32, 0, 0);
     let mut cursor = CursorCompositor::new(width, height, left, top)?;
     let _ = cfg.indicator_shown;
     started
         .send(Ok(()))
         .map_err(|_| "capture caller closed during startup".to_string())?;
 
-    let frame_interval = Duration::from_micros(1_000_000 / u64::from(cfg.fps.max(1)));
+    // BitBlt copies the whole desktop into system memory. Five frames per
+    // second keeps the live view responsive without saturating a post-sleep
+    // graphics stack or needlessly consuming the employee's CPU.
+    let frame_interval = Duration::from_micros(1_000_000 / u64::from(cfg.fps.clamp(1, 5)));
     let mut next_frame = Instant::now();
-    let mut last_frame = Instant::now() - Duration::from_secs(1);
-    let gdi_interval = Duration::from_millis(200);
-    let mut scratch = Vec::new();
 
     while !stop.load(Ordering::Acquire) {
-        let mut recover_dxgi = false;
-        let mut disable_dxgi = false;
-        let next = capture.as_mut().map(|api| api.acquire_next_frame(25));
-        match next {
-            Some(Ok(mut frame)) => {
-                let now = Instant::now();
-                if now < next_frame {
-                    continue;
-                }
-                next_frame = now + frame_interval;
-                let (frame_width, frame_height) = (frame.width(), frame.height());
-                let buffer = match frame.buffer() {
-                    Ok(buffer) => buffer,
-                    Err(_) => {
-                        metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                        continue;
-                    }
-                };
-                let packed = buffer.as_nopadding_buffer(&mut scratch);
-                let composed = cursor.compose(packed);
-                if composed.is_empty() {
-                    metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                    continue;
-                }
-                metrics.set_resolution(frame_width, frame_height);
+        let now = Instant::now();
+        if now < next_frame {
+            thread::sleep((next_frame - now).min(Duration::from_millis(20)));
+            continue;
+        }
+        next_frame = now + frame_interval;
+        match cursor.capture_static_desktop(width, height) {
+            Ok(bgra) => {
+                metrics.set_resolution(width, height);
                 metrics.frames_captured.fetch_add(1, Ordering::Relaxed);
-                last_frame = now;
                 sink(&CapturedFrame {
-                    width: frame_width,
-                    height: frame_height,
-                    bgra: composed,
+                    width,
+                    height,
+                    bgra,
                 });
             }
-            Some(Err(DxgiError::Timeout)) | None => {
-                if last_frame.elapsed() >= gdi_interval {
-                    match cursor.capture_static_desktop(width, height) {
-                        Ok(bgra) => {
-                            metrics.set_resolution(width, height);
-                            metrics.frames_captured.fetch_add(1, Ordering::Relaxed);
-                            last_frame = Instant::now();
-                            sink(&CapturedFrame {
-                                width,
-                                height,
-                                bgra,
-                            });
-                        }
-                        Err(_) => {
-                            metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                            last_frame = Instant::now();
-                        }
-                    }
-                }
-            }
-            Some(Err(DxgiError::AccessLost)) => {
+            Err(_) => {
                 metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                if stop.load(Ordering::Acquire) {
-                    break;
-                }
-                thread::sleep(Duration::from_millis(200));
-                recover_dxgi = true;
             }
-            Some(Err(_)) => {
-                metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                // A driver may report errors instead of Timeout while the
-                // unlocked desktop is static. Fall back to GDI immediately.
-                disable_dxgi = true;
-            }
-        }
-        if recover_dxgi {
-            capture =
-                DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8]).ok();
-        }
-        if disable_dxgi {
-            capture = None;
-        }
-        if capture.is_none() {
-            thread::sleep(Duration::from_millis(25));
         }
     }
     Ok(())

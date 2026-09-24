@@ -23,8 +23,8 @@ sensitive to backend behaviour.
 
 | Component | Version | Why pinned |
 |---|---|---|
-| `windows-capture` | **2.0.1** | Windows Graphics Capture + the DXGI path used for the ADR 0003 comparison |
-| `windows` | **0.62** | Microsoft's official bindings (DXGI/D3D11, process timing) |
+| `windows-capture` | **2.0.1** | benchmark and monitor enumeration |
+| `windows` | **0.62** | Microsoft's official Win32 bindings (GDI, process timing) |
 | Rust toolchain | **stable-x86_64-pc-windows-msvc** | MSVC only. The GNU toolchain cannot link the Tauri test cdylib (`ld: export ordinal too large`) |
 | MSVC | 14.44.35207 | verified build machine |
 | Windows SDK | 10.0.22621 / 10.0.26100 | verified build machine |
@@ -72,11 +72,11 @@ media-publisher --selftest                                     # local capture c
 connects to nothing — it exists to verify the capture path on a machine with no
 backend.
 
-Measured on the reference machine (i7-9850H, Quadro T2000, Win11 26200):
+A successful GDI selftest reports frames at no more than five fps, in this shape:
 
 ```json
-{"event":"selftest_done","metrics":{"frames_captured":45,"width":1920,"height":1080,
- "fps":14.999,"capture_errors":0,"encoder":"unknown"}}
+{"event":"selftest_done","metrics":{"frames_captured":15,"width":1920,"height":1080,
+ "fps":5.0,"capture_errors":0,"encoder":"unknown"}}
 ```
 
 `"encoder":"unknown"` in a selftest run is honest: selftest does not publish, so no
@@ -114,9 +114,10 @@ sidecar must never outlive the agent and keep capturing.
   `agent_ipc::tests::no_event_variant_can_carry_a_token`.
 - **No files written.** No JPEG/PNG/WebP, no frame dumps, no scratch images. Frames go
   to a sink and are dropped.
-- **Interactive session only.** No service mode. DXGI avoids the Windows yellow
-  capture border; the cursor is composited into the stream and the app exposes a
-  monitoring status and local stop control.
+- **Interactive session only.** No service mode. GDI avoids the Windows yellow
+  capture border and remains usable after a DXGI post-sleep hang; the cursor is
+  composited into the stream and the app exposes a monitoring status and local
+  stop control.
 - **Immediate stop.** `stop()` is checked before every frame is delivered, so session
   end, policy stop and emergency stop all take effect at once. Verified under the
   500ms budget by `capture_delivers_frames_and_stops_promptly`.
