@@ -643,7 +643,22 @@ type agentStateReq struct {
 	// Track describes what is being published, recorded once when the publisher
 	// reaches "live". Optional: a publisher that cannot describe its encoding
 	// must still be able to report that it is live.
-	Track *agentTrackReq `json:"track"`
+	Track   *agentTrackReq       `json:"track"`
+	Metrics *publisherMetricsReq `json:"metrics"`
+}
+
+// Numeric counters only: neither screen content nor credentials belong here.
+type publisherMetricsReq struct {
+	FramesCaptured  uint64  `json:"frames_captured"`
+	FramesPublished uint64  `json:"frames_published"`
+	FramesDropped   uint64  `json:"frames_dropped"`
+	CaptureErrors   uint64  `json:"capture_errors"`
+	EncoderErrors   uint64  `json:"encoder_errors"`
+	Reconnects      uint32  `json:"reconnects"`
+	Width           uint32  `json:"width"`
+	Height          uint32  `json:"height"`
+	FPS             float64 `json:"fps"`
+	Encoder         string  `json:"encoder"`
 }
 
 type agentTrackReq struct {
@@ -672,9 +687,29 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
 	var req agentStateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid body", false)
+		return
+	}
+	if req.State == "metrics" {
+		m := req.Metrics
+		if m == nil || m.Width > 16384 || m.Height > 16384 || m.FPS < 0 || m.FPS > 240 ||
+			(m.Encoder != "unknown" && m.Encoder != "software" && m.Encoder != "hardware") {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid publisher metrics", false)
+			return
+		}
+		encoded, _ := json.Marshal(m)
+		if err := h.store.UpdatePublisherMetrics(c.Request.Context(), agentUserID, sessionID, encoded); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				mediaError(c, http.StatusNotFound, CodeSessionNotFound, "Session not found.", false)
+				return
+			}
+			mediaInternal(c, err)
+			return
+		}
+		c.Status(http.StatusNoContent)
 		return
 	}
 	to := media.State(req.State)

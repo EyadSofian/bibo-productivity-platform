@@ -1176,11 +1176,18 @@ impl BackendClient {
         detail: &str,
         metrics: Option<serde_json::Value>,
     ) -> Result<(), String> {
-        let Some((state, failure_code)) = media_agent_report(state) else {
-            return Ok(());
+        let body = if state == "metrics" {
+            let Some(metrics) = metrics else {
+                return Err("publisher metrics are missing".into());
+            };
+            serde_json::json!({"state": "metrics", "metrics": metrics})
+        } else {
+            let Some((state, failure_code)) = media_agent_report(state) else {
+                return Ok(());
+            };
+            let _ = detail;
+            serde_json::json!({"state": state, "failure_code": failure_code})
         };
-        let _ = (detail, metrics);
-        let body = serde_json::json!({"state": state, "failure_code": failure_code});
         let mut token = self.access_token()?;
         for attempt in 0..2 {
             let resp = self

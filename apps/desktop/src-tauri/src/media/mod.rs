@@ -26,6 +26,8 @@ use std::io::{BufRead, BufReader, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+#[cfg(windows)]
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 
@@ -641,6 +643,7 @@ fn spawn_event_reader(
             Err(_) => return,
         };
         let mut lines = BufReader::new(reader).lines();
+        let mut last_metrics_report: Option<Instant> = None;
         while let Some(Ok(line)) = lines.next() {
             let line = line.trim();
             if line.is_empty() {
@@ -665,6 +668,12 @@ fn spawn_event_reader(
                     });
                 }
                 Event::Metrics(m) => {
+                    if last_metrics_report
+                        .is_some_and(|last| last.elapsed() < Duration::from_secs(8))
+                    {
+                        continue;
+                    }
+                    last_metrics_report = Some(Instant::now());
                     rt.block_on(async {
                         let _ = tokio::time::timeout(
                             Duration::from_secs(2),

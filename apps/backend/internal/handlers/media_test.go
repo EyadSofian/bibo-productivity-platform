@@ -1152,6 +1152,38 @@ func TestAgentStateIsScopedToItsOwnDevice(t *testing.T) {
 	}
 }
 
+func TestPublisherMetricsAreStoredOnlyForThePublishingDevice(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	metrics := `{"state":"metrics","metrics":{"frames_captured":12,"frames_published":10,"frames_dropped":2,"capture_errors":0,"encoder_errors":0,"reconnects":0,"width":1280,"height":720,"fps":15,"encoder":"hardware"}}`
+
+	for _, userID := range []string{e.ownerID, e.intruderID} {
+		if rec, _ := e.reportState(t, sessionID, userID, metrics); rec.Code != http.StatusNotFound {
+			t.Fatalf("unrelated user %s stored publisher metrics: %d", userID, rec.Code)
+		}
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"fps":999,"encoder":"hardware"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid metrics accepted: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNoContent {
+		t.Fatalf("publisher metrics rejected: %d", rec.Code)
+	}
+	var captured, published int
+	var receivedAt time.Time
+	if err := e.pool.QueryRow(e.ctx, `SELECT (publisher_metrics->>'frames_captured')::int, (publisher_metrics->>'frames_published')::int, publisher_metrics_at FROM media_sessions WHERE id=$1`, sessionID).Scan(&captured, &published, &receivedAt); err != nil {
+		t.Fatal(err)
+	}
+	if captured != 12 || published != 10 || receivedAt.IsZero() {
+		t.Fatalf("stored publisher metrics = %d/%d at %v", captured, published, receivedAt)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"ended"}`); rec.Code != http.StatusOK {
+		t.Fatalf("end: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNotFound {
+		t.Fatalf("metrics were stored for ended session: %d", rec.Code)
+	}
+}
+
 // An illegal transition means the publisher and the control plane disagree about
 // where the session is. Absorbing that silently is how sessions get stuck in
 // states nobody can explain.

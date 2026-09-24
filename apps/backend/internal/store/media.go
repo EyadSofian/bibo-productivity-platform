@@ -78,19 +78,21 @@ func (s *Store) MediaRoleFor(ctx context.Context, userID, businessID string) (st
 
 // MediaSession is one row of media_sessions.
 type MediaSession struct {
-	ID             string          `json:"id"`
-	BusinessID     string          `json:"business_id"`
-	EmployeeID     string          `json:"employee_id,omitempty"`
-	DeviceID       string          `json:"device_id"`
-	Kind           media.Kind      `json:"kind"`
-	State          media.State     `json:"state"`
-	Provider       string          `json:"provider"`
-	PolicySnapshot json.RawMessage `json:"policy_snapshot,omitempty"`
-	StartedAt      time.Time       `json:"started_at"`
-	EndedAt        *time.Time      `json:"ended_at,omitempty"`
-	FailureCode    string          `json:"failure_code,omitempty"`
-	CreatedBy      string          `json:"created_by,omitempty"`
-	WorkSessionID  string          `json:"work_session_id,omitempty"`
+	ID                 string          `json:"id"`
+	BusinessID         string          `json:"business_id"`
+	EmployeeID         string          `json:"employee_id,omitempty"`
+	DeviceID           string          `json:"device_id"`
+	Kind               media.Kind      `json:"kind"`
+	State              media.State     `json:"state"`
+	Provider           string          `json:"provider"`
+	PolicySnapshot     json.RawMessage `json:"policy_snapshot,omitempty"`
+	StartedAt          time.Time       `json:"started_at"`
+	EndedAt            *time.Time      `json:"ended_at,omitempty"`
+	FailureCode        string          `json:"failure_code,omitempty"`
+	CreatedBy          string          `json:"created_by,omitempty"`
+	WorkSessionID      string          `json:"work_session_id,omitempty"`
+	PublisherMetrics   json.RawMessage `json:"publisher_metrics,omitempty"`
+	PublisherMetricsAt *time.Time      `json:"publisher_metrics_at,omitempty"`
 
 	// ProviderRoomID is the opaque room name. It is NOT serialized to API
 	// clients: a viewer needs a token, not a room name, and handing out room
@@ -115,14 +117,14 @@ type NewMediaSession struct {
 const mediaSessionColumns = `
 	ms.id, ms.business_id, ms.employee_id, ms.device_id, ms.kind, ms.state, ms.provider,
 	ms.provider_room_id, ms.policy_snapshot, ms.started_at, ms.ended_at, ms.failure_code,
-	ms.created_by, ms.work_session_id`
+	ms.created_by, ms.work_session_id, ms.publisher_metrics, ms.publisher_metrics_at`
 
 func scanMediaSession(row pgx.Row) (MediaSession, error) {
 	var m MediaSession
 	var employeeID, failureCode, createdBy, workSessionID *string
 	err := row.Scan(&m.ID, &m.BusinessID, &employeeID, &m.DeviceID, &m.Kind, &m.State,
 		&m.Provider, &m.ProviderRoomID, &m.PolicySnapshot, &m.StartedAt, &m.EndedAt,
-		&failureCode, &createdBy, &workSessionID)
+		&failureCode, &createdBy, &workSessionID, &m.PublisherMetrics, &m.PublisherMetricsAt)
 	if err != nil {
 		return MediaSession{}, err
 	}
@@ -295,6 +297,26 @@ func (s *Store) MediaSessionForAgent(ctx context.Context, agentUserID, sessionID
 		return MediaSession{}, ErrNotFound
 	}
 	return m, err
+}
+
+// UpdatePublisherMetrics stores only bounded, numeric device-side counters.
+// Scope the write to the authenticated device owner and an open session.
+func (s *Store) UpdatePublisherMetrics(ctx context.Context, agentUserID, sessionID string, snapshot json.RawMessage) error {
+	result, err := s.pool.Exec(ctx, `
+		UPDATE media_sessions ms
+		   SET publisher_metrics=$3::jsonb, publisher_metrics_at=now()
+		  FROM devices d
+		 WHERE ms.id=$1 AND d.id=ms.device_id AND d.user_id=$2
+		   AND d.business_id=ms.business_id AND d.deleted_at IS NULL
+		   AND d.monitoring_enabled AND ms.state NOT IN ('ended','failed')`,
+		sessionID, agentUserID, snapshot)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // PendingMediaSessionForAgent resolves demand through the enrolled device and
