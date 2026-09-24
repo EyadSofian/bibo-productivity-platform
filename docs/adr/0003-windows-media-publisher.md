@@ -7,7 +7,7 @@
 
 The Windows delivery at commit `9cce5fc` used a standalone Rust publisher with
 Windows Graphics Capture and the LiveKit Rust SDK. The desktop WebView does not
-capture or encode the screen. Version `1.5.24` uses Windows Graphics Capture again
+capture or encode the screen. Version `1.5.25` uses Windows Graphics Capture again
 after a physical post-sleep test showed that the borderless DXGI and GDI paths could
 connect successfully yet deliver zero frames.
 
@@ -24,7 +24,8 @@ Capture depends on the existing local consent, monitoring schedule, pause and
 excluded-app gates. Windows session checks require an active, unlocked session and
 the ordinary input desktop; unknown OS state denies capture. The capture handler
 reports a closed surface to the agent, which ends the session with a typed failure
-instead of leaving the dashboard indefinitely waiting for frames.
+instead of leaving the dashboard indefinitely waiting for frames. LiveKit connection
+attempts are bounded and retried three times after resume before that typed failure is sent.
 
 The original capture benchmark reported WGC at 14.6 fps and 6.1% of one CPU core
 versus **uncapped** DXGI at 62.3 fps and 25%. Raw data is preserved in

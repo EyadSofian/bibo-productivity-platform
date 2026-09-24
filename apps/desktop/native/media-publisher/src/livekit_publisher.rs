@@ -32,6 +32,10 @@ use crate::metrics::{self as m, EncoderKind, Metrics};
 
 /// Track name shown in the SFU and in operator tooling.
 const TRACK_NAME: &str = "screen";
+/// A laptop can regain its network link a few seconds after waking. Never let a
+/// single stale socket attempt hold the sidecar forever while the viewer waits.
+const CONNECT_ATTEMPTS: u8 = 3;
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(6);
 
 #[derive(Debug)]
 pub enum PublishError {
@@ -104,9 +108,39 @@ impl LiveKitPublisher {
             (source, track)
         };
 
-        let (room, events) = runtime
-            .block_on(Room::connect(url, token, RoomOptions::default()))
-            .map_err(|e| PublishError::Connect(e.to_string()))?;
+        // `Room::connect` can wait indefinitely when Windows has resumed before
+        // Wi-Fi, DNS or the graphics-network stack has settled. Bound each
+        // attempt and reconnect using the same short-lived token. A failure now
+        // reaches the agent as `connection_failed`, so the dashboard does not
+        // spend its whole viewer lease in "waiting for device".
+        let mut last_error = String::new();
+        let mut connected = None;
+        for attempt in 1..=CONNECT_ATTEMPTS {
+            match runtime.block_on(tokio::time::timeout(
+                CONNECT_TIMEOUT,
+                Room::connect(url, token, RoomOptions::default()),
+            )) {
+                Ok(Ok(room)) => {
+                    connected = Some(room);
+                    break;
+                }
+                Ok(Err(error)) => last_error = error.to_string(),
+                Err(_) => {
+                    last_error = format!(
+                        "attempt {attempt} timed out after {}s",
+                        CONNECT_TIMEOUT.as_secs()
+                    )
+                }
+            }
+            if attempt < CONNECT_ATTEMPTS {
+                runtime.block_on(tokio::time::sleep(Duration::from_millis(350)));
+            }
+        }
+        let (room, events) = connected.ok_or_else(|| {
+            PublishError::Connect(format!(
+                "unable to connect after {CONNECT_ATTEMPTS} attempts: {last_error}"
+            ))
+        })?;
 
         let options = TrackPublishOptions {
             source: TrackSource::Screenshare,
