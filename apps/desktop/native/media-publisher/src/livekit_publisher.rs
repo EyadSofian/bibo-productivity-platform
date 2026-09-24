@@ -116,10 +116,13 @@ impl LiveKitPublisher {
         let mut last_error = String::new();
         let mut connected = None;
         for attempt in 1..=CONNECT_ATTEMPTS {
-            match runtime.block_on(tokio::time::timeout(
-                CONNECT_TIMEOUT,
-                Room::connect(url, token, RoomOptions::default()),
-            )) {
+            match runtime.block_on(async {
+                tokio::time::timeout(
+                    CONNECT_TIMEOUT,
+                    Room::connect(url, token, RoomOptions::default()),
+                )
+                .await
+            }) {
                 Ok(Ok(room)) => {
                     connected = Some(room);
                     break;
@@ -133,7 +136,7 @@ impl LiveKitPublisher {
                 }
             }
             if attempt < CONNECT_ATTEMPTS {
-                runtime.block_on(tokio::time::sleep(Duration::from_millis(350)));
+                runtime.block_on(async { tokio::time::sleep(Duration::from_millis(350)).await });
             }
         }
         let (room, events) = connected.ok_or_else(|| {
