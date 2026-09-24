@@ -13,7 +13,7 @@
 //! `--selftest` exists so the capture path can be verified on a machine without a
 //! backend. It publishes nothing.
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
@@ -27,51 +27,6 @@ use media_publisher::metrics::{self, Metrics};
 
 /// How often metrics are pushed to the agent while publishing.
 const METRICS_INTERVAL: Duration = Duration::from_secs(2);
-
-struct RunningCapture {
-    capture: CaptureSession,
-    watchdog_cancel: Arc<AtomicBool>,
-}
-
-impl RunningCapture {
-    fn new(capture: CaptureSession) -> Self {
-        let finished = capture.finished_flag();
-        let watchdog_cancel = Arc::new(AtomicBool::new(false));
-        let cancel = Arc::clone(&watchdog_cancel);
-        // The command reader is blocked on the named pipe during normal
-        // publishing, so it cannot notice a DXGI worker that exits later.
-        std::thread::spawn(move || loop {
-            if cancel.load(Ordering::Acquire) {
-                return;
-            }
-            if finished.load(Ordering::Acquire) {
-                metrics::error(
-                    "capture_worker_exited",
-                    Some("capture stopped unexpectedly"),
-                );
-                // The agent owns this child and reports CAPTURE_FAILED when it
-                // exits. Ending the dedicated sidecar also closes its SFU track.
-                std::process::exit(4);
-            }
-            std::thread::sleep(Duration::from_millis(100));
-        });
-        Self {
-            capture,
-            watchdog_cancel,
-        }
-    }
-
-    fn stop(&mut self) {
-        self.watchdog_cancel.store(true, Ordering::Release);
-        self.capture.stop();
-    }
-}
-
-impl Drop for RunningCapture {
-    fn drop(&mut self) {
-        self.watchdog_cancel.store(true, Ordering::Release);
-    }
-}
 
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -160,7 +115,7 @@ fn serve(pipe: &str) -> i32 {
     let mut reader = CommandReader::new(stream);
 
     let m = Arc::new(Metrics::new());
-    let mut session: Option<RunningCapture> = None;
+    let mut session: Option<CaptureSession> = None;
     // Starts disarmed. Remote control is never available merely because a
     // session is publishing - the agent must arm it explicitly, and only after
     // the backend has authorised the operator.
@@ -308,7 +263,7 @@ fn serve(pipe: &str) -> i32 {
 
                 match started {
                     Ok(s) => {
-                        session = Some(RunningCapture::new(s));
+                        session = Some(s);
                         emit(&Event::State {
                             state: PublisherState::Capturing,
                             detail: None,
