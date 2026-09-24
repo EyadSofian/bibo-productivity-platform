@@ -18,7 +18,8 @@ use windows::Win32::Graphics::Gdi::{
     HGDIOBJ, SRCCOPY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
-    DrawIconEx, GetCursorInfo, GetIconInfo, CURSORINFO, CURSOR_SHOWING, DI_NORMAL, HICON, ICONINFO,
+    DrawIconEx, GetCursorInfo, GetIconInfo, GetSystemMetrics, CURSORINFO, CURSOR_SHOWING,
+    DI_NORMAL, HICON, ICONINFO, SM_CXSCREEN, SM_CYSCREEN,
 };
 use windows_capture::dxgi_duplication_api::{
     DxgiDuplicationApi, DxgiDuplicationFormat, Error as DxgiError,
@@ -314,18 +315,35 @@ fn run_capture(
     started: &mpsc::SyncSender<Result<(), String>>,
 ) -> Result<(), String> {
     let monitor = monitor_for(cfg.monitor).map_err(|error| error.to_string())?;
-    let mut capture = DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8])
-        .map_err(|error| format!("DXGI initialization: {error}"))?;
-    let output = unsafe { capture.output().GetDesc1() }
-        .map_err(|error| format!("DXGI output description: {error}"))?;
-    let width = capture.width();
-    let height = capture.height();
-    let mut cursor = CursorCompositor::new(
-        width,
-        height,
-        output.DesktopCoordinates.left,
-        output.DesktopCoordinates.top,
-    )?;
+    let mut capture =
+        DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8]).ok();
+    let geometry = capture.as_mut().and_then(|api| {
+        unsafe { api.output().GetDesc1() }.ok().map(|output| {
+            (
+                api.width(),
+                api.height(),
+                output.DesktopCoordinates.left,
+                output.DesktopCoordinates.top,
+            )
+        })
+    });
+    let (width, height, left, top) = if let Some(geometry) = geometry {
+        geometry
+    } else if cfg.monitor == 0 {
+        // DXGI can refuse duplication immediately after sleep or an adapter
+        // reset. GDI can still copy the unlocked primary desktop in that case.
+        capture = None;
+        metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
+        let width = unsafe { GetSystemMetrics(SM_CXSCREEN) };
+        let height = unsafe { GetSystemMetrics(SM_CYSCREEN) };
+        if width <= 0 || height <= 0 {
+            return Err("primary desktop has no captureable geometry".into());
+        }
+        (width as u32, height as u32, 0, 0)
+    } else {
+        return Err("DXGI cannot open the requested monitor".into());
+    };
+    let mut cursor = CursorCompositor::new(width, height, left, top)?;
     let _ = cfg.indicator_shown;
     started
         .send(Ok(()))
@@ -334,11 +352,15 @@ fn run_capture(
     let frame_interval = Duration::from_micros(1_000_000 / u64::from(cfg.fps.max(1)));
     let mut next_frame = Instant::now();
     let mut last_frame = Instant::now() - Duration::from_secs(1);
+    let gdi_interval = Duration::from_millis(200);
     let mut scratch = Vec::new();
 
     while !stop.load(Ordering::Acquire) {
-        match capture.acquire_next_frame(25) {
-            Ok(mut frame) => {
+        let mut recover_dxgi = false;
+        let mut disable_dxgi = false;
+        let next = capture.as_mut().map(|api| api.acquire_next_frame(25));
+        match next {
+            Some(Ok(mut frame)) => {
                 let now = Instant::now();
                 if now < next_frame {
                     continue;
@@ -367,8 +389,8 @@ fn run_capture(
                     bgra: composed,
                 });
             }
-            Err(DxgiError::Timeout) => {
-                if last_frame.elapsed() >= Duration::from_secs(1) {
+            Some(Err(DxgiError::Timeout)) | None => {
+                if last_frame.elapsed() >= gdi_interval {
                     match cursor.capture_static_desktop(width, height) {
                         Ok(bgra) => {
                             metrics.set_resolution(width, height);
@@ -387,19 +409,30 @@ fn run_capture(
                     }
                 }
             }
-            Err(DxgiError::AccessLost) => {
+            Some(Err(DxgiError::AccessLost)) => {
                 metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
                 if stop.load(Ordering::Acquire) {
                     break;
                 }
                 thread::sleep(Duration::from_millis(200));
-                capture = DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8])
-                    .map_err(|error| format!("DXGI recovery: {error}"))?;
+                recover_dxgi = true;
             }
-            Err(_) => {
+            Some(Err(_)) => {
                 metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
-                thread::sleep(Duration::from_millis(100));
+                // A driver may report errors instead of Timeout while the
+                // unlocked desktop is static. Fall back to GDI immediately.
+                disable_dxgi = true;
             }
+        }
+        if recover_dxgi {
+            capture =
+                DxgiDuplicationApi::new_options(monitor, &[DxgiDuplicationFormat::Bgra8]).ok();
+        }
+        if disable_dxgi {
+            capture = None;
+        }
+        if capture.is_none() {
+            thread::sleep(Duration::from_millis(25));
         }
     }
     Ok(())

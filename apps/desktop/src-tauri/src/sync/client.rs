@@ -1213,7 +1213,10 @@ impl BackendClient {
 
 fn media_agent_report(state: &str) -> Option<(&'static str, &'static str)> {
     Some(match state {
-        "publishing" => ("live", ""),
+        // A track can be published before a single screen frame is captured.
+        // The event reader reports live only after frames_published increases.
+        "publishing" => ("negotiating", ""),
+        "first_frame" => ("live", ""),
         "connecting" => ("negotiating", ""),
         "reconnecting" => ("reconnecting", ""),
         "capture_failed" => ("failed", "CAPTURE_FAILED"),
@@ -1239,7 +1242,8 @@ mod media_report_tests {
             media_agent_report("capture_failed"),
             Some(("failed", "CAPTURE_FAILED"))
         );
-        assert_eq!(media_agent_report("publishing"), Some(("live", "")));
+        assert_eq!(media_agent_report("publishing"), Some(("negotiating", "")));
+        assert_eq!(media_agent_report("first_frame"), Some(("live", "")));
         assert_eq!(media_agent_report("metrics"), None);
     }
 }

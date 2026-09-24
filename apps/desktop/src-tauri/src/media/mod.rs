@@ -645,6 +645,7 @@ fn spawn_event_reader(
         };
         let mut lines = BufReader::new(reader).lines();
         let mut last_metrics_report: Option<Instant> = None;
+        let mut reported_first_frame = false;
         while let Some(Ok(line)) = lines.next() {
             let line = line.trim();
             if line.is_empty() {
@@ -669,6 +670,28 @@ fn spawn_event_reader(
                     });
                 }
                 Event::Metrics(m) => {
+                    if !reported_first_frame
+                        && m.get("frames_published")
+                            .and_then(serde_json::Value::as_u64)
+                            .unwrap_or(0)
+                            > 0
+                    {
+                        let reported = rt.block_on(async {
+                            tokio::time::timeout(
+                                Duration::from_secs(2),
+                                client.report_media_agent_state(
+                                    &session_id,
+                                    "first_frame",
+                                    "",
+                                    None,
+                                ),
+                            )
+                            .await
+                        });
+                        if matches!(reported, Ok(Ok(()))) {
+                            reported_first_frame = true;
+                        }
+                    }
                     if last_metrics_report
                         .is_some_and(|last| last.elapsed() < Duration::from_secs(8))
                     {

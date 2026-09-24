@@ -1,6 +1,6 @@
 [package]
 name = "ctracking"
-version = "1.5.21"
+version = "1.5.22"
 description = "Transparent employee time and activity tracker"
 authors = ["BiBoTracking"]
 edition = "2021"
