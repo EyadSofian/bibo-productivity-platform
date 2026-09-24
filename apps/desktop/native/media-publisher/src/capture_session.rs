@@ -13,8 +13,9 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
 use windows::Win32::Graphics::Gdi::{
-    CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, SelectObject, BITMAPINFO,
-    BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, HBITMAP, HDC, HGDIOBJ,
+    BitBlt, CreateCompatibleDC, CreateDIBSection, DeleteDC, DeleteObject, GetDC, ReleaseDC,
+    SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, CAPTUREBLT, DIB_RGB_COLORS, HBITMAP, HDC,
+    HGDIOBJ, SRCCOPY,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     DrawIconEx, GetCursorInfo, GetIconInfo, CURSORINFO, CURSOR_SHOWING, DI_NORMAL, HICON, ICONINFO,
@@ -152,6 +153,37 @@ impl CursorCompositor {
         let pixels = unsafe { std::slice::from_raw_parts_mut(self.bits, self.len) };
         pixels.copy_from_slice(frame);
 
+        self.draw_cursor()
+    }
+
+    // Desktop Duplication reports Timeout while the desktop is static. An
+    // initial frame is still needed for a new viewer, and a slow heartbeat
+    // keeps the encoded track alive if nothing on screen changes.
+    fn capture_static_desktop(&mut self, width: u32, height: u32) -> Result<&[u8], String> {
+        let screen = unsafe { GetDC(None) };
+        if screen.0.is_null() {
+            return Err("GetDC returned null".into());
+        }
+        let copied = unsafe {
+            BitBlt(
+                self.dc,
+                0,
+                0,
+                width as i32,
+                height as i32,
+                Some(screen),
+                self.monitor_left,
+                self.monitor_top,
+                SRCCOPY | CAPTUREBLT,
+            )
+        };
+        unsafe { ReleaseDC(None, screen) };
+        copied.map_err(|error| format!("BitBlt static frame: {error}"))?;
+        Ok(self.draw_cursor())
+    }
+
+    fn draw_cursor(&mut self) -> &[u8] {
+        let pixels = unsafe { std::slice::from_raw_parts_mut(self.bits, self.len) };
         let mut cursor = CURSORINFO {
             cbSize: std::mem::size_of::<CURSORINFO>() as u32,
             ..Default::default()
@@ -301,6 +333,7 @@ fn run_capture(
 
     let frame_interval = Duration::from_micros(1_000_000 / u64::from(cfg.fps.max(1)));
     let mut next_frame = Instant::now();
+    let mut last_frame = Instant::now() - Duration::from_secs(1);
     let mut scratch = Vec::new();
 
     while !stop.load(Ordering::Acquire) {
@@ -327,13 +360,33 @@ fn run_capture(
                 }
                 metrics.set_resolution(frame_width, frame_height);
                 metrics.frames_captured.fetch_add(1, Ordering::Relaxed);
+                last_frame = now;
                 sink(&CapturedFrame {
                     width: frame_width,
                     height: frame_height,
                     bgra: composed,
                 });
             }
-            Err(DxgiError::Timeout) => {}
+            Err(DxgiError::Timeout) => {
+                if last_frame.elapsed() >= Duration::from_secs(1) {
+                    match cursor.capture_static_desktop(width, height) {
+                        Ok(bgra) => {
+                            metrics.set_resolution(width, height);
+                            metrics.frames_captured.fetch_add(1, Ordering::Relaxed);
+                            last_frame = Instant::now();
+                            sink(&CapturedFrame {
+                                width,
+                                height,
+                                bgra,
+                            });
+                        }
+                        Err(_) => {
+                            metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
+                            last_frame = Instant::now();
+                        }
+                    }
+                }
+            }
             Err(DxgiError::AccessLost) => {
                 metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
                 if stop.load(Ordering::Acquire) {

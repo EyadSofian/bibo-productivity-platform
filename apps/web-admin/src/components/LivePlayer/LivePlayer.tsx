@@ -65,6 +65,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   // stopped must not restart what they just stopped.
   const runRef = useRef(0);
   const sessionRef = useRef<MediaSession | null>(null);
+  const viewerSessionRef = useRef<string | undefined>(undefined);
   const startingRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -91,8 +92,10 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
     pollRef.current = undefined;
     clearTimer();
     const previous = sessionRef.current;
+    const previousViewerSession = viewerSessionRef.current;
     sessionRef.current = null;
-    if (previous) void stopMediaSession(previous.id).catch(() => {});
+    viewerSessionRef.current = undefined;
+    if (previous && previousViewerSession) void stopMediaSession(previous.id, previousViewerSession).catch(() => {});
     teardownRef.current?.();
     teardownRef.current = null;
     detachStream();
@@ -172,12 +175,14 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   const start = useCallback(async () => {
     if (startingRef.current === runRef.current) return;
     const previous = sessionRef.current;
+    const previousViewerSession = viewerSessionRef.current;
     sessionRef.current = null;
+    viewerSessionRef.current = undefined;
     teardown();
     const run = runRef.current;
     startingRef.current = run;
     try {
-      if (previous) await stopMediaSession(previous.id).catch(() => {});
+      if (previous && previousViewerSession) await stopMediaSession(previous.id, previousViewerSession).catch(() => {});
       if (runRef.current !== run) return;
 
       setError(null);
@@ -204,7 +209,6 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         return;
       }
       if (runRef.current !== run) {
-        await stopMediaSession(started.id).catch(() => {});
         return;
       }
       sessionRef.current = started;
@@ -220,7 +224,7 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
       // Poll serially so publisher failures and policy stops reach the viewer.
       const poll = async () => {
         try {
-          const { session: latest } = await heartbeatMediaSession(started.id);
+          const { session: latest } = await heartbeatMediaSession(started.id, viewerSessionRef.current);
           if (runRef.current !== run) return;
           onSession?.(latest);
           if (latest.state === "failed") { failFromSession(latest); return; }
@@ -259,7 +263,11 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         );
         return;
       }
-      if (runRef.current !== run) return;
+      if (runRef.current !== run) {
+        if (token.viewer_session_id) await stopMediaSession(started.id, token.viewer_session_id).catch(() => {});
+        return;
+      }
+      viewerSessionRef.current = token.viewer_session_id;
       pollRef.current = setTimeout(poll, 1500);
 
       try {
@@ -315,15 +323,17 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
 
   const stop = useCallback(async () => {
     const current = sessionRef.current;
+    const viewerSession = viewerSessionRef.current;
     sessionRef.current = null;
+    viewerSessionRef.current = undefined;
     teardown();
     setPhase("idle");
     setError(null);
-    if (current) {
+    if (current && viewerSession) {
       // Detaching this viewer. The session survives while others watch, so this
       // is safe to call whenever the player goes away.
       try {
-        const result = await stopMediaSession(current.id);
+        const result = await stopMediaSession(current.id, viewerSession);
         onSession?.(result.session);
       } catch {
         // A stop that fails changes nothing the viewer can act on: the local

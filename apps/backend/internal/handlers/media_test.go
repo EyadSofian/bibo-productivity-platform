@@ -311,6 +311,31 @@ func TestViewerTokenIsSubscribeOnly(t *testing.T) {
 	}
 }
 
+func TestTwoTabsForSameUserHaveIndependentViewerLeases(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	path := "/v1/media/sessions/" + sessionID
+	_, first := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	_, second := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	firstID, _ := first["viewer_session_id"].(string)
+	secondID, _ := second["viewer_session_id"].(string)
+	if firstID == "" || secondID == "" || firstID == secondID {
+		t.Fatalf("tabs received invalid viewer leases: %q, %q", firstID, secondID)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] == "ended" {
+		t.Fatalf("closing first tab ended second tab's session: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK {
+		t.Fatalf("second tab cannot renew its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusConflict {
+		t.Fatalf("closed tab still renewed its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] != "ended" {
+		t.Fatalf("closing last tab did not end session: %d %v", rec.Code, body)
+	}
+}
+
 // Acceptance: a token's lifetime is bounded, and it is the configured bound.
 func TestMintedTokensExpireWithinTheConfiguredTTL(t *testing.T) {
 	e := newMediaEnv(t)

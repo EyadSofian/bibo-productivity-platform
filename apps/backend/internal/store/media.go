@@ -389,9 +389,8 @@ func (s *Store) AdvanceMediaSession(ctx context.Context, sessionID string, to me
 	return updated, nil
 }
 
-// JoinViewerSession records that a viewer attached, closing any row they left
-// open on the same session first. Reconnecting must not accumulate open rows, or
-// "who is watching now" becomes a count of reconnections.
+// JoinViewerSession records one browser tab's lease. Multiple tabs belonging
+// to the same user must stay independent, including their LiveKit identities.
 func (s *Store) JoinViewerSession(ctx context.Context, sessionID, businessID, viewerID string) (string, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -404,14 +403,6 @@ func (s *Store) JoinViewerSession(ctx context.Context, sessionID, businessID, vi
 	}
 	if state.Terminal() || state == media.StateEnding {
 		return "", ErrNotFound
-	}
-
-	if _, err := tx.Exec(ctx, `
-		UPDATE viewer_sessions
-		   SET left_at = now(), end_reason = 'superseded'
-		 WHERE media_session_id = $1 AND viewer_user_id = $2 AND left_at IS NULL`,
-		sessionID, viewerID); err != nil {
-		return "", err
 	}
 
 	var id string
@@ -438,10 +429,18 @@ func (s *Store) LeaveViewerSession(ctx context.Context, sessionID, viewerID, rea
 	return err
 }
 
+// LeaveViewerLease releases only the tab whose token could not be minted.
+func (s *Store) LeaveViewerLease(ctx context.Context, sessionID, viewerID, leaseID, reason string) error {
+	_, err := s.pool.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason=$4
+		WHERE media_session_id=$1 AND viewer_user_id=$2 AND id=$3::uuid AND left_at IS NULL`,
+		sessionID, viewerID, leaseID, reason)
+	return err
+}
+
 // LeaveMediaViewerAndMaybeEnd serializes the last-viewer decision with joins,
 // renewals, and expiry. Counting then ending in separate transactions could
 // otherwise end a session after a new viewer had successfully attached.
-func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, viewerID string) (MediaSession, int, bool, error) {
+func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, viewerID string, leaseID ...string) (MediaSession, int, bool, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return MediaSession{}, 0, false, err
@@ -451,7 +450,11 @@ func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, view
 	if err != nil {
 		return MediaSession{}, 0, false, err
 	}
-	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='stopped' WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL`, sessionID, viewerID); err != nil {
+	lease := ""
+	if len(leaseID) > 0 {
+		lease = leaseID[0]
+	}
+	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='stopped' WHERE media_session_id=$1 AND viewer_user_id=$2 AND ($3='' OR id=$3::uuid) AND left_at IS NULL`, sessionID, viewerID, lease); err != nil {
 		return MediaSession{}, 0, false, err
 	}
 	var remaining int
@@ -485,7 +488,7 @@ func (s *Store) ActiveViewerCount(ctx context.Context, sessionID string) (int, e
 // TouchViewerSession renews an existing viewer lease; it cannot join a room or
 // resurrect an expired/ended session. The parent lock serializes joins, renewals
 // and expiration, so an expiry cannot race a successfully committed heartbeat.
-func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID string) error {
+func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID string, leaseID ...string) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -498,9 +501,13 @@ func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID stri
 	if state.Terminal() || state == media.StateEnding {
 		return ErrNotFound
 	}
+	lease := ""
+	if len(leaseID) > 0 {
+		lease = leaseID[0]
+	}
 	result, err := tx.Exec(ctx, `UPDATE viewer_sessions SET last_seen_at=now()
-		WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL
-		AND last_seen_at > now() - interval '90 seconds'`, sessionID, viewerID)
+		WHERE media_session_id=$1 AND viewer_user_id=$2 AND ($3='' OR id=$3::uuid) AND left_at IS NULL
+		AND last_seen_at > now() - interval '90 seconds'`, sessionID, viewerID, lease)
 	if err != nil {
 		return err
 	}
