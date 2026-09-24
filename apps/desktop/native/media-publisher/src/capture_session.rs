@@ -195,6 +195,7 @@ impl Drop for CursorCompositor {
 pub struct CaptureSession {
     worker: Option<JoinHandle<()>>,
     stop: Arc<AtomicBool>,
+    finished: Arc<AtomicBool>,
 }
 
 impl CaptureSession {
@@ -205,6 +206,8 @@ impl CaptureSession {
     ) -> Result<Self, CaptureError> {
         let stop = Arc::new(AtomicBool::new(false));
         let worker_stop = Arc::clone(&stop);
+        let finished = Arc::new(AtomicBool::new(false));
+        let worker_finished = Arc::clone(&finished);
         let (started_tx, started_rx) = mpsc::sync_channel::<Result<(), String>>(1);
 
         let worker = thread::Builder::new()
@@ -214,6 +217,7 @@ impl CaptureSession {
                 if let Err(error) = result {
                     let _ = started_tx.try_send(Err(error));
                 }
+                worker_finished.store(true, Ordering::Release);
             })
             .map_err(|error| CaptureError::Start(error.to_string()))?;
 
@@ -221,6 +225,7 @@ impl CaptureSession {
             Ok(Ok(())) => Ok(Self {
                 worker: Some(worker),
                 stop,
+                finished,
             }),
             Ok(Err(error)) => {
                 let _ = worker.join();
@@ -238,6 +243,13 @@ impl CaptureSession {
 
     pub fn is_finished(&self) -> bool {
         self.worker.as_ref().is_none_or(JoinHandle::is_finished)
+    }
+
+    /// A capture worker can die after startup (for example, DXGI recovery
+    /// fails after sleep). The sidecar watches this flag while its command pipe
+    /// is blocked waiting for input.
+    pub fn finished_flag(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.finished)
     }
 
     pub fn stop(&mut self) {

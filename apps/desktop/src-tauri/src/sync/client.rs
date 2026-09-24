@@ -1169,15 +1169,8 @@ impl BackendClient {
         detail: &str,
         metrics: Option<serde_json::Value>,
     ) -> Result<(), String> {
-        let (state, failure_code) = match state {
-            "publishing" => ("live", ""),
-            "connecting" => ("negotiating", ""),
-            "reconnecting" => ("reconnecting", ""),
-            "capture_failed" => ("failed", "CAPTURE_FAILED"),
-            "encoder_failed" => ("failed", "ENCODER_FAILED"),
-            "connection_failed" => ("failed", "ICE_FAILED"),
-            "stopped" => ("ended", ""),
-            _ => return Ok(()),
+        let Some((state, failure_code)) = media_agent_report(state) else {
+            return Ok(());
         };
         let _ = (detail, metrics);
         let body = serde_json::json!({"state": state, "failure_code": failure_code});
@@ -1201,5 +1194,38 @@ impl BackendClient {
             return Ok(());
         }
         Err("report_media_agent_state: unreachable retry exhaustion".into())
+    }
+}
+
+fn media_agent_report(state: &str) -> Option<(&'static str, &'static str)> {
+    Some(match state {
+        "publishing" => ("live", ""),
+        "connecting" => ("negotiating", ""),
+        "reconnecting" => ("reconnecting", ""),
+        "capture_failed" => ("failed", "CAPTURE_FAILED"),
+        "policy_blocked" => ("failed", "DENIED_BY_POLICY"),
+        "encoder_failed" => ("failed", "ENCODER_FAILED"),
+        "connection_failed" => ("failed", "ICE_FAILED"),
+        "stopped" => ("ended", ""),
+        _ => return None,
+    })
+}
+
+#[cfg(test)]
+mod media_report_tests {
+    use super::media_agent_report;
+
+    #[test]
+    fn local_capture_blocks_are_terminal_and_specific() {
+        assert_eq!(
+            media_agent_report("policy_blocked"),
+            Some(("failed", "DENIED_BY_POLICY"))
+        );
+        assert_eq!(
+            media_agent_report("capture_failed"),
+            Some(("failed", "CAPTURE_FAILED"))
+        );
+        assert_eq!(media_agent_report("publishing"), Some(("live", "")));
+        assert_eq!(media_agent_report("metrics"), None);
     }
 }

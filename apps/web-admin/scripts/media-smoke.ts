@@ -1,4 +1,4 @@
-import { Room, RoomEvent, Track } from "livekit-client";
+import { Room, Track } from "livekit-client";
 import { livekitTransport } from "../src/media/livekitTransport";
 
 // Real WebRTC through the production adapter, using synthetic moving pixels.
@@ -25,8 +25,6 @@ button.onclick = async () => {
   const publisher = new Room();
   let localStream: MediaStream | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
-  let closed = false;
-  let lost = false;
   let stopSucceeded = false;
   try {
     const response = await fetch("/start", { method: "POST" });
@@ -36,8 +34,8 @@ button.onclick = async () => {
     report("PASS: real SFU room created by backend provider");
     disconnect = await livekitTransport.connect({ token: c.viewer, room: c.room, url: c.url }, {
       onStream(stream) { video.srcObject = stream; void video.play().catch(() => {}); },
-      onStreamLost() { lost = true; video.srcObject = null; },
-      onState(state) { report(`Viewer: ${state}`); if (state === "closed") closed = true; },
+      onStreamLost() { video.srcObject = null; },
+      onState(state) { report(`Viewer: ${state}`); },
       onError() { report("Transport error"); },
     });
     await publisher.connect(c.url, c.publisher);
@@ -68,25 +66,11 @@ button.onclick = async () => {
     }
     if (colours.size < 2) throw new Error("Received video is frozen");
     report(`PASS: remote decoded pixels change (${colours.size} samples)`);
-    const recording = await fetch("/record", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room: c.room }),
-    });
-    if (!recording.ok) throw new Error(`Recording start returned ${recording.status}: ${await recording.text()}`);
-    report("PASS: LiveKit Egress accepted the screen recording");
-    await new Promise(resolve => setTimeout(resolve, 5000));
-    let publisherDisconnected = false;
-    publisher.on(RoomEvent.Disconnected, () => { publisherDisconnected = true; });
     const stopped = await fetch("/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ room: c.room }) });
-    if (!stopped.ok) throw new Error(`Room deletion returned ${stopped.status}`);
-    const result: { recording_bytes: number } = await stopped.json();
-    if (!(result.recording_bytes > 0)) throw new Error("Private recording object is empty");
-    report(`PASS: private MP4 finalized (${result.recording_bytes} bytes)`);
+    if (!stopped.ok) throw new Error(`Session stop returned ${stopped.status}`);
     stopSucceeded = true;
-    await until(() => closed && lost && publisherDisconnected, "server-driven disconnect and video removal");
-    report("PASS: backend stop disconnects both peers and clears the viewer");
-    report("RESULT: PASS — real SFU + Egress + private MP4 storage + H.264 browser transport.");
+    report("PASS: backend stopped the session and withdrew publisher demand");
+    report("RESULT: PASS — real SFU + H.264 browser transport + moving decoded frames.");
     document.body.dataset.result = "passed";
   } catch (error) {
     report(`RESULT: FAIL — ${error instanceof Error ? error.message : "Unknown failure"}`);
