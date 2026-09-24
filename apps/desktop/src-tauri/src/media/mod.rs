@@ -229,8 +229,6 @@ enum CaptureBlock {
     #[cfg(windows)]
     LockedOrDisconnected,
     #[cfg(windows)]
-    NoForegroundWindow,
-    #[cfg(windows)]
     SensitiveApp,
 }
 
@@ -240,10 +238,15 @@ impl CaptureBlock {
             Self::Paused | Self::ScreenPolicy | Self::SignedOut => "policy_blocked",
             #[cfg(windows)]
             Self::LockedOrDisconnected | Self::SensitiveApp => "policy_blocked",
-            #[cfg(windows)]
-            Self::NoForegroundWindow => "capture_failed",
         }
     }
+}
+
+// An unlocked desktop can have no foreground window (for example immediately
+// after minimizing a console). That is not a capture failure. Only an actual
+// foreground app on the privacy skip list pauses video.
+fn foreground_is_sensitive(app_name: Option<&str>, skip_apps: &[String]) -> bool {
+    app_name.is_some_and(|name| crate::trackers::should_skip(name, skip_apps))
 }
 
 fn capture_block(ctx: &MediaContext) -> Option<CaptureBlock> {
@@ -265,11 +268,9 @@ fn capture_block(ctx: &MediaContext) -> Option<CaptureBlock> {
         if !windows_privacy::capture_allowed() {
             return Some(CaptureBlock::LockedOrDisconnected);
         }
-        let Some(window) = crate::platform::active_window() else {
-            return Some(CaptureBlock::NoForegroundWindow);
-        };
         let skip = ctx.control.screenshot_skip_apps.read().unwrap();
-        if crate::trackers::should_skip(&window.app_name, &skip) {
+        let window = crate::platform::active_window();
+        if foreground_is_sensitive(window.as_ref().map(|w| w.app_name.as_str()), &skip) {
             return Some(CaptureBlock::SensitiveApp);
         }
     }
@@ -723,11 +724,15 @@ mod tests {
                 CaptureBlock::LockedOrDisconnected.publisher_state(),
                 "policy_blocked"
             );
-            assert_eq!(
-                CaptureBlock::NoForegroundWindow.publisher_state(),
-                "capture_failed"
-            );
         }
+    }
+
+    #[test]
+    fn minimizing_the_only_window_does_not_stop_live_capture() {
+        let skip = vec!["PrivateApp".to_string()];
+        assert!(!foreground_is_sensitive(None, &skip));
+        assert!(!foreground_is_sensitive(Some("Windows Explorer"), &skip));
+        assert!(foreground_is_sensitive(Some("PrivateApp"), &skip));
     }
 
     #[test]
