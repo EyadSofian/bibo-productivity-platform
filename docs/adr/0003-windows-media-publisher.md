@@ -7,31 +7,28 @@
 
 The Windows delivery at commit `9cce5fc` used a standalone Rust publisher with
 Windows Graphics Capture and the LiveKit Rust SDK. The desktop WebView does not
-capture or encode the screen. Version `1.5.16` keeps the standalone publisher and
-changes its capture backend to DXGI Desktop Duplication.
+capture or encode the screen. Version `1.5.25` uses Windows Graphics Capture again
+after a physical post-sleep test showed that the borderless DXGI and GDI paths could
+connect successfully yet deliver zero frames.
 
 ## Capture and visibility
 
-DXGI Desktop Duplication is polled on its own worker and capped to a nominal 15 fps
-before frames are copied to CPU memory. It does not create the yellow Windows
-Graphics Capture border. A reusable top-down DIB composites the current system
-cursor into the BGRA frame, including its hotspot. A desktop status and local stop
-action remain available; the old `indicator_shown` wire field remains compatible
-but does not control an OS border. Capture also depends on the existing local
-consent, monitoring schedule, pause and excluded-app gates. Windows session checks
-require an active, unlocked session and the ordinary input desktop; unknown OS
-state denies capture. The queries follow Microsoft’s
-[WTS session API](https://learn.microsoft.com/en-us/windows/win32/api/wtsapi32/nf-wtsapi32-wtsquerysessioninformationw)
-and [input desktop API](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-openinputdesktop).
+Windows Graphics Capture delivers desktop frames and the system cursor through the
+interactive user session. It displays the native yellow privacy border while sharing.
+That border makes an active share visible to the person at the computer; it neither
+opens a terminal window nor controls the lifetime of the publisher. The sidecar is
+launched with `CREATE_NO_WINDOW`, so it stays hidden and minimizing a terminal cannot
+end a stream.
 
-The worker checks its stop flag every 25 ms. `DXGI_ERROR_ACCESS_LOST` recreates the
-duplication interface after a short backoff, which covers ordinary desktop and
-display-mode changes without leaving the publisher alive but idle.
+Capture depends on the existing local consent, monitoring schedule, pause and
+excluded-app gates. Windows session checks require an active, unlocked session and
+the ordinary input desktop; unknown OS state denies capture. The capture handler
+reports a closed surface to the agent, which ends the session with a typed failure
+instead of leaving the dashboard indefinitely waiting for frames. LiveKit connection
+attempts are bounded and retried three times after resume before that typed failure is sent.
 
 The original capture benchmark reported WGC at 14.6 fps and 6.1% of one CPU core
-versus **uncapped** DXGI at 62.3 fps and 25%. The shipping DXGI loop is capped at
-15 fps and avoids mapping discarded frames, but those historical numbers are not
-evidence of the new full encoding/network/viewer CPU budget. Raw data is preserved in
+versus **uncapped** DXGI at 62.3 fps and 25%. Raw data is preserved in
 [the benchmark JSON](../measurements/v04-capture-bench-windows.json).
 
 ## Encoding and transport

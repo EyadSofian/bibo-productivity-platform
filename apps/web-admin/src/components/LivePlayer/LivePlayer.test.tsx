@@ -63,6 +63,7 @@ beforeEach(async () => {
   mediaMocks.startLiveSession.mockResolvedValue({ session });
   mediaMocks.mintViewerToken.mockResolvedValue({
     token: "viewer-token-value",
+    viewer_session_id: "viewer-lease-1",
     expires_at: "2026-09-01T12:02:00Z",
     room: "room-uuid",
     can_publish: false,
@@ -216,6 +217,8 @@ describe("LivePlayer", () => {
         await vi.advanceTimersByTimeAsync(0);
         await vi.advanceTimersByTimeAsync(16_000);
       });
+      expect(screen.queryByText("TIMEOUT")).toBeNull();
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
 
       expect(screen.getByText("The device did not start sending in time.")).toBeTruthy();
       expect(screen.getByText("TIMEOUT")).toBeTruthy();
@@ -236,7 +239,7 @@ describe("LivePlayer", () => {
     const stopButton = await screen.findByRole("button", { name: "Stop" });
     stopButton.click();
 
-    await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1"));
     expect(stream._track.stop).toHaveBeenCalled();
     expect(transport.stopped).toBe(true);
   });
@@ -262,16 +265,16 @@ it("ends the backend session when its player is unmounted", async () => {
  const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
  await waitFor(() => expect(transport.connectCalls).toBe(1));
  view.unmount();
- await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1"));
+ await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1"));
 });
-it("ends a start response that arrives after the player has left", async () => {
+it("does not stop another tab's room when an unleased start response arrives late", async () => {
  let resolve!: (value: { session: typeof session }) => void;
  mediaMocks.startLiveSession.mockReturnValueOnce(new Promise(r => { resolve = r; }));
  const transport = new ControlledTransport();
  const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
  view.unmount();
  await act(async () => { resolve({ session }); });
- expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+ expect(mediaMocks.stopMediaSession).not.toHaveBeenCalled();
  expect(transport.connectCalls).toBe(0);
 });
 
@@ -282,7 +285,7 @@ it("surfaces a publisher failure that happens after starting", async () => {
     render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
     await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
     expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
-    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1");
   } finally { vi.useRealTimers(); }
 });
 
@@ -296,7 +299,7 @@ it("stops the local stream when its viewer lease expires", async () => {
     render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
     await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
     expect(transport.stopped).toBe(true);
-    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1");
     expect(mediaMocks.heartbeatMediaSession).toHaveBeenCalledTimes(1);
   } finally { vi.useRealTimers(); }
 });
@@ -309,6 +312,6 @@ it("can switch devices while the old start request is pending", async () => {
   view.rerender(<LivePlayer deviceId="device-2" transport={transport} autoStart />);
   await waitFor(() => expect(mediaMocks.startLiveSession).toHaveBeenCalledWith("device-2"));
   await act(async () => { resolve({ session: { ...session, id: "old-session" } }); });
-  expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("old-session");
+  expect(mediaMocks.stopMediaSession).not.toHaveBeenCalledWith("old-session", "viewer-lease-1");
   expect(transport.connectCalls).toBe(1);
 });

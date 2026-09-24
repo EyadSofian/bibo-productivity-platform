@@ -54,6 +54,7 @@ export type MediaToken = {
   room: string;
   can_publish: boolean;
   can_subscribe: boolean;
+  viewer_session_id?: string;
 };
 
 /** The typed error envelope the media endpoints return. */
@@ -119,8 +120,9 @@ export function getMediaSession(sessionId: string) {
   return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}`);
 }
 
-export function heartbeatMediaSession(sessionId: string) {
-  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/heartbeat`, { method: "POST" });
+export function heartbeatMediaSession(sessionId: string, viewerSessionId?: string) {
+  const query = viewerSessionId ? `?viewer_session_id=${encodeURIComponent(viewerSessionId)}` : "";
+  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/heartbeat${query}`, { method: "POST" });
 }
 
 /** Mints a subscribe-only token. Short-lived by design, so it is fetched when
@@ -133,8 +135,9 @@ export function mintViewerToken(sessionId: string) {
 
 /** Detaches this viewer. The session only ends when the last one leaves, so
  *  this is safe to call on unmount. */
-export function stopMediaSession(sessionId: string) {
-  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/stop`, {
+export function stopMediaSession(sessionId: string, viewerSessionId?: string) {
+  const query = viewerSessionId ? `?viewer_session_id=${encodeURIComponent(viewerSessionId)}` : "";
+  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/stop${query}`, {
     method: "POST",
   });
 }

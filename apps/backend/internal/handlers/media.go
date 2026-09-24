@@ -197,6 +197,13 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 	}
 	session, err := h.store.PendingMediaSessionForAgent(c.Request.Context(), userID, deviceID)
 	if errors.Is(err, store.ErrNotFound) {
+		// A locally blocked agent still polls for an existing live request so it
+		// can report the reason promptly. It must not create a new scheduled
+		// recording every second while Windows is locked or capture is paused.
+		if c.Query("existing_only") == "true" {
+			c.Status(http.StatusNoContent)
+			return
+		}
 		session, err = h.openScheduledRecording(c, userID, deviceID)
 		if errors.Is(err, store.ErrNotFound) {
 			c.Status(http.StatusNoContent)
@@ -325,10 +332,11 @@ func (h *MediaHandler) expireUnwatched(c *gin.Context, session store.MediaSessio
 }
 
 type tokenResponse struct {
-	URL       string    `json:"url,omitempty"`
-	Token     string    `json:"token"`
-	ExpiresAt time.Time `json:"expires_at"`
-	Room      string    `json:"room"`
+	URL             string    `json:"url,omitempty"`
+	Token           string    `json:"token"`
+	ExpiresAt       time.Time `json:"expires_at"`
+	Room            string    `json:"room"`
+	ViewerSessionID string    `json:"viewer_session_id,omitempty"`
 	// Permissions the token actually carries, so a client can assert scope
 	// without decoding a vendor token.
 	CanPublish   bool `json:"can_publish"`
@@ -490,8 +498,15 @@ func (h *MediaHandler) ViewerHeartbeat(c *gin.Context) {
 	if !h.require(c, userID, session.BusinessID, media.PermLiveViewWatch, store.AuditSessionRead) {
 		return
 	}
+	leaseID := c.Query("viewer_session_id")
+	if leaseID != "" {
+		if _, err := uuid.Parse(leaseID); err != nil {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "Invalid viewer session ID.", false)
+			return
+		}
+	}
 	if !session.State.Terminal() && session.State != media.StateEnding {
-		if err := h.store.TouchViewerSession(c.Request.Context(), session.ID, userID); err != nil {
+		if err := h.store.TouchViewerSession(c.Request.Context(), session.ID, userID, leaseID); err != nil {
 			if errors.Is(err, store.ErrNotFound) {
 				mediaError(c, http.StatusConflict, CodeSessionEnded, "Viewer session expired. Start watching again.", false)
 				return
@@ -525,32 +540,35 @@ func (h *MediaHandler) ViewerToken(c *gin.Context) {
 		return
 	}
 
+	leaseID, err := h.store.JoinViewerSession(c.Request.Context(), session.ID, session.BusinessID, userID)
+	if err != nil {
+		mediaInternal(c, err)
+		return
+	}
 	token, err := h.provider.MintSubscriberToken(c.Request.Context(), media.SubscriberTokenRequest{
 		Room:     session.ProviderRoomID,
-		Identity: userID,
+		Identity: userID + ":" + leaseID,
 		TTL:      h.tokenTTL,
 	})
 	if err != nil {
+		_ = h.store.LeaveViewerLease(c.Request.Context(), session.ID, userID, leaseID, "token_failed")
 		h.audit(c, session.BusinessID, session.ID, store.AuditViewerTokenMint, store.OutcomeError,
 			map[string]any{"reason": "provider"})
 		h.providerError(c, err)
 		return
 	}
 
-	if _, err := h.store.JoinViewerSession(c.Request.Context(), session.ID, session.BusinessID, userID); err != nil {
-		mediaInternal(c, err)
-		return
-	}
 	h.audit(c, session.BusinessID, session.ID, store.AuditViewerTokenMint, store.OutcomeAllowed,
 		map[string]any{"expires_in_s": int(h.tokenTTL.Seconds())})
 
 	c.JSON(http.StatusOK, tokenResponse{
-		Token:        token.Value,
-		URL:          token.URL,
-		ExpiresAt:    token.ExpiresAt,
-		Room:         session.ProviderRoomID,
-		CanPublish:   token.CanPublish,
-		CanSubscribe: token.CanSubscribe,
+		Token:           token.Value,
+		URL:             token.URL,
+		ExpiresAt:       token.ExpiresAt,
+		Room:            session.ProviderRoomID,
+		ViewerSessionID: leaseID,
+		CanPublish:      token.CanPublish,
+		CanSubscribe:    token.CanSubscribe,
 	})
 }
 
@@ -636,7 +654,22 @@ type agentStateReq struct {
 	// Track describes what is being published, recorded once when the publisher
 	// reaches "live". Optional: a publisher that cannot describe its encoding
 	// must still be able to report that it is live.
-	Track *agentTrackReq `json:"track"`
+	Track   *agentTrackReq       `json:"track"`
+	Metrics *publisherMetricsReq `json:"metrics"`
+}
+
+// Numeric counters only: neither screen content nor credentials belong here.
+type publisherMetricsReq struct {
+	FramesCaptured  uint64  `json:"frames_captured"`
+	FramesPublished uint64  `json:"frames_published"`
+	FramesDropped   uint64  `json:"frames_dropped"`
+	CaptureErrors   uint64  `json:"capture_errors"`
+	EncoderErrors   uint64  `json:"encoder_errors"`
+	Reconnects      uint32  `json:"reconnects"`
+	Width           uint32  `json:"width"`
+	Height          uint32  `json:"height"`
+	FPS             float64 `json:"fps"`
+	Encoder         string  `json:"encoder"`
 }
 
 type agentTrackReq struct {
@@ -665,9 +698,29 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 		return
 	}
 
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, 4096)
 	var req agentStateReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid body", false)
+		return
+	}
+	if req.State == "metrics" {
+		m := req.Metrics
+		if m == nil || m.Width > 16384 || m.Height > 16384 || m.FPS < 0 || m.FPS > 240 ||
+			(m.Encoder != "unknown" && m.Encoder != "software" && m.Encoder != "hardware") {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid publisher metrics", false)
+			return
+		}
+		encoded, _ := json.Marshal(m)
+		if err := h.store.UpdatePublisherMetrics(c.Request.Context(), agentUserID, sessionID, encoded); err != nil {
+			if errors.Is(err, store.ErrNotFound) {
+				mediaError(c, http.StatusNotFound, CodeSessionNotFound, "Session not found.", false)
+				return
+			}
+			mediaInternal(c, err)
+			return
+		}
+		c.Status(http.StatusNoContent)
 		return
 	}
 	to := media.State(req.State)
@@ -798,7 +851,14 @@ func (h *MediaHandler) Stop(c *gin.Context) {
 		return
 	}
 
-	updated, remaining, ended, err := h.store.LeaveMediaViewerAndMaybeEnd(c.Request.Context(), session.ID, userID)
+	leaseID := c.Query("viewer_session_id")
+	if leaseID != "" {
+		if _, err := uuid.Parse(leaseID); err != nil {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "Invalid viewer session ID.", false)
+			return
+		}
+	}
+	updated, remaining, ended, err := h.store.LeaveMediaViewerAndMaybeEnd(c.Request.Context(), session.ID, userID, leaseID)
 	if err != nil {
 		mediaInternal(c, err)
 		return

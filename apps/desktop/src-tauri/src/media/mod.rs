@@ -26,6 +26,8 @@ use std::io::{BufRead, BufReader, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+#[cfg(windows)]
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 
@@ -219,31 +221,64 @@ pub fn start(ctx: MediaContext) {
     }
 }
 
-fn capture_allowed(ctx: &MediaContext) -> bool {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CaptureBlock {
+    Paused,
+    ScreenPolicy,
+    SignedOut,
+    #[cfg(windows)]
+    LockedOrDisconnected,
+    #[cfg(windows)]
+    SensitiveApp,
+}
+
+impl CaptureBlock {
+    fn publisher_state(self) -> &'static str {
+        match self {
+            Self::Paused | Self::ScreenPolicy | Self::SignedOut => "policy_blocked",
+            #[cfg(windows)]
+            Self::LockedOrDisconnected | Self::SensitiveApp => "policy_blocked",
+        }
+    }
+}
+
+// An unlocked desktop can have no foreground window (for example immediately
+// after minimizing a console). That is not a capture failure. Only an actual
+// foreground app on the privacy skip list pauses video.
+fn foreground_is_sensitive(app_name: Option<&str>, skip_apps: &[String]) -> bool {
+    app_name.is_some_and(|name| crate::trackers::should_skip(name, skip_apps))
+}
+
+fn capture_block(ctx: &MediaContext) -> Option<CaptureBlock> {
     // Managed session video has its own server policy. The legacy
     // `capture_screenshots` preference only controls the retired still-image
     // pipeline; tying video to it leaves the media supervisor unable to poll on
     // upgraded devices that previously opted out of screenshots.
-    if ctx.status.stop_requested.load(Ordering::Acquire)
-        || !ctx.control.category_allowed("screen")
-        || ctx.auth.session().is_none()
-    {
-        return false;
+    if ctx.status.stop_requested.load(Ordering::Acquire) {
+        return Some(CaptureBlock::Paused);
+    }
+    if !ctx.control.category_allowed("screen") {
+        return Some(CaptureBlock::ScreenPolicy);
+    }
+    if ctx.auth.session().is_none() {
+        return Some(CaptureBlock::SignedOut);
     }
     #[cfg(windows)]
     {
         if !windows_privacy::capture_allowed() {
-            return false;
+            return Some(CaptureBlock::LockedOrDisconnected);
         }
-        let Some(window) = crate::platform::active_window() else {
-            return false;
-        };
         let skip = ctx.control.screenshot_skip_apps.read().unwrap();
-        if crate::trackers::should_skip(&window.app_name, &skip) {
-            return false;
+        let window = crate::platform::active_window();
+        if foreground_is_sensitive(window.as_ref().map(|w| w.app_name.as_str()), &skip) {
+            return Some(CaptureBlock::SensitiveApp);
         }
     }
-    true
+    None
+}
+
+fn capture_allowed(ctx: &MediaContext) -> bool {
+    capture_block(ctx).is_none()
 }
 
 #[cfg(windows)]
@@ -252,33 +287,59 @@ async fn supervise(ctx: MediaContext) {
     let mut active: Option<ActiveSession> = None;
     loop {
         let device_id = ctx.settings.current.lock().unwrap().device_id.clone();
-        if !capture_allowed(&ctx) || device_id.is_empty() {
+        let blocked = capture_block(&ctx);
+        if blocked.is_some() {
             if let Some(mut s) = active.take() {
                 s.stop("local_policy_stop", &ctx);
             }
-            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+        if device_id.is_empty() || ctx.auth.session().is_none() {
+            tokio::time::sleep(POLL_INTERVAL).await;
             continue;
         }
         let client = BackendClient::new(crate::settings::backend_base_url(), Arc::clone(&ctx.auth));
         let result = {
             let poll = tokio::time::timeout(
                 Duration::from_secs(2),
-                client.agent_media_session(&device_id),
+                client.agent_media_session(&device_id, blocked.is_some()),
             );
             tokio::pin!(poll);
-            loop {
-                tokio::select! {
-                    result = &mut poll => break result.unwrap_or_else(|_| Err("media authorization timed out".into())),
-                    _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                        if !capture_allowed(&ctx) {
-                            if let Some(mut s) = active.take() { s.stop("local_policy_stop", &ctx); }
-                            break Ok(None);
+            if blocked.is_some() {
+                poll.await
+                    .unwrap_or_else(|_| Err("media authorization timed out".into()))
+            } else {
+                loop {
+                    tokio::select! {
+                        result = &mut poll => break result.unwrap_or_else(|_| Err("media authorization timed out".into())),
+                        _ = tokio::time::sleep(Duration::from_millis(100)) => {
+                            if !capture_allowed(&ctx) {
+                                if let Some(mut s) = active.take() { s.stop("local_policy_stop", &ctx); }
+                                break Ok(None);
+                            }
                         }
                     }
                 }
             }
         };
+        let blocked_now = capture_block(&ctx);
         match result {
+            Ok(Some(sess)) if blocked_now.is_some() => {
+                // A healthy presence heartbeat does not mean video can capture.
+                // Keep polling while locally blocked and tell the operator why
+                // this particular request cannot start, rather than timing out.
+                let reason = blocked_now.unwrap();
+                ctx.status.set_error(&format!("media blocked: {reason:?}"));
+                let _ = tokio::time::timeout(
+                    Duration::from_secs(2),
+                    client.report_media_agent_state(
+                        &sess.session_id,
+                        reason.publisher_state(),
+                        "",
+                        None,
+                    ),
+                )
+                .await;
+            }
             Ok(Some(sess)) if capture_allowed(&ctx) => {
                 let same = active
                     .as_ref()
@@ -304,8 +365,21 @@ async fn supervise(ctx: MediaContext) {
                         }
                     }
                 } else if active.as_mut().is_some_and(|s| s.exited()) {
+                    // A sidecar that exits after publishing can leave the API
+                    // saying "live" while no frames arrive. Fail the session
+                    // explicitly so the viewer sees a device capture error.
                     active = None;
                     ctx.status.clear();
+                    let _ = tokio::time::timeout(
+                        Duration::from_secs(2),
+                        client.report_media_agent_state(
+                            &sess.session_id,
+                            "capture_failed",
+                            "",
+                            None,
+                        ),
+                    )
+                    .await;
                 }
             }
             // Authorization uncertainty is a stop, never permission to continue.
@@ -334,10 +408,8 @@ async fn supervise(ctx: MediaContext) {
 struct ActiveSession {
     session_id: String,
     child: std::process::Child,
-    writer: std::fs::File,
-    /// What we last told the sidecar about remote control. Tracked so a change
-    /// is sent once rather than on every five-second poll.
-    control_armed: bool,
+    // Keep the command half of the pipe open while the publisher runs.
+    _writer: std::fs::File,
     // Held so the pipe stays open for the lifetime of the session.
     _server: pipe::PipeServer,
     // Windows kills every process in this job if the agent exits unexpectedly.
@@ -391,47 +463,20 @@ impl ActiveSession {
         matches!(self.child.try_wait(), Ok(Some(_)) | Err(_))
     }
 
-    /// Arms or disarms remote control on the sidecar.
-    ///
-    /// Returns false if the command could not be written, in which case the
-    /// caller must NOT record the new state - retrying on the next poll is the
-    /// right behaviour, especially for a disarm that failed to send.
-    fn set_control(&mut self, armed: bool) -> bool {
-        let cmd = Command::SetControl { armed };
-        let Ok(mut line) = serde_json::to_vec(&cmd) else {
-            return false;
-        };
-        line.push(b'\n');
-        self.writer.write_all(&line).is_ok() && self.writer.flush().is_ok()
-    }
-
-    /// Stops the sidecar: ask politely, then make sure.
+    /// Stop without writing to the pipe. A sidecar stuck in capture may not
+    /// read commands, and a blocking named-pipe write used to freeze this sole
+    /// media polling thread indefinitely after a lock or sleep transition.
     fn stop(&mut self, reason: &str, ctx: &MediaContext) {
-        // Disarm before stopping. If the process lingers for any reason, it must
-        // not still be accepting input while it winds down.
-        if self.control_armed {
-            let _ = self.set_control(false);
-            self.control_armed = false;
-        }
-        let cmd = Command::Stop {
-            reason: reason.to_string(),
-        };
-        if let Ok(mut line) = serde_json::to_vec(&cmd) {
-            line.push(b'\n');
-            let _ = self.writer.write_all(&line);
-            let _ = self.writer.flush();
-        }
-        // Emergency stop has a 500ms budget; do not wait longer than that for a
-        // graceful exit before killing the process.
+        // TerminateProcess returns promptly on Windows. The kill-on-close job
+        // remains a second guarantee when this ActiveSession is dropped.
+        let _ = self.child.kill();
         let deadline = std::time::Instant::now() + Duration::from_millis(400);
         while std::time::Instant::now() < deadline {
-            if matches!(self.child.try_wait(), Ok(Some(_))) {
+            if !matches!(self.child.try_wait(), Ok(None)) {
                 break;
             }
             std::thread::sleep(Duration::from_millis(20));
         }
-        let _ = self.child.kill();
-        let _ = self.child.wait();
         ctx.status.clear();
         crate::log_info!("media", "publisher stopped: {reason}");
     }
@@ -473,6 +518,22 @@ fn sidecar_path() -> Result<std::path::PathBuf, String> {
     Err("media-publisher.exe not found next to the app; set CTRACKING_MEDIA_PUBLISHER".into())
 }
 
+/// The publisher is a console-subsystem executable for diagnostics, but its
+/// normal agent-owned run must never create a terminal on the employee's
+/// desktop. A visible console steals focus and closing it kills the live track.
+#[cfg(windows)]
+fn launch_sidecar(exe: &std::path::Path, pipe_name: &str) -> Result<std::process::Child, String> {
+    use std::os::windows::process::CommandExt;
+    use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+
+    std::process::Command::new(exe)
+        .arg("--pipe")
+        .arg(pipe_name)
+        .creation_flags(CREATE_NO_WINDOW.0)
+        .spawn()
+        .map_err(|e| format!("spawn sidecar: {e}"))
+}
+
 #[cfg(windows)]
 async fn start_session(
     client: &BackendClient,
@@ -496,11 +557,7 @@ async fn start_session(
     let name = pipe::pipe_name(session_id);
     let mut server = pipe::PipeServer::create(&name)?;
 
-    let mut child = std::process::Command::new(&exe)
-        .arg("--pipe")
-        .arg(&name)
-        .spawn()
-        .map_err(|e| format!("spawn sidecar: {e}"))?;
+    let mut child = launch_sidecar(&exe, &name)?;
     let job = match contain_sidecar(&child) {
         Ok(job) => job,
         Err(error) => {
@@ -564,9 +621,7 @@ async fn start_session(
     Ok(ActiveSession {
         session_id: session_id.to_string(),
         child,
-        writer,
-        // Remote input remains disabled in this live-video integration.
-        control_armed: false,
+        _writer: writer,
         _server: server,
         _job: job,
     })
@@ -589,6 +644,8 @@ fn spawn_event_reader(
             Err(_) => return,
         };
         let mut lines = BufReader::new(reader).lines();
+        let mut last_metrics_report: Option<Instant> = None;
+        let mut reported_first_frame = false;
         while let Some(Ok(line)) = lines.next() {
             let line = line.trim();
             if line.is_empty() {
@@ -605,16 +662,48 @@ fn spawn_event_reader(
                     }
                     let d = detail.unwrap_or_default();
                     rt.block_on(async {
-                        let _ = client
-                            .report_media_agent_state(&session_id, &state, &d, None)
-                            .await;
+                        let _ = tokio::time::timeout(
+                            Duration::from_secs(2),
+                            client.report_media_agent_state(&session_id, &state, &d, None),
+                        )
+                        .await;
                     });
                 }
                 Event::Metrics(m) => {
+                    if !reported_first_frame
+                        && m.get("frames_published")
+                            .and_then(serde_json::Value::as_u64)
+                            .unwrap_or(0)
+                            > 0
+                    {
+                        let reported = rt.block_on(async {
+                            tokio::time::timeout(
+                                Duration::from_secs(2),
+                                client.report_media_agent_state(
+                                    &session_id,
+                                    "first_frame",
+                                    "",
+                                    None,
+                                ),
+                            )
+                            .await
+                        });
+                        if matches!(reported, Ok(Ok(()))) {
+                            reported_first_frame = true;
+                        }
+                    }
+                    if last_metrics_report
+                        .is_some_and(|last| last.elapsed() < Duration::from_secs(8))
+                    {
+                        continue;
+                    }
+                    last_metrics_report = Some(Instant::now());
                     rt.block_on(async {
-                        let _ = client
-                            .report_media_agent_state(&session_id, "metrics", "", Some(m))
-                            .await;
+                        let _ = tokio::time::timeout(
+                            Duration::from_secs(2),
+                            client.report_media_agent_state(&session_id, "metrics", "", Some(m)),
+                        )
+                        .await;
                     });
                 }
                 Event::Warning { code, detail } => {
@@ -626,9 +715,11 @@ fn spawn_event_reader(
                         break;
                     }
                     rt.block_on(async {
-                        let _ = client
-                            .report_media_agent_state(&session_id, &code, &detail, None)
-                            .await;
+                        let _ = tokio::time::timeout(
+                            Duration::from_secs(2),
+                            client.report_media_agent_state(&session_id, &code, &detail, None),
+                        )
+                        .await;
                     });
                     break;
                 }
@@ -642,6 +733,30 @@ fn spawn_event_reader(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn local_capture_blocks_have_actionable_server_codes() {
+        assert_eq!(CaptureBlock::Paused.publisher_state(), "policy_blocked");
+        assert_eq!(
+            CaptureBlock::ScreenPolicy.publisher_state(),
+            "policy_blocked"
+        );
+        #[cfg(windows)]
+        {
+            assert_eq!(
+                CaptureBlock::LockedOrDisconnected.publisher_state(),
+                "policy_blocked"
+            );
+        }
+    }
+
+    #[test]
+    fn minimizing_the_only_window_does_not_stop_live_capture() {
+        let skip = vec!["PrivateApp".to_string()];
+        assert!(!foreground_is_sensitive(None, &skip));
+        assert!(!foreground_is_sensitive(Some("Windows Explorer"), &skip));
+        assert!(foreground_is_sensitive(Some("PrivateApp"), &skip));
+    }
 
     #[test]
     fn start_command_serialises_to_the_sidecar_wire_format() {
@@ -754,11 +869,8 @@ mod tests {
         let name = pipe::pipe_name(&session);
         let mut server = pipe::PipeServer::create(&name).expect("create pipe");
 
-        let mut child = std::process::Command::new(&exe)
-            .arg("--pipe")
-            .arg(&name)
-            .spawn()
-            .expect("spawn sidecar");
+        let mut child = launch_sidecar(std::path::Path::new(&exe), &name)
+            .expect("spawn sidecar without a console window");
 
         server
             .wait_for_client()

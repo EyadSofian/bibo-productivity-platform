@@ -78,19 +78,21 @@ func (s *Store) MediaRoleFor(ctx context.Context, userID, businessID string) (st
 
 // MediaSession is one row of media_sessions.
 type MediaSession struct {
-	ID             string          `json:"id"`
-	BusinessID     string          `json:"business_id"`
-	EmployeeID     string          `json:"employee_id,omitempty"`
-	DeviceID       string          `json:"device_id"`
-	Kind           media.Kind      `json:"kind"`
-	State          media.State     `json:"state"`
-	Provider       string          `json:"provider"`
-	PolicySnapshot json.RawMessage `json:"policy_snapshot,omitempty"`
-	StartedAt      time.Time       `json:"started_at"`
-	EndedAt        *time.Time      `json:"ended_at,omitempty"`
-	FailureCode    string          `json:"failure_code,omitempty"`
-	CreatedBy      string          `json:"created_by,omitempty"`
-	WorkSessionID  string          `json:"work_session_id,omitempty"`
+	ID                 string          `json:"id"`
+	BusinessID         string          `json:"business_id"`
+	EmployeeID         string          `json:"employee_id,omitempty"`
+	DeviceID           string          `json:"device_id"`
+	Kind               media.Kind      `json:"kind"`
+	State              media.State     `json:"state"`
+	Provider           string          `json:"provider"`
+	PolicySnapshot     json.RawMessage `json:"policy_snapshot,omitempty"`
+	StartedAt          time.Time       `json:"started_at"`
+	EndedAt            *time.Time      `json:"ended_at,omitempty"`
+	FailureCode        string          `json:"failure_code,omitempty"`
+	CreatedBy          string          `json:"created_by,omitempty"`
+	WorkSessionID      string          `json:"work_session_id,omitempty"`
+	PublisherMetrics   json.RawMessage `json:"publisher_metrics,omitempty"`
+	PublisherMetricsAt *time.Time      `json:"publisher_metrics_at,omitempty"`
 
 	// ProviderRoomID is the opaque room name. It is NOT serialized to API
 	// clients: a viewer needs a token, not a room name, and handing out room
@@ -115,14 +117,14 @@ type NewMediaSession struct {
 const mediaSessionColumns = `
 	ms.id, ms.business_id, ms.employee_id, ms.device_id, ms.kind, ms.state, ms.provider,
 	ms.provider_room_id, ms.policy_snapshot, ms.started_at, ms.ended_at, ms.failure_code,
-	ms.created_by, ms.work_session_id`
+	ms.created_by, ms.work_session_id, ms.publisher_metrics, ms.publisher_metrics_at`
 
 func scanMediaSession(row pgx.Row) (MediaSession, error) {
 	var m MediaSession
 	var employeeID, failureCode, createdBy, workSessionID *string
 	err := row.Scan(&m.ID, &m.BusinessID, &employeeID, &m.DeviceID, &m.Kind, &m.State,
 		&m.Provider, &m.ProviderRoomID, &m.PolicySnapshot, &m.StartedAt, &m.EndedAt,
-		&failureCode, &createdBy, &workSessionID)
+		&failureCode, &createdBy, &workSessionID, &m.PublisherMetrics, &m.PublisherMetricsAt)
 	if err != nil {
 		return MediaSession{}, err
 	}
@@ -297,6 +299,26 @@ func (s *Store) MediaSessionForAgent(ctx context.Context, agentUserID, sessionID
 	return m, err
 }
 
+// UpdatePublisherMetrics stores only bounded, numeric device-side counters.
+// Scope the write to the authenticated device owner and an open session.
+func (s *Store) UpdatePublisherMetrics(ctx context.Context, agentUserID, sessionID string, snapshot json.RawMessage) error {
+	result, err := s.pool.Exec(ctx, `
+		UPDATE media_sessions ms
+		   SET publisher_metrics=$3::jsonb, publisher_metrics_at=now()
+		  FROM devices d
+		 WHERE ms.id=$1 AND d.id=ms.device_id AND d.user_id=$2
+		   AND d.business_id=ms.business_id AND d.deleted_at IS NULL
+		   AND d.monitoring_enabled AND ms.state NOT IN ('ended','failed')`,
+		sessionID, agentUserID, snapshot)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // PendingMediaSessionForAgent resolves demand through the enrolled device and
 // current membership. Caller-supplied business/user pairs are never trusted.
 func (s *Store) PendingMediaSessionForAgent(ctx context.Context, userID, deviceID string) (MediaSession, error) {
@@ -367,9 +389,8 @@ func (s *Store) AdvanceMediaSession(ctx context.Context, sessionID string, to me
 	return updated, nil
 }
 
-// JoinViewerSession records that a viewer attached, closing any row they left
-// open on the same session first. Reconnecting must not accumulate open rows, or
-// "who is watching now" becomes a count of reconnections.
+// JoinViewerSession records one browser tab's lease. Multiple tabs belonging
+// to the same user must stay independent, including their LiveKit identities.
 func (s *Store) JoinViewerSession(ctx context.Context, sessionID, businessID, viewerID string) (string, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
@@ -382,14 +403,6 @@ func (s *Store) JoinViewerSession(ctx context.Context, sessionID, businessID, vi
 	}
 	if state.Terminal() || state == media.StateEnding {
 		return "", ErrNotFound
-	}
-
-	if _, err := tx.Exec(ctx, `
-		UPDATE viewer_sessions
-		   SET left_at = now(), end_reason = 'superseded'
-		 WHERE media_session_id = $1 AND viewer_user_id = $2 AND left_at IS NULL`,
-		sessionID, viewerID); err != nil {
-		return "", err
 	}
 
 	var id string
@@ -416,10 +429,18 @@ func (s *Store) LeaveViewerSession(ctx context.Context, sessionID, viewerID, rea
 	return err
 }
 
+// LeaveViewerLease releases only the tab whose token could not be minted.
+func (s *Store) LeaveViewerLease(ctx context.Context, sessionID, viewerID, leaseID, reason string) error {
+	_, err := s.pool.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason=$4
+		WHERE media_session_id=$1 AND viewer_user_id=$2 AND id=$3::uuid AND left_at IS NULL`,
+		sessionID, viewerID, leaseID, reason)
+	return err
+}
+
 // LeaveMediaViewerAndMaybeEnd serializes the last-viewer decision with joins,
 // renewals, and expiry. Counting then ending in separate transactions could
 // otherwise end a session after a new viewer had successfully attached.
-func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, viewerID string) (MediaSession, int, bool, error) {
+func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, viewerID string, leaseID ...string) (MediaSession, int, bool, error) {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return MediaSession{}, 0, false, err
@@ -429,7 +450,11 @@ func (s *Store) LeaveMediaViewerAndMaybeEnd(ctx context.Context, sessionID, view
 	if err != nil {
 		return MediaSession{}, 0, false, err
 	}
-	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='stopped' WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL`, sessionID, viewerID); err != nil {
+	lease := ""
+	if len(leaseID) > 0 {
+		lease = leaseID[0]
+	}
+	if _, err := tx.Exec(ctx, `UPDATE viewer_sessions SET left_at=now(), end_reason='stopped' WHERE media_session_id=$1 AND viewer_user_id=$2 AND ($3='' OR id=$3::uuid) AND left_at IS NULL`, sessionID, viewerID, lease); err != nil {
 		return MediaSession{}, 0, false, err
 	}
 	var remaining int
@@ -463,7 +488,7 @@ func (s *Store) ActiveViewerCount(ctx context.Context, sessionID string) (int, e
 // TouchViewerSession renews an existing viewer lease; it cannot join a room or
 // resurrect an expired/ended session. The parent lock serializes joins, renewals
 // and expiration, so an expiry cannot race a successfully committed heartbeat.
-func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID string) error {
+func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID string, leaseID ...string) error {
 	tx, err := s.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -476,9 +501,13 @@ func (s *Store) TouchViewerSession(ctx context.Context, sessionID, viewerID stri
 	if state.Terminal() || state == media.StateEnding {
 		return ErrNotFound
 	}
+	lease := ""
+	if len(leaseID) > 0 {
+		lease = leaseID[0]
+	}
 	result, err := tx.Exec(ctx, `UPDATE viewer_sessions SET last_seen_at=now()
-		WHERE media_session_id=$1 AND viewer_user_id=$2 AND left_at IS NULL
-		AND last_seen_at > now() - interval '90 seconds'`, sessionID, viewerID)
+		WHERE media_session_id=$1 AND viewer_user_id=$2 AND ($3='' OR id=$3::uuid) AND left_at IS NULL
+		AND last_seen_at > now() - interval '90 seconds'`, sessionID, viewerID, lease)
 	if err != nil {
 		return err
 	}

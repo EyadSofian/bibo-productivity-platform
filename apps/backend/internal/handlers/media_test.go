@@ -311,6 +311,31 @@ func TestViewerTokenIsSubscribeOnly(t *testing.T) {
 	}
 }
 
+func TestTwoTabsForSameUserHaveIndependentViewerLeases(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	path := "/v1/media/sessions/" + sessionID
+	_, first := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	_, second := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	firstID, _ := first["viewer_session_id"].(string)
+	secondID, _ := second["viewer_session_id"].(string)
+	if firstID == "" || secondID == "" || firstID == secondID {
+		t.Fatalf("tabs received invalid viewer leases: %q, %q", firstID, secondID)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] == "ended" {
+		t.Fatalf("closing first tab ended second tab's session: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK {
+		t.Fatalf("second tab cannot renew its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusConflict {
+		t.Fatalf("closed tab still renewed its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] != "ended" {
+		t.Fatalf("closing last tab did not end session: %d %v", rec.Code, body)
+	}
+}
+
 // Acceptance: a token's lifetime is bounded, and it is the configured bound.
 func TestMintedTokensExpireWithinTheConfiguredTTL(t *testing.T) {
 	e := newMediaEnv(t)
@@ -820,6 +845,40 @@ func TestRecordingProviderFailureUsesCooldownInsteadOfRetryStorm(t *testing.T) {
 	}
 }
 
+func TestBlockedAgentPollDoesNotOpenScheduledRecordings(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Recorded workday",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/v1/media/agent/session?device_id=" + e.deviceID
+	for range 3 {
+		if rec, body := e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusNoContent {
+			t.Fatalf("blocked poll: status %d body %v", rec.Code, body)
+		}
+	}
+	if rooms := e.provider.RoomCount(); rooms != 0 {
+		t.Fatalf("blocked polls opened %d recording rooms", rooms)
+	}
+
+	rec, body := e.call(t, http.MethodGet, path, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("normal recording poll: status %d body %v", rec.Code, body)
+	}
+	wantID := body["session_id"]
+	if rec, body = e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusOK || body["session_id"] != wantID {
+		t.Fatalf("blocked poll did not see existing session: %d %v", rec.Code, body)
+	}
+}
+
 func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
 	e := newMediaEnv(t)
 	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
@@ -1115,6 +1174,38 @@ func TestAgentStateIsScopedToItsOwnDevice(t *testing.T) {
 	// The owner has every permission, and is still not the publisher.
 	if rec, _ := e.reportState(t, sessionID, e.ownerID, `{"state":"live"}`); rec.Code != http.StatusNotFound {
 		t.Errorf("the owner reported publisher state: status %d, want 404", rec.Code)
+	}
+}
+
+func TestPublisherMetricsAreStoredOnlyForThePublishingDevice(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	metrics := `{"state":"metrics","metrics":{"frames_captured":12,"frames_published":10,"frames_dropped":2,"capture_errors":0,"encoder_errors":0,"reconnects":0,"width":1280,"height":720,"fps":15,"encoder":"hardware"}}`
+
+	for _, userID := range []string{e.ownerID, e.intruderID} {
+		if rec, _ := e.reportState(t, sessionID, userID, metrics); rec.Code != http.StatusNotFound {
+			t.Fatalf("unrelated user %s stored publisher metrics: %d", userID, rec.Code)
+		}
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"fps":999,"encoder":"hardware"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid metrics accepted: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNoContent {
+		t.Fatalf("publisher metrics rejected: %d", rec.Code)
+	}
+	var captured, published int
+	var receivedAt time.Time
+	if err := e.pool.QueryRow(e.ctx, `SELECT (publisher_metrics->>'frames_captured')::int, (publisher_metrics->>'frames_published')::int, publisher_metrics_at FROM media_sessions WHERE id=$1`, sessionID).Scan(&captured, &published, &receivedAt); err != nil {
+		t.Fatal(err)
+	}
+	if captured != 12 || published != 10 || receivedAt.IsZero() {
+		t.Fatalf("stored publisher metrics = %d/%d at %v", captured, published, receivedAt)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"ended"}`); rec.Code != http.StatusOK {
+		t.Fatalf("end: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNotFound {
+		t.Fatalf("metrics were stored for ended session: %d", rec.Code)
 	}
 }
 

@@ -224,7 +224,8 @@ func (h *LiveViewHandler) Stream(c *gin.Context) {
 	key := live.DeviceKey(deviceID)
 	frames, cancel := h.live.Subscribe(key)
 	defer cancel()
-	defer h.live.DropSession(key)
+	// A disconnect removes only this viewer. Dropping the device session here
+	// would close other viewers whenever one tab reconnects or goes away.
 
 	flusher := c.Writer
 	c.Header("Content-Type", "text/event-stream")
