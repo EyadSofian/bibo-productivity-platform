@@ -17,7 +17,10 @@ import { releaseStream } from "../../media/transport";
 /** How long a connection may sit in a non-live state before the viewer is told
  *  something is wrong. A spinner with no timeout is a UI that never admits
  *  failure, so every waiting state has a deadline. */
-const CONNECT_TIMEOUT_MS = 15_000;
+// The desktop waits for its next poll, starts a separate capture process, and
+// negotiates WebRTC. A 15-second deadline regularly closed the room while that
+// first connection was still completing on a waking Windows machine.
+const CONNECT_TIMEOUT_MS = 45_000;
 
 /** Everything the player can be showing. Each has its own message: a viewer
  *  told only "unavailable" learns nothing and asks a human instead. */

@@ -216,6 +216,8 @@ describe("LivePlayer", () => {
         await vi.advanceTimersByTimeAsync(0);
         await vi.advanceTimersByTimeAsync(16_000);
       });
+      expect(screen.queryByText("TIMEOUT")).toBeNull();
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
 
       expect(screen.getByText("The device did not start sending in time.")).toBeTruthy();
       expect(screen.getByText("TIMEOUT")).toBeTruthy();
