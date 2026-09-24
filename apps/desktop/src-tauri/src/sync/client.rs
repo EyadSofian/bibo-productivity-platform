@@ -1103,7 +1103,10 @@ impl BackendClient {
                 .get(self.url("/v1/media/agent/session"))
                 .query(&[
                     ("device_id", device_id),
-                    ("existing_only", if existing_only { "true" } else { "false" }),
+                    (
+                        "existing_only",
+                        if existing_only { "true" } else { "false" },
+                    ),
                 ])
                 .bearer_auth(&token)
                 .send()

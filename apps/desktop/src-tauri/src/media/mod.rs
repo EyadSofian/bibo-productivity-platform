@@ -515,6 +515,22 @@ fn sidecar_path() -> Result<std::path::PathBuf, String> {
     Err("media-publisher.exe not found next to the app; set CTRACKING_MEDIA_PUBLISHER".into())
 }
 
+/// The publisher is a console-subsystem executable for diagnostics, but its
+/// normal agent-owned run must never create a terminal on the employee's
+/// desktop. A visible console steals focus and closing it kills the live track.
+#[cfg(windows)]
+fn launch_sidecar(exe: &std::path::Path, pipe_name: &str) -> Result<std::process::Child, String> {
+    use std::os::windows::process::CommandExt;
+    use windows::Win32::System::Threading::CREATE_NO_WINDOW;
+
+    std::process::Command::new(exe)
+        .arg("--pipe")
+        .arg(pipe_name)
+        .creation_flags(CREATE_NO_WINDOW.0)
+        .spawn()
+        .map_err(|e| format!("spawn sidecar: {e}"))
+}
+
 #[cfg(windows)]
 async fn start_session(
     client: &BackendClient,
@@ -538,11 +554,7 @@ async fn start_session(
     let name = pipe::pipe_name(session_id);
     let mut server = pipe::PipeServer::create(&name)?;
 
-    let mut child = std::process::Command::new(&exe)
-        .arg("--pipe")
-        .arg(&name)
-        .spawn()
-        .map_err(|e| format!("spawn sidecar: {e}"))?;
+    let mut child = launch_sidecar(&exe, &name)?;
     let job = match contain_sidecar(&child) {
         Ok(job) => job,
         Err(error) => {
@@ -820,11 +832,8 @@ mod tests {
         let name = pipe::pipe_name(&session);
         let mut server = pipe::PipeServer::create(&name).expect("create pipe");
 
-        let mut child = std::process::Command::new(&exe)
-            .arg("--pipe")
-            .arg(&name)
-            .spawn()
-            .expect("spawn sidecar");
+        let mut child = launch_sidecar(std::path::Path::new(&exe), &name)
+            .expect("spawn sidecar without a console window");
 
         server
             .wait_for_client()
