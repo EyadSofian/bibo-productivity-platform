@@ -27,6 +27,11 @@ use media_publisher::metrics::{self, Metrics};
 
 /// How often metrics are pushed to the agent while publishing.
 const METRICS_INTERVAL: Duration = Duration::from_secs(2);
+/// WGC can report ready while the graphics device is still being recreated after
+/// Windows resumes. A capture is usable only after it delivers a frame.
+const CAPTURE_START_ATTEMPTS: u8 = 3;
+const CAPTURE_FIRST_FRAME_TIMEOUT: Duration = Duration::from_secs(3);
+const CAPTURE_RETRY_DELAY: Duration = Duration::from_millis(750);
 
 pub fn run() {
     let args: Vec<String> = std::env::args().collect();
@@ -241,24 +246,15 @@ fn serve(pipe: &str) -> i32 {
                 let pub_for_sink = Arc::clone(&publisher);
                 let m_sink = Arc::clone(&m);
 
-                let started = CaptureSession::start(
+                let started = start_capture_with_recovery(
                     CaptureConfig {
                         monitor: cfg.monitor,
                         fps: cfg.fps,
                         indicator_shown: cfg.indicator_shown,
                     },
                     Arc::clone(&m),
-                    Box::new(move |frame| {
-                        match pub_for_sink.try_lock() {
-                            Ok(mut p) => p.publish_frame(frame),
-                            // Never block the capture thread waiting on the
-                            // publisher: dropping a frame is better than stalling
-                            // capture and building a backlog.
-                            Err(_) => {
-                                m_sink.frames_dropped.fetch_add(1, Ordering::Relaxed);
-                            }
-                        }
-                    }),
+                    pub_for_sink,
+                    m_sink,
                 );
 
                 match started {
@@ -312,4 +308,76 @@ fn serve(pipe: &str) -> i32 {
             }
         }
     }
+}
+
+/// Rebuilds the Windows Graphics Capture session when the GPU has not completed
+/// its post-sleep recovery. Each attempt creates a fresh WinRT worker, D3D11
+/// device and frame pool; retrying LiveKit would not repair any of those.
+fn start_capture_with_recovery(
+    config: CaptureConfig,
+    metrics: Arc<Metrics>,
+    publisher: Arc<Mutex<LiveKitPublisher>>,
+    sink_metrics: Arc<Metrics>,
+) -> Result<CaptureSession, String> {
+    let mut last_error = String::from("capture did not start");
+
+    for attempt in 1..=CAPTURE_START_ATTEMPTS {
+        let first_frame = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let frame_seen = Arc::clone(&first_frame);
+        let publisher = Arc::clone(&publisher);
+        let sink_metrics = Arc::clone(&sink_metrics);
+
+        let mut session = match CaptureSession::start(
+            config,
+            Arc::clone(&metrics),
+            Box::new(move |frame| {
+                match publisher.try_lock() {
+                    Ok(mut p) => {
+                        p.publish_frame(frame);
+                        // The capture is only ready once an encoded frame has
+                        // been handed to the WebRTC source, not merely received
+                        // from WGC.
+                        frame_seen.store(true, Ordering::Release);
+                    }
+                    // Never block the capture thread waiting on the publisher.
+                    Err(_) => sink_metrics.frames_dropped.fetch_add(1, Ordering::Relaxed),
+                }
+            }),
+        ) {
+            Ok(session) => session,
+            Err(error) => {
+                last_error = error.to_string();
+                metrics::warn(
+                    "capture_start_attempt_failed",
+                    Some(&format!("attempt={attempt} error={last_error}")),
+                );
+                if attempt < CAPTURE_START_ATTEMPTS {
+                    std::thread::sleep(CAPTURE_RETRY_DELAY);
+                }
+                continue;
+            }
+        };
+
+        let deadline = Instant::now() + CAPTURE_FIRST_FRAME_TIMEOUT;
+        while Instant::now() < deadline {
+            if first_frame.load(Ordering::Acquire) {
+                metrics::info("capture_ready", Some(&format!("attempt={attempt}")));
+                return Ok(session);
+            }
+            std::thread::sleep(Duration::from_millis(25));
+        }
+
+        session.stop();
+        metrics.capture_errors.fetch_add(1, Ordering::Relaxed);
+        last_error = format!(
+            "attempt={attempt} produced no frame within {}ms",
+            CAPTURE_FIRST_FRAME_TIMEOUT.as_millis()
+        );
+        metrics::warn("capture_first_frame_timeout", Some(&last_error));
+        if attempt < CAPTURE_START_ATTEMPTS {
+            std::thread::sleep(CAPTURE_RETRY_DELAY);
+        }
+    }
+
+    Err(last_error)
 }

@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use windows_capture::capture::{CaptureControl, Context, GraphicsCaptureApiHandler};
 use windows_capture::frame::Frame;
-use windows_capture::graphics_capture_api::InternalCaptureControl;
+use windows_capture::graphics_capture_api::{GraphicsCaptureApi, InternalCaptureControl};
 use windows_capture::monitor::Monitor;
 use windows_capture::settings::{
     ColorFormat, CursorCaptureSettings, DirtyRegionSettings, DrawBorderSettings,
@@ -67,6 +67,7 @@ pub type FrameSink = Box<dyn FnMut(&CapturedFrame<'_>) + Send + 'static>;
 #[derive(Debug)]
 pub enum CaptureError {
     NoSuchMonitor(u32),
+    Unsupported(String),
     Start(String),
 }
 
@@ -74,6 +75,7 @@ impl std::fmt::Display for CaptureError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NoSuchMonitor(i) => write!(f, "monitor {i} not found"),
+            Self::Unsupported(e) => write!(f, "Windows Graphics Capture is unavailable: {e}"),
             Self::Start(e) => write!(f, "capture failed to start: {e}"),
         }
     }
@@ -172,6 +174,18 @@ impl CaptureSession {
         metrics: Arc<Metrics>,
         sink: FrameSink,
     ) -> Result<Self, CaptureError> {
+        // `IsSupported` is the authoritative OS check.  A display can be present
+        // while its graphics stack is still recovering from sleep, in which case
+        // attempting to create a frame pool only produces an opaque Direct3D error.
+        match GraphicsCaptureApi::is_supported() {
+            Ok(true) => {}
+            Ok(false) => {
+                return Err(CaptureError::Unsupported(
+                    "IsSupported returned false".into(),
+                ))
+            }
+            Err(error) => return Err(CaptureError::Unsupported(error.to_string())),
+        }
         let monitor = if cfg.monitor == 0 {
             Monitor::primary().map_err(|_| CaptureError::NoSuchMonitor(0))?
         } else {
