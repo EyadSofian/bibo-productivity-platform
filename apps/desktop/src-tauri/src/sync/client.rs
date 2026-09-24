@@ -1094,13 +1094,17 @@ impl BackendClient {
     pub async fn agent_media_session(
         &self,
         device_id: &str,
+        existing_only: bool,
     ) -> Result<Option<AgentSession>, String> {
         let mut token = self.access_token()?;
         for attempt in 0..2 {
             let resp = self
                 .http
                 .get(self.url("/v1/media/agent/session"))
-                .query(&[("device_id", device_id)])
+                .query(&[
+                    ("device_id", device_id),
+                    ("existing_only", if existing_only { "true" } else { "false" }),
+                ])
                 .bearer_auth(&token)
                 .send()
                 .await

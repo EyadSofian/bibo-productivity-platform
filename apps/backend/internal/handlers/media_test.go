@@ -820,6 +820,40 @@ func TestRecordingProviderFailureUsesCooldownInsteadOfRetryStorm(t *testing.T) {
 	}
 }
 
+func TestBlockedAgentPollDoesNotOpenScheduledRecordings(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Recorded workday",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/v1/media/agent/session?device_id=" + e.deviceID
+	for range 3 {
+		if rec, body := e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusNoContent {
+			t.Fatalf("blocked poll: status %d body %v", rec.Code, body)
+		}
+	}
+	if rooms := e.provider.RoomCount(); rooms != 0 {
+		t.Fatalf("blocked polls opened %d recording rooms", rooms)
+	}
+
+	rec, body := e.call(t, http.MethodGet, path, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("normal recording poll: status %d body %v", rec.Code, body)
+	}
+	wantID := body["session_id"]
+	if rec, body = e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusOK || body["session_id"] != wantID {
+		t.Fatalf("blocked poll did not see existing session: %d %v", rec.Code, body)
+	}
+}
+
 func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
 	e := newMediaEnv(t)
 	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{

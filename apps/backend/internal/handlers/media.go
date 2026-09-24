@@ -197,6 +197,13 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 	}
 	session, err := h.store.PendingMediaSessionForAgent(c.Request.Context(), userID, deviceID)
 	if errors.Is(err, store.ErrNotFound) {
+		// A locally blocked agent still polls for an existing live request so it
+		// can report the reason promptly. It must not create a new scheduled
+		// recording every second while Windows is locked or capture is paused.
+		if c.Query("existing_only") == "true" {
+			c.Status(http.StatusNoContent)
+			return
+		}
 		session, err = h.openScheduledRecording(c, userID, deviceID)
 		if errors.Is(err, store.ErrNotFound) {
 			c.Status(http.StatusNoContent)

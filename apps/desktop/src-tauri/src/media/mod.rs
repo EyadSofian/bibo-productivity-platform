@@ -298,7 +298,7 @@ async fn supervise(ctx: MediaContext) {
         let result = {
             let poll = tokio::time::timeout(
                 Duration::from_secs(2),
-                client.agent_media_session(&device_id),
+                client.agent_media_session(&device_id, blocked.is_some()),
             );
             tokio::pin!(poll);
             if blocked.is_some() {
