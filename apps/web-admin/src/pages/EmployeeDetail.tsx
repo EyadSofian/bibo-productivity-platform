@@ -22,6 +22,7 @@ import type {
 } from "../api/types";
 import { ActivityPanel } from "../components/reports/ActivityPanel";
 import { BrowserPanel } from "../components/reports/BrowserPanel";
+import { rollupByDomain } from "../components/reports/rollup";
 import { CommunicationEvidencePanel } from "../components/reports/CommunicationEvidencePanel";
 import { KeystrokePanel } from "../components/reports/KeystrokePanel";
 import { PlaybackPanel } from "../components/reports/PlaybackPanel";
@@ -65,7 +66,6 @@ const IconChevron = svg(<path d="m9 18 6-6-6-6" />);
 const IconCalendar = svg(<><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></>);
 const IconClock = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>);
 const IconAppWindow = svg(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 4v4" /><path d="M2 8h20" /><path d="M6 4v4" /></>);
-const IconKeyboard = svg(<><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></>);
 const IconPause = svg(<><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></>);
 const TrendUp = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
@@ -343,6 +343,9 @@ export function EmployeeDetail() {
   // active foreground intervals, so idle, suspended and total device time can
   // only come from here. Null until loaded — never substituted with a guess.
   const totals = states?.totals ?? null;
+  const sites = useMemo(() => rollupByDomain(visits ?? []), [visits]);
+  const topSite = sites[0];
+  const deviceS = totals ? totals.active_s + totals.idle_s + totals.suspended_s : null;
   // The timeline is authoritative for the time budget when it has data, so the
   // cards cannot contradict each other. It measures active time device-wide,
   // whereas activity_samples only accrues while a foreground window is
@@ -444,18 +447,6 @@ export function EmployeeDetail() {
         </div>
       </div>
 
-      <div className="ad-command-deck">
-        {presence?.device_id ? (
-          <Suspense fallback={<Spinner />}>
-            <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={presence.state !== "offline"} />
-          </Suspense>
-        ) : <Notice kind="info">{t("detail.presence.waiting")}</Notice>}
-        <div className="ad-command-deck__telemetry">
-          <LivePresence presence={presence} />
-          <LiveResources resources={presence?.resources} />
-        </div>
-      </div>
-
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}
 
@@ -474,24 +465,50 @@ export function EmployeeDetail() {
         />
         <StatCard
           icon={IconPause}
-          label={t("detail.summary.idleTime")}
-          value={hasTimeline ? fmtDuration(totals.idle_s) : "—"}
-          sub={hasTimeline ? `${t("detail.summary.offlineTime")} ${fmtDuration(totals.offline_s)}` : undefined}
+          label={t("detail.summary.deviceTime")}
+          value={hasTimeline && deviceS !== null ? fmtDuration(deviceS) : "—"}
+          sub={hasTimeline ? `${t("detail.summary.idleTime")} ${fmtDuration(totals.idle_s)}` : undefined}
         />
         <StatCard
           icon={IconAppWindow}
           label={t("detail.summary.topApp")}
           value={topApp}
-          delta={activeS > 0 ? `${topShare}%` : undefined}
-          sub={t("dashboard.statFocus")}
+          sub={activeS > 0 ? `${fmtDuration(topAppS)} · ${topShare}%` : t("detail.summary.noActivity")}
         />
         <StatCard
-          icon={IconKeyboard}
-          label={t("detail.summary.keypresses")}
-          value={keypresses.toLocaleString()}
-          sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
+          icon={IconAppWindow}
+          label={t("detail.summary.topSite")}
+          value={topSite?.domain ?? "—"}
+          sub={topSite ? fmtDuration(topSite.totalS) : t("detail.insights.browserHint")}
         />
       </div>
+
+      <section className="ad-insights" aria-label={t("detail.insights.title")}>
+        <div className="ad-insights__head">
+          <div><span className="ad-insights__eyebrow">{t("detail.insights.eyebrow")}</span><h2>{t("detail.insights.title")}</h2></div>
+          <p>{t("detail.insights.description")}</p>
+        </div>
+        <div className="ad-insights__actions">
+          <button type="button" onClick={() => { setTab("activity"); document.getElementById("employee-reports")?.scrollIntoView({ behavior: "smooth" }); }}>{t("detail.insights.appsAction")} <span aria-hidden="true">↗</span></button>
+          <button type="button" onClick={() => { setTab("browser"); document.getElementById("employee-reports")?.scrollIntoView({ behavior: "smooth" }); }}>{t("detail.insights.sitesAction")} <span aria-hidden="true">↗</span></button>
+          <span>{t("detail.summary.keypresses")}: {keypresses.toLocaleString(i18n.language)}</span>
+        </div>
+      </section>
+
+      <details className="ad-live-details">
+        <summary><span>{t("detail.insights.liveAction")}</span><span aria-hidden="true">⌄</span></summary>
+        <div className="ad-command-deck">
+          {presence?.device_id ? (
+            <Suspense fallback={<Spinner />}>
+              <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={presence.state !== "offline"} />
+            </Suspense>
+          ) : <Notice kind="info">{t("detail.presence.waiting")}</Notice>}
+          <div className="ad-command-deck__telemetry">
+            <LivePresence presence={presence} />
+            <LiveResources resources={presence?.resources} />
+          </div>
+        </div>
+      </details>
 
       {/* Unified timeline: the five reports below share one axis here, so a
           vertical slice answers "what was happening at 14:20" without moving
@@ -515,7 +532,7 @@ export function EmployeeDetail() {
       </div>
 
       {/* tabs + panel */}
-      <div className="ad-tabwrap">
+      <div className="ad-tabwrap" id="employee-reports">
         <div className="bibo-tabs bibo-tabs--pill" role="tablist">
           {TABS.map((key) => (
             <button

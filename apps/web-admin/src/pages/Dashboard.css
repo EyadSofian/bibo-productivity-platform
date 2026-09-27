@@ -115,3 +115,27 @@
   .ops-lite__panel-head, .ops-lite__video-totals, .ops-lite__video-item { padding-inline: 15px; }
 }
 @media (prefers-reduced-motion: reduce) { .ops-lite__button { transition: none; } }
+
+/* Airy overview with a translucent hero instead of a dark colour block. */
+.ops-lite__header {
+  min-height: 200px;
+  border: 1px solid #dce7f8;
+  color: var(--text);
+  background: radial-gradient(circle at 86% -14%, rgba(178, 206, 255, .76), transparent 37%),
+    radial-gradient(circle at 9% 95%, rgba(220, 213, 255, .48), transparent 39%),
+    rgba(255, 255, 255, .67);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  box-shadow: 0 18px 40px rgba(71, 102, 159, .08);
+}
+.ops-lite__header::after { border-color: rgba(74, 112, 197, .12); box-shadow: 0 0 0 48px rgba(93, 133, 212, .04), 0 0 0 96px rgba(93, 133, 212, .025); }
+.ops-lite__eyebrow { border-color: #cddbf6; color: #4466bc; background: rgba(255,255,255,.5); }
+.ops-lite__header h1 { color: #233b62; }
+.ops-lite__header p, .ops-lite__refresh { color: #647590; }
+.ops-lite__button { color: #fff; background: #466bd6; box-shadow: 0 8px 20px rgba(70,107,214,.18); }
+.ops-lite__button:hover { color: #fff; background: #355bc9; }
+.ops-lite__metric, .ops-lite__panel { background: rgba(255,255,255,.76); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 12px 32px rgba(67,92,143,.05); }
+.ops-lite__metric:nth-child(2)::before { background: #d8a55d; }
+.ops-lite__metric:nth-child(3)::before { background: #5eafa7; }
+.ops-lite__metric:nth-child(4)::before { background: #a986d7; }
+.ops-lite__guide { border-color: #d8e5f8; color: #345e9c; background: rgba(235,243,255,.83); }

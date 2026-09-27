@@ -108,6 +108,7 @@
     "errorCreate": "Tidak dapat membuat {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Ringkasan", "title": "Jelajahi detail", "description": "Lihat aplikasi, URL persis, dan waktu di setiap halaman pada laporan di bawah.", "appsAction": "Lihat aplikasi", "sitesAction": "Lihat situs yang dikunjungi", "liveAction": "Tampilan langsung dan status perangkat", "browserHint": "Perlu ekstensi browser"},
     "breadcrumbDashboard": "Dasbor",
     "dateMode": "Mode tanggal",
     "day": "Hari",

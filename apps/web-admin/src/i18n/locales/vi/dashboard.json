@@ -108,6 +108,7 @@
     "errorCreate": "Không thể tạo {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Tổng quan", "title": "Xem chi tiết", "description": "Xem ứng dụng, URL chính xác và thời gian trên từng trang trong báo cáo bên dưới.", "appsAction": "Xem ứng dụng", "sitesAction": "Xem trang đã truy cập", "liveAction": "Màn hình trực tiếp và trạng thái thiết bị", "browserHint": "Cần tiện ích trình duyệt"},
     "breadcrumbDashboard": "Bảng điều khiển",
     "dateMode": "Chế độ ngày",
     "day": "Ngày",

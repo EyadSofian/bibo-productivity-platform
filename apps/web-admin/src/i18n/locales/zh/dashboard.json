@@ -108,6 +108,7 @@
     "errorCreate": "无法创建{{member}}。"
   },
   "detail": {
+    "insights": {"eyebrow": "概览", "title": "查看详情", "description": "在下方报告中查看应用、完整网址及每个页面的停留时间。", "appsAction": "查看应用", "sitesAction": "查看访问的网站", "liveAction": "实时画面和设备状态", "browserHint": "需要浏览器扩展"},
     "breadcrumbDashboard": "仪表板",
     "dateMode": "日期模式",
     "day": "单日",

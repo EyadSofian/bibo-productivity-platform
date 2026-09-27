@@ -108,6 +108,7 @@
     "errorCreate": "No se pudo crear el {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Vista rápida", "title": "Explorar detalles", "description": "Consulta las aplicaciones, las URL exactas y el tiempo en cada página en los informes.", "appsAction": "Ver aplicaciones", "sitesAction": "Ver sitios visitados", "liveAction": "Vista en vivo y estado del dispositivo", "browserHint": "Se necesita la extensión del navegador"},
     "breadcrumbDashboard": "Panel",
     "dateMode": "Modo de fecha",
     "day": "Día",

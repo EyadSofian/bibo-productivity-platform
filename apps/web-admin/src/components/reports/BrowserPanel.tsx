@@ -28,6 +28,16 @@ function colorForDomain(d: string): string {
   return DOMAIN_COLORS[h % DOMAIN_COLORS.length];
 }
 
+// URLs originate from a device. Only make ordinary web addresses clickable.
+function webHref(raw: string): string | null {
+  try {
+    const url = new URL(raw);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export function BrowserPanel({ visits }: { visits: BrowserVisit[] }) {
   const { t } = useTranslation("reports");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -136,9 +146,11 @@ export function BrowserPanel({ visits }: { visits: BrowserVisit[] }) {
                             <article className="ad-browser-page" key={page.url}>
                               <div className="ad-browser-page__main">
                                 <strong>{page.title || t("browser.untitled")}</strong>
-                                <code dir="ltr" title={page.url}>
-                                  {page.url}
-                                </code>
+                                {webHref(page.url) ? (
+                                  <a className="ad-browser-page__link" href={webHref(page.url)!} target="_blank" rel="noopener noreferrer" title={page.url}>
+                                    <bdi dir="ltr">{page.url}</bdi><span aria-hidden="true">↗</span>
+                                  </a>
+                                ) : <code dir="ltr" title={page.url}>{page.url}</code>}
                               </div>
                               <div className="ad-browser-page__metric">
                                 <span>{t("browser.table.time")}</span>

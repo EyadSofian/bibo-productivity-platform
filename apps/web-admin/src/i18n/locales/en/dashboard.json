@@ -108,6 +108,7 @@
     "errorCreate": "Could not create {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Quick view", "title": "Explore the details", "description": "Use the reports below to inspect apps, exact browser URLs and time on each page.", "appsAction": "View apps", "sitesAction": "View visited sites", "liveAction": "Live view and device status", "browserHint": "Browser extension needed"},
     "breadcrumbDashboard": "Dashboard",
     "dateMode": "Date mode",
     "day": "Day",

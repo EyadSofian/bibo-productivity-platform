@@ -108,6 +108,7 @@
     "errorCreate": "تعذّر إنشاء {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "نظرة سريعة", "title": "تفاصيل النشاط", "description": "افتح التقارير أدناه لمعرفة التطبيقات والروابط الفعلية ومدة البقاء في كل صفحة.", "appsAction": "عرض التطبيقات", "sitesAction": "عرض المواقع والروابط", "liveAction": "العرض المباشر وحالة الجهاز", "browserHint": "يتطلب إضافة المتصفح"},
     "breadcrumbDashboard": "لوحة التحكم",
     "dateMode": "نمط التاريخ",
     "day": "يوم",

@@ -108,6 +108,7 @@
     "errorCreate": "{{member}}を作成できませんでした。"
   },
   "detail": {
+    "insights": {"eyebrow": "概要", "title": "詳細を見る", "description": "下のレポートでアプリ、正確なURL、各ページの滞在時間を確認できます。", "appsAction": "アプリを見る", "sitesAction": "訪問サイトを見る", "liveAction": "ライブ画面とデバイス状態", "browserHint": "ブラウザー拡張機能が必要です"},
     "breadcrumbDashboard": "ダッシュボード",
     "dateMode": "日付モード",
     "day": "日",
