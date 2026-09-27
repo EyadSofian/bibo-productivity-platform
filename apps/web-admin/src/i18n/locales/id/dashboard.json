@@ -60,6 +60,11 @@
       "title": "Status rekaman", "subtitle": "Lihat apakah setiap video sampai ke penyimpanan privat.", "error": "Status rekaman tidak dapat dimuat.",
       "ready": "Siap", "inProgress": "Diproses", "failed": "Gagal", "stale": "{{count}} video terlalu lama diproses.",
       "empty": "Belum ada percobaan perekaman.", "unknownEmployee": "Karyawan tidak dikenal", "retention": "Video siap disimpan secara privat selama 30 hari lalu dihapus otomatis.",
+      "guideTitle": "Cara kerja perekaman",
+      "noRecentTitle": "Tidak ada video siap dalam 24 jam terakhir",
+      "guideBody": "Online berarti aplikasi terhubung. Video hanya disimpan selama jadwal perekaman dan setelah perekam berhasil dimulai.",
+      "openPolicy": "Lihat jadwal perekaman",
+      "viewDevices": "Lihat perangkat",
       "status": { "pending": "Memulai", "recording": "Merekam", "processing": "Mengunggah", "ready": "Siap", "failed": "Gagal" },
       "failure": {"encoderFailed": "Encoder perangkat gagal dimulai", "captureFailed": "Gagal menangkap layar", "providerFailed": "Layanan video tidak tersedia", "unknownFailed": "Rekaman tidak dapat diselesaikan"}
     }

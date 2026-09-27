@@ -40,12 +40,13 @@ type RecordingRecoveryCandidate struct {
 }
 
 type RecordingSummary struct {
-	Ready      int64                  `json:"ready"`
-	Recording  int64                  `json:"recording"`
-	Processing int64                  `json:"processing"`
-	Failed     int64                  `json:"failed"`
-	Stale      int64                  `json:"stale"`
-	Recent     []RecordingSummaryItem `json:"recent"`
+	Ready       int64                  `json:"ready"`
+	Recording   int64                  `json:"recording"`
+	Processing  int64                  `json:"processing"`
+	Failed      int64                  `json:"failed"`
+	Stale       int64                  `json:"stale"`
+	LastReadyAt *time.Time             `json:"last_ready_at,omitempty"`
+	Recent      []RecordingSummaryItem `json:"recent"`
 }
 
 type RecordingSummaryItem struct {
@@ -203,26 +204,49 @@ func (s *Store) MarkRecordingAssetDeleted(ctx context.Context, assetID string) e
 func (s *Store) RecordingSummaryForBusiness(ctx context.Context, businessID string, since time.Time) (RecordingSummary, error) {
 	var out RecordingSummary
 	err := s.pool.QueryRow(ctx, `
+		WITH attempts AS (
+			SELECT ra.status, ra.started_at, ra.ended_at
+			  FROM recording_assets ra
+			 WHERE ra.business_id=$1 AND ra.started_at >= $2
+			UNION ALL
+			SELECT CASE WHEN ms.state IN ('ended','failed') THEN 'failed' ELSE 'recording' END,
+			       ms.started_at, ms.ended_at
+			  FROM media_sessions ms
+			 WHERE ms.business_id=$1 AND ms.kind='recording' AND ms.started_at >= $2
+			   AND NOT EXISTS (SELECT 1 FROM recording_assets ra WHERE ra.media_session_id=ms.id)
+		)
 		SELECT count(*) FILTER (WHERE status='ready'),
 		       count(*) FILTER (WHERE status='recording'),
 		       count(*) FILTER (WHERE status='processing'),
 		       count(*) FILTER (WHERE status='failed'),
-		       count(*) FILTER (WHERE status='processing' AND ended_at < now()-interval '45 minutes')
-		  FROM recording_assets
-		 WHERE business_id=$1 AND started_at >= $2`, businessID, since).Scan(
-		&out.Ready, &out.Recording, &out.Processing, &out.Failed, &out.Stale)
+		       count(*) FILTER (WHERE status='processing' AND ended_at < now()-interval '45 minutes'),
+		       max(started_at) FILTER (WHERE status='ready')
+		  FROM attempts`, businessID, since).Scan(
+		&out.Ready, &out.Recording, &out.Processing, &out.Failed, &out.Stale, &out.LastReadyAt)
 	if err != nil {
 		return out, err
 	}
 	rows, err := s.pool.Query(ctx, `
-		SELECT ra.id, COALESCE(ms.employee_id::text,''), COALESCE(u.display_name,''),
-		       ra.status, COALESCE(ms.failure_code,''), ra.byte_size,
-		       ra.started_at, ra.ended_at, ra.retention_until
-		  FROM recording_assets ra
-		  JOIN media_sessions ms ON ms.id=ra.media_session_id
-		  LEFT JOIN users u ON u.id=ms.employee_id
-		 WHERE ra.business_id=$1 AND ra.status <> 'deleted' AND ra.started_at >= $2
-		 ORDER BY ra.started_at DESC LIMIT 8`, businessID, since)
+		WITH attempts AS (
+			SELECT ra.id, ms.employee_id, ra.status,
+			       COALESCE(ms.failure_code,'') AS failure_code, ra.byte_size, ra.started_at,
+			       ra.ended_at, ra.retention_until
+			  FROM recording_assets ra
+			  JOIN media_sessions ms ON ms.id=ra.media_session_id
+			 WHERE ra.business_id=$1 AND ra.status <> 'deleted' AND ra.started_at >= $2
+			UNION ALL
+			SELECT ms.id, ms.employee_id,
+			       CASE WHEN ms.state IN ('ended','failed') THEN 'failed' ELSE 'pending' END,
+			       COALESCE(NULLIF(ms.failure_code,''),'TIMEOUT'), 0::bigint,
+			       ms.started_at, ms.ended_at, NULL::timestamptz
+			  FROM media_sessions ms
+			 WHERE ms.business_id=$1 AND ms.kind='recording' AND ms.started_at >= $2
+			   AND NOT EXISTS (SELECT 1 FROM recording_assets ra WHERE ra.media_session_id=ms.id)
+		)
+		SELECT a.id, COALESCE(a.employee_id::text,''), COALESCE(u.display_name,''),
+		       a.status, a.failure_code, a.byte_size, a.started_at, a.ended_at, a.retention_until
+		  FROM attempts a LEFT JOIN users u ON u.id=a.employee_id
+		 ORDER BY a.started_at DESC LIMIT 8`, businessID, since)
 	if err != nil {
 		return out, err
 	}

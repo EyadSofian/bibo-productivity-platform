@@ -60,6 +60,11 @@
       "title": "Trạng thái ghi hình", "subtitle": "Kiểm tra xem từng video đã đến kho lưu trữ riêng hay chưa.", "error": "Không thể tải trạng thái ghi hình.",
       "ready": "Sẵn sàng", "inProgress": "Đang xử lý", "failed": "Thất bại", "stale": "{{count}} video đã xử lý quá lâu.",
       "empty": "Chưa có lần ghi hình nào.", "unknownEmployee": "Nhân viên không xác định", "retention": "Video sẵn sàng được lưu riêng trong 30 ngày, sau đó tự động xóa.",
+      "guideTitle": "Cách hoạt động của ghi hình",
+      "noRecentTitle": "Không có video sẵn sàng trong 24 giờ qua",
+      "guideBody": "Trực tuyến chỉ có nghĩa là ứng dụng đã kết nối. Video chỉ được lưu trong lịch ghi hình và khi bộ ghi khởi động thành công.",
+      "openPolicy": "Xem lịch ghi hình",
+      "viewDevices": "Xem thiết bị",
       "status": { "pending": "Đang bắt đầu", "recording": "Đang ghi", "processing": "Đang tải lên", "ready": "Sẵn sàng", "failed": "Thất bại" },
       "failure": {"encoderFailed": "Không thể khởi động bộ mã hóa", "captureFailed": "Không thể ghi màn hình", "providerFailed": "Dịch vụ video không khả dụng", "unknownFailed": "Không thể hoàn tất ghi hình"}
     }

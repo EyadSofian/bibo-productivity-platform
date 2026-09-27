@@ -164,7 +164,16 @@ func (h *MediaHandler) sweepExpiredRecordings(ctx context.Context) {
 		return
 	}
 	for _, session := range sessions {
-		updated, err := h.store.AdvanceMediaSession(ctx, session.ID, media.StateEnded, "")
+		// A session that never reached the recorder has no MP4 to finalize. Mark
+		// that attempt as failed instead of reporting a successful empty chunk.
+		state, failure := media.StateEnded, media.FailureCode("")
+		if _, assetErr := h.store.RecordingAssetForSession(ctx, session.ID); errors.Is(assetErr, store.ErrNotFound) {
+			state, failure = media.StateFailed, media.FailTimeout
+		} else if assetErr != nil {
+			obs.Warn("recording rotation asset lookup failed", "session_id", session.ID, "err", assetErr)
+			continue
+		}
+		updated, err := h.store.AdvanceMediaSession(ctx, session.ID, state, failure)
 		if err != nil {
 			// A request or agent callback may have won this race.
 			continue
@@ -981,7 +990,11 @@ func (h *MediaHandler) startRecording(c *gin.Context, session store.MediaSession
 func (h *MediaHandler) stopRecording(c *gin.Context, session store.MediaSession) {
 	asset, err := h.store.RecordingAssetForSession(c.Request.Context(), session.ID)
 	if !session.State.Terminal() {
-		if ended, endErr := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, media.StateEnded, ""); endErr == nil {
+		state, failure := media.StateEnded, media.FailureCode("")
+		if errors.Is(err, store.ErrNotFound) {
+			state, failure = media.StateFailed, media.FailTimeout
+		}
+		if ended, endErr := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, state, failure); endErr == nil {
 			session = ended
 		}
 	}

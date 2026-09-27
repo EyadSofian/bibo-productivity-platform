@@ -77,6 +77,9 @@ export function Dashboard() {
   const online = employees.filter((employee) => rosterStatus(employee) !== "offline").length;
   const activeTime = employees.reduce((sum, employee) => sum + employee.active_today_s, 0);
   const needsReview = (recordings?.failed ?? 0) + (recordings?.stale ?? 0);
+  const lastReadyAt = recordings?.last_ready_at ? Date.parse(recordings.last_ready_at) : NaN;
+  const noRecentVideo = online > 0 && !videoError && recordings != null &&
+    (!Number.isFinite(lastReadyAt) || lastReadyAt < Date.now() - 24 * 60 * 60 * 1000);
 
   return <main className="ad-wrap ops-lite">
     <header className="ops-lite__header">
@@ -99,6 +102,15 @@ export function Dashboard() {
         <div className={`ops-lite__metric${needsReview ? " ops-lite__metric--alert" : ""}`}><span>{t("dashboard.simple.needsReview")}</span><strong>{videoError ? "—" : needsReview}</strong><p>{t("dashboard.simple.lastSevenDays")}</p></div>
       </section>
 
+      <section className={`ops-lite__guide${noRecentVideo ? " ops-lite__guide--attention" : ""}`} aria-label={t("dashboard.video.guideTitle")}>
+        <span className="ops-lite__guide-icon" aria-hidden>{noRecentVideo ? "!" : "i"}</span>
+        <div>
+          <strong>{noRecentVideo ? t("dashboard.video.noRecentTitle") : t("dashboard.video.guideTitle")}</strong>
+          <p>{t("dashboard.video.guideBody")}</p>
+        </div>
+        <Link to="/monitoring">{t("dashboard.video.openPolicy")} <span aria-hidden>↗</span></Link>
+      </section>
+
       <div className="ops-lite__columns">
         <section className="ops-lite__panel ops-lite__team">
           <div className="ops-lite__panel-head"><div><h2>{t("dashboard.simple.teamTitle")}</h2><p>{t("dashboard.simple.teamHelp")}</p></div><Link to="/employees">{t("dashboard.ops.viewAll")}</Link></div>
@@ -115,7 +127,7 @@ export function Dashboard() {
         </section>
 
         <section className="ops-lite__panel ops-lite__videos">
-          <div className="ops-lite__panel-head"><div><h2>{t("dashboard.video.title")}</h2><p>{t("dashboard.video.subtitle")}</p></div></div>
+          <div className="ops-lite__panel-head"><div><h2>{t("dashboard.video.title")}</h2><p>{t("dashboard.video.subtitle")}</p></div><Link to="/devices">{t("dashboard.video.viewDevices")}</Link></div>
           {videoError ? <Notice kind="danger">{t("dashboard.video.error")}</Notice> : null}
           {recordings ? <>
             <div className="ops-lite__video-totals">

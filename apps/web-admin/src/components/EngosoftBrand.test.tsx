@@ -10,13 +10,13 @@ describe("EngosoftBrand", () => {
 
   it("renders the Engosoft wordmark in the full lockup", () => {
     render(<EngosoftBrand />);
-    expect(screen.getByText("ENGO")).toBeTruthy();
-    expect(screen.getByText("SOFT")).toBeTruthy();
+    expect(screen.getByText("Engosoft")).toBeTruthy();
   });
 
-  it("keeps the compact rail mark free of duplicate visible words", () => {
+  it("does not render the retired circular logo", () => {
     const { container } = render(<EngosoftBrand compact />);
     expect(container.querySelector(".engosoft-brand__wordmark")).toBeNull();
+    expect(container.querySelector("svg")).toBeNull();
     expect(container.querySelector(".engosoft-brand--compact")).toBeTruthy();
   });
 });

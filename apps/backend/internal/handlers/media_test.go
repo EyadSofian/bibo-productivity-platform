@@ -929,6 +929,25 @@ func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
 	}
 }
 
+func TestRecordingMaintenanceFailsChunkThatNeverPublishedVideo(t *testing.T) {
+	e := newMediaEnv(t)
+	session, _, err := e.store.OpenMediaSession(e.ctx, store.NewMediaSession{
+		BusinessID: e.businessID, EmployeeID: e.employeeID, DeviceID: e.deviceID,
+		Kind: media.KindRecording, Provider: "fake", ProviderRoomID: uuid.NewString(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(e.ctx, `UPDATE media_sessions SET started_at=now()-interval '6 minutes' WHERE id=$1`, session.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.handler.sweepExpiredRecordings(e.ctx)
+	finished, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, session.ID)
+	if err != nil || finished.State != media.StateFailed || finished.FailureCode != string(media.FailTimeout) {
+		t.Fatalf("empty chunk state=%s reason=%s err=%v", finished.State, finished.FailureCode, err)
+	}
+}
+
 func TestRecordingListReconcilesACompletedObject(t *testing.T) {
 	e := newMediaEnv(t)
 	sessionID := e.startLive(t, e.ownerID)
@@ -1031,12 +1050,41 @@ func TestRecordingSummaryIsTenantScopedAndShowsUploadStatus(t *testing.T) {
 	if summary["ready"] != float64(1) || summary["failed"] != float64(0) {
 		t.Fatalf("summary counts = %v", summary)
 	}
+	if summary["last_ready_at"] == nil {
+		t.Fatalf("summary omitted the last successful video time: %v", summary)
+	}
 	recent := summary["recent"].([]any)[0].(map[string]any)
 	if recent["byte_size"] != float64(1024) || recent["retention_until"] == nil {
 		t.Fatalf("recent upload metadata = %v", recent)
 	}
 	if _, leaked := recent["manifest_key"]; leaked {
 		t.Fatal("private object key leaked")
+	}
+}
+
+func TestRecordingSummaryShowsFailedAttemptWithoutVideoAsset(t *testing.T) {
+	e := newMediaEnv(t)
+	session, _, err := e.store.OpenMediaSession(e.ctx, store.NewMediaSession{
+		BusinessID: e.businessID, EmployeeID: e.employeeID, DeviceID: e.deviceID,
+		Kind: media.KindRecording, Provider: "fake", ProviderRoomID: uuid.NewString(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.store.AdvanceMediaSession(e.ctx, session.ID, media.StateFailed, media.FailTimeout); err != nil {
+		t.Fatal(err)
+	}
+	rec, body := e.call(t, http.MethodGet, "/v1/businesses/"+e.businessID+"/recordings/summary", e.ownerID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("summary = %d %v", rec.Code, body)
+	}
+	summary := body["summary"].(map[string]any)
+	if summary["failed"] != float64(1) {
+		t.Fatalf("attempt without MP4 disappeared: %v", summary)
+	}
+	recent := summary["recent"].([]any)[0].(map[string]any)
+	if recent["status"] != "failed" || recent["failure_code"] != "TIMEOUT" || recent["id"] != session.ID {
+		t.Fatalf("attempt diagnosis = %v", recent)
 	}
 }
 

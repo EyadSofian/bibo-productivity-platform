@@ -7,12 +7,6 @@ import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { DetailHeaderContext } from "../detailHeader";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { EngosoftBrand } from "./EngosoftBrand";
-
-/** Brand mark used by the operational workspace shell. */
-function RailLogo() {
-  return <EngosoftBrand compact className="ad-rail__logo" />;
-}
 
 /** Shared lucide-style icon frame (24×24, stroke = currentColor). */
 function RailIcon({ children }: { children: ReactNode }) {
@@ -320,10 +314,9 @@ export function AppShell() {
     <div className="app">
       <aside className="ad-rail">
         <div className="ad-rail__brand">
-          <RailLogo />
           <span className="ad-rail__wordmark">
-            <strong>ENGOSOFT</strong>
-            <small>WORKFORCE INTELLIGENCE</small>
+            <strong>Engosoft<span className="ad-rail__brand-dot">.</span></strong>
+            <small>WORKFORCE</small>
           </span>
         </div>
 
@@ -360,7 +353,7 @@ export function AppShell() {
             <span className="ad-topbar__pulse" aria-hidden />
             <div>
               <div className="ad-topbar__title">{title}</div>
-              <small>Engosoft workforce control</small>
+              <small>{selected?.name ?? "Engosoft"}</small>
             </div>
           </div>
           <div className="ad-topbar__right">

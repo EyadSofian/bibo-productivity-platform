@@ -60,6 +60,11 @@
       "title": "录制状态", "subtitle": "查看每段视频是否已保存到私有存储。", "error": "无法加载录制状态。",
       "ready": "已就绪", "inProgress": "处理中", "failed": "失败", "stale": "{{count}} 段视频处理时间过长。",
       "empty": "暂无录制尝试。", "unknownEmployee": "未知员工", "retention": "已就绪的视频会私密保存30天，之后自动删除。",
+      "guideTitle": "录制如何工作",
+      "noRecentTitle": "过去24小时没有已就绪的视频",
+      "guideBody": "在线仅表示应用已连接。视频只有在录制计划时间内且录制服务成功启动后才会保存。",
+      "openPolicy": "查看录制计划",
+      "viewDevices": "查看设备",
       "status": { "pending": "正在开始", "recording": "录制中", "processing": "上传中", "ready": "已就绪", "failed": "失败" },
       "failure": {"encoderFailed": "设备编码器无法启动", "captureFailed": "屏幕采集失败", "providerFailed": "视频服务不可用", "unknownFailed": "录制无法完成"}
     }

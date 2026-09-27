@@ -204,6 +204,7 @@ export type RecordingSummary = {
   processing: number;
   failed: number;
   stale: number;
+  last_ready_at?: string;
   recent: RecordingSummaryItem[];
 };
 

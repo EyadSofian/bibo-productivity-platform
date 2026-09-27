@@ -60,6 +60,11 @@
       "title": "Estado de las grabaciones", "subtitle": "Comprueba si cada vídeo llegó al almacenamiento privado.", "error": "No se pudo cargar el estado de las grabaciones.",
       "ready": "Listos", "inProgress": "En curso", "failed": "Fallidos", "stale": "{{count}} vídeo(s) llevan demasiado tiempo procesándose.",
       "empty": "Todavía no hay intentos de grabación.", "unknownEmployee": "Empleado desconocido", "retention": "Los vídeos listos se guardan de forma privada durante 30 días y luego se eliminan automáticamente.",
+      "guideTitle": "Cómo funciona la grabación",
+      "noRecentTitle": "No hay vídeos listos en las últimas 24 horas",
+      "guideBody": "En línea significa que la aplicación está conectada. El vídeo solo se guarda dentro del horario de grabación y si el grabador se inicia correctamente.",
+      "openPolicy": "Revisar horario de grabación",
+      "viewDevices": "Ver dispositivos",
       "status": { "pending": "Iniciando", "recording": "Grabando", "processing": "Subiendo", "ready": "Listo", "failed": "Fallido" },
       "failure": {"encoderFailed": "No se pudo iniciar el codificador", "captureFailed": "Falló la captura de pantalla", "providerFailed": "Servicio de vídeo no disponible", "unknownFailed": "No se pudo completar la grabación"}
     }
