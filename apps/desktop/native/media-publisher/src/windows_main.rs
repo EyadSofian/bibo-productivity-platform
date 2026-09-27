@@ -340,7 +340,9 @@ fn start_capture_with_recovery(
                         frame_seen.store(true, Ordering::Release);
                     }
                     // Never block the capture thread waiting on the publisher.
-                    Err(_) => sink_metrics.frames_dropped.fetch_add(1, Ordering::Relaxed),
+                    Err(_) => {
+                        sink_metrics.frames_dropped.fetch_add(1, Ordering::Relaxed);
+                    }
                 }
             }),
         ) {
