@@ -3,7 +3,8 @@
     "empty": "この期間に記録されたアクティビティはありません。",
     "timeline": "本日のタイムライン",
     "breakdown": "アプリ・ウィンドウ内訳",
-    "idle": "アイドル"
+    "idle": "アイドル",
+    "watchApp": "{{app}} の録画を見る"
   },
   "browser": {
     "empty": "この期間のブラウザ閲覧履歴はありません。",
@@ -68,7 +69,12 @@
     "website": "ウェブサイト",
     "url": "完全なURL",
     "keys": "この1分間のキー入力",
-    "resolution": "解像度"
+    "resolution": "解像度",
+    "segmentsFor": "{{app}} — {{count}} 件の利用時間。クリックで移動します。",
+    "clearFocus": "すべて表示",
+    "noVideoAt": "{{time}} の録画はありません。最も近い録画を表示します。",
+    "noVideoSegment": "この時間の録画はありません",
+    "emptyVideoHint": "「画面録画」ポリシーが有効でデバイスが接続中の場合のみ録画されます。"
   },
   "timeline": {
     "lanes": {

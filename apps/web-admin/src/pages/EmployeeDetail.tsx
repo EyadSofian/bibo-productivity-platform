@@ -1,10 +1,7 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  createRemoteAssist,
-  endRemoteAssist,
-  getRemoteAssist,
   reportActivity,
   reportBrowser,
   reportEmployees,
@@ -12,9 +9,7 @@ import {
   reportPresence,
   reportScreenshots,
   reportStates,
-  sendRemoteAssistAction,
 } from "../api/endpoints";
-import { subscribeDeviceLiveFrames, subscribeRemoteAssistFrames } from "../api/client";
 import type {
   ActivityResponse,
   BrowserVisit,
@@ -23,7 +18,6 @@ import type {
   KeystrokeBucket,
   OsStateReport,
   ReportEmployee,
-  RemoteAssistSession,
   ScreenshotMeta,
 } from "../api/types";
 import { ActivityPanel } from "../components/reports/ActivityPanel";
@@ -50,13 +44,15 @@ import { useDetailHeader } from "../detailHeader";
 const DeviceLiveVideo = lazy(() => import("../components/LivePlayer/DeviceLiveVideo"));
 
 type Tab = "activity" | "communications" | "keystrokes" | "browser" | "screenshots" | "playback";
+// Apps first, then their recordings: the admin's question is "what did they
+// do, and show me". Historical screenshots stay reachable, last.
 const TABS: Tab[] = [
   "activity",
-  "communications",
-  "keystrokes",
-  "browser",
-  "screenshots",
   "playback",
+  "browser",
+  "keystrokes",
+  "communications",
+  "screenshots",
 ];
 
 // ── inline icons (no icon dependency in web-admin) ───────────────────
@@ -70,11 +66,7 @@ const IconCalendar = svg(<><path d="M8 2v4" /><path d="M16 2v4" /><rect width="1
 const IconClock = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>);
 const IconAppWindow = svg(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 4v4" /><path d="M2 8h20" /><path d="M6 4v4" /></>);
 const IconKeyboard = svg(<><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></>);
-const IconCamera = svg(<><path d="M13.997 4a2 2 0 0 1 1.76 1.05l.486.9A2 2 0 0 0 18.003 7H20a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1.997a2 2 0 0 0 1.759-1.048l.489-.904A2 2 0 0 1 10.004 4z" /><circle cx="12" cy="13" r="3" /></>);
 const IconPause = svg(<><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></>);
-const IconMonitor = svg(<><rect width="20" height="14" x="2" y="3" rx="2" /><path d="M8 21h8" /><path d="M12 17v4" /></>);
-const IconSunrise = svg(<><path d="M12 2v6" /><path d="m4.93 8.93 1.41 1.41" /><path d="M2 18h2" /><path d="M20 18h2" /><path d="m17.66 10.34 1.41-1.41" /><path d="M22 22H2" /><path d="m8 6 4-4 4 4" /><path d="M16 18a4 4 0 0 0-8 0" /></>);
-const IconGlobe = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></>);
 const TrendUp = (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
     <path d="M7 17 17 7M9 7h8v8" />
@@ -143,376 +135,8 @@ function LivePresence({ presence }: { presence: EmployeePresence | null }) {
   );
 }
 
-export function LegacyLiveScreen({
-  presence,
-}: {
-  presence: EmployeePresence | null;
-}) {
-  const { t, i18n } = useTranslation("dashboard");
-  const [enabled, setEnabled] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [frameAt, setFrameAt] = useState<Date | null>(null);
-  const [waiting, setWaiting] = useState(false);
-  const [fallbackActive, setFallbackActive] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [remoteSession, setRemoteSession] = useState<RemoteAssistSession | null>(null);
-  const [remoteFrameUrl, setRemoteFrameUrl] = useState<string | null>(null);
-  const [remoteBusy, setRemoteBusy] = useState(false);
-  const [remoteError, setRemoteError] = useState<string | null>(null);
-  const [keyboardEnabled, setKeyboardEnabled] = useState(false);
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const consecutiveFailures = useRef(0);
-  const deviceId = presence?.device_id ?? null;
-  const online = Boolean(deviceId && presence && presence.state !== "offline");
-  const remoteOpen = remoteSession?.status === "pending" || remoteSession?.status === "active";
-  const remoteActive = remoteSession?.status === "active";
-
-  // The live screen is a pushed stream, not a poll. Holding it open is also what
-  // keeps the agent capturing: the backend renews the agent's authorization while
-  // a viewer is attached, and the agent stops on its own when renewals stop. That
-  // replaces a 20s frame request + 3s discovery poll that together capped the
-  // live view at one frame per 20 seconds (FULL_SYSTEM_AUDIT P0-1).
-  //
-  // These frames are ephemeral and are never stored; scheduled screenshots stay
-  // on their own policy schedule and are unaffected by watching.
-  useEffect(() => {
-    if (!enabled || !deviceId || !online || remoteOpen) {
-      setWaiting(false);
-      return;
-    }
-    let alive = true;
-    setWaiting(true);
-    setFallbackActive(false);
-    setError(null);
-    consecutiveFailures.current = 0;
-
-    const unsubscribe = subscribeDeviceLiveFrames(deviceId, {
-      onFrame: (frame) => {
-        if (!alive) return;
-        setImageUrl(`data:image/webp;base64,${frame.image}`);
-        setFrameAt(new Date(frame.received_at));
-        consecutiveFailures.current = 0;
-        setFallbackActive(false);
-        setWaiting(false);
-        setError(null);
-      },
-      onEnd: () => {
-        if (alive) setWaiting(false);
-      },
-      onAgentUnreachable: () => {
-        // The desktop now has an authenticated HTTPS status fallback for this
-        // exact condition. Keep waiting instead of presenting an offline error:
-        // the first frame should arrive after its next low-rate status check.
-        if (alive) setFallbackActive(true);
-      },
-      onError: () => {
-        if (!alive) return;
-        consecutiveFailures.current += 1;
-        // A laptop can miss a beat while sleeping or switching networks. Keep the
-        // last good frame visible and only surface a persistent issue.
-        if (consecutiveFailures.current >= 2) {
-          setError(t("detail.presence.liveView.requestError"));
-        }
-      },
-    });
-
-    return () => {
-      alive = false;
-      unsubscribe();
-      setWaiting(false);
-      setFallbackActive(false);
-    };
-  }, [deviceId, enabled, online, remoteOpen, t]);
-
-  useEffect(() => {
-    if (!remoteOpen || !remoteSession) return;
-    let alive = true;
-    const poll = async () => {
-      try {
-        const result = await getRemoteAssist(remoteSession.id);
-        if (!alive) return;
-        setRemoteSession(result.session);
-        setRemoteError(null);
-        if (result.session.status !== "active") setKeyboardEnabled(false);
-      } catch {
-        if (alive) setRemoteError(t("detail.presence.liveView.remoteError"));
-      }
-    };
-    void poll();
-    const timer = window.setInterval(poll, 1_000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, [remoteOpen, remoteSession?.id, t]);
-
-  // Live frames arrive over a pushed stream rather than a 900ms poll, so a
-  // frame renders as soon as the agent uploads it. Frames come through as
-  // base64 data URLs, which also removes the object-URL lifecycle (and the leak
-  // that came with it) from this path entirely.
-  useEffect(() => {
-    if (!remoteActive || !remoteSession) {
-      setRemoteFrameUrl(null);
-      return;
-    }
-    let alive = true;
-    const unsubscribe = subscribeRemoteAssistFrames(remoteSession.id, {
-      onFrame: (frame) => {
-        if (!alive) return;
-        setRemoteFrameUrl(`data:image/webp;base64,${frame.image}`);
-        setRemoteError(null);
-      },
-      onEnd: () => {
-        if (!alive) return;
-        setRemoteFrameUrl(null);
-      },
-      onError: () => {
-        if (!alive) return;
-        setRemoteError(t("detail.presence.liveView.remoteError"));
-      },
-    });
-    return () => {
-      alive = false;
-      unsubscribe();
-    };
-  }, [remoteActive, remoteSession?.id, t]);
-
-  useEffect(() => {
-    if (!online) {
-      setEnabled(false);
-      setWaiting(false);
-      setFallbackActive(false);
-    }
-  }, [online]);
-
-  async function startRemoteAssist() {
-    if (!deviceId || remoteBusy) return;
-    setRemoteBusy(true);
-    setEnabled(false);
-    setRemoteError(null);
-    try {
-      const result = await createRemoteAssist(deviceId);
-      setRemoteSession(result.session);
-    } catch {
-      setRemoteError(t("detail.presence.liveView.remoteError"));
-    } finally {
-      setRemoteBusy(false);
-    }
-  }
-
-  async function stopRemoteAssist() {
-    if (!remoteSession || remoteBusy) return;
-    setRemoteBusy(true);
-    try {
-      const result = await endRemoteAssist(remoteSession.id);
-      setRemoteSession(result.session);
-      setKeyboardEnabled(false);
-    } catch {
-      setRemoteError(t("detail.presence.liveView.remoteError"));
-    } finally {
-      setRemoteBusy(false);
-    }
-  }
-
-  function sendRemoteInput(action: Parameters<typeof sendRemoteAssistAction>[1]) {
-    if (!remoteActive || !remoteSession) return;
-    void sendRemoteAssistAction(remoteSession.id, action).catch(() => {
-      setRemoteError(t("detail.presence.liveView.remoteError"));
-    });
-  }
-
-  function clickRemoteFrame(event: React.MouseEvent<HTMLDivElement>) {
-    if (!remoteActive || !remoteFrameUrl) return;
-    const image = event.currentTarget.querySelector("img");
-    if (!image?.naturalWidth || !image.naturalHeight) return;
-    const rect = event.currentTarget.getBoundingClientRect();
-    const scale = Math.min(rect.width / image.naturalWidth, rect.height / image.naturalHeight);
-    const width = image.naturalWidth * scale;
-    const height = image.naturalHeight * scale;
-    const x = (event.clientX - rect.left - (rect.width - width) / 2) / width;
-    const y = (event.clientY - rect.top - (rect.height - height) / 2) / height;
-    if (x < 0 || x > 1 || y < 0 || y > 1) return;
-    sendRemoteInput({ kind: "click", payload: { x, y, button: "left" } });
-    if (keyboardEnabled) stageRef.current?.focus();
-  }
-
-  function typeOnRemote(event: React.KeyboardEvent<HTMLDivElement>) {
-    if (!remoteActive || !keyboardEnabled) return;
-    const supported = new Set([
-      "Enter", "Tab", "Escape", "Backspace", "Delete",
-      "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight",
-    ]);
-    if (supported.has(event.key)) {
-      event.preventDefault();
-      sendRemoteInput({ kind: "key", payload: { key: event.key } });
-    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
-      event.preventDefault();
-      sendRemoteInput({ kind: "text", payload: { text: event.key } });
-    }
-  }
-
-  const frameTime = frameAt
-    ? frameAt.toLocaleTimeString(i18n.language, {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-    : null;
-
-  const displayedImage = remoteActive ? remoteFrameUrl : imageUrl;
-
-  return (
-    <section className={`ad-live-screen${enabled || remoteActive ? " ad-live-screen--on" : ""}${remoteActive ? " ad-live-screen--remote" : ""}`}>
-      <div className="ad-live-screen__head">
-        <div>
-          <span className="ad-live-screen__eyebrow">
-            <i aria-hidden />
-            {remoteActive
-              ? t("detail.presence.liveView.remoteActive")
-              : remoteSession?.status === "pending"
-                ? t("detail.presence.liveView.remotePending")
-                : enabled
-                  ? t("detail.presence.liveView.live")
-                  : t("detail.presence.liveView.ready")}
-          </span>
-          <h2>{t("detail.presence.liveView.title")}</h2>
-          <p>{t("detail.presence.liveView.description")}</p>
-        </div>
-        <div className="ad-live-screen__actions">
-          {displayedImage ? (
-            <button
-              type="button"
-              className="ad-live-screen__expand"
-              aria-label={t("detail.presence.liveView.expand")}
-              title={t("detail.presence.liveView.expand")}
-              onClick={() => void stageRef.current?.requestFullscreen?.()}
-            >
-              <span aria-hidden>↗</span>
-            </button>
-          ) : null}
-          {remoteActive ? (
-            <button
-              type="button"
-              className={`bibo-btn ${keyboardEnabled ? "bibo-btn--primary" : "bibo-btn--ghost"}`}
-              onClick={() => {
-                setKeyboardEnabled((value) => !value);
-                window.setTimeout(() => stageRef.current?.focus(), 0);
-              }}
-            >
-              {keyboardEnabled
-                ? t("detail.presence.liveView.remoteKeyboardOn")
-                : t("detail.presence.liveView.remoteKeyboard")}
-            </button>
-          ) : null}
-          {remoteOpen ? (
-            <button type="button" className="bibo-btn bibo-btn--danger" disabled={remoteBusy} onClick={() => void stopRemoteAssist()}>
-              {t("detail.presence.liveView.remoteStop")}
-            </button>
-          ) : (
-            <>
-              <button type="button" className="bibo-btn bibo-btn--ghost" disabled={!online || remoteBusy} onClick={() => void startRemoteAssist()}>
-                {remoteBusy ? t("detail.presence.liveView.remotePending") : t("detail.presence.liveView.remoteStart")}
-              </button>
-              <button
-                type="button"
-                className={`bibo-btn ${enabled ? "bibo-btn--ghost" : "bibo-btn--primary"}`}
-                disabled={!online}
-                onClick={() => {
-                  setError(null);
-                  setFallbackActive(false);
-                  consecutiveFailures.current = 0;
-                  setEnabled((value) => !value);
-                }}
-              >
-                {enabled ? t("detail.presence.liveView.stop") : t("detail.presence.liveView.start")}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {remoteOpen ? <p className="ad-live-screen__consent">{t("detail.presence.liveView.remoteConsent")}</p> : null}
-      {fallbackActive && !displayedImage ? <p className="ad-live-screen__notice" role="status">{t("detail.presence.liveView.fallback")}</p> : null}
-
-      <div
-        className="ad-live-screen__stage"
-        ref={stageRef}
-        role={remoteActive ? "application" : undefined}
-        aria-label={remoteActive ? t("detail.presence.liveView.remoteClickHint") : undefined}
-        tabIndex={remoteActive && keyboardEnabled ? 0 : -1}
-        onClick={clickRemoteFrame}
-        onKeyDown={typeOnRemote}
-      >
-        {displayedImage ? (
-          <img src={displayedImage} alt={t("detail.presence.liveView.frameAlt")} decoding="async" />
-        ) : (
-          <div className="ad-live-screen__empty">
-            {remoteSession?.status === "pending" ? (
-              <Spinner label={t("detail.presence.liveView.remotePending")} />
-            ) : remoteActive ? (
-              <Spinner label={t("detail.presence.liveView.remoteWaitingFrame")} />
-            ) : waiting ? (
-              <Spinner label={t("detail.presence.liveView.waiting")} />
-            ) : (
-              <span>{online ? t("detail.presence.liveView.startHint") : t("detail.presence.liveView.offline")}</span>
-            )}
-          </div>
-        )}
-        {(enabled && imageUrl) || (remoteActive && remoteFrameUrl) ? (
-          <span className="ad-live-screen__badge">
-            {remoteActive ? t("detail.presence.liveView.remoteActive") : waiting ? t("detail.presence.liveView.refreshing") : t("detail.presence.liveView.live")}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="ad-live-screen__foot">
-        <span>
-          {remoteActive
-            ? t("detail.presence.liveView.remoteApproved")
-            : frameTime
-              ? t("detail.presence.liveView.lastFrame", { time: frameTime })
-              : t("detail.presence.liveView.noFrame")}
-        </span>
-        <span>{remoteActive ? t("detail.presence.liveView.remoteClickHint") : t("detail.presence.liveView.readOnly")}</span>
-      </div>
-      {remoteSession && !remoteOpen ? <p className="ad-live-screen__warning" role="status">{t("detail.presence.liveView.remoteEnded")}</p> : null}
-      {remoteError || error ? <p className="ad-live-screen__warning" role="status">{remoteError || error}</p> : null}
-    </section>
-  );
-}
-
-function ResourceMeter({
-  label,
-  value,
-  detail,
-  percent,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  percent: number;
-}) {
-  return (
-    <div className="ad-resource-card">
-      <div className="ad-resource-card__head">
-        <span>{label}</span>
-        <strong dir="ltr">{value}</strong>
-      </div>
-      <div
-        className="ad-resource-meter"
-        role="progressbar"
-        aria-label={label}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={percent}
-      >
-        <span style={{ width: `${percent}%` }} />
-      </div>
-      <small dir="ltr">{detail}</small>
-    </div>
-  );
-}
-
+/** Device load as one compact list: useful for "why is it slow", never the
+ *  headline of the page. */
 function LiveResources({ resources }: { resources: DeviceResourceSnapshot | null | undefined }) {
   const { t } = useTranslation("dashboard");
   if (!resources) return null;
@@ -520,53 +144,31 @@ function LiveResources({ resources }: { resources: DeviceResourceSnapshot | null
   const cpu = usagePercent(resources.cpu_pct, 100);
   const memory = usagePercent(resources.memory_used_bytes, resources.memory_total_bytes);
   const disk = usagePercent(resources.disk_used_bytes, resources.disk_total_bytes);
+  const row = (label: string, percent: number, detail: string) => (
+    <div className="ad-resource-row">
+      <span>{label}</span>
+      <span className="ad-resource-row__bar" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
+        <i style={{ width: `${percent}%` }} />
+      </span>
+      <strong dir="ltr" title={detail}>{percent}%</strong>
+    </div>
+  );
 
   return (
-    <section className="ad-resources" aria-labelledby="device-resource-title">
-      <div className="ad-resources__intro">
-        <h2 id="device-resource-title">{t("detail.presence.resources.title")}</h2>
-        <p>{t("detail.presence.resources.wholeDevice")}</p>
-      </div>
-      <div className="ad-resources__grid">
-        <ResourceMeter
-          label={t("detail.presence.resources.cpu")}
-          value={`${cpu}%`}
-          detail={t("detail.presence.resources.current")}
-          percent={cpu}
-        />
-        <ResourceMeter
-          label={t("detail.presence.resources.memory")}
-          value={`${memory}%`}
-          detail={t("detail.presence.resources.of", {
-            used: fmtBytes(resources.memory_used_bytes),
-            total: fmtBytes(resources.memory_total_bytes),
-          })}
-          percent={memory}
-        />
-        <ResourceMeter
-          label={t("detail.presence.resources.disk")}
-          value={`${disk}%`}
-          detail={t("detail.presence.resources.of", {
-            used: fmtBytes(resources.disk_used_bytes),
-            total: fmtBytes(resources.disk_total_bytes),
-          })}
-          percent={disk}
-        />
-        <div className="ad-resource-card ad-resource-card--network">
-          <div className="ad-resource-card__head">
-            <span>{t("detail.presence.resources.network")}</span>
-          </div>
-          <div className="ad-resource-network">
-            <span>
-              <small>{t("detail.presence.resources.download")}</small>
-              <strong dir="ltr">↓ {fmtByteRate(resources.network_rx_bps)}</strong>
-            </span>
-            <span>
-              <small>{t("detail.presence.resources.upload")}</small>
-              <strong dir="ltr">↑ {fmtByteRate(resources.network_tx_bps)}</strong>
-            </span>
-          </div>
-        </div>
+    <section className="ad-resources ad-resources--compact" aria-labelledby="device-resource-title">
+      <h2 id="device-resource-title">{t("detail.presence.resources.title")}</h2>
+      {row(t("detail.presence.resources.cpu"), cpu, t("detail.presence.resources.current"))}
+      {row(t("detail.presence.resources.memory"), memory, t("detail.presence.resources.of", {
+        used: fmtBytes(resources.memory_used_bytes),
+        total: fmtBytes(resources.memory_total_bytes),
+      }))}
+      {row(t("detail.presence.resources.disk"), disk, t("detail.presence.resources.of", {
+        used: fmtBytes(resources.disk_used_bytes),
+        total: fmtBytes(resources.disk_total_bytes),
+      }))}
+      <div className="ad-resource-row ad-resource-row--net">
+        <span>{t("detail.presence.resources.network")}</span>
+        <strong dir="ltr">↓ {fmtByteRate(resources.network_rx_bps)} · ↑ {fmtByteRate(resources.network_tx_bps)}</strong>
       </div>
     </section>
   );
@@ -625,8 +227,15 @@ export function EmployeeDetail() {
   const [to, setTo] = useState(() => isoDate(new Date()));
 
   const [tab, setTab] = useState<Tab>(params.get("tab") === "playback" ? "playback" : "activity");
-  // Set by a timeline click: switches to the player and points it at a moment.
-  const [seekTo, setSeekTo] = useState<number | null>(hasInitialSeek ? initialSeek : null);
+  // Set by a timeline or app click: switches to the player and points it at a
+  // moment. `n` changes on every request so asking again rewinds.
+  const [seek, setSeek] = useState<{ ts: number; n: number } | null>(hasInitialSeek ? { ts: initialSeek, n: 0 } : null);
+  const [focusApp, setFocusApp] = useState<string | null>(null);
+  const play = useCallback((ts: number, app: string | null) => {
+    setSeek((current) => ({ ts, n: (current?.n ?? 0) + 1 }));
+    setFocusApp(app);
+    setTab("playback");
+  }, []);
 
   const [employee, setEmployee] = useState<ReportEmployee | null>(null);
   const [presence, setPresence] = useState<EmployeePresence | null>(null);
@@ -743,12 +352,6 @@ export function EmployeeDetail() {
   // activity sum keeps their dashboards working instead of showing a bare zero.
   const hasTimeline = !!totals && totals.covered_s > 0;
   const budgetActiveS = hasTimeline ? totals.active_s : activeS;
-  // "Device time" is the time the machine was powered and reporting: active +
-  // idle. Suspended and offline are deliberately excluded.
-  const deviceS = hasTimeline ? totals.active_s + totals.idle_s : null;
-  const coverage = totals && totals.elapsed_s > 0 && totals.covered_s > 0
-    ? Math.round((totals.covered_s / totals.elapsed_s) * 100)
-    : null;
 
   const clockTime = (unix: number | null | undefined) =>
     unix == null
@@ -757,20 +360,6 @@ export function EmployeeDetail() {
           hour: "2-digit",
           minute: "2-digit",
         });
-
-  // Most-visited site for the window, by summed real visit duration.
-  const topSite = (() => {
-    if (!visits || visits.length === 0) return null;
-    const byDomain = new Map<string, number>();
-    for (const v of visits) {
-      const key = v.domain || v.url;
-      if (!key) continue;
-      byDomain.set(key, (byDomain.get(key) ?? 0) + v.duration_s);
-    }
-    let best: [string, number] | null = null;
-    for (const entry of byDomain) if (!best || entry[1] > best[1]) best = entry;
-    return best;
-  })();
 
   const name = employee?.display_name ?? terms.one;
   const isSelf = employee?.role === "owner" || (!!employee && employee.id === user?.id);
@@ -858,7 +447,7 @@ export function EmployeeDetail() {
       <div className="ad-command-deck">
         {presence?.device_id ? (
           <Suspense fallback={<Spinner />}>
-            <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} />
+            <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={presence.state !== "offline"} />
           </Suspense>
         ) : <Notice kind="info">{t("detail.presence.waiting")}</Notice>}
         <div className="ad-command-deck__telemetry">
@@ -870,14 +459,18 @@ export function EmployeeDetail() {
       {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
       {error && <Notice kind="danger">{error}</Notice>}
 
-      {/* summary stat cards */}
+      {/* summary: the four numbers an admin reads first */}
       <div className="ad-stats">
         <StatCard
           focal
           icon={IconClock}
           label={mode === "day" ? t("detail.summary.activeTime") : t("detail.summary.activeTimeRange")}
           value={fmtDuration(budgetActiveS)}
-          sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
+          sub={
+            states?.first_activity
+              ? `${clockTime(states.first_activity)} – ${clockTime(states.last_activity) ?? "…"}`
+              : t("detail.summary.noActivity")
+          }
         />
         <StatCard
           icon={IconPause}
@@ -886,44 +479,16 @@ export function EmployeeDetail() {
           sub={hasTimeline ? `${t("detail.summary.offlineTime")} ${fmtDuration(totals.offline_s)}` : undefined}
         />
         <StatCard
-          icon={IconMonitor}
-          label={t("detail.summary.deviceTime")}
-          value={deviceS === null ? "—" : fmtDuration(deviceS)}
-          sub={coverage === null ? undefined : `${coverage}% ${t("detail.summary.coverage")}`}
-        />
-        <StatCard
-          icon={IconSunrise}
-          label={t("detail.summary.firstActivity")}
-          value={clockTime(states?.first_activity) ?? "—"}
-          sub={
-            states && states.last_activity
-              ? `${t("detail.summary.lastActivity")} ${clockTime(states.last_activity)}`
-              : t("detail.summary.noActivity")
-          }
-        />
-        <StatCard
           icon={IconAppWindow}
           label={t("detail.summary.topApp")}
           value={topApp}
-          delta={`${topShare}%`}
+          delta={activeS > 0 ? `${topShare}%` : undefined}
           sub={t("dashboard.statFocus")}
-        />
-        <StatCard
-          icon={IconGlobe}
-          label={t("detail.summary.topSite")}
-          value={topSite ? topSite[0] : "—"}
-          sub={topSite ? fmtDuration(topSite[1]) : undefined}
         />
         <StatCard
           icon={IconKeyboard}
           label={t("detail.summary.keypresses")}
           value={keypresses.toLocaleString()}
-          sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
-        />
-        <StatCard
-          icon={IconCamera}
-          label={t("detail.summary.screenshots")}
-          value={(shots?.length ?? 0).toLocaleString()}
           sub={mode === "day" ? t("detail.singleDay") : t("detail.dateRange")}
         />
       </div>
@@ -944,10 +509,7 @@ export function EmployeeDetail() {
             buckets={keystrokes}
             visits={visits}
             shots={shots}
-            onSeek={(ts) => {
-              setSeekTo(ts);
-              setTab("playback");
-            }}
+            onSeek={(ts) => play(ts, null)}
           />
         )}
       </div>
@@ -975,7 +537,7 @@ export function EmployeeDetail() {
             !error && (
               <>
                 {tab === "activity" &&
-                  (activity ? <ActivityPanel data={activity} /> : <Spinner />)}
+                  (activity ? <ActivityPanel data={activity} onPlay={(ts, app) => play(ts, app)} /> : <Spinner />)}
                 {tab === "communications" && activity && visits && keystrokes ? (
                   <CommunicationEvidencePanel
                     activity={activity}
@@ -1001,7 +563,10 @@ export function EmployeeDetail() {
                     activity={activity}
                     visits={visits}
                     buckets={keystrokes}
-                    seekTo={seekTo}
+                    seekTo={seek?.ts ?? null}
+                    seekNonce={seek?.n}
+                    focusApp={focusApp}
+                    onClearFocus={() => setFocusApp(null)}
                   />
                 ) : null}
               </>

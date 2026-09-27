@@ -3,7 +3,8 @@
     "empty": "No activity recorded for this range.",
     "timeline": "Today's timeline",
     "breakdown": "App & window breakdown",
-    "idle": "Idle"
+    "idle": "Idle",
+    "watchApp": "Watch {{app}} recordings"
   },
   "browser": {
     "empty": "No browser visits for this range.",
@@ -68,7 +69,12 @@
     "website": "Website",
     "url": "Full URL",
     "keys": "Keypresses this minute",
-    "resolution": "Resolution"
+    "resolution": "Resolution",
+    "segmentsFor": "{{app}} — {{count}} stretches today. Click one to jump to it.",
+    "clearFocus": "Show all",
+    "noVideoAt": "No video was recorded at {{time}}. Showing the nearest recording instead.",
+    "noVideoSegment": "No video was recorded for this stretch",
+    "emptyVideoHint": "Recording runs only while the \"Screen recording\" policy is on and the device is connected. The times below show when each app was used."
   },
   "timeline": {
     "lanes": {

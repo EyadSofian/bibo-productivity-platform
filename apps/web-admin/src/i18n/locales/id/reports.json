@@ -3,7 +3,8 @@
     "empty": "Tidak ada aktivitas yang tercatat untuk rentang ini.",
     "timeline": "Linimasa hari ini",
     "breakdown": "Rincian aplikasi & jendela",
-    "idle": "Idle"
+    "idle": "Idle",
+    "watchApp": "Tonton rekaman {{app}}"
   },
   "browser": {
     "empty": "Tidak ada kunjungan browser untuk rentang ini.",
@@ -68,7 +69,12 @@
     "website": "Situs web",
     "url": "URL lengkap",
     "keys": "Ketikan pada menit ini",
-    "resolution": "Resolusi"
+    "resolution": "Resolusi",
+    "segmentsFor": "{{app}} — {{count}} periode. Klik untuk melompat.",
+    "clearFocus": "Tampilkan semua",
+    "noVideoAt": "Tidak ada video pada {{time}}. Menampilkan rekaman terdekat.",
+    "noVideoSegment": "Tidak ada video untuk periode ini",
+    "emptyVideoHint": "Perekaman hanya berjalan saat kebijakan \"Rekam layar\" aktif dan perangkat terhubung."
   },
   "timeline": {
     "lanes": {

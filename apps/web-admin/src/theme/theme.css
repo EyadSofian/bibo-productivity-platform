@@ -3757,6 +3757,14 @@ select.input:focus,
   border-block-start: 1px solid var(--border-subtle);
   border-inline-start: 0;
 }
+.ad-resources--compact { display: grid; gap: 9px; padding: 16px 18px; }
+.ad-resources--compact h2 { margin: 0 0 2px; font-size: 13px; font-weight: 800; }
+.ad-resource-row { display: grid; grid-template-columns: 70px minmax(0, 1fr) 44px; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-muted); }
+.ad-resource-row strong { color: var(--text-primary); text-align: end; font-variant-numeric: tabular-nums; }
+.ad-resource-row__bar { height: 6px; border-radius: 4px; background: var(--surface-sunken); overflow: hidden; }
+.ad-resource-row__bar i { display: block; height: 100%; border-radius: 4px; background: var(--accent); }
+.ad-resource-row--net { grid-template-columns: 70px minmax(0, 1fr); }
+.ad-resource-row--net strong { font-size: 12px; }
 .ad-command-deck__telemetry .ad-resources__intro p {
   display: none;
 }
@@ -4509,6 +4517,40 @@ select.input:focus,
   min-width: 52px;
   text-align: end;
 }
+
+/* Clickable app rows open that app's recorded footage. */
+.ad-appbar--playable {
+  grid-template-columns: 90px 1fr auto 18px;
+  width: 100%;
+  margin: 0 -8px;
+  padding: 6px 8px;
+  box-sizing: content-box;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.ad-appbar--playable:hover,
+.ad-appbar--playable:focus-visible { background: var(--surface-sunken); }
+.ad-appbar--playable:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ad-appbar__play { font-size: 10px; color: var(--accent); opacity: .45; transition: opacity .15s; }
+.ad-appbar--playable:hover .ad-appbar__play,
+.ad-appbar--playable:focus-visible .ad-appbar__play { opacity: 1; }
+.ad-tlseg--playable { cursor: pointer; }
+
+/* Segments of the focused app under the playback video. */
+.ad-segments { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 4px; padding: 12px 14px; border: 1px solid var(--border-subtle); border-radius: 12px; background: var(--surface-strong); }
+.ad-segments__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13px; font-weight: 700; }
+.ad-segments__head button { border: 0; background: none; color: var(--text-muted); font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.ad-segments__list { display: flex; flex-wrap: wrap; gap: 6px; }
+.ad-segment { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border: 1px solid var(--border-subtle); border-radius: 999px; background: var(--surface-sunken); color: inherit; font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; cursor: pointer; }
+.ad-segment[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.ad-segment:disabled { cursor: not-allowed; opacity: .5; }
+.ad-segment small { color: var(--text-muted); }
+.ad-playback__notice { margin: 10px 0 0; padding: 9px 12px; border-radius: 10px; background: color-mix(in srgb, #d9a441 14%, transparent); font-size: 13px; }
 
 /* ── Keystrokes-through-the-day bar chart (offline design) ────────────── */
 .ad-act-total {
@@ -6229,7 +6271,17 @@ select.input:focus,
 .live-player__stage { position: relative; aspect-ratio: 16 / 9; background: #10151e; border-radius: 14px; overflow: hidden; }
 .live-player__video { width: 100%; height: 100%; object-fit: contain; }
 .live-player__overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px; text-align: center; color: #fff; }
-.live-player__code { max-width: 100%; overflow-wrap: anywhere; font-size: 12px; }
+.live-player__code { max-width: 100%; overflow-wrap: anywhere; font-size: 11px; opacity: .55; margin: 6px 0 0; }
+.live-player__status { margin: 0; font-size: 15px; font-weight: 700; max-width: 46ch; }
+.live-player__hint { margin: 8px 0 0; font-size: 13px; opacity: .78; max-width: 52ch; }
+.live-player__error { margin: 10px 0 0; font-size: 14px; font-weight: 600; color: #ffb4a8; max-width: 52ch; }
+.live-player__detail { margin: 6px 0 0; font-size: 13px; opacity: .85; max-width: 52ch; }
+.live-player__spinner { width: 28px; height: 28px; margin-bottom: 12px; border: 3px solid rgba(255,255,255,.18); border-top-color: #fff; border-radius: 50%; animation: live-player-spin .9s linear infinite; }
+.live-player__pause { margin-bottom: 10px; font-size: 22px; letter-spacing: -2px; opacity: .8; }
+.live-player[data-phase="paused"] .live-player__stage { box-shadow: inset 0 0 0 2px #d9a441; }
+.live-player[data-phase="live"] .live-player__stage { box-shadow: inset 0 0 0 2px #1f9d63; }
+@keyframes live-player-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .live-player__spinner { animation-duration: 2.4s; } }
 .live-player__badge { position: absolute; top: 12px; inset-inline-start: 12px; background: #126d44; color: white; padding: 4px 10px; border-radius: 20px; }
 .live-player__actions { padding-top: 12px; }
 

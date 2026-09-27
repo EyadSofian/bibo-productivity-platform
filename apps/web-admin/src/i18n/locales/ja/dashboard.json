@@ -187,12 +187,12 @@
       "noActivity": "操作なし"
     },
     "tabs": {
-      "activity": "アクティビティ",
+      "activity": "アプリ",
       "communications": "コミュニケーション証跡",
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット",
-      "playback": "再生"
+      "playback": "録画"
     },
     "communications": {
       "eyebrow": "推測ではなく証跡",

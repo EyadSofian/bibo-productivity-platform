@@ -233,6 +233,31 @@ enum CaptureBlock {
 }
 
 impl CaptureBlock {
+    /// Typed reason for the operator. Never includes the app name or window title.
+    fn reason(self) -> &'static str {
+        match self {
+            Self::Paused => "paused",
+            Self::ScreenPolicy => "schedule",
+            Self::SignedOut => "signed_out",
+            #[cfg(windows)]
+            Self::LockedOrDisconnected => "locked",
+            #[cfg(windows)]
+            Self::SensitiveApp => "private_app",
+        }
+    }
+
+    /// Transient states of the person at the keyboard. A live view pauses
+    /// through them and resumes by itself, instead of failing and making the
+    /// operator start over after every lock screen.
+    fn pauses_live(self) -> bool {
+        match self {
+            Self::Paused => true,
+            Self::ScreenPolicy | Self::SignedOut => false,
+            #[cfg(windows)]
+            Self::LockedOrDisconnected | Self::SensitiveApp => true,
+        }
+    }
+
     fn publisher_state(self) -> &'static str {
         match self {
             Self::Paused | Self::ScreenPolicy | Self::SignedOut => "policy_blocked",
@@ -281,26 +306,73 @@ fn capture_allowed(ctx: &MediaContext) -> bool {
     capture_block(ctx).is_none()
 }
 
+/// How long a live publisher keeps running while the backend cannot be
+/// reached. A single slow poll used to kill the sidecar, so a stream on a
+/// flaky link restarted every few seconds and never reached "live". The
+/// backend still ends the SFU room itself when a session stops, which cuts
+/// the publisher off regardless of what this agent believes.
+#[cfg(windows)]
+const POLL_GRACE: Duration = Duration::from_secs(15);
+#[cfg(windows)]
+const POLL_TIMEOUT: Duration = Duration::from_secs(5);
+/// Unexpected publisher exits tolerated per session before it is failed.
+#[cfg(windows)]
+const MAX_PUBLISHER_RESTARTS: u32 = 3;
+#[cfg(windows)]
+const PAUSE_REPORT_INTERVAL: Duration = Duration::from_secs(5);
+
+/// Metrics body for a live session that is paused on the device. Counters are
+/// zero because no publisher is running; `pause_reason` tells the viewer why.
+#[cfg(windows)]
+fn paused_metrics(reason: &str) -> serde_json::Value {
+    serde_json::json!({
+        "frames_captured": 0, "frames_published": 0, "frames_dropped": 0,
+        "capture_errors": 0, "encoder_errors": 0, "reconnects": 0,
+        "width": 0, "height": 0, "fps": 0.0, "encoder": "unknown",
+        "pause_reason": reason,
+    })
+}
+
+#[cfg(windows)]
+async fn report(
+    client: &BackendClient,
+    session_id: &str,
+    state: &str,
+    detail: &str,
+    metrics: Option<serde_json::Value>,
+) {
+    let _ = tokio::time::timeout(
+        Duration::from_secs(3),
+        client.report_media_agent_state(session_id, state, detail, metrics),
+    )
+    .await;
+}
+
 #[cfg(windows)]
 async fn supervise(ctx: MediaContext) {
     tokio::time::sleep(STARTUP_DELAY).await;
+    // One client for the lifetime of the supervisor, so polls reuse a warm
+    // TLS connection instead of handshaking with the backend every second.
+    let client = BackendClient::new(crate::settings::backend_base_url(), Arc::clone(&ctx.auth));
     let mut active: Option<ActiveSession> = None;
+    let mut last_poll_ok = std::time::Instant::now();
+    let mut restarts: (String, u32) = (String::new(), 0);
+    let mut last_pause_report: Option<(String, std::time::Instant)> = None;
     loop {
         let device_id = ctx.settings.current.lock().unwrap().device_id.clone();
         let blocked = capture_block(&ctx);
-        if blocked.is_some() {
+        if let Some(reason) = blocked {
             if let Some(mut s) = active.take() {
-                s.stop("local_policy_stop", &ctx);
+                s.stop(reason.reason(), &ctx);
             }
         }
         if device_id.is_empty() || ctx.auth.session().is_none() {
             tokio::time::sleep(POLL_INTERVAL).await;
             continue;
         }
-        let client = BackendClient::new(crate::settings::backend_base_url(), Arc::clone(&ctx.auth));
         let result = {
             let poll = tokio::time::timeout(
-                Duration::from_secs(2),
+                POLL_TIMEOUT,
                 client.agent_media_session(&device_id, blocked.is_some()),
             );
             tokio::pin!(poll);
@@ -312,9 +384,8 @@ async fn supervise(ctx: MediaContext) {
                     tokio::select! {
                         result = &mut poll => break result.unwrap_or_else(|_| Err("media authorization timed out".into())),
                         _ = tokio::time::sleep(Duration::from_millis(100)) => {
-                            if !capture_allowed(&ctx) {
-                                if let Some(mut s) = active.take() { s.stop("local_policy_stop", &ctx); }
-                                break Ok(None);
+                            if let Some(reason) = capture_block(&ctx) {
+                                if let Some(mut s) = active.take() { s.stop(reason.reason(), &ctx); }
                             }
                         }
                     }
@@ -323,78 +394,128 @@ async fn supervise(ctx: MediaContext) {
         };
         let blocked_now = capture_block(&ctx);
         match result {
-            Ok(Some(sess)) if blocked_now.is_some() => {
-                // A healthy presence heartbeat does not mean video can capture.
-                // Keep polling while locally blocked and tell the operator why
-                // this particular request cannot start, rather than timing out.
-                let reason = blocked_now.unwrap();
-                ctx.status.set_error(&format!("media blocked: {reason:?}"));
-                let _ = tokio::time::timeout(
-                    Duration::from_secs(2),
-                    client.report_media_agent_state(
-                        &sess.session_id,
-                        reason.publisher_state(),
-                        "",
-                        None,
-                    ),
-                )
-                .await;
-            }
-            Ok(Some(sess)) if capture_allowed(&ctx) => {
-                let same = active
-                    .as_ref()
-                    .is_some_and(|s| s.session_id == sess.session_id);
-                if !same {
-                    if let Some(mut old) = active.take() {
-                        old.stop("superseded", &ctx);
+            Ok(Some(sess)) => {
+                last_poll_ok = std::time::Instant::now();
+                if restarts.0 != sess.session_id {
+                    restarts = (sess.session_id.clone(), 0);
+                }
+                if let Some(reason) = blocked_now {
+                    if let Some(mut s) = active.take() {
+                        s.stop(reason.reason(), &ctx);
                     }
-                    match start_session(&client, &ctx, &device_id, &sess.session_id).await {
-                        Ok(s) => active = Some(s),
-                        Err(_) => {
-                            ctx.status.set_error("publisher_start_failed");
-                            let _ = tokio::time::timeout(
-                                Duration::from_secs(2),
-                                client.report_media_agent_state(
-                                    &sess.session_id,
-                                    "capture_failed",
-                                    "",
-                                    None,
-                                ),
+                    ctx.status.set_error(&format!("media blocked: {reason:?}"));
+                    if sess.kind == "live" && reason.pauses_live() {
+                        // Keep the session: tell the viewer why the picture is
+                        // gone, and resume on the first poll after the block.
+                        let due = last_pause_report.as_ref().is_none_or(|(id, at)| {
+                            *id != sess.session_id || at.elapsed() >= PAUSE_REPORT_INTERVAL
+                        });
+                        if due {
+                            report(&client, &sess.session_id, "reconnecting", "", None).await;
+                            report(
+                                &client,
+                                &sess.session_id,
+                                "metrics",
+                                "",
+                                Some(paused_metrics(reason.reason())),
                             )
                             .await;
+                            last_pause_report =
+                                Some((sess.session_id.clone(), std::time::Instant::now()));
+                        }
+                    } else {
+                        // A healthy presence heartbeat does not mean video can
+                        // capture. Tell the operator why this request cannot
+                        // start, rather than timing out.
+                        report(
+                            &client,
+                            &sess.session_id,
+                            reason.publisher_state(),
+                            reason.reason(),
+                            None,
+                        )
+                        .await;
+                    }
+                } else {
+                    last_pause_report = None;
+                    let same = active
+                        .as_ref()
+                        .is_some_and(|s| s.session_id == sess.session_id);
+                    if !same {
+                        if let Some(mut old) = active.take() {
+                            old.stop("superseded", &ctx);
+                        }
+                        match start_session(&client, &ctx, &device_id, &sess.session_id).await {
+                            Ok(s) => active = Some(s),
+                            Err(error) => {
+                                crate::log_warn!("media", "publisher start failed: {error}");
+                                ctx.status.set_error("publisher_start_failed");
+                                restarts.1 += 1;
+                                if restarts.1 > MAX_PUBLISHER_RESTARTS {
+                                    report(
+                                        &client,
+                                        &sess.session_id,
+                                        "capture_failed",
+                                        "publisher_start_failed",
+                                        None,
+                                    )
+                                    .await;
+                                }
+                            }
+                        }
+                    } else if let Some(exit) = active.as_mut().and_then(|s| s.exit_kind()) {
+                        active = None;
+                        ctx.status.clear();
+                        match exit {
+                            // The publisher already reported a terminal failure.
+                            PublisherExit::Reported => {}
+                            PublisherExit::Recoverable => {
+                                restarts.1 += 1;
+                                if restarts.1 > MAX_PUBLISHER_RESTARTS {
+                                    // A sidecar that keeps exiting can leave the API
+                                    // saying "live" while no frames arrive. Fail the
+                                    // session so the viewer sees a device error.
+                                    report(
+                                        &client,
+                                        &sess.session_id,
+                                        "capture_failed",
+                                        "publisher_exited",
+                                        None,
+                                    )
+                                    .await;
+                                } else {
+                                    crate::log_warn!("media", "publisher exited; restarting ({}/{MAX_PUBLISHER_RESTARTS})", restarts.1);
+                                    report(&client, &sess.session_id, "reconnecting", "", None)
+                                        .await;
+                                }
+                            }
                         }
                     }
-                } else if active.as_mut().is_some_and(|s| s.exited()) {
-                    // A sidecar that exits after publishing can leave the API
-                    // saying "live" while no frames arrive. Fail the session
-                    // explicitly so the viewer sees a device capture error.
-                    active = None;
-                    ctx.status.clear();
-                    let _ = tokio::time::timeout(
-                        Duration::from_secs(2),
-                        client.report_media_agent_state(
-                            &sess.session_id,
-                            "capture_failed",
-                            "",
-                            None,
-                        ),
-                    )
-                    .await;
                 }
             }
-            // Authorization uncertainty is a stop, never permission to continue.
-            _ => {
+            // The backend says there is nothing to publish: stop at once.
+            Ok(None) => {
+                last_poll_ok = std::time::Instant::now();
                 if let Some(mut s) = active.take() {
-                    s.stop("authorization_unavailable", &ctx);
+                    s.stop("session_ended", &ctx);
                 }
+            }
+            // Authorization uncertainty is a stop once it outlasts the grace window.
+            Err(error) => {
+                if active.is_some() && last_poll_ok.elapsed() >= POLL_GRACE {
+                    if let Some(mut s) = active.take() {
+                        s.stop("authorization_unavailable", &ctx);
+                    }
+                }
+                crate::log_warn!("media", "media poll failed: {error}");
             }
         }
         // Local stop/privacy changes remain responsive between server polls.
         let until = std::time::Instant::now() + POLL_INTERVAL;
         while std::time::Instant::now() < until {
-            if !capture_allowed(&ctx) {
+            if let Some(reason) = capture_block(&ctx) {
                 if let Some(mut s) = active.take() {
-                    s.stop("local_policy_stop", &ctx);
+                    s.stop(reason.reason(), &ctx);
                 }
                 break;
             }
@@ -403,11 +524,22 @@ async fn supervise(ctx: MediaContext) {
     }
 }
 
+/// How a publisher process ended, as far as restarting it is concerned.
+#[cfg(windows)]
+enum PublisherExit {
+    /// It sent a terminal failure the backend already knows about.
+    Reported,
+    /// It crashed or lost its room; a fresh process may well succeed.
+    Recoverable,
+}
+
 /// A running sidecar for one session.
 #[cfg(windows)]
 struct ActiveSession {
     session_id: String,
     child: std::process::Child,
+    /// Set by the event reader once a terminal failure has been reported.
+    terminal: Arc<AtomicBool>,
     // Keep the command half of the pipe open while the publisher runs.
     _writer: std::fs::File,
     // Held so the pipe stays open for the lifetime of the session.
@@ -459,8 +591,15 @@ fn contain_sidecar(child: &std::process::Child) -> Result<KillOnCloseJob, String
 
 #[cfg(windows)]
 impl ActiveSession {
-    fn exited(&mut self) -> bool {
-        matches!(self.child.try_wait(), Ok(Some(_)) | Err(_))
+    fn exit_kind(&mut self) -> Option<PublisherExit> {
+        if !matches!(self.child.try_wait(), Ok(Some(_)) | Err(_)) {
+            return None;
+        }
+        Some(if self.terminal.load(Ordering::Acquire) {
+            PublisherExit::Reported
+        } else {
+            PublisherExit::Recoverable
+        })
     }
 
     /// Stop without writing to the pipe. A sidecar stuck in capture may not
@@ -529,6 +668,11 @@ fn launch_sidecar(exe: &std::path::Path, pipe_name: &str) -> Result<std::process
     std::process::Command::new(exe)
         .arg("--pipe")
         .arg(pipe_name)
+        // No inherited console handles either: nothing may tie the publisher's
+        // lifetime to a terminal window.
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
         .creation_flags(CREATE_NO_WINDOW.0)
         .spawn()
         .map_err(|e| format!("spawn sidecar: {e}"))
@@ -554,7 +698,12 @@ async fn start_session(
         return Err("local policy stopped capture".into());
     }
 
-    let name = pipe::pipe_name(session_id);
+    // A fresh name per process: a restarted publisher must never race the
+    // previous process's pipe instance, which FILE_FLAG_FIRST_PIPE_INSTANCE
+    // rightly refuses to share.
+    static SPAWNS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let spawn = SPAWNS.fetch_add(1, Ordering::Relaxed);
+    let name = pipe::pipe_name(&format!("{session_id}-{spawn}"));
     let mut server = pipe::PipeServer::create(&name)?;
 
     let mut child = launch_sidecar(&exe, &name)?;
@@ -615,16 +764,38 @@ async fn start_session(
     }
 
     ctx.status.begin_session(session_id);
-    spawn_event_reader(reader, ctx.clone(), client.clone(), session_id.to_string());
+    let terminal = Arc::new(AtomicBool::new(false));
+    spawn_event_reader(
+        reader,
+        ctx.clone(),
+        client.clone(),
+        session_id.to_string(),
+        Arc::clone(&terminal),
+    );
     crate::log_info!("media", "publisher started for session {session_id}");
 
     Ok(ActiveSession {
         session_id: session_id.to_string(),
         child,
+        terminal,
         _writer: writer,
         _server: server,
         _job: job,
     })
+}
+
+/// First `name: detail` token of a sidecar failure detail, if it is a typed slug.
+#[cfg_attr(not(windows), allow(dead_code))]
+fn failure_slug(detail: &str) -> &str {
+    let slug = detail.split(':').next().unwrap_or("").trim();
+    let valid = !slug.is_empty()
+        && slug.len() <= 40
+        && slug.bytes().all(|b| b.is_ascii_lowercase() || b == b'_');
+    if valid {
+        slug
+    } else {
+        ""
+    }
 }
 
 /// Reads sidecar events and relays them to status + backend.
@@ -634,6 +805,7 @@ fn spawn_event_reader(
     ctx: MediaContext,
     client: BackendClient,
     session_id: String,
+    terminal: Arc<AtomicBool>,
 ) {
     std::thread::spawn(move || {
         let rt = match tokio::runtime::Builder::new_current_thread()
@@ -645,7 +817,11 @@ fn spawn_event_reader(
         };
         let mut lines = BufReader::new(reader).lines();
         let mut last_metrics_report: Option<Instant> = None;
-        let mut reported_first_frame = false;
+        let mut last_metrics: Option<serde_json::Value> = None;
+        // "live" is reported when frames flow -- on start, and again after
+        // every recovery, so the session does not stay "reconnecting".
+        let mut awaiting_live = true;
+        let mut published_mark = 0u64;
         while let Some(Ok(line)) = lines.next() {
             let line = line.trim();
             if line.is_empty() {
@@ -660,25 +836,28 @@ fn spawn_event_reader(
                     if !ctx.status.set_session_state(&session_id, &state) {
                         break;
                     }
+                    if state == "reconnecting" {
+                        awaiting_live = true;
+                        published_mark = last_metrics
+                            .as_ref()
+                            .and_then(|m| m.get("frames_published"))
+                            .and_then(serde_json::Value::as_u64)
+                            .unwrap_or(0);
+                    }
                     let d = detail.unwrap_or_default();
-                    rt.block_on(async {
-                        let _ = tokio::time::timeout(
-                            Duration::from_secs(2),
-                            client.report_media_agent_state(&session_id, &state, &d, None),
-                        )
-                        .await;
-                    });
+                    rt.block_on(report(&client, &session_id, &state, &d, None));
                 }
                 Event::Metrics(m) => {
-                    if !reported_first_frame
-                        && m.get("frames_published")
-                            .and_then(serde_json::Value::as_u64)
-                            .unwrap_or(0)
-                            > 0
-                    {
+                    let published = m
+                        .get("frames_published")
+                        .and_then(serde_json::Value::as_u64)
+                        .unwrap_or(0);
+                    last_metrics = Some(m.clone());
+                    let mut force = false;
+                    if awaiting_live && published > published_mark {
                         let reported = rt.block_on(async {
                             tokio::time::timeout(
-                                Duration::from_secs(2),
+                                Duration::from_secs(3),
                                 client.report_media_agent_state(
                                     &session_id,
                                     "first_frame",
@@ -689,38 +868,43 @@ fn spawn_event_reader(
                             .await
                         });
                         if matches!(reported, Ok(Ok(()))) {
-                            reported_first_frame = true;
+                            awaiting_live = false;
+                            // Send the counters with the transition so the time
+                            // to first frame is recorded without waiting.
+                            force = true;
                         }
                     }
-                    if last_metrics_report
-                        .is_some_and(|last| last.elapsed() < Duration::from_secs(8))
+                    if !force
+                        && last_metrics_report
+                            .is_some_and(|last| last.elapsed() < Duration::from_secs(8))
                     {
                         continue;
                     }
                     last_metrics_report = Some(Instant::now());
-                    rt.block_on(async {
-                        let _ = tokio::time::timeout(
-                            Duration::from_secs(2),
-                            client.report_media_agent_state(&session_id, "metrics", "", Some(m)),
-                        )
-                        .await;
-                    });
+                    rt.block_on(report(&client, &session_id, "metrics", "", Some(m)));
                 }
                 Event::Warning { code, detail } => {
                     crate::log_warn!("media", "sidecar warning {code}: {detail}");
                 }
                 Event::Fatal { code, detail } => {
+                    crate::log_warn!("media", "sidecar fatal {code}: {detail}");
+                    if code == "room_disconnected" {
+                        // Recoverable: the supervisor restarts the publisher.
+                        break;
+                    }
+                    terminal.store(true, Ordering::Release);
                     ctx.status.set_session_error(&session_id, &code);
                     if !ctx.status.set_session_state(&session_id, &code) {
                         break;
                     }
-                    rt.block_on(async {
-                        let _ = tokio::time::timeout(
-                            Duration::from_secs(2),
-                            client.report_media_agent_state(&session_id, &code, &detail, None),
-                        )
-                        .await;
-                    });
+                    let slug = failure_slug(&detail).to_string();
+                    rt.block_on(report(
+                        &client,
+                        &session_id,
+                        &code,
+                        &slug,
+                        last_metrics.take(),
+                    ));
                     break;
                 }
                 Event::Pong { .. } => {}
@@ -748,6 +932,32 @@ mod tests {
                 "policy_blocked"
             );
         }
+    }
+
+    #[test]
+    fn lock_screen_pauses_a_live_view_but_policy_ends_it() {
+        assert!(CaptureBlock::Paused.pauses_live());
+        assert!(!CaptureBlock::ScreenPolicy.pauses_live());
+        assert!(!CaptureBlock::SignedOut.pauses_live());
+        #[cfg(windows)]
+        {
+            assert!(CaptureBlock::LockedOrDisconnected.pauses_live());
+            assert!(CaptureBlock::SensitiveApp.pauses_live());
+            assert_eq!(CaptureBlock::LockedOrDisconnected.reason(), "locked");
+        }
+    }
+
+    #[test]
+    fn failure_details_yield_only_typed_slugs() {
+        assert_eq!(
+            failure_slug("no_first_frame: attempt=3 produced no frame"),
+            "no_first_frame"
+        );
+        assert_eq!(failure_slug("resumed_from_sleep"), "resumed_from_sleep");
+        // Free text never becomes a reason, so nothing personal can leak through.
+        assert_eq!(failure_slug("C:\\Users\\x: boom"), "");
+        assert_eq!(failure_slug("Some Window Title"), "");
+        assert_eq!(failure_slug(""), "");
     }
 
     #[test]

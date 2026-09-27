@@ -10,6 +10,7 @@ import type {
 import { fmtTime } from "../../format";
 import { Empty, Spinner } from "../ui";
 import { UnifiedTimeline } from "./UnifiedTimeline";
+import { appSegments, playableMoment } from "./appSegments";
 
 export type PlaybackFrame = ScreenshotMeta & {
   app: string | null;
@@ -96,6 +97,9 @@ export function PlaybackPanel({
   visits,
   buckets,
   seekTo,
+  seekNonce,
+  focusApp,
+  onClearFocus,
 }: {
   employeeId: string;
   from: number;
@@ -105,6 +109,11 @@ export function PlaybackPanel({
   buckets: KeystrokeBucket[];
   /** Unix seconds to open at; the nearest frame wins. */
   seekTo?: number | null;
+  /** Changes on every request, so asking for the same moment again rewinds. */
+  seekNonce?: number;
+  /** App whose stretches are listed under the player for quick jumping. */
+  focusApp?: string | null;
+  onClearFocus?: () => void;
 }) {
   const { t } = useTranslation("reports");
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -115,6 +124,8 @@ export function PlaybackPanel({
   const [speed, setSpeed] = useState<(typeof SPEEDS)[number]>(1);
   const [absoluteTime, setAbsoluteTime] = useState(seekTo ?? from);
   const desiredTime = useRef<number | null>(seekTo ?? null);
+  const selectedRef = useRef<string | null>(null);
+  selectedRef.current = selectedId;
 
   useEffect(() => {
     let alive = true;
@@ -140,12 +151,21 @@ export function PlaybackPanel({
     }
   };
 
+  // Opening at a moment. A jump inside the recording already loaded must seek
+  // the element directly: re-selecting the same id changes nothing, so the
+  // second click on an app segment used to leave the video where it was.
   useEffect(() => {
     if (!recordings?.length) return;
-    const target = recordingAt(recordings, seekTo ?? from) ?? recordings.find((item) => item.status !== "failed") ?? recordings[0];
-    desiredTime.current = seekTo ?? Date.parse(target.started_at) / 1000;
+    const wanted = seekTo ?? from;
+    const target = recordingAt(recordings, wanted) ?? recordings.find((item) => item.status !== "failed") ?? recordings[0];
+    const at = recordingAt(recordings, wanted) ? wanted : Date.parse(target.started_at) / 1000;
+    desiredTime.current = at;
+    setAbsoluteTime(at);
+    if (selectedRef.current === target.id && videoRef.current?.readyState) {
+      videoRef.current.currentTime = Math.max(0, at - Date.parse(target.started_at) / 1000);
+    }
     setSelectedId(target.id);
-  }, [recordings, seekTo, from]);
+  }, [recordings, seekTo, seekNonce, from]);
 
   const selected = recordings?.find((item) => item.id === selectedId) ?? null;
   useEffect(() => {
@@ -164,8 +184,50 @@ export function PlaybackPanel({
   const keyMinute = absoluteTime - absoluteTime % 60;
   const currentKeys = buckets.find((item) => item.ts_bucket === keyMinute)?.count ?? 0;
 
+  const segments = focusApp ? appSegments(activity.samples, focusApp) : [];
+  // The admin asked for a specific moment and there is no footage for it:
+  // say so instead of silently playing some other part of the day.
+  const missedMoment = seekTo != null && recordings != null && recordings.length > 0 && !recordingAt(recordings, seekTo);
+
+  const segmentList = focusApp ? (
+    <div className="ad-segments">
+      <div className="ad-segments__head">
+        <span>{t("playback.segmentsFor", { app: focusApp, count: segments.length })}</span>
+        {onClearFocus ? <button type="button" onClick={onClearFocus}>{t("playback.clearFocus")}</button> : null}
+      </div>
+      <div className="ad-segments__list">
+        {segments.map((segment) => {
+          const moment = playableMoment(segment, recordings ?? []);
+          const active = absoluteTime >= segment.ts && absoluteTime < segment.ts + segment.dur;
+          return (
+            <button
+              type="button"
+              key={segment.ts}
+              className="ad-segment"
+              aria-pressed={active}
+              disabled={moment === null}
+              title={moment === null ? t("playback.noVideoSegment") : undefined}
+              onClick={() => moment !== null && seekAbsolute(moment)}
+            >
+              <bdi dir="ltr">{fmtTime(segment.ts)}</bdi>
+              <small><bdi dir="ltr">{Math.max(1, Math.round(segment.dur / 60))}m</bdi></small>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  ) : null;
+
   if (recordings == null) return <Spinner label={t("playback.loadingVideo")} />;
-  if (recordings.length === 0) return <Empty>{t("playback.emptyVideo")}</Empty>;
+  if (recordings.length === 0) {
+    return (
+      <>
+        <Empty>{t("playback.emptyVideo")}</Empty>
+        <p className="ad-playback__notice">{t("playback.emptyVideoHint")}</p>
+        {segmentList}
+      </>
+    );
+  }
 
   return (
     <div className="ad-playback">
@@ -206,6 +268,12 @@ export function PlaybackPanel({
           ))}
           <span>{t("playback.videoNotice")}</span>
         </div>
+        {missedMoment ? (
+          <p className="ad-playback__notice" role="status">
+            {t("playback.noVideoAt", { time: fmtTime(seekTo as number) })}
+          </p>
+        ) : null}
+        {segmentList}
         <UnifiedTimeline from={from} to={to} states={null} activity={activity} buckets={buckets} visits={visits} shots={null} onSeek={seekAbsolute} />
       </div>
 

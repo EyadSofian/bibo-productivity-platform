@@ -187,12 +187,12 @@
       "noActivity": "Sin actividad"
     },
     "tabs": {
-      "activity": "Actividad",
+      "activity": "Aplicaciones",
       "communications": "Evidencia de comunicación",
       "keystrokes": "Pulsaciones",
       "browser": "Navegador",
       "screenshots": "Capturas de pantalla",
-      "playback": "Reproducción"
+      "playback": "Grabaciones"
     },
     "communications": {
       "eyebrow": "Evidencia, no suposiciones",

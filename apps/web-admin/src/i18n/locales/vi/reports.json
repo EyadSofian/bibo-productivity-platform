@@ -3,7 +3,8 @@
     "empty": "Không có hoạt động nào được ghi nhận trong khoảng thời gian này.",
     "timeline": "Dòng thời gian hôm nay",
     "breakdown": "Phân tích ứng dụng & cửa sổ",
-    "idle": "Nghỉ"
+    "idle": "Nghỉ",
+    "watchApp": "Xem bản ghi {{app}}"
   },
   "browser": {
     "empty": "Không có lượt truy cập trình duyệt nào trong khoảng thời gian này.",
@@ -68,7 +69,12 @@
     "website": "Trang web",
     "url": "URL đầy đủ",
     "keys": "Lần gõ phím trong phút này",
-    "resolution": "Độ phân giải"
+    "resolution": "Độ phân giải",
+    "segmentsFor": "{{app}} — {{count}} khoảng thời gian. Nhấn để chuyển tới.",
+    "clearFocus": "Hiện tất cả",
+    "noVideoAt": "Không có video lúc {{time}}. Đang hiện bản ghi gần nhất.",
+    "noVideoSegment": "Không có video cho khoảng này",
+    "emptyVideoHint": "Chỉ ghi khi chính sách \"Ghi màn hình\" bật và thiết bị đang kết nối."
   },
   "timeline": {
     "lanes": {

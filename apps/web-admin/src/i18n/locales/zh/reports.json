@@ -3,7 +3,8 @@
     "empty": "此时间范围内未记录任何活动。",
     "timeline": "今日时间线",
     "breakdown": "应用和窗口明细",
-    "idle": "空闲"
+    "idle": "空闲",
+    "watchApp": "观看 {{app}} 的录像"
   },
   "browser": {
     "empty": "此时间范围内没有浏览记录。",
@@ -68,7 +69,12 @@
     "website": "网站",
     "url": "完整网址",
     "keys": "本分钟按键次数",
-    "resolution": "分辨率"
+    "resolution": "分辨率",
+    "segmentsFor": "{{app}} — {{count}} 个时段，点击跳转。",
+    "clearFocus": "显示全部",
+    "noVideoAt": "{{time}} 没有录像，显示最近的录像。",
+    "noVideoSegment": "此时段没有录像",
+    "emptyVideoHint": "仅在启用“屏幕录制”策略且设备在线时才会录制。"
   },
   "timeline": {
     "lanes": {

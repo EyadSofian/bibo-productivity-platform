@@ -26,7 +26,7 @@ use windows_capture::settings::{
     MinimumUpdateIntervalSettings, SecondaryWindowSettings, Settings,
 };
 
-use crate::metrics::Metrics;
+use crate::metrics::{CaptureIssue, Metrics};
 
 /// What to capture and how fast.
 #[derive(Debug, Clone, Copy)]
@@ -82,6 +82,17 @@ impl std::fmt::Display for CaptureError {
 }
 
 impl std::error::Error for CaptureError {}
+
+impl CaptureError {
+    /// The typed reason reported to the operator.
+    pub fn issue(&self) -> CaptureIssue {
+        match self {
+            Self::NoSuchMonitor(_) => CaptureIssue::NoMonitor,
+            Self::Unsupported(_) => CaptureIssue::WgcUnsupported,
+            Self::Start(_) => CaptureIssue::StartFailed,
+        }
+    }
+}
 
 struct Flags {
     sink: FrameSink,
@@ -251,6 +262,16 @@ impl Drop for CaptureSession {
     fn drop(&mut self) {
         self.stop();
     }
+}
+
+/// What the capture was built against: monitor count and the primary monitor's
+/// size. A change means the capture item may point at a display that no longer
+/// exists, so the supervisor rebuilds rather than waiting for frames that will
+/// never come. `None` when the display stack cannot be queried (mid-reset).
+pub fn display_signature() -> Option<(u32, u32, u32)> {
+    let count = Monitor::enumerate().ok()?.len() as u32;
+    let primary = Monitor::primary().ok()?;
+    Some((count, primary.width().ok()?, primary.height().ok()?))
 }
 
 /// Number of monitors currently attached, for multi-monitor planning.

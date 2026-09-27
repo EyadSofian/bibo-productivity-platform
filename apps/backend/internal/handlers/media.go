@@ -235,7 +235,7 @@ func (h *MediaHandler) AgentSession(c *gin.Context) {
 	} else if h.expireUnwatched(c, session) {
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"session_id": session.ID, "room": session.ProviderRoomID, "state": session.State, "control_armed": false})
+	c.JSON(http.StatusOK, gin.H{"session_id": session.ID, "room": session.ProviderRoomID, "state": session.State, "kind": session.Kind, "control_armed": false})
 }
 
 func (h *MediaHandler) recordingPolicyActive(c *gin.Context, userID, deviceID string) (bool, error) {
@@ -656,6 +656,38 @@ type agentStateReq struct {
 	// must still be able to report that it is live.
 	Track   *agentTrackReq       `json:"track"`
 	Metrics *publisherMetricsReq `json:"metrics"`
+	// FailureReason narrows a failure code to what actually happened on the
+	// device ("resumed_from_sleep", "locked"), so the operator is not left with
+	// a generic CAPTURE_FAILED. A closed slug, never free text.
+	FailureReason string `json:"failure_reason"`
+}
+
+// A device-reported reason is a short snake_case slug. Anything else is
+// rejected: this field must not become a channel for window titles or paths.
+func validReasonSlug(s string) bool {
+	if len(s) == 0 || len(s) > 40 {
+		return false
+	}
+	for _, r := range s {
+		if (r < 'a' || r > 'z') && r != '_' {
+			return false
+		}
+	}
+	return true
+}
+
+var captureIssues = map[string]bool{
+	"": true, "none": true, "wgc_unsupported": true, "no_monitor": true, "start_failed": true,
+	"no_first_frame": true, "capture_closed": true, "capture_stalled": true,
+	"resumed_from_sleep": true, "display_changed": true,
+}
+
+var pauseReasons = map[string]bool{"": true, "locked": true, "private_app": true, "paused": true}
+
+func (m *publisherMetricsReq) valid() bool {
+	return m != nil && m.Width <= 16384 && m.Height <= 16384 && m.FPS >= 0 && m.FPS <= 240 &&
+		(m.Encoder == "unknown" || m.Encoder == "software" || m.Encoder == "hardware") &&
+		captureIssues[m.CaptureIssue] && pauseReasons[m.PauseReason]
 }
 
 // Numeric counters only: neither screen content nor credentials belong here.
@@ -670,6 +702,14 @@ type publisherMetricsReq struct {
 	Height          uint32  `json:"height"`
 	FPS             float64 `json:"fps"`
 	Encoder         string  `json:"encoder"`
+	// Capture lifecycle telemetry: rebuilds after sleep or display changes,
+	// time to the first published frame, and the last typed capture issue.
+	CaptureRestarts uint32 `json:"capture_restarts"`
+	FirstFrameMS    uint32 `json:"first_frame_ms"`
+	CaptureIssue    string `json:"capture_issue,omitempty"`
+	// PauseReason is set while a live view is paused on the device (lock
+	// screen, private app); the viewer shows it instead of timing out.
+	PauseReason string `json:"pause_reason,omitempty"`
 }
 
 type agentTrackReq struct {
@@ -706,8 +746,7 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 	}
 	if req.State == "metrics" {
 		m := req.Metrics
-		if m == nil || m.Width > 16384 || m.Height > 16384 || m.FPS < 0 || m.FPS > 240 ||
-			(m.Encoder != "unknown" && m.Encoder != "software" && m.Encoder != "hardware") {
+		if !m.valid() {
 			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid publisher metrics", false)
 			return
 		}
@@ -738,12 +777,32 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 	}
 
 	var failure media.FailureCode
+	var failureDetail json.RawMessage
 	if to == media.StateFailed {
 		failure = media.FailureCode(req.FailureCode)
 		if !media.ValidFailureCode(failure) {
 			mediaError(c, http.StatusBadRequest, CodeInvalidRequest,
 				"failed requires a known failure_code", false)
 			return
+		}
+		if req.FailureReason != "" && !validReasonSlug(req.FailureReason) {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid failure_reason", false)
+			return
+		}
+		if req.Metrics != nil && !req.Metrics.valid() {
+			mediaError(c, http.StatusBadRequest, CodeInvalidRequest, "invalid publisher metrics", false)
+			return
+		}
+		if req.FailureReason != "" || req.Metrics != nil {
+			detail := map[string]any{}
+			if req.Metrics != nil {
+				encoded, _ := json.Marshal(req.Metrics)
+				_ = json.Unmarshal(encoded, &detail)
+			}
+			if req.FailureReason != "" {
+				detail["failure_reason"] = req.FailureReason
+			}
+			failureDetail, _ = json.Marshal(detail)
 		}
 	}
 
@@ -755,6 +814,14 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 	if err != nil {
 		mediaInternal(c, err)
 		return
+	}
+
+	if failureDetail != nil {
+		// Written before the terminal transition: once failed, the row no
+		// longer accepts publisher telemetry. Best effort, like the track row.
+		if err := h.store.UpdatePublisherMetrics(c.Request.Context(), agentUserID, sessionID, failureDetail); err != nil && !errors.Is(err, store.ErrNotFound) {
+			obs.Warn("media failure detail not recorded", "err", err, "session", session.ID)
+		}
 	}
 
 	updated, err := h.store.AdvanceMediaSession(c.Request.Context(), session.ID, to, failure)
@@ -791,7 +858,7 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 
 	h.auditAs(c, "agent", session.DeviceID, session.BusinessID, session.ID,
 		store.AuditAgentState, store.OutcomeAllowed,
-		map[string]any{"state": string(to), "failure_code": string(failure)})
+		map[string]any{"state": string(to), "failure_code": string(failure), "failure_reason": req.FailureReason})
 	if updated.Kind == media.KindRecording && to.Terminal() {
 		h.stopRecording(c, updated)
 	}

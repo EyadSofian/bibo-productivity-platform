@@ -1341,3 +1341,57 @@ func TestStopWithdrawsAgentDemandBeforeWaitingForProvider(t *testing.T) {
 		t.Fatalf("token granted during stop: %d", rec.Code)
 	}
 }
+
+// The operator must see why capture failed, not only that it did. The reason is
+// a closed slug stored with the last device counters; free text is refused.
+func TestPublisherFailureCarriesATypedReasonToTheViewer(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+
+	for _, body := range []string{
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"C:\\Users\\someone"}`,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"Private Window Title"}`,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","metrics":{"encoder":"software","capture_issue":"free text"}}`,
+	} {
+		if rec, _ := e.reportState(t, sessionID, e.employeeID, body); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status %d, want 400", body, rec.Code)
+		}
+	}
+
+	rec, decoded := e.reportState(t, sessionID, e.employeeID,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"resumed_from_sleep","metrics":{"frames_captured":40,"frames_published":38,"encoder":"software","capture_restarts":2,"first_frame_ms":420,"capture_issue":"resumed_from_sleep"}}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("typed failure refused: %d %v", rec.Code, decoded)
+	}
+	session, _ := decoded["session"].(map[string]any)
+	if session["failure_code"] != string(media.FailCaptureFailed) {
+		t.Fatalf("failure_code = %v", session["failure_code"])
+	}
+	var reason string
+	var restarts, firstFrame int
+	if err := e.pool.QueryRow(e.ctx, `SELECT publisher_metrics->>'failure_reason', (publisher_metrics->>'capture_restarts')::int, (publisher_metrics->>'first_frame_ms')::int FROM media_sessions WHERE id=$1`, sessionID).Scan(&reason, &restarts, &firstFrame); err != nil {
+		t.Fatal(err)
+	}
+	if reason != "resumed_from_sleep" || restarts != 2 || firstFrame != 420 {
+		t.Fatalf("stored failure detail = %q restarts=%d first_frame_ms=%d", reason, restarts, firstFrame)
+	}
+}
+
+// A paused live view reports why; unknown pause reasons are refused.
+func TestPausedLiveViewReportsAKnownReason(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"encoder":"unknown","pause_reason":"watching netflix"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown pause reason accepted: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"encoder":"unknown","pause_reason":"locked"}}`); rec.Code != http.StatusNoContent {
+		t.Fatalf("pause reason rejected: %d", rec.Code)
+	}
+	var reason string
+	if err := e.pool.QueryRow(e.ctx, `SELECT publisher_metrics->>'pause_reason' FROM media_sessions WHERE id=$1`, sessionID).Scan(&reason); err != nil {
+		t.Fatal(err)
+	}
+	if reason != "locked" {
+		t.Fatalf("pause_reason = %q", reason)
+	}
+}

@@ -45,6 +45,35 @@ export type MediaSession = {
   started_at: string;
   ended_at?: string;
   failure_code?: MediaFailureCode | "";
+  /** Latest device-side counters, plus typed reasons for a pause or failure. */
+  publisher_metrics?: PublisherMetrics | null;
+};
+
+/** Why the device's capture last needed recovery. A closed vocabulary. */
+export type CaptureIssue =
+  | "none"
+  | "wgc_unsupported"
+  | "no_monitor"
+  | "start_failed"
+  | "no_first_frame"
+  | "capture_closed"
+  | "capture_stalled"
+  | "resumed_from_sleep"
+  | "display_changed";
+
+export type PublisherMetrics = {
+  frames_captured?: number;
+  frames_published?: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+  capture_restarts?: number;
+  first_frame_ms?: number;
+  capture_issue?: CaptureIssue;
+  /** Set while a live view is paused on the device. */
+  pause_reason?: "locked" | "private_app" | "paused";
+  /** Set with a failure: what actually happened on the device. */
+  failure_reason?: string;
 };
 
 export type MediaToken = {

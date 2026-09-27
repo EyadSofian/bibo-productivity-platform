@@ -1064,6 +1064,10 @@ pub struct AgentSession {
     pub session_id: String,
     pub state: String,
     pub room: String,
+    /// `live` or `recording`. Empty from older backends, which are treated as
+    /// recording-like: a local block then fails the session as before.
+    #[serde(default)]
+    pub kind: String,
     /// Whether an operator has been authorised to drive this machine (V07).
     ///
     /// Defaults to **false** when the field is absent, so an older backend - or a
@@ -1185,8 +1189,21 @@ impl BackendClient {
             let Some((state, failure_code)) = media_agent_report(state) else {
                 return Ok(());
             };
-            let _ = detail;
-            serde_json::json!({"state": state, "failure_code": failure_code})
+            let mut body = serde_json::json!({"state": state, "failure_code": failure_code});
+            if state == "failed" {
+                // Only a closed slug travels with a failure; callers pass typed
+                // reasons, and anything else is dropped rather than sent.
+                if !detail.is_empty()
+                    && detail.len() <= 40
+                    && detail.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
+                {
+                    body["failure_reason"] = serde_json::Value::String(detail.to_string());
+                }
+                if let Some(metrics) = metrics {
+                    body["metrics"] = metrics;
+                }
+            }
+            body
         };
         let mut token = self.access_token()?;
         for attempt in 0..2 {

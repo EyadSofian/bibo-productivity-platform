@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { heartbeatMediaSession, mediaErrorOf, mintViewerToken, startLiveSession, stopMediaSession } from "../../api/media";
-import type { MediaFailureCode, MediaSession } from "../../api/media";
+import type { MediaFailureCode, MediaSession, MediaSessionState } from "../../api/media";
 import type { MediaTransport, TransportState } from "../../media/transport";
 import { releaseStream } from "../../media/transport";
 
@@ -31,6 +31,7 @@ export type PlayerPhase =
   | "connecting"
   | "live"
   | "reconnecting"
+  | "paused"
   | "ended"
   | "error";
 
@@ -38,6 +39,8 @@ export type PlayerError = {
   /** Machine-readable, from the API envelope or a transport failure. */
   code: string;
   message: string;
+  /** What actually happened on the device, when the publisher said. */
+  detail?: string;
   requestId?: string;
   retryable: boolean;
 };
@@ -53,9 +56,11 @@ export type LivePlayerProps = {
    *  without re-fetching. */
   onSession?: (session: MediaSession | null) => void;
   autoStart?: boolean;
+  /** False when the device is known to be offline: starting is pointless. */
+  online?: boolean;
 };
 
-export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStart = false }: LivePlayerProps) {
+export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStart = false, online = true }: LivePlayerProps) {
   const { t } = useTranslation("live");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const teardownRef = useRef<(() => void) | null>(null);
@@ -68,9 +73,16 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   const viewerSessionRef = useRef<string | undefined>(undefined);
   const startingRef = useRef<number | null>(null);
   const pollRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  // What the control plane last said, so a timeout can name the stage it
+  // stalled in instead of a bare TIMEOUT.
+  const serverStateRef = useRef<MediaSessionState | null>(null);
+  const captureIssueRef = useRef<string | undefined>(undefined);
 
   const [phase, setPhase] = useState<PlayerPhase>("idle");
   const [error, setError] = useState<PlayerError | null>(null);
+  const [pauseReason, setPauseReason] = useState<string | null>(null);
+  const [waitingSince, setWaitingSince] = useState<number | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const clearTimer = () => {
     if (timeoutRef.current !== undefined) {
@@ -112,14 +124,38 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
   const failFromSession = useCallback(
     (s: MediaSession) => {
       const code = (s.failure_code || "TIMEOUT") as MediaFailureCode;
+      const reason = s.publisher_metrics?.failure_reason;
       fail({
         code,
         message: t(`failure.${code}`, { defaultValue: t("failure.unknown") }),
-        retryable: code === "AGENT_OFFLINE" || code === "ICE_FAILED" || code === "TIMEOUT",
+        detail: reason ? t(`reason.${reason}`, { defaultValue: "" }) || undefined : undefined,
+        // A capture failure after sleep or a display change usually clears
+        // on a fresh attempt, so offer it rather than a dead end.
+        retryable: code === "AGENT_OFFLINE" || code === "ICE_FAILED" || code === "TIMEOUT" || code === "CAPTURE_FAILED",
       });
     },
     [fail, t],
   );
+
+  /** The stage a stalled connection was stuck in, in words an admin can act on. */
+  const timeoutDetail = useCallback(() => {
+    const issue = captureIssueRef.current;
+    if (issue && issue !== "none") {
+      const known = t(`reason.${issue}`, { defaultValue: "" });
+      if (known) return known;
+    }
+    switch (serverStateRef.current) {
+      case "waiting_for_agent":
+        return t("timeout.noAgent");
+      case "negotiating":
+        return t("timeout.noFirstFrame");
+      case "live":
+      case "reconnecting":
+        return t("timeout.lostVideo");
+      default:
+        return t("timeout.noSession");
+    }
+  }, [t]);
 
   const armTimeout = useCallback(
     (run: number) => {
@@ -131,13 +167,14 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         fail({
           code: "TIMEOUT",
           message: t("failure.TIMEOUT"),
+          detail: timeoutDetail(),
           retryable: true,
         });
         teardownRef.current?.();
         teardownRef.current = null;
       }, CONNECT_TIMEOUT_MS);
     },
-    [fail, t],
+    [fail, t, timeoutDetail],
   );
 
   const onTransportState = useCallback(
@@ -181,6 +218,9 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
     teardown();
     const run = runRef.current;
     startingRef.current = run;
+    serverStateRef.current = null;
+    captureIssueRef.current = undefined;
+    setPauseReason(null);
     try {
       if (previous && previousViewerSession) await stopMediaSession(previous.id, previousViewerSession).catch(() => {});
       if (runRef.current !== run) return;
@@ -227,7 +267,20 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
           const { session: latest } = await heartbeatMediaSession(started.id, viewerSessionRef.current);
           if (runRef.current !== run) return;
           onSession?.(latest);
+          serverStateRef.current = latest.state;
+          captureIssueRef.current = latest.publisher_metrics?.capture_issue;
           if (latest.state === "failed") { failFromSession(latest); return; }
+          // The device paused capture (lock screen, a private app). That is
+          // not a failure: say why, and keep the session until it resumes.
+          const paused = latest.publisher_metrics?.pause_reason;
+          if (paused && latest.state !== "live") {
+            setPauseReason(paused);
+            setPhase("paused");
+            armTimeout(run);
+          } else if (!paused) {
+            setPauseReason(null);
+            setPhase((current) => (current === "paused" ? "reconnecting" : current));
+          }
           if (latest.state === "ended" || latest.state === "ending") {
             teardown();
             setPhase("ended");
@@ -342,6 +395,20 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
     }
   }, [onSession, teardown]);
 
+  const waiting = phase === "starting" || phase === "waiting_for_agent" || phase === "connecting" || phase === "reconnecting";
+
+  // A visible elapsed counter while connecting: a silent spinner reads as
+  // "stuck" long before the deadline.
+  useEffect(() => {
+    if (!waiting) {
+      setWaitingSince(null);
+      return;
+    }
+    setWaitingSince((since) => since ?? Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [waiting]);
+
   useEffect(() => {
     if (autoStart) void start();
     // Unmounting must release the tracks. A stream left running after the
@@ -350,7 +417,8 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceId]);
 
-  const waiting = phase === "starting" || phase === "waiting_for_agent" || phase === "connecting" || phase === "reconnecting";
+  const elapsed = waitingSince ? Math.max(0, Math.floor((now - waitingSince) / 1000)) : 0;
+  const offlineIdle = !online && (phase === "idle" || phase === "ended" || phase === "error");
 
   return (
     <section className="live-player" data-phase={phase}>
@@ -370,10 +438,23 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         {phase !== "live" && (
           <div className="live-player__overlay" role="status" aria-live="polite">
             {waiting && <span className="live-player__spinner" aria-hidden />}
-            <p className="live-player__status">{t(`phase.${phase}`)}</p>
+            {phase === "paused" && <span className="live-player__pause" aria-hidden>❚❚</span>}
+            <p className="live-player__status">
+              {offlineIdle && !error ? t("offline") : t(`phase.${phase}`)}
+            </p>
+            {waiting && elapsed >= 3 ? (
+              <p className="live-player__hint">
+                {t("elapsed", { seconds: elapsed })}
+                {phase === "waiting_for_agent" && elapsed >= 10 ? ` · ${t("hint.agentSlow")}` : ""}
+              </p>
+            ) : null}
+            {phase === "paused" && pauseReason ? (
+              <p className="live-player__hint">{t(`pause.${pauseReason}`, { defaultValue: t("pause.paused") })}</p>
+            ) : null}
             {error && (
               <>
                 <p className="live-player__error">{error.message}</p>
+                {error.detail ? <p className="live-player__detail">{error.detail}</p> : null}
                 <p className="live-player__code">
                   <code>{error.code}</code>
                   {error.requestId ? <span className="live-player__request-id"> · {error.requestId}</span> : null}
@@ -387,12 +468,12 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
       </div>
 
       <div className="live-player__actions">
-        {phase === "live" || waiting ? (
+        {phase === "live" || waiting || phase === "paused" ? (
           <button type="button" className="bibo-btn bibo-btn--ghost" onClick={() => void stop()}>
             {t("action.stop")}
           </button>
         ) : (
-          <button type="button" className="bibo-btn bibo-btn--primary" onClick={() => void start()}>
+          <button type="button" className="bibo-btn bibo-btn--primary" disabled={!online} onClick={() => void start()}>
             {phase === "error" && error?.retryable ? t("action.retry") : t("action.start")}
           </button>
         )}

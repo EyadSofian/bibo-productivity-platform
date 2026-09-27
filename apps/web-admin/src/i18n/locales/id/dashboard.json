@@ -187,12 +187,12 @@
       "noActivity": "Tidak ada aktivitas"
     },
     "tabs": {
-      "activity": "Aktivitas",
+      "activity": "Aplikasi",
       "communications": "Bukti komunikasi",
       "keystrokes": "Ketikan",
       "browser": "Peramban",
       "screenshots": "Tangkapan layar",
-      "playback": "Pemutaran"
+      "playback": "Rekaman"
     },
     "communications": {
       "eyebrow": "Bukti, bukan asumsi",

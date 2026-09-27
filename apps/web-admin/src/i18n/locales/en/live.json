@@ -8,7 +8,8 @@
     "live": "Live",
     "reconnecting": "Connection lost — reconnecting…",
     "ended": "The session has ended.",
-    "error": "Live view could not start."
+    "error": "Live view could not start.",
+    "paused": "Live view is paused on the employee's device"
   },
   "action": {
     "start": "Start live view",
@@ -38,5 +39,38 @@
     "ROOM_FAILED": "The video service dropped the session.",
     "TIMEOUT": "The device did not start sending in time.",
     "unknown": "The session failed."
+  },
+  "offline": "The employee's device is offline — live view will be available when it reconnects.",
+  "elapsed": "{{seconds}}s",
+  "hint": {
+    "agentSlow": "the device may be waking up or starting its recorder"
+  },
+  "pause": {
+    "locked": "The screen is locked. Live view resumes by itself when it is unlocked.",
+    "private_app": "A private app is open (privacy-protected). Live view resumes when it closes.",
+    "paused": "The employee paused tracking. Live view resumes when they continue."
+  },
+  "timeout": {
+    "noAgent": "The device did not respond. Check that the app is running and the device is awake.",
+    "noFirstFrame": "The device connected to the video service, but no screen image arrived.",
+    "lostVideo": "The video dropped and did not come back in time.",
+    "noSession": "The session did not start in time."
+  },
+  "reason": {
+    "wgc_unsupported": "Windows screen capture is not ready (usually right after waking from sleep).",
+    "no_monitor": "No display is attached to the device.",
+    "start_failed": "Windows refused to start screen capture.",
+    "no_first_frame": "Screen capture started, but no image arrived.",
+    "capture_closed": "Screen capture was closed (graphics reset or session change).",
+    "capture_stalled": "Screen images stopped arriving.",
+    "resumed_from_sleep": "The device woke from sleep and could not restore screen capture.",
+    "display_changed": "The displays or resolution changed and capture could not recover.",
+    "publisher_start_failed": "The streaming helper could not start on the device.",
+    "publisher_exited": "The streaming helper stopped repeatedly on the device.",
+    "locked": "The screen is locked.",
+    "private_app": "A private app is open (privacy-protected).",
+    "paused": "The employee paused tracking.",
+    "schedule": "Outside the screen-monitoring hours.",
+    "signed_out": "The employee is not signed in to the app."
   }
 }

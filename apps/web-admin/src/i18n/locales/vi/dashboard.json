@@ -187,12 +187,12 @@
       "noActivity": "Không có hoạt động"
     },
     "tabs": {
-      "activity": "Hoạt động",
+      "activity": "Ứng dụng",
       "communications": "Bằng chứng liên lạc",
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
       "screenshots": "Ảnh chụp màn hình",
-      "playback": "Phát lại"
+      "playback": "Bản ghi"
     },
     "communications": {
       "eyebrow": "Bằng chứng, không suy đoán",

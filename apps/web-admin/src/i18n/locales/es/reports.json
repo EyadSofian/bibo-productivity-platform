@@ -3,7 +3,8 @@
     "empty": "No se registró actividad para este intervalo.",
     "timeline": "Cronología de hoy",
     "breakdown": "Desglose de apps y ventanas",
-    "idle": "Inactivo"
+    "idle": "Inactivo",
+    "watchApp": "Ver grabaciones de {{app}}"
   },
   "browser": {
     "empty": "No hay visitas del navegador para este intervalo.",
@@ -68,7 +69,12 @@
     "website": "Sitio web",
     "url": "URL completa",
     "keys": "Pulsaciones en este minuto",
-    "resolution": "Resolución"
+    "resolution": "Resolución",
+    "segmentsFor": "{{app}} — {{count}} periodos. Haz clic para ir.",
+    "clearFocus": "Mostrar todo",
+    "noVideoAt": "No hay video grabado a las {{time}}. Se muestra la grabación más cercana.",
+    "noVideoSegment": "No hay video para este periodo",
+    "emptyVideoHint": "La grabación solo funciona con la política «Grabación de pantalla» activa y el dispositivo conectado."
   },
   "timeline": {
     "lanes": {

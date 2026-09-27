@@ -315,3 +315,52 @@ it("can switch devices while the old start request is pending", async () => {
   expect(mediaMocks.stopMediaSession).not.toHaveBeenCalledWith("old-session", "viewer-lease-1");
   expect(transport.connectCalls).toBe(1);
 });
+
+it("names what actually failed on the device, not only the failure code", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: {
+      ...session, state: "failed", failure_code: "CAPTURE_FAILED",
+      publisher_metrics: { failure_reason: "resumed_from_sleep" },
+    } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
+    expect(screen.getByText("The device woke from sleep and could not restore screen capture.")).toBeTruthy();
+    // Capture failures after sleep usually clear on a fresh attempt.
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("shows a locked screen as a pause that does not time out", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: {
+      ...session, state: "negotiating", publisher_metrics: { pause_reason: "locked" },
+    } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(screen.getByText("The screen is locked. Live view resumes by itself when it is unlocked.")).toBeTruthy();
+    // Well past the connection deadline, a paused session is still waiting.
+    await act(async () => { await vi.advanceTimersByTimeAsync(90_000); });
+    expect(screen.queryByText("TIMEOUT")).toBeNull();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("explains which stage a timeout stalled in", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: { ...session, state: "negotiating" } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(46_000); });
+    expect(screen.getByText("TIMEOUT")).toBeTruthy();
+    expect(screen.getByText("The device connected to the video service, but no screen image arrived.")).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("does not offer to start when the device is offline", async () => {
+  render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} online={false} />);
+  expect(screen.getByText(/device is offline/)).toBeTruthy();
+  expect((screen.getByRole("button", { name: "Start live view" }) as HTMLButtonElement).disabled).toBe(true);
+});

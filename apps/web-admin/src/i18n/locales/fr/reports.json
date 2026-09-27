@@ -3,7 +3,8 @@
     "empty": "Aucune activité enregistrée pour cette période.",
     "timeline": "Chronologie du jour",
     "breakdown": "Détail des applis et fenêtres",
-    "idle": "Inactif"
+    "idle": "Inactif",
+    "watchApp": "Voir les enregistrements de {{app}}"
   },
   "browser": {
     "empty": "Aucune visite de navigateur pour cette période.",
@@ -68,7 +69,12 @@
     "website": "Site web",
     "url": "URL complète",
     "keys": "Frappes pendant cette minute",
-    "resolution": "Résolution"
+    "resolution": "Résolution",
+    "segmentsFor": "{{app}} — {{count}} périodes. Cliquez pour y aller.",
+    "clearFocus": "Tout afficher",
+    "noVideoAt": "Aucune vidéo enregistrée à {{time}}. L'enregistrement le plus proche est affiché.",
+    "noVideoSegment": "Aucune vidéo pour cette période",
+    "emptyVideoHint": "L'enregistrement ne fonctionne que si la règle « Enregistrement d'écran » est active et l'appareil connecté."
   },
   "timeline": {
     "lanes": {

@@ -8,7 +8,7 @@
 //! 2. **No screen content is ever logged.** Metrics describe the stream (rate, size,
 //!    codec, drops), never what is on it.
 
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicU8, Ordering};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,64 @@ impl EncoderKind {
     }
 }
 
+/// Why the capture last needed recovery (or could not start). A closed, typed
+/// vocabulary so the operator sees a real reason instead of a generic timeout,
+/// and so nothing free-form (window titles, paths) can leak through telemetry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum CaptureIssue {
+    #[default]
+    None,
+    /// `GraphicsCaptureSession::IsSupported` is false (graphics stack not ready).
+    WgcUnsupported,
+    /// The requested monitor is not attached.
+    NoMonitor,
+    /// WGC refused to create the frame pool or session.
+    StartFailed,
+    /// Capture started but delivered no frame within the first-frame budget.
+    NoFirstFrame,
+    /// The capture item closed (display reset, GPU removed, session switch).
+    CaptureClosed,
+    /// Frames stopped arriving for longer than the stall budget.
+    CaptureStalled,
+    /// The machine was suspended; the capture is rebuilt after resume.
+    ResumedFromSleep,
+    /// Monitor count or primary resolution changed.
+    DisplayChanged,
+}
+
+impl CaptureIssue {
+    pub const ALL: [Self; 9] = [
+        Self::None,
+        Self::WgcUnsupported,
+        Self::NoMonitor,
+        Self::StartFailed,
+        Self::NoFirstFrame,
+        Self::CaptureClosed,
+        Self::CaptureStalled,
+        Self::ResumedFromSleep,
+        Self::DisplayChanged,
+    ];
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::WgcUnsupported => "wgc_unsupported",
+            Self::NoMonitor => "no_monitor",
+            Self::StartFailed => "start_failed",
+            Self::NoFirstFrame => "no_first_frame",
+            Self::CaptureClosed => "capture_closed",
+            Self::CaptureStalled => "capture_stalled",
+            Self::ResumedFromSleep => "resumed_from_sleep",
+            Self::DisplayChanged => "display_changed",
+        }
+    }
+
+    fn from_u8(v: u8) -> Self {
+        Self::ALL.get(v as usize).copied().unwrap_or(Self::None)
+    }
+}
+
 /// Live counters for one publishing session. Cheap enough to update per frame.
 #[derive(Debug, Default)]
 pub struct Metrics {
@@ -54,6 +112,11 @@ pub struct Metrics {
     pub fps_milli: AtomicU32,
     pub hardware_encoder: AtomicBool,
     pub encoder_resolved: AtomicBool,
+    /// Times the capture was torn down and rebuilt after it was running.
+    pub capture_restarts: AtomicU32,
+    /// Milliseconds from the start command to the first published frame; 0 until then.
+    pub first_frame_ms: AtomicU32,
+    capture_issue: AtomicU8,
 }
 
 impl Metrics {
@@ -82,6 +145,18 @@ impl Metrics {
         }
     }
 
+    pub fn set_capture_issue(&self, issue: CaptureIssue) {
+        let index = CaptureIssue::ALL
+            .iter()
+            .position(|i| *i == issue)
+            .unwrap_or(0);
+        self.capture_issue.store(index as u8, Ordering::Relaxed);
+    }
+
+    pub fn capture_issue(&self) -> CaptureIssue {
+        CaptureIssue::from_u8(self.capture_issue.load(Ordering::Relaxed))
+    }
+
     pub fn encoder(&self) -> EncoderKind {
         if !self.encoder_resolved.load(Ordering::Relaxed) {
             EncoderKind::Unknown
@@ -105,6 +180,9 @@ impl Metrics {
             height: self.height.load(Ordering::Relaxed),
             fps: self.fps_milli.load(Ordering::Relaxed) as f32 / 1000.0,
             encoder: self.encoder(),
+            capture_restarts: self.capture_restarts.load(Ordering::Relaxed),
+            first_frame_ms: self.first_frame_ms.load(Ordering::Relaxed),
+            capture_issue: self.capture_issue(),
         }
     }
 }
@@ -122,6 +200,13 @@ pub struct MetricsSnapshot {
     pub height: u32,
     pub fps: f32,
     pub encoder: EncoderKind,
+    // Defaulted so an older agent or test fixture without these still parses.
+    #[serde(default)]
+    pub capture_restarts: u32,
+    #[serde(default)]
+    pub first_frame_ms: u32,
+    #[serde(default)]
+    pub capture_issue: CaptureIssue,
 }
 
 /// Reduces a possibly-sensitive string to a non-reversible shape.
@@ -236,6 +321,28 @@ mod tests {
         for banned in ["token", "url", "room", "device", "user", "session"] {
             assert!(!json.contains(banned), "metrics leaked {banned}: {json}");
         }
+    }
+
+    #[test]
+    fn capture_issue_is_reported_as_a_closed_slug() {
+        let m = Metrics::new();
+        assert_eq!(m.snapshot().capture_issue, CaptureIssue::None);
+        for issue in CaptureIssue::ALL {
+            m.set_capture_issue(issue);
+            let json = serde_json::to_string(&m.snapshot()).unwrap();
+            assert!(
+                json.contains(&format!("\"capture_issue\":\"{}\"", issue.as_str())),
+                "got {json}"
+            );
+        }
+    }
+
+    #[test]
+    fn snapshots_from_older_publishers_still_parse() {
+        let old = r#"{"frames_captured":1,"frames_published":1,"frames_dropped":0,"capture_errors":0,"encoder_errors":0,"reconnects":0,"width":1,"height":1,"fps":1.0,"encoder":"software"}"#;
+        let snap: MetricsSnapshot = serde_json::from_str(old).unwrap();
+        assert_eq!(snap.capture_restarts, 0);
+        assert_eq!(snap.capture_issue, CaptureIssue::None);
     }
 
     #[test]

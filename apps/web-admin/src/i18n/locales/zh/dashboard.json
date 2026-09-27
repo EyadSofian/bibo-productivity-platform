@@ -187,12 +187,12 @@
       "noActivity": "无活动"
     },
     "tabs": {
-      "activity": "活动",
+      "activity": "应用",
       "communications": "沟通证据",
       "keystrokes": "按键",
       "browser": "浏览器",
       "screenshots": "截图",
-      "playback": "回放"
+      "playback": "录像"
     },
     "communications": {
       "eyebrow": "证据，而非推测",

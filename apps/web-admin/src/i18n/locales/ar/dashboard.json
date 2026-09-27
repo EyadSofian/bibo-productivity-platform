@@ -187,12 +187,12 @@
       "noActivity": "لا يوجد نشاط"
     },
     "tabs": {
-      "activity": "النشاط",
+      "activity": "التطبيقات",
       "communications": "أدلة التواصل",
       "keystrokes": "ضغطات المفاتيح",
       "browser": "المتصفح",
       "screenshots": "لقطات الشاشة",
-      "playback": "إعادة التشغيل"
+      "playback": "تسجيلات الفيديو"
     },
     "communications": {
       "eyebrow": "أدلة وليست افتراضات",
