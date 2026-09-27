@@ -193,12 +193,13 @@
       "noActivity": "لا يوجد نشاط"
     },
     "tabs": {
-      "activity": "التطبيقات",
+      "activity": "النشاط",
       "communications": "أدلة التواصل",
       "keystrokes": "ضغطات المفاتيح",
       "browser": "المتصفح",
       "screenshots": "لقطات الشاشة",
-      "playback": "تسجيلات الفيديو"
+      "playback": "فيديو اليوم",
+      "input": "الإدخال"
     },
     "communications": {
       "eyebrow": "أدلة وليست افتراضات",

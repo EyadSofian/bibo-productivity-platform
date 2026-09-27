@@ -6,6 +6,7 @@
     "idle": "Nghỉ",
     "watchApp": "Xem bản ghi {{app}}"
   },
+  "explorer": {"title": "Ứng dụng và liên kết", "description": "Chọn ứng dụng hoặc URL đầy đủ để chuyển đến thời điểm tương ứng trong video đã lưu, nếu có.", "search": "Tìm ứng dụng, trang hoặc URL", "apps": "Ứng dụng", "pages": "Trang và URL đầy đủ", "watch": "Xem video", "open": "Mở {{page}}", "appTime": "Thời gian đã ghi nhận", "noMatches": "Không có kết quả"},
   "browser": {
     "empty": "Không có lượt truy cập trình duyệt nào trong khoảng thời gian này.",
     "extensionRequired": "URL trình duyệt cần tiện ích BiBo Tracker trên Chrome hoặc Edge của nhân viên.",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} lần gõ phím",
     "privacyNote": "Chỉ đếm số lần. Các phím riêng lẻ không bao giờ được thu thập hay lưu trữ — biểu đồ này hiển thị khối lượng gõ phím, không phải nội dung.",
     "minuteBuckets": "Mỗi cột đại diện cho một phút hoạt động bàn phím.",
-    "activityMeaning": "Chuyển động chuột được tính vào thời gian Hoạt động/Nhàn rỗi nhưng chưa có bộ đếm riêng.",
+    "activityMeaning": "Di chuyển chuột góp phần vào thời gian Hoạt động/Không hoạt động ở trên; chưa có bộ đếm riêng.",
     "title": "Số phím gõ trong ngày",
     "keypresses": "lượt gõ phím"
   },
@@ -49,6 +50,11 @@
     "close": "Đóng"
   },
   "playback": {
+    "noVideoForMoment": "Không có video đã lưu tại {{time}}.",
+    "dayVideos": "Video đã lưu trong khoảng này",
+    "videoCount": "{{count}} sẵn sàng",
+    "unknownDuration": "Chưa rõ thời lượng",
+    "status": {"pending": "Đang chờ", "recording": "Đang ghi", "processing": "Đang xử lý", "ready": "Sẵn sàng", "failed": "Thất bại"},
     "emptyVideo": "Chưa có video ghi lại cho khoảng thời gian này.",
     "loadingVideo": "Đang tải video đã ghi…",
     "processing": "Đoạn video này đang được hoàn tất. Hãy thử lại sau ít phút.",
@@ -74,7 +80,7 @@
     "clearFocus": "Hiện tất cả",
     "noVideoAt": "Không có video lúc {{time}}. Đang hiện bản ghi gần nhất.",
     "noVideoSegment": "Không có video cho khoảng này",
-    "emptyVideoHint": "Chỉ ghi khi chính sách \"Ghi màn hình\" bật và thiết bị đang kết nối."
+    "emptyVideoHint": "Không có video đã lưu cho khoảng này. Kiểm tra lịch ghi và lỗi trong trang Thiết bị."
   },
   "timeline": {
     "lanes": {

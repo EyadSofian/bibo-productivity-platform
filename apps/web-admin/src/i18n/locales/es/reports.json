@@ -6,6 +6,7 @@
     "idle": "Inactivo",
     "watchApp": "Ver grabaciones de {{app}}"
   },
+  "explorer": {"title": "Aplicaciones y enlaces", "description": "Selecciona una aplicación o URL exacta para ir a ese momento del vídeo guardado, si está disponible.", "search": "Buscar aplicaciones, páginas o URL", "apps": "Aplicaciones", "pages": "Páginas y URL exactas", "watch": "Ver vídeo", "open": "Abrir {{page}}", "appTime": "Tiempo de uso registrado", "noMatches": "Sin resultados"},
   "browser": {
     "empty": "No hay visitas del navegador para este intervalo.",
     "extensionRequired": "Las URL requieren la extensión BiBo Tracker en Chrome o Edge del empleado.",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} pulsaciones de teclas",
     "privacyNote": "Solo recuentos. Las teclas individuales nunca se capturan ni se almacenan: este gráfico muestra el volumen de escritura, no el contenido.",
     "minuteBuckets": "Cada columna representa un minuto de actividad del teclado.",
-    "activityMeaning": "El movimiento del ratón contribuye al tiempo activo/inactivo; aún no tiene un contador separado.",
+    "activityMeaning": "El movimiento del ratón contribuye a los tiempos activo e inactivo de arriba; aún no hay un recuento independiente.",
     "title": "Pulsaciones durante el día",
     "keypresses": "pulsaciones"
   },
@@ -49,6 +50,11 @@
     "close": "Cerrar"
   },
   "playback": {
+    "noVideoForMoment": "No hay vídeo guardado a las {{time}}.",
+    "dayVideos": "Vídeos guardados en este período",
+    "videoCount": "{{count}} listos",
+    "unknownDuration": "Duración desconocida",
+    "status": {"pending": "Pendiente", "recording": "Grabando", "processing": "Procesando", "ready": "Listo", "failed": "Error"},
     "emptyVideo": "Todavía no hay vídeo grabado disponible para este periodo.",
     "loadingVideo": "Cargando vídeo grabado…",
     "processing": "Este fragmento de vídeo se está finalizando. Inténtalo de nuevo en breve.",
@@ -74,7 +80,7 @@
     "clearFocus": "Mostrar todo",
     "noVideoAt": "No hay video grabado a las {{time}}. Se muestra la grabación más cercana.",
     "noVideoSegment": "No hay video para este periodo",
-    "emptyVideoHint": "La grabación solo funciona con la política «Grabación de pantalla» activa y el dispositivo conectado."
+    "emptyVideoHint": "No hay vídeo guardado para este período. Revisa el horario de grabación y los errores en Dispositivos."
   },
   "timeline": {
     "lanes": {

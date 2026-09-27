@@ -193,12 +193,13 @@
       "noActivity": "操作なし"
     },
     "tabs": {
-      "activity": "アプリ",
+      "activity": "アクティビティ",
       "communications": "コミュニケーション証跡",
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット",
-      "playback": "録画"
+      "playback": "今日の動画",
+      "input": "入力"
     },
     "communications": {
       "eyebrow": "推測ではなく証跡",

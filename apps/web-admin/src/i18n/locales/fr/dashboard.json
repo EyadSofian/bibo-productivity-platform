@@ -193,12 +193,13 @@
       "noActivity": "Aucune activité"
     },
     "tabs": {
-      "activity": "Applications",
+      "activity": "Activité",
       "communications": "Preuves de communication",
       "keystrokes": "Frappes",
       "browser": "Navigateur",
       "screenshots": "Captures d'écran",
-      "playback": "Enregistrements"
+      "playback": "Vidéos du jour",
+      "input": "Saisie"
     },
     "communications": {
       "eyebrow": "Des preuves, pas des suppositions",

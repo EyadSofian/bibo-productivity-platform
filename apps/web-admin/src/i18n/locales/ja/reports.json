@@ -6,6 +6,7 @@
     "idle": "アイドル",
     "watchApp": "{{app}} の録画を見る"
   },
+  "explorer": {"title": "アプリとリンク", "description": "アプリまたは完全なURLを選ぶと、保存済み動画の該当時刻に移動します（動画がある場合）。", "search": "アプリ、ページ、URLを検索", "apps": "アプリ", "pages": "ページと完全なURL", "watch": "動画を見る", "open": "{{page}}を開く", "appTime": "記録された利用時間", "noMatches": "一致する結果はありません"},
   "browser": {
     "empty": "この期間のブラウザ閲覧履歴はありません。",
     "extensionRequired": "URL の表示には従業員の Chrome または Edge に BiBo Tracker 拡張機能が必要です。",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} 回のキー入力",
     "privacyNote": "回数のみを記録します。個々のキーが取得・保存されることはありません。このチャートは入力内容ではなく入力量を示しています。",
     "minuteBuckets": "各列は1分間のキーボード操作を表します。",
-    "activityMeaning": "マウス移動はアクティブ/アイドル時間に反映されますが、個別の回数はまだ表示されません。",
+    "activityMeaning": "マウス操作は上のアクティブ・アイドル時間に反映されます。独立したマウス回数はまだありません。",
     "title": "1日のキー入力",
     "keypresses": "キー入力"
   },
@@ -49,6 +50,11 @@
     "close": "閉じる"
   },
   "playback": {
+    "noVideoForMoment": "{{time}}の保存済み動画はありません。",
+    "dayVideos": "この期間の保存済み動画",
+    "videoCount": "準備完了 {{count}} 件",
+    "unknownDuration": "長さ不明",
+    "status": {"pending": "保留中", "recording": "録画中", "processing": "処理中", "ready": "準備完了", "failed": "失敗"},
     "emptyVideo": "この期間の録画動画はまだありません。",
     "loadingVideo": "録画動画を読み込んでいます…",
     "processing": "この動画区間を処理中です。しばらくしてから再試行してください。",
@@ -74,7 +80,7 @@
     "clearFocus": "すべて表示",
     "noVideoAt": "{{time}} の録画はありません。最も近い録画を表示します。",
     "noVideoSegment": "この時間の録画はありません",
-    "emptyVideoHint": "「画面録画」ポリシーが有効でデバイスが接続中の場合のみ録画されます。"
+    "emptyVideoHint": "この期間の保存済み動画はありません。デバイス画面で録画スケジュールと失敗を確認してください。"
   },
   "timeline": {
     "lanes": {

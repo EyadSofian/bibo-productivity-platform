@@ -193,12 +193,13 @@
       "noActivity": "无活动"
     },
     "tabs": {
-      "activity": "应用",
+      "activity": "活动",
       "communications": "沟通证据",
       "keystrokes": "按键",
       "browser": "浏览器",
       "screenshots": "截图",
-      "playback": "录像"
+      "playback": "今日视频",
+      "input": "输入"
     },
     "communications": {
       "eyebrow": "证据，而非推测",

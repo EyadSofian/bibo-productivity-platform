@@ -193,12 +193,13 @@
       "noActivity": "Không có hoạt động"
     },
     "tabs": {
-      "activity": "Ứng dụng",
+      "activity": "Hoạt động",
       "communications": "Bằng chứng liên lạc",
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
       "screenshots": "Ảnh chụp màn hình",
-      "playback": "Bản ghi"
+      "playback": "Video trong ngày",
+      "input": "Nhập liệu"
     },
     "communications": {
       "eyebrow": "Bằng chứng, không suy đoán",

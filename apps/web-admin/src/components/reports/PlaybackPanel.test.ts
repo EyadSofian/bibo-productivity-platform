@@ -5,7 +5,7 @@ import type {
   KeystrokeBucket,
   ScreenshotMeta,
 } from "../../api/types";
-import { assemblePlaybackFrames, frameIndexAt, recordingAt, type PlaybackFrame } from "./PlaybackPanel";
+import { assemblePlaybackFrames, frameIndexAt, recordedMomentForTarget, recordingAt, type PlaybackFrame } from "./PlaybackPanel";
 import type { RecordingAsset } from "../../api/media";
 
 function shot(ts: number, id = String(ts)): ScreenshotMeta {
@@ -112,5 +112,29 @@ describe("recordingAt", () => {
 
   it("leaves a real recording gap empty", () => {
     expect(recordingAt(recordings, Date.parse("2026-09-06T09:15:00.500Z") / 1000)).toBeNull();
+  });
+});
+
+describe("recordedMomentForTarget", () => {
+  const ready = [{ id: "ready", status: "ready", started_at: "2026-09-06T09:10:00Z", ended_at: "2026-09-06T09:20:00Z", duration_ms: 600_000 }] as RecordingAsset[];
+  const start = Date.parse("2026-09-06T09:00:00Z") / 1000;
+  const activity: ActivityResponse = {
+    samples: [
+      { ts: start, app_name: "Chrome", window_title: "First", duration_s: 60 },
+      { ts: start + 600, app_name: "Chrome", window_title: "Second", duration_s: 90 },
+    ],
+    breakdown: [{ app_name: "Chrome", duration_s: 150 }],
+  };
+  const visits: BrowserVisit[] = [
+    { ts: start, url: "https://example.com/a", domain: "example.com", page_title: "A", browser: "Chrome", duration_s: 60 },
+    { ts: start + 600, url: "https://example.com/a", domain: "example.com", page_title: "A", browser: "Chrome", duration_s: 90 },
+  ];
+
+  it("jumps to a later recorded app stretch when its first stretch has no video", () => {
+    expect(recordedMomentForTarget(ready, activity, visits, start, "Chrome", null)).toBe(start + 600);
+  });
+
+  it("jumps to a later visit of the same exact URL when its first visit has no video", () => {
+    expect(recordedMomentForTarget(ready, activity, visits, start, null, "https://example.com/a")).toBe(start + 600);
   });
 });

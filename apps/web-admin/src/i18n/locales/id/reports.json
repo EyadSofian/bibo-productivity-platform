@@ -6,6 +6,7 @@
     "idle": "Idle",
     "watchApp": "Tonton rekaman {{app}}"
   },
+  "explorer": {"title": "Aplikasi dan tautan", "description": "Pilih aplikasi atau URL lengkap untuk membuka waktu tersebut dalam video tersimpan, jika ada.", "search": "Cari aplikasi, halaman, atau URL", "apps": "Aplikasi", "pages": "Halaman dan URL lengkap", "watch": "Tonton video", "open": "Buka {{page}}", "appTime": "Waktu penggunaan tercatat", "noMatches": "Tidak ada hasil"},
   "browser": {
     "empty": "Tidak ada kunjungan browser untuk rentang ini.",
     "extensionRequired": "URL browser memerlukan ekstensi BiBo Tracker di Chrome atau Edge karyawan.",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} ketikan",
     "privacyNote": "Hanya jumlah. Tombol individual tidak pernah direkam atau disimpan — grafik ini menunjukkan volume ketikan, bukan isinya.",
     "minuteBuckets": "Setiap kolom mewakili satu menit aktivitas keyboard.",
-    "activityMeaning": "Gerakan mouse dihitung dalam waktu Aktif/Idle, tetapi belum memiliki penghitung terpisah.",
+    "activityMeaning": "Gerakan mouse dihitung dalam waktu Aktif/Tidak aktif di atas; belum ada penghitung mouse terpisah.",
     "title": "Ketikan sepanjang hari",
     "keypresses": "ketikan"
   },
@@ -49,6 +50,11 @@
     "close": "Tutup"
   },
   "playback": {
+    "noVideoForMoment": "Tidak ada video tersimpan pada {{time}}.",
+    "dayVideos": "Video tersimpan dalam periode ini",
+    "videoCount": "{{count}} siap",
+    "unknownDuration": "Durasi tidak diketahui",
+    "status": {"pending": "Menunggu", "recording": "Merekam", "processing": "Memproses", "ready": "Siap", "failed": "Gagal"},
     "emptyVideo": "Belum ada video rekaman untuk periode ini.",
     "loadingVideo": "Memuat video rekaman…",
     "processing": "Potongan video ini sedang diselesaikan. Coba lagi sebentar lagi.",
@@ -74,7 +80,7 @@
     "clearFocus": "Tampilkan semua",
     "noVideoAt": "Tidak ada video pada {{time}}. Menampilkan rekaman terdekat.",
     "noVideoSegment": "Tidak ada video untuk periode ini",
-    "emptyVideoHint": "Perekaman hanya berjalan saat kebijakan \"Rekam layar\" aktif dan perangkat terhubung."
+    "emptyVideoHint": "Tidak ada video tersimpan untuk periode ini. Periksa jadwal perekaman dan kegagalan di halaman Perangkat."
   },
   "timeline": {
     "lanes": {

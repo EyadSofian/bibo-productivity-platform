@@ -20,14 +20,11 @@ import type {
   ReportEmployee,
   ScreenshotMeta,
 } from "../api/types";
-import { ActivityPanel } from "../components/reports/ActivityPanel";
-import { BrowserPanel } from "../components/reports/BrowserPanel";
+import { ActivityExplorer } from "../components/reports/ActivityExplorer";
 import { rollupByDomain } from "../components/reports/rollup";
-import { CommunicationEvidencePanel } from "../components/reports/CommunicationEvidencePanel";
 import { KeystrokePanel } from "../components/reports/KeystrokePanel";
 import { PlaybackPanel } from "../components/reports/PlaybackPanel";
 import { UnifiedTimeline } from "../components/reports/UnifiedTimeline";
-import { ScreenshotGallery } from "../components/reports/ScreenshotGallery";
 import { Notice, SectionTitle, Spinner } from "../components/ui";
 import {
   dayRangeToUnix,
@@ -44,17 +41,8 @@ import { useDetailHeader } from "../detailHeader";
 
 const DeviceLiveVideo = lazy(() => import("../components/LivePlayer/DeviceLiveVideo"));
 
-type Tab = "activity" | "communications" | "keystrokes" | "browser" | "screenshots" | "playback";
-// Apps first, then their recordings: the admin's question is "what did they
-// do, and show me". Historical screenshots stay reachable, last.
-const TABS: Tab[] = [
-  "activity",
-  "playback",
-  "browser",
-  "keystrokes",
-  "communications",
-  "screenshots",
-];
+type Tab = "activity" | "playback" | "input";
+const TABS: Tab[] = ["activity", "playback", "input"];
 
 // ── inline icons (no icon dependency in web-admin) ───────────────────
 const svg = (children: ReactNode) => (
@@ -231,9 +219,11 @@ export function EmployeeDetail() {
   // moment. `n` changes on every request so asking again rewinds.
   const [seek, setSeek] = useState<{ ts: number; n: number } | null>(hasInitialSeek ? { ts: initialSeek, n: 0 } : null);
   const [focusApp, setFocusApp] = useState<string | null>(null);
-  const play = useCallback((ts: number, app: string | null) => {
+  const [focusUrl, setFocusUrl] = useState<string | null>(null);
+  const play = useCallback((ts: number, app: string | null, url: string | null = null) => {
     setSeek((current) => ({ ts, n: (current?.n ?? 0) + 1 }));
     setFocusApp(app);
+    setFocusUrl(url);
     setTab("playback");
   }, []);
 
@@ -332,7 +322,6 @@ export function EmployeeDetail() {
   const activeS = activity?.breakdown.reduce((sum, b) => sum + b.duration_s, 0) ?? 0;
   const topApp = activity?.breakdown[0]?.app_name ?? "—";
   const topAppS = activity?.breakdown[0]?.duration_s ?? 0;
-  const keypresses = keystrokes?.reduce((sum, b) => sum + b.count, 0) ?? 0;
   // Top app's share of active time (real) — shown as the "focus" chip.
   const topShare = activeS > 0 ? Math.round((topAppS / activeS) * 100) : 0;
   // NOTE: topShare stays relative to activity_samples' own total, because both
@@ -483,20 +472,8 @@ export function EmployeeDetail() {
         />
       </div>
 
-      <section className="ad-insights" aria-label={t("detail.insights.title")}>
-        <div className="ad-insights__head">
-          <div><span className="ad-insights__eyebrow">{t("detail.insights.eyebrow")}</span><h2>{t("detail.insights.title")}</h2></div>
-          <p>{t("detail.insights.description")}</p>
-        </div>
-        <div className="ad-insights__actions">
-          <button type="button" onClick={() => { setTab("activity"); document.getElementById("employee-reports")?.scrollIntoView({ behavior: "smooth" }); }}>{t("detail.insights.appsAction")} <span aria-hidden="true">↗</span></button>
-          <button type="button" onClick={() => { setTab("browser"); document.getElementById("employee-reports")?.scrollIntoView({ behavior: "smooth" }); }}>{t("detail.insights.sitesAction")} <span aria-hidden="true">↗</span></button>
-          <span>{t("detail.summary.keypresses")}: {keypresses.toLocaleString(i18n.language)}</span>
-        </div>
-      </section>
-
-      <details className="ad-live-details">
-        <summary><span>{t("detail.insights.liveAction")}</span><span aria-hidden="true">⌄</span></summary>
+      <section className="ad-live-details ad-live-details--visible" aria-label={t("detail.insights.liveAction")}>
+        <h2 className="ad-live-details__heading">{t("detail.insights.liveAction")}</h2>
         <div className="ad-command-deck">
           {presence?.device_id ? (
             <Suspense fallback={<Spinner />}>
@@ -508,28 +485,7 @@ export function EmployeeDetail() {
             <LiveResources resources={presence?.resources} />
           </div>
         </div>
-      </details>
-
-      {/* Unified timeline: the five reports below share one axis here, so a
-          vertical slice answers "what was happening at 14:20" without moving
-          between tabs. Clicking anything opens the player at that moment. */}
-      <div className="bibo-card bibo-card--default ad-cardpad" style={{ marginBottom: "var(--sp-4)" }}>
-        <SectionTitle>{t("detail.timelineTitle")}</SectionTitle>
-        {loading ? (
-          <Spinner label={t("detail.loadingReports")} />
-        ) : error ? null : (
-          <UnifiedTimeline
-            from={rangeUnix.from}
-            to={rangeUnix.to}
-            states={states}
-            activity={activity}
-            buckets={keystrokes}
-            visits={visits}
-            shots={shots}
-            onSeek={(ts) => play(ts, null)}
-          />
-        )}
-      </div>
+      </section>
 
       {/* tabs + panel */}
       <div className="ad-tabwrap" id="employee-reports">
@@ -538,6 +494,8 @@ export function EmployeeDetail() {
             <button
               key={key}
               role="tab"
+              id={`employee-tab-${key}`}
+              aria-controls="employee-report-panel"
               aria-selected={tab === key}
               className={`bibo-tab${tab === key ? " bibo-tab--on" : ""}`}
               onClick={() => setTab(key)}
@@ -547,29 +505,37 @@ export function EmployeeDetail() {
           ))}
         </div>
 
-        <div className="ad-panel">
+        <div className="ad-panel" id="employee-report-panel" role="tabpanel" aria-labelledby={`employee-tab-${tab}`}>
           {loading ? (
             <Spinner label={t("detail.loadingReports")} />
           ) : (
             !error && (
               <>
-                {tab === "activity" &&
-                  (activity ? <ActivityPanel data={activity} onPlay={(ts, app) => play(ts, app)} /> : <Spinner />)}
-                {tab === "communications" && activity && visits && keystrokes ? (
-                  <CommunicationEvidencePanel
-                    activity={activity}
-                    visits={visits}
-                    keystrokes={keystrokes}
-                  />
+                {tab === "activity" && activity && visits ? (
+                  <>
+                    <ActivityExplorer activity={activity} visits={visits} onPlay={play} />
+                    <div className="bibo-card bibo-card--default ad-cardpad ad-report-timeline">
+                      <SectionTitle>{t("detail.timelineTitle")}</SectionTitle>
+                      <UnifiedTimeline
+                        from={rangeUnix.from}
+                        to={rangeUnix.to}
+                        states={states}
+                        activity={activity}
+                        buckets={keystrokes}
+                        visits={visits}
+                        shots={shots}
+                        onSeek={(ts) => play(ts, null)}
+                      />
+                    </div>
+                  </>
                 ) : null}
-                {/* Browser panel renders its own table card */}
-                {tab === "browser" && (visits ? <BrowserPanel visits={visits} /> : <Spinner />)}
-                {(tab === "keystrokes" || tab === "screenshots") && (
+                {tab === "input" && (
                   <div className="bibo-card bibo-card--default ad-cardpad">
-                    {tab === "keystrokes" &&
-                      (keystrokes ? <KeystrokePanel buckets={keystrokes} /> : <Spinner />)}
-                    {tab === "screenshots" &&
-                      (shots ? <ScreenshotGallery shots={shots} /> : <Spinner />)}
+                    <div className="ad-input-summary">
+                      <div><span>{t("detail.summary.activeTime")}</span><strong>{fmtDuration(budgetActiveS)}</strong></div>
+                      <div><span>{t("detail.summary.idleTime")}</span><strong>{hasTimeline ? fmtDuration(totals.idle_s) : "—"}</strong></div>
+                    </div>
+                    {keystrokes ? <KeystrokePanel buckets={keystrokes} /> : <Spinner />}
                   </div>
                 )}
                 {tab === "playback" && activity && keystrokes && visits ? (
@@ -583,7 +549,8 @@ export function EmployeeDetail() {
                     seekTo={seek?.ts ?? null}
                     seekNonce={seek?.n}
                     focusApp={focusApp}
-                    onClearFocus={() => setFocusApp(null)}
+                    focusUrl={focusUrl}
+                    onClearFocus={() => { setFocusApp(null); setFocusUrl(null); }}
                   />
                 ) : null}
               </>

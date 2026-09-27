@@ -193,12 +193,13 @@
       "noActivity": "Tidak ada aktivitas"
     },
     "tabs": {
-      "activity": "Aplikasi",
+      "activity": "Aktivitas",
       "communications": "Bukti komunikasi",
       "keystrokes": "Ketikan",
       "browser": "Peramban",
       "screenshots": "Tangkapan layar",
-      "playback": "Rekaman"
+      "playback": "Video hari ini",
+      "input": "Input"
     },
     "communications": {
       "eyebrow": "Bukti, bukan asumsi",

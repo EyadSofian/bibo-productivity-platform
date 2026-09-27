@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BrowserVisit } from "../../api/types";
-import { domainOf, rollupByDomain, rollupByPage } from "./rollup";
+import { domainOf, rollupAllPages, rollupByDomain, rollupByPage } from "./rollup";
 
 function visit(over: Partial<BrowserVisit> = {}): BrowserVisit {
   return {
@@ -127,6 +127,20 @@ describe("rollupByDomain", () => {
     const rows = rollupByDomain([visit({ duration_s: 60 }), visit({ duration_s: -100 })]);
 
     expect(rows[0].totalS).toBe(60);
+  });
+});
+
+describe("rollupAllPages", () => {
+  it("keeps every exact URL and sums repeated checkpoints for each page", () => {
+    const rows = rollupAllPages([
+      visit({ ts: 1000, url: "https://github.com/a", duration_s: 60 }),
+      visit({ ts: 1060, url: "https://github.com/a", duration_s: 60 }),
+      visit({ ts: 1120, url: "https://github.com/b", duration_s: 30 }),
+      visit({ ts: 1150, url: "https://docs.example.com/page", domain: "docs.example.com", duration_s: 45 }),
+    ]);
+    expect(rows).toHaveLength(3);
+    expect(rows.map((row) => row.url)).toContain("https://github.com/b");
+    expect(rows.find((row) => row.url === "https://github.com/a")).toMatchObject({ totalS: 120, firstTs: 1000 });
   });
 });
 

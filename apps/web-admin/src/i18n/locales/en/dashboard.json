@@ -193,12 +193,13 @@
       "noActivity": "No activity"
     },
     "tabs": {
-      "activity": "Apps",
+      "activity": "Activity",
       "communications": "Communication evidence",
       "keystrokes": "Keystrokes",
       "browser": "Browser",
       "screenshots": "Screenshots",
-      "playback": "Recordings"
+      "playback": "Day videos",
+      "input": "Input"
     },
     "communications": {
       "eyebrow": "Evidence, not assumptions",

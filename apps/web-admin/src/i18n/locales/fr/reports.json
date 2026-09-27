@@ -6,6 +6,7 @@
     "idle": "Inactif",
     "watchApp": "Voir les enregistrements de {{app}}"
   },
+  "explorer": {"title": "Applications et liens", "description": "Sélectionnez une application ou une URL exacte pour accéder à ce moment de la vidéo, si disponible.", "search": "Rechercher applications, pages ou URL", "apps": "Applications", "pages": "Pages et URL exactes", "watch": "Voir la vidéo", "open": "Ouvrir {{page}}", "appTime": "Temps observé", "noMatches": "Aucun résultat"},
   "browser": {
     "empty": "Aucune visite de navigateur pour cette période.",
     "extensionRequired": "Les URL nécessitent l’extension BiBo Tracker dans Chrome ou Edge de l’employé.",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} frappes au clavier",
     "privacyNote": "Comptage uniquement. Les touches individuelles ne sont jamais capturées ni stockées — ce graphique indique le volume de frappe, pas le contenu.",
     "minuteBuckets": "Chaque colonne représente une minute d’activité clavier.",
-    "activityMeaning": "Les mouvements de souris contribuent au temps actif/inactif, sans compteur de souris distinct pour le moment.",
+    "activityMeaning": "Les mouvements de souris contribuent aux temps actif et inactif ci-dessus ; aucun compteur séparé n’est disponible.",
     "title": "Frappes au fil de la journée",
     "keypresses": "frappes"
   },
@@ -49,6 +50,11 @@
     "close": "Fermer"
   },
   "playback": {
+    "noVideoForMoment": "Aucune vidéo enregistrée à {{time}}.",
+    "dayVideos": "Vidéos enregistrées sur cette période",
+    "videoCount": "{{count}} prêts",
+    "unknownDuration": "Durée inconnue",
+    "status": {"pending": "En attente", "recording": "Enregistrement", "processing": "Traitement", "ready": "Prêt", "failed": "Échec"},
     "emptyVideo": "Aucune vidéo enregistrée n’est encore disponible pour cette période.",
     "loadingVideo": "Chargement de la vidéo enregistrée…",
     "processing": "Ce segment vidéo est en cours de finalisation. Réessayez bientôt.",
@@ -74,7 +80,7 @@
     "clearFocus": "Tout afficher",
     "noVideoAt": "Aucune vidéo enregistrée à {{time}}. L'enregistrement le plus proche est affiché.",
     "noVideoSegment": "Aucune vidéo pour cette période",
-    "emptyVideoHint": "L'enregistrement ne fonctionne que si la règle « Enregistrement d'écran » est active et l'appareil connecté."
+    "emptyVideoHint": "Aucune vidéo enregistrée pour cette période. Vérifiez les horaires et les échecs dans Appareils."
   },
   "timeline": {
     "lanes": {

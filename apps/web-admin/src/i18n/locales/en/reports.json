@@ -6,6 +6,7 @@
     "idle": "Idle",
     "watchApp": "Watch {{app}} recordings"
   },
+  "explorer": {"title": "Apps and links", "description": "Select an app or exact URL to jump to that time in the saved video, when available.", "search": "Search apps, pages or URLs", "apps": "Applications", "pages": "Exact pages and URLs", "watch": "Watch video", "open": "Open {{page}}", "appTime": "Tracked foreground time", "noMatches": "No matches"},
   "browser": {
     "empty": "No browser visits for this range.",
     "extensionRequired": "Browser URLs require the BiBo Tracker extension on this employee's Chrome or Edge browser.",
@@ -33,7 +34,7 @@
     "tooltip": "{{time}} — {{count}} keystrokes",
     "privacyNote": "Counts only. Individual keys are never captured or stored — this chart shows typing volume, not content.",
     "minuteBuckets": "Each column represents one minute of keyboard activity.",
-    "activityMeaning": "Mouse movement contributes to Active/Idle time in the Activity tab; it is not counted as a separate mouse total yet.",
+    "activityMeaning": "Mouse movement contributes to the Active/Idle times shown above; a separate mouse count is not available yet.",
     "title": "Keystrokes through the day",
     "keypresses": "keypresses"
   },
@@ -49,6 +50,11 @@
     "close": "Close"
   },
   "playback": {
+    "noVideoForMoment": "No saved video at {{time}}.",
+    "dayVideos": "Saved videos in this period",
+    "videoCount": "{{count}} ready",
+    "unknownDuration": "Duration unknown",
+    "status": {"pending": "Pending", "recording": "Recording", "processing": "Processing", "ready": "Ready", "failed": "Failed"},
     "emptyVideo": "No recorded video is available in this period yet.",
     "loadingVideo": "Loading recorded video…",
     "processing": "This video chunk is being finalized. Try again shortly.",
@@ -74,7 +80,7 @@
     "clearFocus": "Show all",
     "noVideoAt": "No video was recorded at {{time}}. Showing the nearest recording instead.",
     "noVideoSegment": "No video was recorded for this stretch",
-    "emptyVideoHint": "Recording runs only while the \"Screen recording\" policy is on and the device is connected. The times below show when each app was used."
+    "emptyVideoHint": "No saved video covers this period. Check the screen recording schedule and recording failures on the Devices page."
   },
   "timeline": {
     "lanes": {
