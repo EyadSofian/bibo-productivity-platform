@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -7,197 +7,54 @@ import {
   reportEmployees,
   reportKeystrokes,
   reportPresence,
-  reportScreenshots,
   reportStates,
 } from "../api/endpoints";
-import type {
-  ActivityResponse,
-  BrowserVisit,
-  DeviceResourceSnapshot,
-  EmployeePresence,
-  KeystrokeBucket,
-  OsStateReport,
-  ReportEmployee,
-  ScreenshotMeta,
-} from "../api/types";
-import { ActivityExplorer } from "../components/reports/ActivityExplorer";
-import { rollupByDomain } from "../components/reports/rollup";
-import { KeystrokePanel } from "../components/reports/KeystrokePanel";
-import { PlaybackPanel } from "../components/reports/PlaybackPanel";
-import { UnifiedTimeline } from "../components/reports/UnifiedTimeline";
-import { Notice, SectionTitle, Spinner } from "../components/ui";
+import { listEmployeeRecordings, type RecordingAsset } from "../api/media";
 import {
-  dayRangeToUnix,
-  fmtByteRate,
-  fmtBytes,
-  fmtDuration,
-  isoDate,
-  usagePercent,
-} from "../format";
+  ApiError,
+  type ActivityResponse,
+  type BrowserVisit,
+  type EmployeePresence,
+  type KeystrokeBucket,
+  type OsStateReport,
+  type ReportEmployee,
+} from "../api/types";
+import { DayVideoTab } from "../components/employee/DayVideoTab";
+import { InputTab } from "../components/employee/InputTab";
+import { RecordingStage, type SeekRequest } from "../components/employee/RecordingStage";
+import { WorkTab } from "../components/employee/WorkTab";
+import { isPlayable, type WorkItem } from "../components/employee/dayModel";
+import { Notice } from "../components/ui";
+import { dayRangeToUnix, fmtDuration, fmtRelative, isoDate } from "../format";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { useAuth } from "../auth/AuthContext";
 import { useDetailHeader } from "../detailHeader";
+import "./EmployeeDetail.css";
 
 const DeviceLiveVideo = lazy(() => import("../components/LivePlayer/DeviceLiveVideo"));
 
-type Tab = "activity" | "playback" | "input";
-const TABS: Tab[] = ["activity", "playback", "input"];
-
-// ── inline icons (no icon dependency in web-admin) ───────────────────
-const svg = (children: ReactNode) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-);
-const IconChevron = svg(<path d="m9 18 6-6-6-6" />);
-const IconCalendar = svg(<><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></>);
-const IconClock = svg(<><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></>);
-const IconAppWindow = svg(<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="M10 4v4" /><path d="M2 8h20" /><path d="M6 4v4" /></>);
-const IconPause = svg(<><rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" /></>);
-const TrendUp = (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3}>
-    <path d="M7 17 17 7M9 7h8v8" />
-  </svg>
-);
+type Tab = "work" | "video" | "input";
+const TABS: Tab[] = ["work", "video", "input"];
+type Screen = "live" | "recordings";
 
 const initials = (name: string) =>
   name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
 
-type Status = "active" | "idle" | "offline";
-function memberStatus(lastSeen: number | null): Status {
-  if (!lastSeen) return "offline";
-  const ageS = Date.now() / 1000 - lastSeen;
-  if (ageS < 5 * 60) return "active";
-  if (ageS < 30 * 60) return "idle";
-  return "offline";
+function shiftDay(value: string, days: number): string {
+  const [y, m, d] = value.split("-").map(Number);
+  return isoDate(new Date(y, m - 1, d + days));
 }
 
-function LivePresence({ presence }: { presence: EmployeePresence | null }) {
-  const { t, i18n } = useTranslation("dashboard");
-  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  const state = presence?.state ?? "offline";
-  const seen = presence?.seen_at
-    ? new Date(presence.seen_at * 1000).toLocaleTimeString(i18n.language, {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-      })
-    : null;
-  const onlineFor = presence?.session_started_at && state !== "offline"
-    ? fmtDuration(Math.max(0, now - presence.session_started_at))
-    : null;
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <section className={`ad-live-presence ad-live-presence--${state}`} aria-live="polite">
-      <span className="ad-live-presence__dot" aria-hidden="true" />
-      <div className="ad-live-presence__state">
-        <strong>{t(`detail.presence.states.${state}`)}</strong>
-        <span>
-          {seen
-            ? t("detail.presence.updated", { time: seen })
-            : t("detail.presence.waiting")}
-        </span>
-      </div>
-      <div className="ad-live-presence__now">
-        <span>{t("detail.presence.openNow")}</span>
-        <strong>{presence?.app || t("detail.presence.noCurrentApp")}</strong>
-        {presence?.window_title ? (
-          <small title={presence.window_title}>{presence.window_title}</small>
-        ) : null}
-      </div>
-      {onlineFor ? (
-        <div className="ad-live-presence__since">
-          <span>{t("detail.presence.onlineFor")}</span>
-          <strong>
-            <bdi dir="ltr">{onlineFor}</bdi>
-          </strong>
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
-/** Device load as one compact list: useful for "why is it slow", never the
- *  headline of the page. */
-function LiveResources({ resources }: { resources: DeviceResourceSnapshot | null | undefined }) {
-  const { t } = useTranslation("dashboard");
-  if (!resources) return null;
-
-  const cpu = usagePercent(resources.cpu_pct, 100);
-  const memory = usagePercent(resources.memory_used_bytes, resources.memory_total_bytes);
-  const disk = usagePercent(resources.disk_used_bytes, resources.disk_total_bytes);
-  const row = (label: string, percent: number, detail: string) => (
-    <div className="ad-resource-row">
-      <span>{label}</span>
-      <span className="ad-resource-row__bar" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={percent}>
-        <i style={{ width: `${percent}%` }} />
-      </span>
-      <strong dir="ltr" title={detail}>{percent}%</strong>
-    </div>
-  );
-
-  return (
-    <section className="ad-resources ad-resources--compact" aria-labelledby="device-resource-title">
-      <h2 id="device-resource-title">{t("detail.presence.resources.title")}</h2>
-      {row(t("detail.presence.resources.cpu"), cpu, t("detail.presence.resources.current"))}
-      {row(t("detail.presence.resources.memory"), memory, t("detail.presence.resources.of", {
-        used: fmtBytes(resources.memory_used_bytes),
-        total: fmtBytes(resources.memory_total_bytes),
-      }))}
-      {row(t("detail.presence.resources.disk"), disk, t("detail.presence.resources.of", {
-        used: fmtBytes(resources.disk_used_bytes),
-        total: fmtBytes(resources.disk_total_bytes),
-      }))}
-      <div className="ad-resource-row ad-resource-row--net">
-        <span>{t("detail.presence.resources.network")}</span>
-        <strong dir="ltr">↓ {fmtByteRate(resources.network_rx_bps)} · ↑ {fmtByteRate(resources.network_tx_bps)}</strong>
-      </div>
-    </section>
-  );
-}
-
-// ── detail stat card (no sparkline — matches the detail layout) ──────
-function StatCard(props: {
-  icon: ReactNode;
-  label: string;
-  value: ReactNode;
-  focal?: boolean;
-  delta?: string;
-  sub?: string;
-}) {
-  const { icon, label, value, focal, delta, sub } = props;
-  return (
-    <div className={`bibo-card ${focal ? "bibo-card--focal" : "bibo-card--default"} ad-cardpad`}>
-      <div className={`bibo-stat${focal ? " bibo-stat--focal" : ""}`}>
-        <div className="bibo-stat__top">
-          <div className="bibo-stat__icon">{icon}</div>
-          <div className="bibo-stat__label">{label}</div>
-        </div>
-        <div className="bibo-stat__value">
-          <bdi dir="ltr">{value}</bdi>
-        </div>
-        <div className="bibo-stat__foot">
-          {delta && (
-            <span className="bibo-stat__delta bibo-stat__delta--up">
-              {TrendUp}
-              <bdi dir="ltr">{delta}</bdi>
-            </span>
-          )}
-          {sub && <span className="bibo-stat__sub">{sub}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
-
+/**
+ * One employee, one day. A single screen at the top shows either the live
+ * desktop or the day's recordings; the three tabs underneath answer the three
+ * questions an admin asks: what did they work in, show me the day, and how
+ * active were they.
+ */
 export function EmployeeDetail() {
-  const { t, i18n } = useTranslation("dashboard");
+  const { t, i18n } = useTranslation("reports");
+  const { t: td } = useTranslation("dashboard");
   const { id = "" } = useParams();
   const [params] = useSearchParams();
   const businessId = params.get("business");
@@ -206,39 +63,31 @@ export function EmployeeDetail() {
   const { setTitle } = useDetailHeader();
   const terms = memberTerms(businesses.find((b) => b.id === businessId)?.kind);
 
-  // Single-day view by default; switch to "range" for a custom span.
-  const [mode, setMode] = useState<"day" | "range">("day");
   const initialSeek = Number(params.get("at"));
   const hasInitialSeek = Number.isFinite(initialSeek) && initialSeek > 0;
+  const today = isoDate(new Date());
   const [day, setDay] = useState(() => isoDate(hasInitialSeek ? new Date(initialSeek * 1000) : new Date()));
-  const [from, setFrom] = useState(() => isoDate(new Date()));
-  const [to, setTo] = useState(() => isoDate(new Date()));
-
-  const [tab, setTab] = useState<Tab>(params.get("tab") === "playback" ? "playback" : "activity");
-  // Set by a timeline or app click: switches to the player and points it at a
-  // moment. `n` changes on every request so asking again rewinds.
-  const [seek, setSeek] = useState<{ ts: number; n: number } | null>(hasInitialSeek ? { ts: initialSeek, n: 0 } : null);
-  const [focusApp, setFocusApp] = useState<string | null>(null);
-  const [focusUrl, setFocusUrl] = useState<string | null>(null);
-  const play = useCallback((ts: number, app: string | null, url: string | null = null) => {
-    setSeek((current) => ({ ts, n: (current?.n ?? 0) + 1 }));
-    setFocusApp(app);
-    setFocusUrl(url);
-    setTab("playback");
-  }, []);
+  const [tab, setTab] = useState<Tab>(params.get("tab") === "playback" ? "video" : "work");
+  const [screen, setScreen] = useState<Screen>(hasInitialSeek || day !== today ? "recordings" : "live");
+  const [request, setRequest] = useState<SeekRequest | null>(hasInitialSeek ? { ts: initialSeek, n: 1 } : null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [playhead, setPlayhead] = useState<number | null>(null);
+  const stageRef = useRef<HTMLElement>(null);
 
   const [employee, setEmployee] = useState<ReportEmployee | null>(null);
   const [presence, setPresence] = useState<EmployeePresence | null>(null);
+  const [presenceDenied, setPresenceDenied] = useState(false);
   const [activity, setActivity] = useState<ActivityResponse | null>(null);
   const [keystrokes, setKeystrokes] = useState<KeystrokeBucket[] | null>(null);
   const [visits, setVisits] = useState<BrowserVisit[] | null>(null);
-  const [shots, setShots] = useState<ScreenshotMeta[] | null>(null);
   const [states, setStates] = useState<OsStateReport | null>(null);
-
+  const [recordings, setRecordings] = useState<RecordingAsset[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Resolve the employee's identity from the roster (for the header).
+  const range = useMemo(() => dayRangeToUnix(day, day), [day]);
+  const daySpan = useMemo(() => ({ start: range.from, end: range.to }), [range]);
+
   useEffect(() => {
     if (!businessId) return;
     reportEmployees(businessId)
@@ -246,318 +95,277 @@ export function EmployeeDetail() {
       .catch(() => {});
   }, [businessId, id]);
 
-  // Push the member's name into the app header (replaces the section label);
-  // cleared on unmount so other pages keep their own title.
   useEffect(() => {
     setTitle(employee?.display_name ?? null);
     return () => setTitle(null);
   }, [employee, setTitle]);
 
-  // The exact window the reports were loaded for. The timeline must lay blocks
-  // out against this and not recompute it, or a block would drift from the
-  // numbers in the cards above it.
-  const rangeUnix = useMemo(() => {
-    const [fromDate, toDate] = mode === "day" ? [day, day] : [from, to];
-    return dayRangeToUnix(fromDate, toDate);
-  }, [mode, day, from, to]);
-
   const load = useCallback(async () => {
     if (!id) return;
-    const { from: f, to: to2 } = rangeUnix;
-    if (f > to2) {
-      setError(t("detail.errorStartAfterEnd"));
-      return;
-    }
     setLoading(true);
     setError(null);
+    setRecordings(null);
     try {
-      const [a, k, b, s, st] = await Promise.all([
-        reportActivity(id, f, to2),
-        reportKeystrokes(id, f, to2),
-        reportBrowser(id, f, to2),
-        reportScreenshots(id, f, to2),
-        reportStates(id, f, to2),
+      const [a, k, b, st] = await Promise.all([
+        reportActivity(id, range.from, range.to),
+        reportKeystrokes(id, range.from, range.to),
+        reportBrowser(id, range.from, range.to),
+        reportStates(id, range.from, range.to),
       ]);
       setActivity(a);
       setKeystrokes(k.buckets);
       setVisits(b.visits);
-      setShots(s.screenshots);
       setStates(st);
     } catch {
-      setError(t("detail.errorRange"));
+      setError(t("employee.errors.load"));
     } finally {
       setLoading(false);
     }
-  }, [id, rangeUnix, t]);
+    // Recordings load on their own: a video outage must not blank the reports.
+    listEmployeeRecordings(id, range.from, range.to)
+      .then(({ recordings: found }) => setRecordings(found))
+      .catch(() => setRecordings([]));
+  }, [id, range, t]);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
-  // Presence is independent of historical reports. The desktop posts every
-  // 15 seconds; this small poll refreshes only one lightweight JSON object.
+  // The desktop posts presence every 15 seconds; this refreshes one small object.
   useEffect(() => {
     if (!id) return;
-    let live = true;
+    let alive = true;
     const refresh = () => {
       reportPresence(id)
         .then((result) => {
-          if (live) setPresence(result.presence);
+          if (!alive) return;
+          setPresence(result.presence);
+          setPresenceDenied(false);
         })
-        .catch(() => {
-          if (live) setPresence(null);
+        .catch((err) => {
+          if (!alive) return;
+          setPresence(null);
+          setPresenceDenied(err instanceof ApiError && err.status === 403);
         });
     };
     refresh();
     const timer = window.setInterval(refresh, 15_000);
     return () => {
-      live = false;
+      alive = false;
       window.clearInterval(timer);
     };
   }, [id]);
 
-  const today = isoDate(new Date());
+  const play = useCallback((ts: number, item: WorkItem | null = null) => {
+    setRequest((current) => ({ ts, n: (current?.n ?? 0) + 1, label: item?.name ?? null }));
+    setSelectedKey(item?.key ?? null);
+    setScreen("recordings");
+    stageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
 
-  // Summary stats for the selected day/range, derived from the loaded data.
-  const activeS = activity?.breakdown.reduce((sum, b) => sum + b.duration_s, 0) ?? 0;
-  const topApp = activity?.breakdown[0]?.app_name ?? "—";
-  const topAppS = activity?.breakdown[0]?.duration_s ?? 0;
-  // Top app's share of active time (real) — shown as the "focus" chip.
-  const topShare = activeS > 0 ? Math.round((topAppS / activeS) * 100) : 0;
-  // NOTE: topShare stays relative to activity_samples' own total, because both
-  // numerator and denominator come from that table. Mixing sources here would
-  // produce a percentage that silently exceeds 100%.
-
-  // Time budget from the device-state timeline. `activity_samples` only records
-  // active foreground intervals, so idle, suspended and total device time can
-  // only come from here. Null until loaded — never substituted with a guess.
-  const totals = states?.totals ?? null;
-  const sites = useMemo(() => rollupByDomain(visits ?? []), [visits]);
-  const topSite = sites[0];
-  const deviceS = totals ? totals.active_s + totals.idle_s + totals.suspended_s : null;
-  // The timeline is authoritative for the time budget when it has data, so the
-  // cards cannot contradict each other. It measures active time device-wide,
-  // whereas activity_samples only accrues while a foreground window is
-  // identifiable — two honest numbers that would otherwise disagree on screen.
-  //
-  // Agents older than the timeline report nothing here; falling back to the
-  // activity sum keeps their dashboards working instead of showing a bare zero.
-  const hasTimeline = !!totals && totals.covered_s > 0;
-  const budgetActiveS = hasTimeline ? totals.active_s : activeS;
-
-  const clockTime = (unix: number | null | undefined) =>
-    unix == null
-      ? null
-      : new Date(unix * 1000).toLocaleTimeString(i18n.language, {
-          hour: "2-digit",
-          minute: "2-digit",
-        });
+  const changeDay = (next: string) => {
+    if (next > today) return;
+    setDay(next);
+    setRequest(null);
+    setSelectedKey(null);
+    setPlayhead(null);
+    if (next !== today) setScreen("recordings");
+  };
 
   const name = employee?.display_name ?? terms.one;
   const isSelf = employee?.role === "owner" || (!!employee && employee.id === user?.id);
-  const status: Status = presence?.state === "active" || presence?.state === "idle"
-    ? presence.state
-    : memberStatus(employee?.last_seen ?? null);
+  const state = presence?.state === "active" || presence?.state === "idle" ? presence.state : "offline";
+  const online = state !== "offline";
+  const lastSeen = presence?.seen_at ?? employee?.last_seen ?? null;
 
-  const dateInput = (value: string, onChange: (v: string) => void, min?: string, max?: string) => (
-    <input type="date" value={value} min={min} max={max} onChange={(e) => onChange(e.target.value)} />
-  );
+  const totals = states?.totals;
+  const activeS = totals && totals.covered_s > 0
+    ? totals.active_s
+    : activity?.breakdown.reduce((sum, b) => sum + b.duration_s, 0) ?? 0;
+  const topApp = activity ? [...activity.breakdown].sort((a, b) => b.duration_s - a.duration_s)[0] : undefined;
+  const keys = keystrokes?.reduce((sum, b) => sum + b.count, 0) ?? 0;
+  const playableCount = recordings?.filter(isPlayable).length ?? 0;
+  const clock = (ts: number | null | undefined) =>
+    ts == null ? null : new Date(ts * 1000).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="ad-wrap" style={{ paddingBottom: 32 }}>
-      {/* breadcrumb */}
-      <div className="ad-crumb">
-        <Link to="/">{t("detail.breadcrumbDashboard")}</Link>
-        <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconChevron}</span>
-        <span>{terms.many}</span>
-        <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconChevron}</span>
-        <span className="ad-crumb__here">{name}</span>
-      </div>
+    <div className="ev">
+      <nav className="ev-crumb" aria-label={td("detail.breadcrumbDashboard")}>
+        <Link to="/employees">{terms.many}</Link>
+        <span aria-hidden>/</span>
+        <span>{name}</span>
+      </nav>
 
-      {/* detail header */}
-      <div className="ad-detailhead">
-        <span className="bibo-avatar" style={{ ["--_s" as string]: "48px" }}>
-          <span
-            className="bibo-avatar__img"
-            aria-label={name}
-            style={{ background: "var(--info-soft)", color: "var(--info)" }}
-          >
-            {initials(name)}
-          </span>
-          <span className={`bibo-avatar__dot bibo-avatar__dot--${status}`} />
-        </span>
-        <div className="ad-detailhead__id">
-          <div className="ad-detailhead__name">
-            {name}
-            {isSelf && <span className="ad-self">{t("dashboard.selfBadge")}</span>}
+      <header className="ev-head">
+        <div className="ev-id">
+          <span className={`ev-avatar ev-avatar--${state}`} aria-hidden>{initials(name)}</span>
+          <div>
+            <h1>
+              {name}
+              {isSelf ? <span className="ev-self">{td("dashboard.selfBadge")}</span> : null}
+            </h1>
+            <p>
+              <span className={`ev-pill ev-pill--${state}`}>
+                <i aria-hidden />
+                {t(`employee.status.${state}`)}
+              </span>
+              {!online && lastSeen ? <span className="ev-muted">{t("employee.status.lastSeen", { time: fmtRelative(lastSeen) })}</span> : null}
+              {online && presence?.app ? <span className="ev-muted">{t("employee.status.using", { app: presence.app })}</span> : null}
+            </p>
           </div>
-          {employee && (
-            <div className="ad-detailhead__login">{employee.email || employee.username}</div>
-          )}
         </div>
 
-        <div className="ad-datemode">
-          <div className="bibo-seg bibo-seg--sm" role="tablist" aria-label={t("detail.dateMode")}>
+        <div className="ev-daynav" role="group" aria-label={t("employee.day.label")}>
+          <button type="button" onClick={() => changeDay(shiftDay(day, -1))} aria-label={t("employee.day.prev")}>
+            <span aria-hidden>‹</span>
+          </button>
+          <input type="date" value={day} max={today} onChange={(e) => e.target.value && changeDay(e.target.value)} aria-label={t("employee.day.label")} />
+          <button type="button" onClick={() => changeDay(shiftDay(day, 1))} disabled={day >= today} aria-label={t("employee.day.next")}>
+            <span aria-hidden>›</span>
+          </button>
+          {day !== today ? (
+            <button type="button" className="ev-daynav__today" onClick={() => changeDay(today)}>{t("employee.day.today")}</button>
+          ) : null}
+        </div>
+      </header>
+
+      {!businessId ? <Notice kind="info">{td("detail.noBusinessContext")}</Notice> : null}
+      {error ? <Notice kind="danger">{error}</Notice> : null}
+
+      <section className="ev-top" ref={stageRef}>
+        <div className="ev-stage">
+          <div className="ev-stage__switch" role="tablist" aria-label={t("employee.stage.label")}>
             <button
+              type="button"
               role="tab"
-              aria-selected={mode === "day"}
-              className={`bibo-seg__opt${mode === "day" ? " bibo-seg__opt--on" : ""}`}
-              onClick={() => setMode("day")}
+              aria-selected={screen === "live"}
+              className={`ev-switch ev-switch--live${screen === "live" ? " is-on" : ""}`}
+              onClick={() => setScreen("live")}
             >
-              {t("detail.singleDay")}
+              <i aria-hidden />
+              {t("employee.stage.live")}
             </button>
             <button
+              type="button"
               role="tab"
-              aria-selected={mode === "range"}
-              className={`bibo-seg__opt${mode === "range" ? " bibo-seg__opt--on" : ""}`}
-              onClick={() => setMode("range")}
+              aria-selected={screen === "recordings"}
+              className={`ev-switch${screen === "recordings" ? " is-on" : ""}`}
+              onClick={() => setScreen("recordings")}
             >
-              {t("detail.dateRange")}
+              ▶ {t("employee.stage.recordings")}
+              {recordings ? <small>{playableCount}</small> : null}
             </button>
           </div>
-
-          {mode === "day" ? (
-            <span className="ad-datefield">
-              <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconCalendar}</span>
-              {dateInput(day, setDay, undefined, today)}
-            </span>
-          ) : (
-            <>
-              <span className="ad-datefield">
-                <span className="ad-datefield__lbl">{t("detail.from")}</span>
-                {dateInput(from, setFrom, undefined, to)}
-              </span>
-              <span className="ad-datefield">
-                <span className="ad-datefield__lbl">{t("detail.to")}</span>
-                {dateInput(to, setTo, from, today)}
-              </span>
-            </>
-          )}
-        </div>
-      </div>
-
-      {!businessId && <Notice kind="info">{t("detail.noBusinessContext")}</Notice>}
-      {error && <Notice kind="danger">{error}</Notice>}
-
-      {/* summary: the four numbers an admin reads first */}
-      <div className="ad-stats">
-        <StatCard
-          focal
-          icon={IconClock}
-          label={mode === "day" ? t("detail.summary.activeTime") : t("detail.summary.activeTimeRange")}
-          value={fmtDuration(budgetActiveS)}
-          sub={
-            states?.first_activity
-              ? `${clockTime(states.first_activity)} – ${clockTime(states.last_activity) ?? "…"}`
-              : t("detail.summary.noActivity")
-          }
-        />
-        <StatCard
-          icon={IconPause}
-          label={t("detail.summary.deviceTime")}
-          value={hasTimeline && deviceS !== null ? fmtDuration(deviceS) : "—"}
-          sub={hasTimeline ? `${t("detail.summary.idleTime")} ${fmtDuration(totals.idle_s)}` : undefined}
-        />
-        <StatCard
-          icon={IconAppWindow}
-          label={t("detail.summary.topApp")}
-          value={topApp}
-          sub={activeS > 0 ? `${fmtDuration(topAppS)} · ${topShare}%` : t("detail.summary.noActivity")}
-        />
-        <StatCard
-          icon={IconAppWindow}
-          label={t("detail.summary.topSite")}
-          value={topSite?.domain ?? "—"}
-          sub={topSite ? fmtDuration(topSite.totalS) : t("detail.insights.browserHint")}
-        />
-      </div>
-
-      <section className="ad-live-details ad-live-details--visible" aria-label={t("detail.insights.liveAction")}>
-        <h2 className="ad-live-details__heading">{t("detail.insights.liveAction")}</h2>
-        <div className="ad-command-deck">
-          {presence?.device_id ? (
-            <Suspense fallback={<Spinner />}>
-              <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={presence.state !== "offline"} />
-            </Suspense>
-          ) : <Notice kind="info">{t("detail.presence.waiting")}</Notice>}
-          <div className="ad-command-deck__telemetry">
-            <LivePresence presence={presence} />
-            <LiveResources resources={presence?.resources} />
+          <div className="ev-stage__screen">
+            {screen === "live" ? (
+              presence?.device_id ? (
+                <Suspense fallback={<div className="ev-stage__empty"><span className="ev-spinner" aria-hidden /></div>}>
+                  <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={online} />
+                </Suspense>
+              ) : (
+                <div className="ev-stage__empty">
+                  <strong>{presenceDenied ? t("employee.now.denied") : t("employee.stage.noDevice")}</strong>
+                </div>
+              )
+            ) : (
+              <RecordingStage recordings={recordings} request={request} activity={activity} onTime={setPlayhead} />
+            )}
           </div>
         </div>
+
+        <aside className="ev-side">
+          <div className={`ev-now ev-now--${state}`}>
+            <span className="ev-now__label">{t("employee.now.title")}</span>
+            {presenceDenied ? (
+              <p className="ev-muted">{t("employee.now.denied")}</p>
+            ) : online ? (
+              <>
+                <strong title={presence?.app ?? undefined}>{presence?.app || t("employee.now.noApp")}</strong>
+                {presence?.window_title ? <small title={presence.window_title}>{presence.window_title}</small> : null}
+              </>
+            ) : (
+              <strong>{t("employee.status.offline")}</strong>
+            )}
+          </div>
+          <dl className="ev-kpis">
+            <div>
+              <dt>{t("employee.stats.active")}</dt>
+              <dd><bdi dir="ltr">{fmtDuration(activeS)}</bdi></dd>
+              <small>
+                {states?.first_activity
+                  ? <><bdi>{clock(states.first_activity)}</bdi> – <bdi>{clock(states.last_activity) ?? "…"}</bdi></>
+                  : t("employee.stats.none")}
+              </small>
+            </div>
+            <div>
+              <dt>{t("employee.stats.idle")}</dt>
+              <dd><bdi dir="ltr">{totals && totals.covered_s > 0 ? fmtDuration(totals.idle_s) : "—"}</bdi></dd>
+            </div>
+            <div>
+              <dt>{t("employee.stats.topApp")}</dt>
+              <dd className="ev-kpis__text" title={topApp?.app_name}>{topApp?.app_name ?? "—"}</dd>
+              {topApp ? <small><bdi dir="ltr">{fmtDuration(topApp.duration_s)}</bdi></small> : null}
+            </div>
+            <div>
+              <dt>{t("employee.stats.keys")}</dt>
+              <dd>{keys.toLocaleString(i18n.language)}</dd>
+            </div>
+          </dl>
+        </aside>
       </section>
 
-      {/* tabs + panel */}
-      <div className="ad-tabwrap" id="employee-reports">
-        <div className="bibo-tabs bibo-tabs--pill" role="tablist">
+      <section className="ev-panel">
+        <div className="ev-tabs" role="tablist" aria-label={t("employee.tabs.label")}>
           {TABS.map((key) => (
             <button
               key={key}
+              type="button"
               role="tab"
-              id={`employee-tab-${key}`}
-              aria-controls="employee-report-panel"
+              id={`ev-tab-${key}`}
               aria-selected={tab === key}
-              className={`bibo-tab${tab === key ? " bibo-tab--on" : ""}`}
+              aria-controls="ev-tabpanel"
+              className={tab === key ? "is-on" : ""}
               onClick={() => setTab(key)}
             >
-              {t(`detail.tabs.${key}`)}
+              <span className="ev-tabs__num" aria-hidden>{TABS.indexOf(key) + 1}</span>
+              <span>
+                <strong>{t(`employee.tabs.${key}`)}</strong>
+                <small>{t(`employee.tabs.${key}Hint`)}</small>
+              </span>
             </button>
           ))}
         </div>
 
-        <div className="ad-panel" id="employee-report-panel" role="tabpanel" aria-labelledby={`employee-tab-${tab}`}>
+        <div className="ev-tabpanel" id="ev-tabpanel" role="tabpanel" aria-labelledby={`ev-tab-${tab}`}>
           {loading ? (
-            <Spinner label={t("detail.loadingReports")} />
-          ) : (
-            !error && (
-              <>
-                {tab === "activity" && activity && visits ? (
-                  <>
-                    <ActivityExplorer activity={activity} visits={visits} onPlay={play} />
-                    <div className="bibo-card bibo-card--default ad-cardpad ad-report-timeline">
-                      <SectionTitle>{t("detail.timelineTitle")}</SectionTitle>
-                      <UnifiedTimeline
-                        from={rangeUnix.from}
-                        to={rangeUnix.to}
-                        states={states}
-                        activity={activity}
-                        buckets={keystrokes}
-                        visits={visits}
-                        shots={shots}
-                        onSeek={(ts) => play(ts, null)}
-                      />
-                    </div>
-                  </>
-                ) : null}
-                {tab === "input" && (
-                  <div className="bibo-card bibo-card--default ad-cardpad">
-                    <div className="ad-input-summary">
-                      <div><span>{t("detail.summary.activeTime")}</span><strong>{fmtDuration(budgetActiveS)}</strong></div>
-                      <div><span>{t("detail.summary.idleTime")}</span><strong>{hasTimeline ? fmtDuration(totals.idle_s) : "—"}</strong></div>
-                    </div>
-                    {keystrokes ? <KeystrokePanel buckets={keystrokes} /> : <Spinner />}
-                  </div>
-                )}
-                {tab === "playback" && activity && keystrokes && visits ? (
-                  <PlaybackPanel
-                    employeeId={id}
-                    from={rangeUnix.from}
-                    to={rangeUnix.to}
-                    activity={activity}
-                    visits={visits}
-                    buckets={keystrokes}
-                    seekTo={seek?.ts ?? null}
-                    seekNonce={seek?.n}
-                    focusApp={focusApp}
-                    focusUrl={focusUrl}
-                    onClearFocus={() => { setFocusApp(null); setFocusUrl(null); }}
-                  />
-                ) : null}
-              </>
-            )
+            <div className="ev-empty"><span className="ev-spinner" aria-hidden />{t("employee.loading")}</div>
+          ) : error ? null : (
+            <>
+              {tab === "work" && activity && visits ? (
+                <WorkTab
+                  activity={activity}
+                  visits={visits}
+                  recordings={recordings ?? []}
+                  selectedKey={selectedKey}
+                  onPlay={(ts, item) => play(ts, item)}
+                />
+              ) : null}
+              {tab === "video" ? (
+                <DayVideoTab
+                  day={daySpan}
+                  recordings={recordings ?? []}
+                  activity={activity}
+                  playhead={screen === "recordings" ? playhead : null}
+                  onPlay={(ts) => play(ts)}
+                />
+              ) : null}
+              {tab === "input" && keystrokes ? (
+                <InputTab day={daySpan} buckets={keystrokes} states={states} />
+              ) : null}
+            </>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

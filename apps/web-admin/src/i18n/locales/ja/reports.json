@@ -6,7 +6,17 @@
     "idle": "アイドル",
     "watchApp": "{{app}} の録画を見る"
   },
-  "explorer": {"title": "アプリとリンク", "description": "アプリまたは完全なURLを選ぶと、保存済み動画の該当時刻に移動します（動画がある場合）。", "search": "アプリ、ページ、URLを検索", "apps": "アプリ", "pages": "ページと完全なURL", "watch": "動画を見る", "open": "{{page}}を開く", "appTime": "記録された利用時間", "noMatches": "一致する結果はありません"},
+  "explorer": {
+    "title": "アプリとリンク",
+    "description": "アプリまたは完全なURLを選ぶと、保存済み動画の該当時刻に移動します（動画がある場合）。",
+    "search": "アプリ、ページ、URLを検索",
+    "apps": "アプリ",
+    "pages": "ページと完全なURL",
+    "watch": "動画を見る",
+    "open": "{{page}}を開く",
+    "appTime": "記録された利用時間",
+    "noMatches": "一致する結果はありません"
+  },
   "browser": {
     "empty": "この期間のブラウザ閲覧履歴はありません。",
     "extensionRequired": "URL の表示には従業員の Chrome または Edge に BiBo Tracker 拡張機能が必要です。",
@@ -54,7 +64,13 @@
     "dayVideos": "この期間の保存済み動画",
     "videoCount": "準備完了 {{count}} 件",
     "unknownDuration": "長さ不明",
-    "status": {"pending": "保留中", "recording": "録画中", "processing": "処理中", "ready": "準備完了", "failed": "失敗"},
+    "status": {
+      "pending": "保留中",
+      "recording": "録画中",
+      "processing": "処理中",
+      "ready": "準備完了",
+      "failed": "失敗"
+    },
     "emptyVideo": "この期間の録画動画はまだありません。",
     "loadingVideo": "録画動画を読み込んでいます…",
     "processing": "この動画区間を処理中です。しばらくしてから再試行してください。",
@@ -99,5 +115,103 @@
     "inputAt": "{{count}} 回のキー入力",
     "empty": "この期間のデータはありません。",
     "note": "入力はキー入力の回数のみで、内容は記録しません。「データなし」はデータが届かなかったという意味で、デバイスが電源オフだったこととは異なります。"
+  },
+  "employee": {
+    "loading": "読み込み中…",
+    "errors": {
+      "load": "この日のデータを読み込めませんでした。しばらくしてから再試行してください。"
+    },
+    "status": {
+      "active": "アクティブ",
+      "idle": "アイドル",
+      "offline": "オフライン",
+      "lastSeen": "最終確認 {{time}}",
+      "using": "{{app}} を使用中"
+    },
+    "day": {
+      "label": "日付",
+      "prev": "前日",
+      "next": "翌日",
+      "today": "今日"
+    },
+    "stage": {
+      "label": "画面",
+      "live": "ライブ",
+      "recordings": "当日の録画",
+      "noDevice": "この従業員にはまだデバイスが紐付いていません。"
+    },
+    "now": {
+      "title": "現在",
+      "noApp": "前面のアプリはありません",
+      "denied": "このアカウントでは従業員の状態を表示できません。会社のオーナーでサインインしてください。"
+    },
+    "stats": {
+      "active": "アクティブ時間",
+      "idle": "アイドル時間",
+      "topApp": "最も使ったアプリ",
+      "keys": "キー入力数",
+      "none": "まだ活動がありません"
+    },
+    "tabs": {
+      "label": "当日のレポート",
+      "work": "アプリとサイト",
+      "workHint": "クリックで再生",
+      "video": "終日の動画",
+      "videoHint": "今日録画されたすべて",
+      "input": "キーボードとマウス",
+      "inputHint": "活動量"
+    },
+    "work": {
+      "filter": "表示",
+      "filter_all": "すべて",
+      "filter_app": "アプリ",
+      "filter_site": "サイト",
+      "search": "アプリ・サイト・リンクを検索",
+      "hint": "アプリやサイトをクリックすると、使用していた時刻の動画を再生します。",
+      "app": "アプリ",
+      "site": "サイト",
+      "times_other": "{{count}} 回使用",
+      "noVideoShort": "動画なし",
+      "noVideo": "この時間の録画はありません",
+      "watchAt": "{{time}} から再生",
+      "stretches": "{{name}} の使用時間",
+      "openLink": "リンクを開く",
+      "empty": "この日に記録されたアプリやサイトはありません。",
+      "noMatches": "一致する結果はありません。"
+    },
+    "video": {
+      "loading": "動画を読み込み中…",
+      "unavailable": "この動画を読み込めませんでした。",
+      "empty": "この日の録画はまだありません。",
+      "inProgress": "今日の録画を保存しています。",
+      "emptyHint": "録画は監視ポリシーで設定した録画時間中、デバイスの電源が入っている間に行われます。",
+      "noVideoAt": "{{time}} の録画はありません。最も近い録画（{{nearest}}）を表示します。",
+      "speed": "再生速度",
+      "recorded": "録画時間",
+      "clips": "クリップ",
+      "ribbon": "当日のタイムライン",
+      "ribbonHint": "タイムラインをクリックするとその時刻を再生します。動画は自動で続けて再生されます。",
+      "legendVideo": "録画",
+      "legendActivity": "従業員の活動",
+      "status_ready": "再生可能",
+      "status_recording": "録画中",
+      "status_processing": "保存中",
+      "status_pending": "開始中",
+      "status_failed": "未録画"
+    },
+    "input": {
+      "keys": "今日のキー入力",
+      "perMinute": "アクティブ1分あたり",
+      "peak": "最も活発な時間",
+      "byHour": "時間別キー入力",
+      "presence": "アクティブ・アイドル・離席",
+      "active": "アクティブ（キーボードまたはマウス）",
+      "idle": "アイドル",
+      "away": "スリープまたはロック",
+      "offline": "オフライン",
+      "empty": "この日のキー入力はありません。",
+      "noPresence": "この日の活動データはありません。",
+      "privacy": "キー入力の回数のみを数え、入力内容は一切記録しません。「アクティブ」はキーボードまたはマウスの操作を指します。"
+    }
   }
 }

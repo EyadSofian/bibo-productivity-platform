@@ -6,7 +6,17 @@
     "idle": "Inactif",
     "watchApp": "Voir les enregistrements de {{app}}"
   },
-  "explorer": {"title": "Applications et liens", "description": "Sélectionnez une application ou une URL exacte pour accéder à ce moment de la vidéo, si disponible.", "search": "Rechercher applications, pages ou URL", "apps": "Applications", "pages": "Pages et URL exactes", "watch": "Voir la vidéo", "open": "Ouvrir {{page}}", "appTime": "Temps observé", "noMatches": "Aucun résultat"},
+  "explorer": {
+    "title": "Applications et liens",
+    "description": "Sélectionnez une application ou une URL exacte pour accéder à ce moment de la vidéo, si disponible.",
+    "search": "Rechercher applications, pages ou URL",
+    "apps": "Applications",
+    "pages": "Pages et URL exactes",
+    "watch": "Voir la vidéo",
+    "open": "Ouvrir {{page}}",
+    "appTime": "Temps observé",
+    "noMatches": "Aucun résultat"
+  },
   "browser": {
     "empty": "Aucune visite de navigateur pour cette période.",
     "extensionRequired": "Les URL nécessitent l’extension BiBo Tracker dans Chrome ou Edge de l’employé.",
@@ -54,7 +64,13 @@
     "dayVideos": "Vidéos enregistrées sur cette période",
     "videoCount": "{{count}} prêts",
     "unknownDuration": "Durée inconnue",
-    "status": {"pending": "En attente", "recording": "Enregistrement", "processing": "Traitement", "ready": "Prêt", "failed": "Échec"},
+    "status": {
+      "pending": "En attente",
+      "recording": "Enregistrement",
+      "processing": "Traitement",
+      "ready": "Prêt",
+      "failed": "Échec"
+    },
     "emptyVideo": "Aucune vidéo enregistrée n’est encore disponible pour cette période.",
     "loadingVideo": "Chargement de la vidéo enregistrée…",
     "processing": "Ce segment vidéo est en cours de finalisation. Réessayez bientôt.",
@@ -99,5 +115,104 @@
     "inputAt": "{{count}} frappes",
     "empty": "Rien n'a été enregistré sur cette période.",
     "note": "La saisie est un simple comptage de frappes, jamais leur contenu. « Aucune donnée » signifie que rien n'est arrivé, ce qui n'est pas la même chose qu'un appareil éteint."
+  },
+  "employee": {
+    "loading": "Chargement de la journée…",
+    "errors": {
+      "load": "Impossible de charger cette journée. Réessayez dans un instant."
+    },
+    "status": {
+      "active": "Actif",
+      "idle": "Inactif",
+      "offline": "Hors ligne",
+      "lastSeen": "Vu {{time}}",
+      "using": "Utilise {{app}}"
+    },
+    "day": {
+      "label": "Jour",
+      "prev": "Jour précédent",
+      "next": "Jour suivant",
+      "today": "Aujourd'hui"
+    },
+    "stage": {
+      "label": "Écran",
+      "live": "En direct",
+      "recordings": "Enregistrements du jour",
+      "noDevice": "Aucun appareil n'est encore lié à cet employé."
+    },
+    "now": {
+      "title": "En ce moment",
+      "noApp": "Aucune application au premier plan",
+      "denied": "Votre compte ne peut pas voir le statut de cet employé. Connectez-vous avec le compte propriétaire."
+    },
+    "stats": {
+      "active": "Temps actif",
+      "idle": "Temps inactif",
+      "topApp": "Application la plus utilisée",
+      "keys": "Frappes",
+      "none": "Aucune activité"
+    },
+    "tabs": {
+      "label": "Rapport du jour",
+      "work": "Applications et sites",
+      "workHint": "Cliquez pour regarder",
+      "video": "Vidéo de la journée",
+      "videoHint": "Tout ce qui a été enregistré",
+      "input": "Clavier et souris",
+      "inputHint": "Niveau d'activité"
+    },
+    "work": {
+      "filter": "Afficher",
+      "filter_all": "Tout",
+      "filter_app": "Applications",
+      "filter_site": "Sites",
+      "search": "Rechercher une application, un site ou un lien",
+      "hint": "Cliquez sur une application ou un site pour lire la vidéo du moment où il a été utilisé.",
+      "app": "Application",
+      "site": "Site",
+      "times_one": "utilisé une fois",
+      "times_other": "utilisé {{count}} fois",
+      "noVideoShort": "sans vidéo",
+      "noVideo": "Aucune vidéo pour ce moment",
+      "watchAt": "Regarder à partir de {{time}}",
+      "stretches": "Utilisations de {{name}}",
+      "openLink": "Ouvrir le lien",
+      "empty": "Aucune application ni aucun site enregistré ce jour-là.",
+      "noMatches": "Aucun résultat."
+    },
+    "video": {
+      "loading": "Chargement de la vidéo…",
+      "unavailable": "Cette vidéo n'a pas pu être chargée.",
+      "empty": "Aucun enregistrement pour ce jour.",
+      "inProgress": "L'enregistrement du jour est en cours de sauvegarde.",
+      "emptyHint": "La vidéo est enregistrée pendant les heures d'enregistrement définies dans la politique de surveillance, lorsque l'appareil est allumé.",
+      "noVideoAt": "Rien n'a été enregistré à {{time}}. Enregistrement le plus proche : {{nearest}}.",
+      "speed": "Vitesse",
+      "recorded": "Enregistré",
+      "clips": "Extraits",
+      "ribbon": "Chronologie du jour",
+      "ribbonHint": "Cliquez n'importe où pour regarder ce moment. La vidéo enchaîne toute la journée.",
+      "legendVideo": "Vidéo enregistrée",
+      "legendActivity": "Activité",
+      "status_ready": "Prêt",
+      "status_recording": "Enregistrement",
+      "status_processing": "Sauvegarde",
+      "status_pending": "Démarrage",
+      "status_failed": "Non enregistré"
+    },
+    "input": {
+      "keys": "Frappes du jour",
+      "perMinute": "Par minute active",
+      "peak": "Heure la plus active",
+      "byHour": "Frappes par heure",
+      "presence": "Actif, inactif et absent",
+      "active": "Actif (clavier ou souris)",
+      "idle": "Inactif",
+      "away": "En veille ou verrouillé",
+      "offline": "Hors ligne",
+      "empty": "Aucune frappe enregistrée ce jour-là.",
+      "noPresence": "Aucune donnée d'activité ce jour-là.",
+      "privacy": "Seul le nombre de frappes est compté — le texte saisi n'est jamais enregistré. « Actif » signifie toute action clavier ou souris."
+    }
   }
 }

@@ -224,12 +224,40 @@ export type PlaybackToken = {
   duration_ms: number;
 };
 
+/** Dev-only demo clips: 30-minute chunks across a morning and an afternoon. */
+function demoRecordings(employeeId: string, from: number, to: number): RecordingAsset[] {
+  const clips: RecordingAsset[] = [];
+  const blocks: Array<[number, number]> = [[9, 12], [13, 15.5]];
+  for (const [startHour, endHour] of blocks) {
+    for (let h = startHour; h < endHour; h += 0.5) {
+      const start = from + Math.round(h * 3600);
+      if (start >= to) continue;
+      clips.push({
+        id: `demo-${employeeId}-${start}`, business_id: "demo", media_session_id: `demo-${start}`,
+        employee_id: employeeId, device_id: "demo", status: h === 10.5 ? "failed" : "ready", format: "mp4",
+        duration_ms: 1_800_000, byte_size: 42_000_000,
+        started_at: new Date(start * 1000).toISOString(), ended_at: new Date((start + 1800) * 1000).toISOString(),
+      });
+    }
+  }
+  return clips;
+}
+
 export function listEmployeeRecordings(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve({ recordings: demoRecordings(employeeId, from, to) });
   return request<{ recordings: RecordingAsset[] }>(`/v1/employees/${employeeId}/recordings`, {
     query: { from, to },
   });
 }
 
 export function mintPlaybackToken(recordingId: string) {
+  if (isDemo()) {
+    // A short public-domain clip; each demo chunk ends quickly, which also
+    // exercises continuous playback into the next recording.
+    return Promise.resolve({
+      recording_id: recordingId, url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      expires_at: new Date(Date.now() + 600_000).toISOString(), started_at: "", duration_ms: 0,
+    } as PlaybackToken);
+  }
   return request<PlaybackToken>(`/v1/recordings/${recordingId}/playback-token`, { method: "POST" });
 }

@@ -6,7 +6,17 @@
     "idle": "Idle",
     "watchApp": "Watch {{app}} recordings"
   },
-  "explorer": {"title": "Apps and links", "description": "Select an app or exact URL to jump to that time in the saved video, when available.", "search": "Search apps, pages or URLs", "apps": "Applications", "pages": "Exact pages and URLs", "watch": "Watch video", "open": "Open {{page}}", "appTime": "Tracked foreground time", "noMatches": "No matches"},
+  "explorer": {
+    "title": "Apps and links",
+    "description": "Select an app or exact URL to jump to that time in the saved video, when available.",
+    "search": "Search apps, pages or URLs",
+    "apps": "Applications",
+    "pages": "Exact pages and URLs",
+    "watch": "Watch video",
+    "open": "Open {{page}}",
+    "appTime": "Tracked foreground time",
+    "noMatches": "No matches"
+  },
   "browser": {
     "empty": "No browser visits for this range.",
     "extensionRequired": "Browser URLs require the BiBo Tracker extension on this employee's Chrome or Edge browser.",
@@ -54,7 +64,13 @@
     "dayVideos": "Saved videos in this period",
     "videoCount": "{{count}} ready",
     "unknownDuration": "Duration unknown",
-    "status": {"pending": "Pending", "recording": "Recording", "processing": "Processing", "ready": "Ready", "failed": "Failed"},
+    "status": {
+      "pending": "Pending",
+      "recording": "Recording",
+      "processing": "Processing",
+      "ready": "Ready",
+      "failed": "Failed"
+    },
     "emptyVideo": "No recorded video is available in this period yet.",
     "loadingVideo": "Loading recorded video…",
     "processing": "This video chunk is being finalized. Try again shortly.",
@@ -99,5 +115,104 @@
     "inputAt": "{{count}} keypresses",
     "empty": "Nothing was reported for this range.",
     "note": "Input is a count of keypresses only — never what was typed. \"Not reporting\" means no data arrived, which is not the same as the device being off."
+  },
+  "employee": {
+    "loading": "Loading this day…",
+    "errors": {
+      "load": "Couldn't load this day's data. Try again in a moment."
+    },
+    "status": {
+      "active": "Active now",
+      "idle": "Idle",
+      "offline": "Offline",
+      "lastSeen": "Last seen {{time}}",
+      "using": "Using {{app}}"
+    },
+    "day": {
+      "label": "Day",
+      "prev": "Previous day",
+      "next": "Next day",
+      "today": "Today"
+    },
+    "stage": {
+      "label": "Screen",
+      "live": "Live now",
+      "recordings": "Day recordings",
+      "noDevice": "No device is linked to this employee yet."
+    },
+    "now": {
+      "title": "Right now",
+      "noApp": "No app in focus",
+      "denied": "Your account can't see this employee's live status. Sign in as the company owner."
+    },
+    "stats": {
+      "active": "Active time",
+      "idle": "Idle time",
+      "topApp": "Most used app",
+      "keys": "Keypresses",
+      "none": "No activity yet"
+    },
+    "tabs": {
+      "label": "Day report",
+      "work": "Apps & websites",
+      "workHint": "Click one to watch it",
+      "video": "Full day video",
+      "videoHint": "Everything recorded today",
+      "input": "Keyboard & mouse",
+      "inputHint": "How active they were"
+    },
+    "work": {
+      "filter": "Show",
+      "filter_all": "All",
+      "filter_app": "Apps",
+      "filter_site": "Websites",
+      "search": "Search apps, websites or links",
+      "hint": "Click any app or website to play the video of exactly when it was used.",
+      "app": "App",
+      "site": "Website",
+      "times_one": "used once",
+      "times_other": "used {{count}} times",
+      "noVideoShort": "no video",
+      "noVideo": "No video was recorded for this time",
+      "watchAt": "Watch from {{time}}",
+      "stretches": "Times {{name}} was used",
+      "openLink": "Open link",
+      "empty": "No apps or websites were recorded for this day.",
+      "noMatches": "Nothing matches your search."
+    },
+    "video": {
+      "loading": "Loading video…",
+      "unavailable": "This video couldn't be loaded. Try another clip.",
+      "empty": "No recordings for this day yet.",
+      "inProgress": "Today's recording is still being saved. It will appear here shortly.",
+      "emptyHint": "Video is recorded during the screen-recording hours set in the monitoring policy, while the employee's device is on.",
+      "noVideoAt": "Nothing was recorded at {{time}}. Showing the nearest recording from {{nearest}}.",
+      "speed": "Playback speed",
+      "recorded": "Recorded",
+      "clips": "Clips",
+      "ribbon": "Day timeline",
+      "ribbonHint": "Click anywhere on the timeline to watch that moment. The video plays through the day on its own.",
+      "legendVideo": "Recorded video",
+      "legendActivity": "Employee activity",
+      "status_ready": "Ready",
+      "status_recording": "Recording",
+      "status_processing": "Saving",
+      "status_pending": "Starting",
+      "status_failed": "Not recorded"
+    },
+    "input": {
+      "keys": "Keypresses today",
+      "perMinute": "Per active minute",
+      "peak": "Busiest hour",
+      "byHour": "Keypresses by hour",
+      "presence": "Active, idle and away",
+      "active": "Active (keyboard or mouse)",
+      "idle": "Idle",
+      "away": "Asleep or locked",
+      "offline": "Offline",
+      "empty": "No keyboard input was recorded for this day.",
+      "noPresence": "No activity data for this day.",
+      "privacy": "Only the number of keypresses is counted — what is typed is never recorded. \"Active\" means any keyboard or mouse input."
+    }
   }
 }
