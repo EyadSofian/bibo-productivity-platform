@@ -177,7 +177,8 @@
       "stretches": "{{name}} の使用時間",
       "openLink": "リンクを開く",
       "empty": "この日に記録されたアプリやサイトはありません。",
-      "noMatches": "一致する結果はありません。"
+      "noMatches": "一致する結果はありません。",
+      "watch": "再生"
     },
     "video": {
       "loading": "動画を読み込み中…",

@@ -178,7 +178,8 @@
       "stretches": "Times {{name}} was used",
       "openLink": "Open link",
       "empty": "No apps or websites were recorded for this day.",
-      "noMatches": "Nothing matches your search."
+      "noMatches": "Nothing matches your search.",
+      "watch": "Watch"
     },
     "video": {
       "loading": "Loading video…",

@@ -95,7 +95,7 @@ export function WorkTab({
                 </span>
                 <span className="ev-item__bar" aria-hidden><i style={{ width: `${(item.totalS / max) * 100}%` }} /></span>
                 <span className="ev-item__time"><bdi dir="ltr">{fmtDuration(item.totalS)}</bdi></span>
-                <span className="ev-item__play" aria-hidden>▶</span>
+                <span className="ev-item__play" aria-hidden data-label={t("employee.work.watch")}>▶</span>
               </button>
 
               {expanded ? (

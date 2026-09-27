@@ -177,7 +177,8 @@
       "stretches": "Waktu penggunaan {{name}}",
       "openLink": "Buka tautan",
       "empty": "Tidak ada aplikasi atau situs yang tercatat hari ini.",
-      "noMatches": "Tidak ada hasil yang cocok."
+      "noMatches": "Tidak ada hasil yang cocok.",
+      "watch": "Tonton"
     },
     "video": {
       "loading": "Memuat video…",

@@ -178,7 +178,8 @@
       "stretches": "Utilisations de {{name}}",
       "openLink": "Ouvrir le lien",
       "empty": "Aucune application ni aucun site enregistré ce jour-là.",
-      "noMatches": "Aucun résultat."
+      "noMatches": "Aucun résultat.",
+      "watch": "Regarder"
     },
     "video": {
       "loading": "Chargement de la vidéo…",

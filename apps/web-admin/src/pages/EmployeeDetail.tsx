@@ -24,7 +24,6 @@ import { InputTab } from "../components/employee/InputTab";
 import { RecordingStage, type SeekRequest } from "../components/employee/RecordingStage";
 import { WorkTab } from "../components/employee/WorkTab";
 import { isPlayable, type WorkItem } from "../components/employee/dayModel";
-import { Notice } from "../components/ui";
 import { dayRangeToUnix, fmtDuration, fmtRelative, isoDate } from "../format";
 import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
@@ -189,28 +188,28 @@ export function EmployeeDetail() {
     ts == null ? null : new Date(ts * 1000).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="ev">
+    <main className="e-page ev">
       <nav className="ev-crumb" aria-label={td("detail.breadcrumbDashboard")}>
         <Link to="/employees">{terms.many}</Link>
         <span aria-hidden>/</span>
         <span>{name}</span>
       </nav>
 
-      <header className="ev-head">
+      <header className="e-head ev-head">
         <div className="ev-id">
-          <span className={`ev-avatar ev-avatar--${state}`} aria-hidden>{initials(name)}</span>
+          <span className={`e-av ev-av e-av--${state}`} aria-hidden>{initials(name)}<i /></span>
           <div>
             <h1>
               {name}
-              {isSelf ? <span className="ev-self">{td("dashboard.selfBadge")}</span> : null}
+              <span className={`e-pill e-pill--${state}`}><i aria-hidden />{t(`employee.status.${state}`)}</span>
+              {isSelf ? <span className="e-pill">{td("dashboard.selfBadge")}</span> : null}
             </h1>
             <p>
-              <span className={`ev-pill ev-pill--${state}`}>
-                <i aria-hidden />
-                {t(`employee.status.${state}`)}
-              </span>
-              {!online && lastSeen ? <span className="ev-muted">{t("employee.status.lastSeen", { time: fmtRelative(lastSeen) })}</span> : null}
-              {online && presence?.app ? <span className="ev-muted">{t("employee.status.using", { app: presence.app })}</span> : null}
+              {online && presence?.app
+                ? t("employee.status.using", { app: presence.app })
+                : !online && lastSeen
+                  ? t("employee.status.lastSeen", { time: fmtRelative(lastSeen) })
+                  : employee?.email ?? ""}
             </p>
           </div>
         </div>
@@ -229,92 +228,75 @@ export function EmployeeDetail() {
         </div>
       </header>
 
-      {!businessId ? <Notice kind="info">{td("detail.noBusinessContext")}</Notice> : null}
-      {error ? <Notice kind="danger">{error}</Notice> : null}
+      {!businessId ? <div className="e-notice e-notice--info">{td("detail.noBusinessContext")}</div> : null}
+      {error ? <div className="e-notice" role="alert">{error}</div> : null}
 
-      <section className="ev-top" ref={stageRef}>
-        <div className="ev-stage">
-          <div className="ev-stage__switch" role="tablist" aria-label={t("employee.stage.label")}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={screen === "live"}
-              className={`ev-switch ev-switch--live${screen === "live" ? " is-on" : ""}`}
-              onClick={() => setScreen("live")}
-            >
-              <i aria-hidden />
-              {t("employee.stage.live")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={screen === "recordings"}
-              className={`ev-switch${screen === "recordings" ? " is-on" : ""}`}
-              onClick={() => setScreen("recordings")}
-            >
-              ▶ {t("employee.stage.recordings")}
-              {recordings ? <small>{playableCount}</small> : null}
-            </button>
-          </div>
-          <div className="ev-stage__screen">
-            {screen === "live" ? (
-              presence?.device_id ? (
-                <Suspense fallback={<div className="ev-stage__empty"><span className="ev-spinner" aria-hidden /></div>}>
-                  <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={online} />
-                </Suspense>
-              ) : (
-                <div className="ev-stage__empty">
-                  <strong>{presenceDenied ? t("employee.now.denied") : t("employee.stage.noDevice")}</strong>
-                </div>
-              )
-            ) : (
-              <RecordingStage recordings={recordings} request={request} activity={activity} onTime={setPlayhead} />
-            )}
-          </div>
+      <section className="e-kpis" aria-label={t("employee.tabs.label")}>
+        <div className="e-kpi">
+          <span>{t("employee.stats.active")}</span>
+          <strong className="num" dir="ltr">{fmtDuration(activeS)}</strong>
+          <small>
+            {states?.first_activity
+              ? <><bdi>{clock(states.first_activity)}</bdi> – <bdi>{clock(states.last_activity) ?? "…"}</bdi></>
+              : t("employee.stats.none")}
+          </small>
         </div>
-
-        <aside className="ev-side">
-          <div className={`ev-now ev-now--${state}`}>
-            <span className="ev-now__label">{t("employee.now.title")}</span>
-            {presenceDenied ? (
-              <p className="ev-muted">{t("employee.now.denied")}</p>
-            ) : online ? (
-              <>
-                <strong title={presence?.app ?? undefined}>{presence?.app || t("employee.now.noApp")}</strong>
-                {presence?.window_title ? <small title={presence.window_title}>{presence.window_title}</small> : null}
-              </>
-            ) : (
-              <strong>{t("employee.status.offline")}</strong>
-            )}
-          </div>
-          <dl className="ev-kpis">
-            <div>
-              <dt>{t("employee.stats.active")}</dt>
-              <dd><bdi dir="ltr">{fmtDuration(activeS)}</bdi></dd>
-              <small>
-                {states?.first_activity
-                  ? <><bdi>{clock(states.first_activity)}</bdi> – <bdi>{clock(states.last_activity) ?? "…"}</bdi></>
-                  : t("employee.stats.none")}
-              </small>
-            </div>
-            <div>
-              <dt>{t("employee.stats.idle")}</dt>
-              <dd><bdi dir="ltr">{totals && totals.covered_s > 0 ? fmtDuration(totals.idle_s) : "—"}</bdi></dd>
-            </div>
-            <div>
-              <dt>{t("employee.stats.topApp")}</dt>
-              <dd className="ev-kpis__text" title={topApp?.app_name}>{topApp?.app_name ?? "—"}</dd>
-              {topApp ? <small><bdi dir="ltr">{fmtDuration(topApp.duration_s)}</bdi></small> : null}
-            </div>
-            <div>
-              <dt>{t("employee.stats.keys")}</dt>
-              <dd>{keys.toLocaleString(i18n.language)}</dd>
-            </div>
-          </dl>
-        </aside>
+        <div className="e-kpi">
+          <span>{t("employee.stats.idle")}</span>
+          <strong className="num" dir="ltr">{totals && totals.covered_s > 0 ? fmtDuration(totals.idle_s) : "—"}</strong>
+        </div>
+        <div className="e-kpi">
+          <span>{t("employee.stats.topApp")}</span>
+          <strong title={topApp?.app_name}>{topApp?.app_name ?? "—"}</strong>
+          {topApp ? <small dir="ltr">{fmtDuration(topApp.duration_s)}</small> : null}
+        </div>
+        <div className="e-kpi">
+          <span>{t("employee.stats.keys")}</span>
+          <strong className="num">{keys.toLocaleString(i18n.language)}</strong>
+        </div>
       </section>
 
-      <section className="ev-panel">
+      <section className="e-card ev-stage" ref={stageRef}>
+        <div className="e-card__head ev-stage__head">
+          <div className="ev-stage__now">
+            <h2>{t("employee.stage.label")}</h2>
+            <p>
+              {presenceDenied
+                ? t("employee.now.denied")
+                : online
+                  ? <>{t("employee.now.title")}: <strong>{presence?.app || t("employee.now.noApp")}</strong>{presence?.window_title ? <span className="ev-stage__win"> · {presence.window_title}</span> : null}</>
+                  : t("employee.status.offline")}
+            </p>
+          </div>
+          <div className="e-seg" role="tablist" aria-label={t("employee.stage.label")}>
+            <button type="button" role="tab" aria-selected={screen === "live"} onClick={() => setScreen("live")}>
+              <i className="ev-livedot" aria-hidden />
+              {t("employee.stage.live")}
+            </button>
+            <button type="button" role="tab" aria-selected={screen === "recordings"} onClick={() => setScreen("recordings")}>
+              {t("employee.stage.recordings")}
+              {recordings ? <small className="ev-count">{playableCount}</small> : null}
+            </button>
+          </div>
+        </div>
+        <div className="ev-stage__screen">
+          {screen === "live" ? (
+            presence?.device_id ? (
+              <Suspense fallback={<div className="ev-stage__empty"><span className="ev-spinner" aria-hidden /></div>}>
+                <DeviceLiveVideo key={presence.device_id} deviceId={presence.device_id} online={online} />
+              </Suspense>
+            ) : (
+              <div className="ev-stage__empty">
+                <strong>{presenceDenied ? t("employee.now.denied") : t("employee.stage.noDevice")}</strong>
+              </div>
+            )
+          ) : (
+            <RecordingStage recordings={recordings} request={request} activity={activity} onTime={setPlayhead} />
+          )}
+        </div>
+      </section>
+
+      <section className="e-card ev-panel">
         <div className="ev-tabs" role="tablist" aria-label={t("employee.tabs.label")}>
           {TABS.map((key) => (
             <button
@@ -327,18 +309,15 @@ export function EmployeeDetail() {
               className={tab === key ? "is-on" : ""}
               onClick={() => setTab(key)}
             >
-              <span className="ev-tabs__num" aria-hidden>{TABS.indexOf(key) + 1}</span>
-              <span>
-                <strong>{t(`employee.tabs.${key}`)}</strong>
-                <small>{t(`employee.tabs.${key}Hint`)}</small>
-              </span>
+              <strong>{t(`employee.tabs.${key}`)}</strong>
+              <small>{t(`employee.tabs.${key}Hint`)}</small>
             </button>
           ))}
         </div>
 
         <div className="ev-tabpanel" id="ev-tabpanel" role="tabpanel" aria-labelledby={`ev-tab-${tab}`}>
           {loading ? (
-            <div className="ev-empty"><span className="ev-spinner" aria-hidden />{t("employee.loading")}</div>
+            <div className="e-empty"><span className="ev-spinner" aria-hidden />{t("employee.loading")}</div>
           ) : error ? null : (
             <>
               {tab === "work" && activity && visits ? (
@@ -366,6 +345,6 @@ export function EmployeeDetail() {
           )}
         </div>
       </section>
-    </div>
+    </main>
   );
 }

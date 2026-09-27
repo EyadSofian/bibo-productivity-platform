@@ -177,7 +177,8 @@
       "stretches": "Các lần dùng {{name}}",
       "openLink": "Mở liên kết",
       "empty": "Không có ứng dụng hay trang web nào được ghi trong ngày.",
-      "noMatches": "Không có kết quả phù hợp."
+      "noMatches": "Không có kết quả phù hợp.",
+      "watch": "Xem"
     },
     "video": {
       "loading": "Đang tải video…",

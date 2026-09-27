@@ -8,7 +8,8 @@
     "monitoring": "Surveillance",
     "organization": "Organisation",
     "tasks": "Tâches",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "manage": "Gestion"
   },
   "actions": {
     "signIn": "Se connecter",

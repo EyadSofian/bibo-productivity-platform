@@ -177,7 +177,8 @@
       "stretches": "{{name}} 的使用时段",
       "openLink": "打开链接",
       "empty": "当天没有记录的应用或网站。",
-      "noMatches": "没有匹配结果。"
+      "noMatches": "没有匹配结果。",
+      "watch": "观看"
     },
     "video": {
       "loading": "正在加载视频…",
