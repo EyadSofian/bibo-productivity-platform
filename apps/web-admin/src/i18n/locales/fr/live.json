@@ -8,7 +8,8 @@
     "live": "En direct",
     "reconnecting": "Connexion perdue : reconnexion…",
     "ended": "La session est terminée.",
-    "error": "Impossible de démarrer la vue en direct."
+    "error": "Impossible de démarrer la vue en direct.",
+    "paused": "La vue en direct est en pause sur l'appareil de l'employé"
   },
   "action": {
     "start": "Démarrer la vue en direct",
@@ -38,5 +39,38 @@
     "ROOM_FAILED": "Le service vidéo a abandonné la session.",
     "TIMEOUT": "L'appareil n'a pas commencé à envoyer à temps.",
     "unknown": "La session a échoué."
+  },
+  "offline": "L'appareil de l'employé est hors ligne — la vue en direct sera disponible à son retour.",
+  "elapsed": "{{seconds}} s",
+  "hint": {
+    "agentSlow": "l'appareil sort peut-être de veille ou démarre son enregistreur"
+  },
+  "pause": {
+    "locked": "L'écran est verrouillé. La vue reprend d'elle-même au déverrouillage.",
+    "private_app": "Une application privée est ouverte (protégée). La vue reprend à sa fermeture.",
+    "paused": "L'employé a mis le suivi en pause. La vue reprend à la reprise."
+  },
+  "timeout": {
+    "noAgent": "L'appareil n'a pas répondu. Vérifiez que l'application tourne et que l'appareil est réveillé.",
+    "noFirstFrame": "L'appareil s'est connecté au service vidéo, mais aucune image d'écran n'est arrivée.",
+    "lostVideo": "La vidéo s'est coupée et n'est pas revenue à temps.",
+    "noSession": "La session n'a pas démarré à temps."
+  },
+  "reason": {
+    "wgc_unsupported": "La capture d'écran Windows n'est pas prête (souvent juste après la veille).",
+    "no_monitor": "Aucun écran n'est connecté à l'appareil.",
+    "start_failed": "Windows a refusé de démarrer la capture d'écran.",
+    "no_first_frame": "La capture a démarré, mais aucune image n'est arrivée.",
+    "capture_closed": "La capture a été fermée (réinitialisation graphique ou changement de session).",
+    "capture_stalled": "Les images de l'écran ont cessé d'arriver.",
+    "resumed_from_sleep": "L'appareil est sorti de veille sans pouvoir rétablir la capture.",
+    "display_changed": "Les écrans ou la résolution ont changé et la capture n'a pas pu reprendre.",
+    "publisher_start_failed": "Le module de diffusion n'a pas pu démarrer sur l'appareil.",
+    "publisher_exited": "Le module de diffusion s'est arrêté plusieurs fois sur l'appareil.",
+    "locked": "L'écran est verrouillé.",
+    "private_app": "Une application privée est ouverte (protégée).",
+    "paused": "L'employé a mis le suivi en pause.",
+    "schedule": "En dehors des heures de surveillance de l'écran.",
+    "signed_out": "L'employé n'est pas connecté à l'application."
   }
 }

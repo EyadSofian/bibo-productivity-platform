@@ -8,7 +8,8 @@
     "live": "En directo",
     "reconnecting": "Conexión perdida: reconectando…",
     "ended": "La sesión ha terminado.",
-    "error": "No se pudo iniciar la vista en directo."
+    "error": "No se pudo iniciar la vista en directo.",
+    "paused": "La vista en vivo está en pausa en el dispositivo del empleado"
   },
   "action": {
     "start": "Iniciar vista en directo",
@@ -38,5 +39,38 @@
     "ROOM_FAILED": "El servicio de vídeo descartó la sesión.",
     "TIMEOUT": "El dispositivo no empezó a enviar a tiempo.",
     "unknown": "La sesión falló."
+  },
+  "offline": "El dispositivo del empleado está sin conexión — la vista en vivo estará disponible cuando vuelva.",
+  "elapsed": "{{seconds}} s",
+  "hint": {
+    "agentSlow": "el dispositivo puede estar despertando o iniciando su grabador"
+  },
+  "pause": {
+    "locked": "La pantalla está bloqueada. La vista se reanuda sola al desbloquearla.",
+    "private_app": "Hay una aplicación privada abierta (protegida). La vista se reanuda al cerrarla.",
+    "paused": "El empleado pausó el seguimiento. La vista se reanuda al continuar."
+  },
+  "timeout": {
+    "noAgent": "El dispositivo no respondió. Comprueba que la aplicación esté abierta y el dispositivo despierto.",
+    "noFirstFrame": "El dispositivo se conectó al servicio de video, pero no llegó ninguna imagen de pantalla.",
+    "lostVideo": "El video se cortó y no volvió a tiempo.",
+    "noSession": "La sesión no comenzó a tiempo."
+  },
+  "reason": {
+    "wgc_unsupported": "La captura de pantalla de Windows no está lista (normalmente justo después de suspender).",
+    "no_monitor": "No hay ninguna pantalla conectada al dispositivo.",
+    "start_failed": "Windows rechazó iniciar la captura de pantalla.",
+    "no_first_frame": "La captura empezó, pero no llegó ninguna imagen.",
+    "capture_closed": "La captura se cerró (reinicio gráfico o cambio de sesión).",
+    "capture_stalled": "Las imágenes de la pantalla dejaron de llegar.",
+    "resumed_from_sleep": "El dispositivo salió de suspensión y no pudo restaurar la captura.",
+    "display_changed": "Cambiaron las pantallas o la resolución y la captura no se recuperó.",
+    "publisher_start_failed": "El módulo de transmisión no pudo iniciarse en el dispositivo.",
+    "publisher_exited": "El módulo de transmisión se detuvo varias veces en el dispositivo.",
+    "locked": "La pantalla está bloqueada.",
+    "private_app": "Hay una aplicación privada abierta (protegida).",
+    "paused": "El empleado pausó el seguimiento.",
+    "schedule": "Fuera del horario de monitoreo de pantalla.",
+    "signed_out": "El empleado no ha iniciado sesión en la aplicación."
   }
 }

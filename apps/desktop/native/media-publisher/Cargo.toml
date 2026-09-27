@@ -45,6 +45,7 @@ windows = { version = "0.62", features = [
     "Win32_System_Performance",
     # Named-pipe peek for the agent IPC reader; FileSystem/Security for its test server.
     "Win32_System_Pipes",
+    "Win32_System_IO",
     "Win32_Storage_FileSystem",
     "Win32_Security",
     "Win32_System_Threading",
