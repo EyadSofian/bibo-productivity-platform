@@ -139,3 +139,12 @@
 .ops-lite__metric:nth-child(3)::before { background: #5eafa7; }
 .ops-lite__metric:nth-child(4)::before { background: #a986d7; }
 .ops-lite__guide { border-color: #d8e5f8; color: #345e9c; background: rgba(235,243,255,.83); }
+:root[data-theme="dark"] .ops-lite__header { border-color: var(--ops-line); background: radial-gradient(circle at 85% 0%, #31525c, transparent 38%), #1a3038; }
+:root[data-theme="dark"] .ops-lite__header h1 { color: #f1f7ff; }
+:root[data-theme="dark"] .ops-lite__header p,
+:root[data-theme="dark"] .ops-lite__refresh { color: #b6c8d6; }
+:root[data-theme="dark"] .ops-lite__eyebrow { border-color: #577681; color: #cfecf2; background: rgba(255,255,255,.06); }
+:root[data-theme="dark"] .ops-lite__metric,
+:root[data-theme="dark"] .ops-lite__panel { background: var(--ops-panel); }
+:root[data-theme="dark"] .ops-lite__guide { border-color: #35584a; color: #c9efce; background: #233e32; }
+:root[data-theme="dark"] .ops-lite__guide--attention { border-color: #6b542e; color: #f2d5a1; background: #3b3021; }

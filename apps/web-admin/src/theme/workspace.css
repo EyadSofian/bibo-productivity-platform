@@ -286,3 +286,26 @@ select:focus-visible { outline: 3px solid var(--ops-acid); outline-offset: 2px; 
   .ops-lite__metric:nth-child(4), .ad-stats > *:nth-child(4) { animation-delay: .18s; }
   @keyframes workspace-rise { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: translateY(0); } }
 }
+
+/* The optional dark preference keeps the same readable hierarchy. */
+:root[data-theme="dark"] .main,
+:root[data-theme="dark"] .content,
+:root[data-theme="dark"] .content--flat { background: var(--ops-paper); }
+:root[data-theme="dark"] .bibo-card,
+:root[data-theme="dark"] .ad-panel,
+:root[data-theme="dark"] .ad-card,
+:root[data-theme="dark"] .ad-table-wrap,
+:root[data-theme="dark"] .ad-stats .bibo-card--default,
+:root[data-theme="dark"] .ad-stats .bibo-card--focal { border-color: var(--ops-line); background: var(--ops-panel); }
+:root[data-theme="dark"] .ad-stats .bibo-stat--focal .bibo-stat__value { color: var(--text); }
+:root[data-theme="dark"] .ad-stats .bibo-stat--focal .bibo-stat__label,
+:root[data-theme="dark"] .ad-stats .bibo-stat--focal .bibo-stat__unit,
+:root[data-theme="dark"] .ad-stats .bibo-stat--focal .bibo-stat__sub { color: var(--text-muted); }
+:root[data-theme="dark"] .ad-stats .bibo-stat--focal .bibo-stat__icon { color: var(--accent); background: var(--accent-weak); }
+:root[data-theme="dark"] .ad-insights,
+:root[data-theme="dark"] .ad-live-details,
+:root[data-theme="dark"] .ad-tabwrap .bibo-tabs { border-color: var(--ops-line); background: var(--ops-panel); }
+:root[data-theme="dark"] .ad-insights__actions button { border-color: #3c5778; color: #c6d9ff; background: #263d5b; }
+:root[data-theme="dark"] .ad-insights__actions button:hover { background: #314e73; }
+:root[data-theme="dark"] .ad-tabwrap .bibo-tab--on,
+:root[data-theme="dark"] .ad-tabwrap .bibo-tab--on:hover { color: #d4e2ff; background: #2d4564; }
