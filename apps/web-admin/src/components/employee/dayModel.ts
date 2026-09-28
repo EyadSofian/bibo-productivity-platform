@@ -75,13 +75,32 @@ export function firstRecordedMoment(segment: AppSegment, recordings: RecordingAs
 }
 
 export const domainOfVisit = (visit: BrowserVisit): string | null => {
-  if (visit.domain) return visit.domain;
-  try {
-    return new URL(visit.url).hostname.replace(/^www\./, "") || null;
-  } catch {
-    return null;
+  let host = visit.domain;
+  if (!host) {
+    try {
+      host = new URL(visit.url).hostname;
+    } catch {
+      return null;
+    }
   }
+  // "www.youtube.com" and "youtube.com" are one site to the person reading.
+  return host.replace(/^www\./, "") || null;
 };
+
+/**
+ * The browser extension can deliver the same visit more than once (same
+ * moment, same page). Counting each copy would double the time on a site, so
+ * keep one row per moment and page -- the longest, as it is the latest update.
+ */
+export function uniqueVisits(visits: BrowserVisit[]): BrowserVisit[] {
+  const byKey = new Map<string, BrowserVisit>();
+  for (const v of visits) {
+    const key = `${v.ts}|${v.url}`;
+    const seen = byKey.get(key);
+    if (!seen || v.duration_s > seen.duration_s) byKey.set(key, v);
+  }
+  return [...byKey.values()];
+}
 
 /** One thing the employee worked in: an app or a website, with its stretches. */
 export type WorkItem = {
@@ -124,7 +143,7 @@ export function workItems(activity: ActivityResponse, visits: BrowserVisit[]): W
     }));
 
   const byDomain = new Map<string, BrowserVisit[]>();
-  for (const v of visits) {
+  for (const v of uniqueVisits(visits)) {
     const domain = domainOfVisit(v);
     if (!domain || v.duration_s <= 0) continue;
     byDomain.set(domain, [...(byDomain.get(domain) ?? []), v]);

@@ -25,7 +25,8 @@ function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "?";
 }
 
-function failureReason(code: string): string {
+function failureReason(code: string, reason?: string): string {
+  if (reason === "recording_quota") return "quotaExceeded";
   if (code === "ENCODER_FAILED") return "encoderFailed";
   if (code === "CAPTURE_FAILED") return "captureFailed";
   if (code === "ROOM_FAILED" || code === "PROVIDER_UNAVAILABLE") return "providerFailed";
@@ -82,6 +83,9 @@ export function Dashboard() {
   const lastReadyAt = recordings?.last_ready_at ? Date.parse(recordings.last_ready_at) : NaN;
   const noRecentVideo = online > 0 && !videoError && recordings != null &&
     (!Number.isFinite(lastReadyAt) || lastReadyAt < Date.now() - 24 * 60 * 60 * 1000);
+  // The recording service refused for lack of minutes: nothing on the
+  // device can fix that, so say it plainly and at the top.
+  const quotaExhausted = recordings?.recent.some((item) => item.failure_reason === "recording_quota") ?? false;
   const employeeLink = (id: string) => `/employees/${id}?business=${selectedId}`;
 
   return (
@@ -131,7 +135,16 @@ export function Dashboard() {
             </div>
           </section>
 
-          {noRecentVideo ? (
+          {quotaExhausted ? (
+            <div className="e-notice e-notice--bad" role="alert">
+              <div>
+                <strong>{t("dashboard.video.quotaTitle")}</strong>
+                <div>{t("dashboard.video.quotaBody")}</div>
+              </div>
+            </div>
+          ) : null}
+
+          {noRecentVideo && !quotaExhausted ? (
             <div className="e-notice" role="status">
               <div>
                 <strong>{t("dashboard.video.noRecentTitle")}</strong>
@@ -229,7 +242,7 @@ export function Dashboard() {
                               <small>
                                 {new Date(item.started_at).toLocaleString(i18n.language, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                                 {size}
-                                {item.status === "failed" ? ` · ${t(`dashboard.video.failure.${failureReason(item.failure_code)}`)}` : ""}
+                                {item.status === "failed" ? ` · ${t(`dashboard.video.failure.${failureReason(item.failure_code, item.failure_reason)}`)}` : ""}
                               </small>
                             </span>
                             <span className={`e-pill ${item.status === "ready" ? "e-pill--ok" : item.status === "failed" ? "e-pill--bad" : "e-pill--warn"}`}>

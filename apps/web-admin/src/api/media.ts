@@ -192,6 +192,8 @@ export type RecordingSummaryItem = {
   employee_name: string;
   status: RecordingAsset["status"];
   failure_code: string;
+  /** Typed device or provider reason, e.g. "recording_quota". */
+  failure_reason?: string;
   byte_size: number;
   started_at: string;
   ended_at?: string;

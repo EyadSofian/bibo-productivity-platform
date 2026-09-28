@@ -61,12 +61,12 @@
       "ready": "Prêtes", "inProgress": "En cours", "failed": "Échecs", "stale": "{{count}} vidéo(s) sont en traitement depuis trop longtemps.",
       "empty": "Aucune tentative d’enregistrement.", "unknownEmployee": "Employé inconnu", "retention": "Les vidéos prêtes sont conservées 30 jours en privé, puis supprimées automatiquement.",
       "guideTitle": "Comment fonctionne l’enregistrement",
-      "noRecentTitle": "Aucune vidéo prête au cours des dernières 24 heures",
+      "noRecentTitle": "Aucune vidéo prête au cours des dernières 24 heures", "quotaTitle": "Minutes d'enregistrement épuisées", "quotaBody": "L'enregistrement est arrêté car le forfait du service vidéo (LiveKit Cloud) n'a plus de minutes ce mois-ci. Le direct fonctionne toujours. Passez à un forfait supérieur dans LiveKit Cloud.",
       "guideBody": "En ligne signifie que l’application est connectée. La vidéo n’est conservée que pendant les horaires prévus et si l’enregistreur démarre correctement.",
       "openPolicy": "Voir le calendrier d’enregistrement",
       "viewDevices": "Voir les appareils",
       "status": { "pending": "Démarrage", "recording": "Enregistrement", "processing": "Envoi", "ready": "Prête", "failed": "Échec" },
-      "failure": {"encoderFailed": "L’encodeur de l’appareil n’a pas démarré", "captureFailed": "Échec de la capture d’écran", "providerFailed": "Service vidéo indisponible", "unknownFailed": "L’enregistrement n’a pas pu se terminer"}
+      "failure": {"encoderFailed": "L’encodeur de l’appareil n’a pas démarré", "captureFailed": "Échec de la capture d’écran", "providerFailed": "Service vidéo indisponible", "quotaExceeded": "Minutes d'enregistrement épuisées", "unknownFailed": "L’enregistrement n’a pas pu se terminer"}
     }
   },
   "employees": {

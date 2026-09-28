@@ -25,6 +25,11 @@ import (
 // is what this whole migration exists to remove.
 var ErrProviderUnconfigured = errors.New("media provider is not configured")
 
+// ErrProviderQuota: the provider refused because the account ran out of an
+// allowance (for example LiveKit egress minutes). Retrying cannot help until
+// the plan changes, so it is reported as its own reason.
+var ErrProviderQuota = errors.New("media provider quota exhausted")
+
 // ErrRoomNotFound is returned when a room has already been reaped by the
 // provider. Ending a session that the provider has forgotten is not an error the
 // caller should have to care about, so implementations return this and callers

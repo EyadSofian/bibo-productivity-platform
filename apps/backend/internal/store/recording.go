@@ -55,6 +55,7 @@ type RecordingSummaryItem struct {
 	EmployeeName   string     `json:"employee_name"`
 	Status         string     `json:"status"`
 	FailureCode    string     `json:"failure_code"`
+	FailureReason  string     `json:"failure_reason,omitempty"`
 	ByteSize       int64      `json:"byte_size"`
 	StartedAt      time.Time  `json:"started_at"`
 	EndedAt        *time.Time `json:"ended_at,omitempty"`
@@ -229,7 +230,8 @@ func (s *Store) RecordingSummaryForBusiness(ctx context.Context, businessID stri
 	rows, err := s.pool.Query(ctx, `
 		WITH attempts AS (
 			SELECT ra.id, ms.employee_id, ra.status,
-			       COALESCE(ms.failure_code,'') AS failure_code, ra.byte_size, ra.started_at,
+			       COALESCE(ms.failure_code,'') AS failure_code,
+			       COALESCE(ms.publisher_metrics->>'failure_reason','') AS failure_reason, ra.byte_size, ra.started_at,
 			       ra.ended_at, ra.retention_until
 			  FROM recording_assets ra
 			  JOIN media_sessions ms ON ms.id=ra.media_session_id
@@ -237,14 +239,15 @@ func (s *Store) RecordingSummaryForBusiness(ctx context.Context, businessID stri
 			UNION ALL
 			SELECT ms.id, ms.employee_id,
 			       CASE WHEN ms.state IN ('ended','failed') THEN 'failed' ELSE 'pending' END,
-			       COALESCE(NULLIF(ms.failure_code,''),'TIMEOUT'), 0::bigint,
+			       COALESCE(NULLIF(ms.failure_code,''),'TIMEOUT'),
+			       COALESCE(ms.publisher_metrics->>'failure_reason',''), 0::bigint,
 			       ms.started_at, ms.ended_at, NULL::timestamptz
 			  FROM media_sessions ms
 			 WHERE ms.business_id=$1 AND ms.kind='recording' AND ms.started_at >= $2
 			   AND NOT EXISTS (SELECT 1 FROM recording_assets ra WHERE ra.media_session_id=ms.id)
 		)
 		SELECT a.id, COALESCE(a.employee_id::text,''), COALESCE(u.display_name,''),
-		       a.status, a.failure_code, a.byte_size, a.started_at, a.ended_at, a.retention_until
+		       a.status, a.failure_code, a.failure_reason, a.byte_size, a.started_at, a.ended_at, a.retention_until
 		  FROM attempts a LEFT JOIN users u ON u.id=a.employee_id
 		 ORDER BY a.started_at DESC LIMIT 8`, businessID, since)
 	if err != nil {
@@ -255,7 +258,7 @@ func (s *Store) RecordingSummaryForBusiness(ctx context.Context, businessID stri
 	for rows.Next() {
 		var item RecordingSummaryItem
 		if err := rows.Scan(&item.ID, &item.EmployeeID, &item.EmployeeName, &item.Status,
-			&item.FailureCode, &item.ByteSize, &item.StartedAt, &item.EndedAt, &item.RetentionUntil); err != nil {
+			&item.FailureCode, &item.FailureReason, &item.ByteSize, &item.StartedAt, &item.EndedAt, &item.RetentionUntil); err != nil {
 			return out, err
 		}
 		out.Recent = append(out.Recent, item)

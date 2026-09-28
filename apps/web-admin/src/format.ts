@@ -8,7 +8,8 @@ export function fmtDuration(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return m > 0 ? `${h}h ${m}m` : `${h}h`;
   if (m > 0) return `${m}m`;
-  return `${seconds}s`;
+  // Whole seconds only: a clip of 0.1s must not print as "0.100999832s".
+  return `${Math.max(1, Math.round(seconds))}s`;
 }
 
 export function fmtRelative(unixSeconds: number | null): string {

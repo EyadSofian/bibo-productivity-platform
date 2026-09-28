@@ -313,3 +313,5 @@ html .auth-card { border: 1px solid var(--e-line); border-radius: 14px; backgrou
 html .ad-loginbox { border: 1px solid var(--e-line); border-radius: 14px; background: var(--e-surface); box-shadow: var(--e-shadow-pop); }
 html .ad-login__title { color: var(--e-ink); font-weight: 600; }
 html .ad-login__sub { color: var(--e-ink-2); }
+.e-notice--bad { border-color: color-mix(in srgb, var(--e-bad) 35%, var(--e-line)); background: var(--e-bad-weak); }
+.e-notice--bad strong { color: var(--e-bad); }

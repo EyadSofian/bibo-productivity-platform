@@ -95,6 +95,20 @@ describe("workItems", () => {
   });
 });
 
+describe("duplicate visits", () => {
+  it("counts a visit delivered twice only once and merges www", () => {
+    const activity = { samples: [], breakdown: [] } as unknown as ActivityResponse;
+    const items = workItems(activity, [
+      visit(100, 30, "https://www.youtube.com/"),
+      visit(100, 30, "https://www.youtube.com/"),
+      visit(100, 30, "https://www.youtube.com/"),
+      visit(200, 20, "https://youtube.com/watch?v=1"),
+    ]);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ name: "youtube.com", totalS: 50 });
+  });
+});
+
 describe("safeHref", () => {
   it("opens only web addresses", () => {
     expect(safeHref("https://github.com/x")).toBe("https://github.com/x");

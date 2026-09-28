@@ -858,6 +858,12 @@ func (h *MediaHandler) AgentState(c *gin.Context) {
 	}
 	if to == media.StateLive && updated.Kind == media.KindRecording {
 		if err := h.startRecording(c, updated); err != nil {
+			if errors.Is(err, media.ErrProviderQuota) {
+				// Written while the session can still take telemetry: the admin
+				// sees "recording minutes used up", not a vague provider error.
+				detail, _ := json.Marshal(map[string]string{"failure_reason": "recording_quota"})
+				_ = h.store.UpdatePublisherMetrics(c.Request.Context(), agentUserID, sessionID, detail)
+			}
 			_ = h.provider.EndRoom(c.Request.Context(), updated.ProviderRoomID)
 			_, _ = h.store.AdvanceMediaSession(c.Request.Context(), updated.ID, media.StateFailed, media.FailProviderUnavailable)
 			h.providerError(c, err)

@@ -207,7 +207,11 @@ func (s *Store) RecentRecordingFailure(ctx context.Context, businessID, deviceID
 			   AND kind = 'recording'
 			   AND state = 'failed'
 		   AND failure_code IN ($3,$4,$5,$6)
-		   AND ended_at >= $7
+		   AND (ended_at >= $7
+		        -- An exhausted recording plan will not recover in minutes:
+		        -- back off for an hour instead of logging a failed clip each time.
+		        OR (publisher_metrics->>'failure_reason' = 'recording_quota'
+		            AND ended_at >= now() - interval '1 hour'))
 		)`, businessID, deviceID, media.FailProviderUnavailable, media.FailEncoderFailed,
 		media.FailCaptureFailed, media.FailRoomFailed, since).Scan(&recent)
 	return recent, err
