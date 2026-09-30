@@ -8,7 +8,8 @@
     "live": "Trực tiếp",
     "reconnecting": "Mất kết nối — đang kết nối lại…",
     "ended": "Phiên đã kết thúc.",
-    "error": "Không thể bắt đầu xem trực tiếp."
+    "error": "Không thể bắt đầu xem trực tiếp.",
+    "paused": "Xem trực tiếp đang tạm dừng trên thiết bị của nhân viên"
   },
   "action": {
     "start": "Bắt đầu xem trực tiếp",
@@ -38,5 +39,38 @@
     "ROOM_FAILED": "Dịch vụ video đã ngắt phiên.",
     "TIMEOUT": "Thiết bị không bắt đầu gửi kịp thời.",
     "unknown": "Phiên đã thất bại."
+  },
+  "offline": "Thiết bị của nhân viên đang ngoại tuyến — xem trực tiếp sẽ khả dụng khi kết nối lại.",
+  "elapsed": "{{seconds}} giây",
+  "hint": {
+    "agentSlow": "thiết bị có thể đang thức dậy hoặc khởi động trình ghi"
+  },
+  "pause": {
+    "locked": "Màn hình đang khóa. Sẽ tự tiếp tục khi mở khóa.",
+    "private_app": "Một ứng dụng riêng tư đang mở (được bảo vệ). Sẽ tiếp tục khi đóng.",
+    "paused": "Nhân viên đã tạm dừng theo dõi. Sẽ tiếp tục khi họ tiếp tục."
+  },
+  "timeout": {
+    "noAgent": "Thiết bị không phản hồi. Kiểm tra ứng dụng đang chạy và thiết bị không ngủ.",
+    "noFirstFrame": "Thiết bị đã kết nối dịch vụ video nhưng chưa có hình ảnh màn hình.",
+    "lostVideo": "Video bị ngắt và không trở lại kịp thời.",
+    "noSession": "Phiên không bắt đầu kịp thời."
+  },
+  "reason": {
+    "wgc_unsupported": "Chụp màn hình Windows chưa sẵn sàng (thường ngay sau khi thức dậy).",
+    "no_monitor": "Không có màn hình nào được kết nối.",
+    "start_failed": "Windows từ chối bắt đầu chụp màn hình.",
+    "no_first_frame": "Đã bắt đầu chụp nhưng không có hình ảnh.",
+    "capture_closed": "Việc chụp đã bị đóng (đặt lại đồ họa hoặc đổi phiên).",
+    "capture_stalled": "Hình ảnh màn hình ngừng đến.",
+    "resumed_from_sleep": "Thiết bị thức dậy nhưng không khôi phục được việc chụp màn hình.",
+    "display_changed": "Màn hình hoặc độ phân giải thay đổi và không khôi phục được.",
+    "publisher_start_failed": "Không thể khởi động trình phát trên thiết bị.",
+    "publisher_exited": "Trình phát trên thiết bị dừng nhiều lần.",
+    "locked": "Màn hình đang khóa.",
+    "private_app": "Một ứng dụng riêng tư đang mở (được bảo vệ).",
+    "paused": "Nhân viên đã tạm dừng theo dõi.",
+    "schedule": "Ngoài giờ giám sát màn hình.",
+    "signed_out": "Nhân viên chưa đăng nhập ứng dụng."
   }
 }

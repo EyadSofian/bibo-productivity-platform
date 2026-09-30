@@ -1064,6 +1064,10 @@ pub struct AgentSession {
     pub session_id: String,
     pub state: String,
     pub room: String,
+    /// `live` or `recording`. Empty from older backends, which are treated as
+    /// recording-like: a local block then fails the session as before.
+    #[serde(default)]
+    pub kind: String,
     /// Whether an operator has been authorised to drive this machine (V07).
     ///
     /// Defaults to **false** when the field is absent, so an older backend - or a
@@ -1094,13 +1098,20 @@ impl BackendClient {
     pub async fn agent_media_session(
         &self,
         device_id: &str,
+        existing_only: bool,
     ) -> Result<Option<AgentSession>, String> {
         let mut token = self.access_token()?;
         for attempt in 0..2 {
             let resp = self
                 .http
                 .get(self.url("/v1/media/agent/session"))
-                .query(&[("device_id", device_id)])
+                .query(&[
+                    ("device_id", device_id),
+                    (
+                        "existing_only",
+                        if existing_only { "true" } else { "false" },
+                    ),
+                ])
                 .bearer_auth(&token)
                 .send()
                 .await
@@ -1169,18 +1180,31 @@ impl BackendClient {
         detail: &str,
         metrics: Option<serde_json::Value>,
     ) -> Result<(), String> {
-        let (state, failure_code) = match state {
-            "publishing" => ("live", ""),
-            "connecting" => ("negotiating", ""),
-            "reconnecting" => ("reconnecting", ""),
-            "capture_failed" => ("failed", "CAPTURE_FAILED"),
-            "encoder_failed" => ("failed", "ENCODER_FAILED"),
-            "connection_failed" => ("failed", "ICE_FAILED"),
-            "stopped" => ("ended", ""),
-            _ => return Ok(()),
+        let body = if state == "metrics" {
+            let Some(metrics) = metrics else {
+                return Err("publisher metrics are missing".into());
+            };
+            serde_json::json!({"state": "metrics", "metrics": metrics})
+        } else {
+            let Some((state, failure_code)) = media_agent_report(state) else {
+                return Ok(());
+            };
+            let mut body = serde_json::json!({"state": state, "failure_code": failure_code});
+            if state == "failed" {
+                // Only a closed slug travels with a failure; callers pass typed
+                // reasons, and anything else is dropped rather than sent.
+                if !detail.is_empty()
+                    && detail.len() <= 40
+                    && detail.bytes().all(|b| b.is_ascii_lowercase() || b == b'_')
+                {
+                    body["failure_reason"] = serde_json::Value::String(detail.to_string());
+                }
+                if let Some(metrics) = metrics {
+                    body["metrics"] = metrics;
+                }
+            }
+            body
         };
-        let _ = (detail, metrics);
-        let body = serde_json::json!({"state": state, "failure_code": failure_code});
         let mut token = self.access_token()?;
         for attempt in 0..2 {
             let resp = self
@@ -1201,5 +1225,42 @@ impl BackendClient {
             return Ok(());
         }
         Err("report_media_agent_state: unreachable retry exhaustion".into())
+    }
+}
+
+fn media_agent_report(state: &str) -> Option<(&'static str, &'static str)> {
+    Some(match state {
+        // A track can be published before a single screen frame is captured.
+        // The event reader reports live only after frames_published increases.
+        "publishing" => ("negotiating", ""),
+        "first_frame" => ("live", ""),
+        "connecting" => ("negotiating", ""),
+        "reconnecting" => ("reconnecting", ""),
+        "capture_failed" => ("failed", "CAPTURE_FAILED"),
+        "policy_blocked" => ("failed", "DENIED_BY_POLICY"),
+        "encoder_failed" => ("failed", "ENCODER_FAILED"),
+        "connection_failed" => ("failed", "ICE_FAILED"),
+        "stopped" => ("ended", ""),
+        _ => return None,
+    })
+}
+
+#[cfg(test)]
+mod media_report_tests {
+    use super::media_agent_report;
+
+    #[test]
+    fn local_capture_blocks_are_terminal_and_specific() {
+        assert_eq!(
+            media_agent_report("policy_blocked"),
+            Some(("failed", "DENIED_BY_POLICY"))
+        );
+        assert_eq!(
+            media_agent_report("capture_failed"),
+            Some(("failed", "CAPTURE_FAILED"))
+        );
+        assert_eq!(media_agent_report("publishing"), Some(("negotiating", "")));
+        assert_eq!(media_agent_report("first_frame"), Some(("live", "")));
+        assert_eq!(media_agent_report("metrics"), None);
     }
 }

@@ -8,7 +8,8 @@
     "monitoring": "Monitoring",
     "organization": "Organization",
     "tasks": "Tasks",
-    "settings": "Settings"
+    "settings": "Settings",
+    "manage": "Manage"
   },
   "actions": {
     "signIn": "Sign in",

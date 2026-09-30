@@ -60,8 +60,13 @@
       "title": "Trạng thái ghi hình", "subtitle": "Kiểm tra xem từng video đã đến kho lưu trữ riêng hay chưa.", "error": "Không thể tải trạng thái ghi hình.",
       "ready": "Sẵn sàng", "inProgress": "Đang xử lý", "failed": "Thất bại", "stale": "{{count}} video đã xử lý quá lâu.",
       "empty": "Chưa có lần ghi hình nào.", "unknownEmployee": "Nhân viên không xác định", "retention": "Video sẵn sàng được lưu riêng trong 30 ngày, sau đó tự động xóa.",
+      "guideTitle": "Cách hoạt động của ghi hình",
+      "noRecentTitle": "Không có video sẵn sàng trong 24 giờ qua", "quotaTitle": "Đã hết phút ghi hình", "quotaBody": "Ghi hình đang dừng vì gói dịch vụ video (LiveKit Cloud) đã hết phút ghi trong tháng. Xem trực tiếp vẫn hoạt động. Hãy nâng cấp gói trong LiveKit Cloud.",
+      "guideBody": "Trực tuyến chỉ có nghĩa là ứng dụng đã kết nối. Video chỉ được lưu trong lịch ghi hình và khi bộ ghi khởi động thành công.",
+      "openPolicy": "Xem lịch ghi hình",
+      "viewDevices": "Xem thiết bị",
       "status": { "pending": "Đang bắt đầu", "recording": "Đang ghi", "processing": "Đang tải lên", "ready": "Sẵn sàng", "failed": "Thất bại" },
-      "failure": {"encoderFailed": "Không thể khởi động bộ mã hóa", "captureFailed": "Không thể ghi màn hình", "providerFailed": "Dịch vụ video không khả dụng", "unknownFailed": "Không thể hoàn tất ghi hình"}
+      "failure": {"encoderFailed": "Không thể khởi động bộ mã hóa", "captureFailed": "Không thể ghi màn hình", "providerFailed": "Dịch vụ video không khả dụng", "quotaExceeded": "Đã hết phút ghi hình", "unknownFailed": "Không thể hoàn tất ghi hình"}
     }
   },
   "employees": {
@@ -103,6 +108,7 @@
     "errorCreate": "Không thể tạo {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Tổng quan", "title": "Xem chi tiết", "description": "Xem ứng dụng, URL chính xác và thời gian trên từng trang trong báo cáo bên dưới.", "appsAction": "Xem ứng dụng", "sitesAction": "Xem trang đã truy cập", "liveAction": "Màn hình trực tiếp và trạng thái thiết bị", "browserHint": "Cần tiện ích trình duyệt"},
     "breadcrumbDashboard": "Bảng điều khiển",
     "dateMode": "Chế độ ngày",
     "day": "Ngày",
@@ -192,7 +198,8 @@
       "keystrokes": "Gõ phím",
       "browser": "Trình duyệt",
       "screenshots": "Ảnh chụp màn hình",
-      "playback": "Phát lại"
+      "playback": "Video trong ngày",
+      "input": "Nhập liệu"
     },
     "communications": {
       "eyebrow": "Bằng chứng, không suy đoán",

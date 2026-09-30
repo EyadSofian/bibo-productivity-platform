@@ -3,7 +3,19 @@
     "empty": "Tidak ada aktivitas yang tercatat untuk rentang ini.",
     "timeline": "Linimasa hari ini",
     "breakdown": "Rincian aplikasi & jendela",
-    "idle": "Idle"
+    "idle": "Idle",
+    "watchApp": "Tonton rekaman {{app}}"
+  },
+  "explorer": {
+    "title": "Aplikasi dan tautan",
+    "description": "Pilih aplikasi atau URL lengkap untuk membuka waktu tersebut dalam video tersimpan, jika ada.",
+    "search": "Cari aplikasi, halaman, atau URL",
+    "apps": "Aplikasi",
+    "pages": "Halaman dan URL lengkap",
+    "watch": "Tonton video",
+    "open": "Buka {{page}}",
+    "appTime": "Waktu penggunaan tercatat",
+    "noMatches": "Tidak ada hasil"
   },
   "browser": {
     "empty": "Tidak ada kunjungan browser untuk rentang ini.",
@@ -32,7 +44,7 @@
     "tooltip": "{{time}} — {{count}} ketikan",
     "privacyNote": "Hanya jumlah. Tombol individual tidak pernah direkam atau disimpan — grafik ini menunjukkan volume ketikan, bukan isinya.",
     "minuteBuckets": "Setiap kolom mewakili satu menit aktivitas keyboard.",
-    "activityMeaning": "Gerakan mouse dihitung dalam waktu Aktif/Idle, tetapi belum memiliki penghitung terpisah.",
+    "activityMeaning": "Gerakan mouse dihitung dalam waktu Aktif/Tidak aktif di atas; belum ada penghitung mouse terpisah.",
     "title": "Ketikan sepanjang hari",
     "keypresses": "ketikan"
   },
@@ -48,6 +60,17 @@
     "close": "Tutup"
   },
   "playback": {
+    "noVideoForMoment": "Tidak ada video tersimpan pada {{time}}.",
+    "dayVideos": "Video tersimpan dalam periode ini",
+    "videoCount": "{{count}} siap",
+    "unknownDuration": "Durasi tidak diketahui",
+    "status": {
+      "pending": "Menunggu",
+      "recording": "Merekam",
+      "processing": "Memproses",
+      "ready": "Siap",
+      "failed": "Gagal"
+    },
     "emptyVideo": "Belum ada video rekaman untuk periode ini.",
     "loadingVideo": "Memuat video rekaman…",
     "processing": "Potongan video ini sedang diselesaikan. Coba lagi sebentar lagi.",
@@ -68,7 +91,12 @@
     "website": "Situs web",
     "url": "URL lengkap",
     "keys": "Ketikan pada menit ini",
-    "resolution": "Resolusi"
+    "resolution": "Resolusi",
+    "segmentsFor": "{{app}} — {{count}} periode. Klik untuk melompat.",
+    "clearFocus": "Tampilkan semua",
+    "noVideoAt": "Tidak ada video pada {{time}}. Menampilkan rekaman terdekat.",
+    "noVideoSegment": "Tidak ada video untuk periode ini",
+    "emptyVideoHint": "Tidak ada video tersimpan untuk periode ini. Periksa jadwal perekaman dan kegagalan di halaman Perangkat."
   },
   "timeline": {
     "lanes": {
@@ -87,5 +115,104 @@
     "inputAt": "{{count}} ketikan",
     "empty": "Tidak ada data pada rentang ini.",
     "note": "Masukan hanya berupa jumlah ketikan — tidak pernah isinya. \"Tidak ada laporan\" berarti data tidak sampai, bukan berarti perangkat mati."
+  },
+  "employee": {
+    "loading": "Memuat…",
+    "errors": {
+      "load": "Tidak dapat memuat data hari ini. Coba lagi sebentar."
+    },
+    "status": {
+      "active": "Aktif",
+      "idle": "Diam",
+      "offline": "Offline",
+      "lastSeen": "Terakhir terlihat {{time}}",
+      "using": "Menggunakan {{app}}"
+    },
+    "day": {
+      "label": "Hari",
+      "prev": "Hari sebelumnya",
+      "next": "Hari berikutnya",
+      "today": "Hari ini"
+    },
+    "stage": {
+      "label": "Layar",
+      "live": "Langsung",
+      "recordings": "Rekaman hari ini",
+      "noDevice": "Karyawan ini belum memiliki perangkat terhubung."
+    },
+    "now": {
+      "title": "Sekarang",
+      "noApp": "Tidak ada aplikasi di depan",
+      "denied": "Akun Anda tidak dapat melihat status karyawan ini. Masuk sebagai pemilik perusahaan."
+    },
+    "stats": {
+      "active": "Waktu aktif",
+      "idle": "Waktu diam",
+      "topApp": "Aplikasi terbanyak",
+      "keys": "Tekanan tombol",
+      "none": "Belum ada aktivitas"
+    },
+    "tabs": {
+      "label": "Laporan harian",
+      "work": "Aplikasi dan situs",
+      "workHint": "Klik untuk menonton",
+      "video": "Video sehari penuh",
+      "videoHint": "Semua yang direkam hari ini",
+      "input": "Keyboard dan mouse",
+      "inputHint": "Tingkat aktivitas"
+    },
+    "work": {
+      "filter": "Tampilkan",
+      "filter_all": "Semua",
+      "filter_app": "Aplikasi",
+      "filter_site": "Situs",
+      "search": "Cari aplikasi, situs, atau tautan",
+      "hint": "Klik aplikasi atau situs untuk memutar video saat digunakan.",
+      "app": "Aplikasi",
+      "site": "Situs",
+      "times_other": "digunakan {{count}} kali",
+      "noVideoShort": "tanpa video",
+      "noVideo": "Tidak ada video untuk waktu ini",
+      "watchAt": "Tonton dari {{time}}",
+      "stretches": "Waktu penggunaan {{name}}",
+      "openLink": "Buka tautan",
+      "empty": "Tidak ada aplikasi atau situs yang tercatat hari ini.",
+      "noMatches": "Tidak ada hasil yang cocok.",
+      "watch": "Tonton"
+    },
+    "video": {
+      "loading": "Memuat video…",
+      "unavailable": "Video ini tidak dapat dimuat.",
+      "empty": "Belum ada rekaman untuk hari ini.",
+      "inProgress": "Rekaman hari ini sedang disimpan.",
+      "emptyHint": "Video direkam selama jam perekaman layar di kebijakan pemantauan, saat perangkat menyala.",
+      "noVideoAt": "Tidak ada rekaman pada {{time}}. Menampilkan rekaman terdekat ({{nearest}}).",
+      "speed": "Kecepatan",
+      "recorded": "Terekam",
+      "clips": "Klip",
+      "ribbon": "Lini waktu",
+      "ribbonHint": "Klik di mana saja pada lini waktu untuk menonton saat itu. Video berlanjut sepanjang hari.",
+      "legendVideo": "Video terekam",
+      "legendActivity": "Aktivitas",
+      "status_ready": "Siap",
+      "status_recording": "Merekam",
+      "status_processing": "Menyimpan",
+      "status_pending": "Memulai",
+      "status_failed": "Tidak terekam"
+    },
+    "input": {
+      "keys": "Tekanan tombol hari ini",
+      "perMinute": "Per menit aktif",
+      "peak": "Jam tersibuk",
+      "byHour": "Tekanan tombol per jam",
+      "presence": "Aktif, diam, dan pergi",
+      "active": "Aktif (keyboard atau mouse)",
+      "idle": "Diam",
+      "away": "Tidur atau terkunci",
+      "offline": "Offline",
+      "empty": "Tidak ada input keyboard hari ini.",
+      "noPresence": "Tidak ada data aktivitas hari ini.",
+      "privacy": "Hanya jumlah tekanan tombol yang dihitung — isi ketikan tidak pernah direkam. \"Aktif\" berarti setiap input keyboard atau mouse."
+    }
   }
 }

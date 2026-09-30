@@ -2,7 +2,7 @@ import { VideoMonitoringStatus } from "./components/VideoMonitoringStatus";
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import { call as invoke } from "./api";
 import { Sentry } from "./sentry";
-import { autoCheckAndPrompt } from "./updater";
+import { autoCheckAndInstall, CHECK_THROTTLE_MS } from "./updater";
 import { listen } from "@tauri-apps/api/event";
 import { getVersion } from "@tauri-apps/api/app";
 import { track } from "./analytics";
@@ -168,20 +168,21 @@ function App() {
     invoke("set_locale", { locale: i18n.resolvedLanguage ?? "en" }).catch(() => {});
   }, [i18n.resolvedLanguage]);
 
-  // Check for a signed app update on launch and whenever the window regains focus.
-  // Throttled + de-duped inside updater.ts. On a newer version it downloads silently,
-  // then prompts the user to restart — it never relaunches without confirmation.
+  // Check for a signed app update on launch, focus and every five minutes. The
+  // timer also resumes after sleep even if the employee never opens this window.
   useEffect(() => {
-    autoCheckAndPrompt();
-    const onFocus = () => autoCheckAndPrompt();
+    autoCheckAndInstall();
+    const onFocus = () => autoCheckAndInstall();
     const onVisible = () => {
-      if (!document.hidden) autoCheckAndPrompt();
+      if (!document.hidden) autoCheckAndInstall();
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
+    const timer = window.setInterval(() => { void autoCheckAndInstall(); }, CHECK_THROTTLE_MS);
     return () => {
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(timer);
     };
   }, []);
 

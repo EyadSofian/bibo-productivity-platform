@@ -7,12 +7,6 @@ import { useBusinesses } from "../useBusinesses";
 import { memberTerms } from "../terms";
 import { DetailHeaderContext } from "../detailHeader";
 import { LanguageSwitcher } from "./LanguageSwitcher";
-import { EngosoftBrand } from "./EngosoftBrand";
-
-/** Brand mark used by the operational workspace shell. */
-function RailLogo() {
-  return <EngosoftBrand compact className="ad-rail__logo" />;
-}
 
 /** Shared lucide-style icon frame (24×24, stroke = currentColor). */
 function RailIcon({ children }: { children: ReactNode }) {
@@ -159,9 +153,28 @@ function useDismiss(open: boolean, close: () => void) {
   return ref;
 }
 
-/** Topbar business switcher — a pill showing the current business name. Clicking opens
- *  a menu listing every business (✓ on the active one) plus a "new business" action.
- *  Backed by the shared business context. */
+const SunIcon = () => (
+  <RailIcon>
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
+  </RailIcon>
+);
+
+const MoonIcon = () => (
+  <RailIcon>
+    <path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" />
+  </RailIcon>
+);
+
+const AutoIcon = () => (
+  <RailIcon>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3v18" />
+    <path d="M12 3a9 9 0 0 1 0 18" fill="currentColor" />
+  </RailIcon>
+);
+
+/** Company switcher: the current business, with every other one a click away. */
 function BizPicker() {
   const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
@@ -172,51 +185,41 @@ function BizPicker() {
   if (!selected) return null;
 
   return (
-    <div className="ad-bizpick" ref={ref}>
-      <button
-        type="button"
-        className="ad-bizpick__btn"
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="ad-bizpick__ic">{initials(selected.name)}</span>
-        <span className="ad-bizpick__name">{selected.name}</span>
+    <div className="es-pick" ref={ref}>
+      <button type="button" className="es-pick__btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <span>{selected.name}</span>
         <ChevronsUpDownIcon />
       </button>
       {open && (
-        <div className="ad-menu ad-menu--left" role="menu">
+        <div className="es-menu" role="menu">
           {businesses.map((b) => (
             <button
               key={b.id}
               type="button"
               role="menuitemradio"
               aria-checked={b.id === selectedId}
-              className={`ad-menu__opt${b.id === selectedId ? " on" : ""}`}
+              className="es-menu__opt"
               onClick={() => {
                 setSelectedId(b.id);
                 setOpen(false);
               }}
             >
-              <span className="ad-bizpick__ic">{initials(b.name)}</span>
-              <span className="ad-menu__label">{b.name}</span>
+              <span>{b.name}</span>
               {b.id === selectedId && <CheckIcon />}
             </button>
           ))}
-          <div className="ad-menu__sep" />
+          <div className="es-menu__sep" />
           <button
             type="button"
             role="menuitem"
-            className="ad-menu__opt ad-menu__action"
+            className="es-menu__opt"
             onClick={() => {
               setOpen(false);
               navigate("/employees?new=1");
             }}
           >
-            <span className="ad-menu__plus">
-              <PlusIcon />
-            </span>
-            <span className="ad-menu__label">{t("dashboard.newTeam")}</span>
+            <PlusIcon />
+            <span>{t("dashboard.newTeam")}</span>
           </button>
         </div>
       )}
@@ -224,7 +227,21 @@ function BizPicker() {
   );
 }
 
-/** Topbar account button — avatar that opens a small menu with sign out. */
+/** Light, dark or follow the system; one button that cycles, labelled with the next choice. */
+function ThemeButton() {
+  const { t } = useTranslation();
+  const { mode, setMode } = useTheme();
+  const order: ThemeMode[] = ["light", "dark", "system"];
+  const next = order[(order.indexOf(mode) + 1) % order.length];
+  const label = (m: ThemeMode) => (m === "light" ? t("theme.light") : m === "dark" ? t("theme.dark") : t("theme.auto"));
+  return (
+    <button type="button" className="es-iconbtn" onClick={() => setMode(next)} title={`${label(mode)} → ${label(next)}`} aria-label={`${label(mode)} → ${label(next)}`}>
+      {mode === "light" ? <SunIcon /> : mode === "dark" ? <MoonIcon /> : <AutoIcon />}
+    </button>
+  );
+}
+
+/** Account menu with the signed-in identity and sign out. */
 function AccountMenu() {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -234,39 +251,20 @@ function AccountMenu() {
   const email = user?.email ?? user?.username ?? "";
 
   return (
-    <div className="ad-acct" ref={ref}>
-      <button
-        type="button"
-        className="ad-acct-btn"
-        aria-label={displayName}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
-      >
-        <span className="bibo-avatar bibo-avatar--sm">
-          <span className="bibo-avatar__img">{initials(displayName)}</span>
-          <span className="bibo-avatar__dot bibo-avatar__dot--active" />
-        </span>
+    <div className="es-pick" ref={ref}>
+      <button type="button" className="es-iconbtn" aria-label={displayName} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((o) => !o)} style={{ padding: 0, borderRadius: "50%" }}>
+        <span className="es-avatar">{initials(displayName)}</span>
       </button>
       {open && (
-        <div className="ad-menu ad-menu--right" role="menu" style={{ minWidth: 200 }}>
-          <div style={{ padding: "8px 10px 10px" }}>
-            <div style={{ fontSize: "13.5px", fontWeight: 800 }} title={displayName}>
-              {displayName}
-            </div>
-            <div style={{ fontSize: "12px", color: "#9aa1b4", marginTop: 3 }}>{email}</div>
+        <div className="es-menu" role="menu">
+          <div className="es-menu__who">
+            <strong title={displayName}>{displayName}</strong>
+            <small>{email}</small>
           </div>
-          <div className="ad-menu__sep" />
-          <button
-            className="ad-menu__opt"
-            role="menuitem"
-            onClick={logout}
-            style={{ color: "#f43f5e", fontSize: "15px" }}
-          >
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>
-              <LogOutIcon />
-            </span>
-            {t("actions.signOut")}
+          <div className="es-menu__sep" />
+          <button className="es-menu__opt es-menu__opt--danger" role="menuitem" onClick={logout}>
+            <LogOutIcon />
+            <span>{t("actions.signOut")}</span>
           </button>
         </div>
       )}
@@ -277,29 +275,31 @@ function AccountMenu() {
 export function AppShell() {
   const { t } = useTranslation();
   const { user } = useAuth();
-  const { mode, setMode } = useTheme();
   const { selected } = useBusinesses();
   const terms = memberTerms(selected?.kind);
   const location = useLocation();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const NAV = [
+  // Grouped the way an admin thinks: watching people, then setting the rules.
+  const WATCH = [
     { to: "/", label: t("nav.dashboard"), end: true, icon: <DashboardIcon /> },
     { to: "/employees", label: terms.many, end: false, icon: <MembersIcon /> },
     { to: "/tasks", label: t("nav.tasks"), end: false, icon: <TasksIcon /> },
+  ];
+  const MANAGE = [
     { to: "/devices", label: t("nav.devices"), end: false, icon: <DevicesIcon /> },
     { to: "/monitoring", label: t("nav.monitoring"), end: false, icon: <MonitoringIcon /> },
     { to: "/organization", label: t("nav.organization"), end: false, icon: <OrganizationIcon /> },
     { to: "/settings", label: t("nav.settings"), end: false, icon: <SettingsIcon /> },
   ];
+  const NAV = [...WATCH, ...MANAGE];
 
   const activeNav = NAV.find((n) =>
     n.end ? location.pathname === n.to : location.pathname.startsWith(n.to),
   );
   const baseTitle = activeNav?.label ?? t("nav.dashboard");
 
-  // On a member detail page (/employees/:id) the header shows the member's name
-  // (pushed up from EmployeeDetail) and the business picker is hidden.
+  // On a member detail page (/employees/:id) the header shows the member's name.
   const isDetail = location.pathname.startsWith("/employees/");
   const [detailTitle, setDetailTitle] = useState<string | null>(null);
   const detailHeader = useMemo(() => ({ setTitle: setDetailTitle }), []);
@@ -307,84 +307,54 @@ export function AppShell() {
 
   const displayName = user?.display_name ?? user?.email ?? "";
 
-  // The main workspace is its own scroll container. React Router preserves the
-  // element between routes, so without an explicit reset a return from a long
-  // employee report opens the dashboard halfway down its roster.
+  // The workspace is its own scroll container; reset it between routes so a
+  // return from a long report does not open the next page halfway down.
   useEffect(() => {
     if (!contentRef.current) return;
     contentRef.current.scrollTop = 0;
     contentRef.current.scrollLeft = 0;
   }, [location.pathname, location.search]);
 
+  const link = (n: (typeof NAV)[number]) => (
+    <NavLink key={n.to} to={n.to} end={n.end} aria-label={n.label} className={({ isActive }) => `es-link${isActive ? " on" : ""}`}>
+      {n.icon}
+      <span>{n.label}</span>
+    </NavLink>
+  );
+
   return (
-    <div className="app">
-      <aside className="ad-rail">
-        <div className="ad-rail__brand">
-          <RailLogo />
-          <span className="ad-rail__wordmark">
-            <strong>ENGOSOFT</strong>
-            <small>WORKFORCE INTELLIGENCE</small>
-          </span>
-        </div>
-
-        <nav className="ad-rail__nav">
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              end={n.end}
-              aria-label={n.label}
-              className={({ isActive }) => `ad-railbtn${isActive ? " on" : ""}`}
-            >
-              {n.icon}
-              <span className="ad-railbtn__label">{n.label}</span>
-            </NavLink>
-          ))}
+    <div className="es">
+      <aside className="es-side">
+        <NavLink to="/" className="es-brand" aria-label="Engosoft Workforce">
+          <strong>Engosoft</strong>
+          <small>WORKFORCE</small>
+        </NavLink>
+        <nav className="es-nav" aria-label={t("nav.dashboard")}>
+          {WATCH.map(link)}
+          <div className="es-nav__label" aria-hidden>{t("nav.manage")}</div>
+          {MANAGE.map(link)}
         </nav>
-
-        <div className="ad-rail__foot">
-          <span className="bibo-avatar" aria-label={displayName}>
-            <span className="bibo-avatar__img">{initials(displayName)}</span>
-            <span className="bibo-avatar__dot bibo-avatar__dot--active" />
-          </span>
-          <span className="ad-rail__identity">
-            <strong>{displayName}</strong>
-            <small>ADMIN</small>
+        <div className="es-me">
+          <span className="es-avatar" aria-hidden>{initials(displayName)}</span>
+          <span>
+            <strong title={displayName}>{displayName}</strong>
+            <small>{selected?.name ?? "Engosoft"}</small>
           </span>
         </div>
       </aside>
 
-      <main className="main">
-        <header className="ad-topbar">
-          <div className="ad-topbar__heading">
-            <span className="ad-topbar__pulse" aria-hidden />
-            <div>
-              <div className="ad-topbar__title">{title}</div>
-              <small>Engosoft workforce control</small>
-            </div>
-          </div>
-          <div className="ad-topbar__right">
+      <main className="es-main">
+        <header className="es-top">
+          <div className="es-top__title">{title}</div>
+          <div className="es-top__right">
             {!isDetail && <BizPicker />}
-            <LanguageSwitcher />
-            <div className="bibo-seg bibo-seg--sm" role="tablist" aria-label={t("language")}>
-              {(["light", "dark", "system"] as ThemeMode[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={m === mode}
-                  className={`bibo-seg__opt${m === mode ? " bibo-seg__opt--on" : ""}`}
-                  onClick={() => setMode(m)}
-                >
-                  {m === "light" ? t("theme.light") : m === "dark" ? t("theme.dark") : t("theme.auto")}
-                </button>
-              ))}
-            </div>
+            <span className="es-top__lang"><LanguageSwitcher /></span>
+            <ThemeButton />
             <AccountMenu />
           </div>
         </header>
 
-        <div ref={contentRef} className={`content${location.pathname === "/" ? " content--flat" : ""}`}>
+        <div ref={contentRef} className="es-content">
           <DetailHeaderContext.Provider value={detailHeader}>
             <Outlet />
           </DetailHeaderContext.Provider>

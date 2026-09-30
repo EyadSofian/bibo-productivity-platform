@@ -60,8 +60,13 @@
       "title": "録画の状態", "subtitle": "各動画が非公開ストレージに保存されたか確認できます。", "error": "録画の状態を読み込めませんでした。",
       "ready": "準備完了", "inProgress": "処理中", "failed": "失敗", "stale": "{{count}} 件の動画の処理が長時間続いています。",
       "empty": "録画の試行はまだありません。", "unknownEmployee": "不明な従業員", "retention": "準備完了の動画は非公開で30日間保存され、その後自動削除されます。",
+      "guideTitle": "録画の仕組み",
+      "noRecentTitle": "過去24時間に準備完了の動画がありません", "quotaTitle": "録画時間の上限に達しました", "quotaBody": "動画サービスのプラン（LiveKit Cloud）の今月の録画時間を使い切ったため、録画が停止しています。ライブ表示は引き続き使えます。LiveKit Cloud でプランをアップグレードしてください。",
+      "guideBody": "オンラインはアプリが接続中であることを示します。動画は録画予定時間内に録画サービスが正常に開始された場合のみ保存されます。",
+      "openPolicy": "録画スケジュールを確認",
+      "viewDevices": "端末を見る",
       "status": { "pending": "開始中", "recording": "録画中", "processing": "アップロード中", "ready": "準備完了", "failed": "失敗" },
-      "failure": {"encoderFailed": "端末のエンコーダーを開始できません", "captureFailed": "画面の取得に失敗しました", "providerFailed": "動画サービスを利用できません", "unknownFailed": "録画を完了できません"}
+      "failure": {"encoderFailed": "端末のエンコーダーを開始できません", "captureFailed": "画面の取得に失敗しました", "providerFailed": "動画サービスを利用できません", "quotaExceeded": "録画時間の上限に達しました", "unknownFailed": "録画を完了できません"}
     }
   },
   "employees": {
@@ -103,6 +108,7 @@
     "errorCreate": "{{member}}を作成できませんでした。"
   },
   "detail": {
+    "insights": {"eyebrow": "概要", "title": "詳細を見る", "description": "下のレポートでアプリ、正確なURL、各ページの滞在時間を確認できます。", "appsAction": "アプリを見る", "sitesAction": "訪問サイトを見る", "liveAction": "ライブ画面とデバイス状態", "browserHint": "ブラウザー拡張機能が必要です"},
     "breadcrumbDashboard": "ダッシュボード",
     "dateMode": "日付モード",
     "day": "日",
@@ -192,7 +198,8 @@
       "keystrokes": "キー入力",
       "browser": "ブラウザ",
       "screenshots": "スクリーンショット",
-      "playback": "再生"
+      "playback": "今日の動画",
+      "input": "入力"
     },
     "communications": {
       "eyebrow": "推測ではなく証跡",

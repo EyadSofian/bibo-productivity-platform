@@ -328,7 +328,7 @@ export function Settings({
     invoke<PrivacyAppCategory[]>("privacy_apps").then(setPrivacyApps).catch(() => {});
   }, []);
 
-  // Manual update check (auto-check also runs once on launch). Progress strings are
+  // Manual update check (auto-check also runs in the background). Progress strings are
   // transient status and kept in English here (localize via settings later if needed).
   async function runUpdateCheck() {
     setUpdBusy(true);
@@ -339,12 +339,12 @@ export function Settings({
         case "uptodate": setUpdMsg("You're on the latest version."); break;
         case "available": setUpdMsg(`Update ${p.version} found — downloading…`); break;
         case "downloading": setUpdMsg(`Downloading… ${p.pct}%`); break;
-        case "ready": setUpdMsg(`Update ${p.version} ready — restart to apply.`); break;
+        case "ready": setUpdMsg(`Update ${p.version} downloaded — installing…`); break;
         case "error": setUpdMsg(`Update failed: ${p.message}`); break;
       }
     });
-    // We no longer auto-relaunch — the user is prompted to restart, so re-enable the
-    // button whether they restarted, postponed, or were already up to date.
+    // The app restarts automatically after installation. Re-enable the button
+    // if there was no update or the install could not complete.
     setUpdBusy(false);
   }
 

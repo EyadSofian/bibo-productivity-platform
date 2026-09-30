@@ -18,7 +18,7 @@ function resolve(mode: ThemeMode): "light" | "dark" {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(
-    () => (localStorage.getItem(KEY) as ThemeMode) || "system",
+    () => (localStorage.getItem(KEY) as ThemeMode) || "light",
   );
 
   useEffect(() => {

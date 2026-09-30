@@ -45,6 +45,35 @@ export type MediaSession = {
   started_at: string;
   ended_at?: string;
   failure_code?: MediaFailureCode | "";
+  /** Latest device-side counters, plus typed reasons for a pause or failure. */
+  publisher_metrics?: PublisherMetrics | null;
+};
+
+/** Why the device's capture last needed recovery. A closed vocabulary. */
+export type CaptureIssue =
+  | "none"
+  | "wgc_unsupported"
+  | "no_monitor"
+  | "start_failed"
+  | "no_first_frame"
+  | "capture_closed"
+  | "capture_stalled"
+  | "resumed_from_sleep"
+  | "display_changed";
+
+export type PublisherMetrics = {
+  frames_captured?: number;
+  frames_published?: number;
+  width?: number;
+  height?: number;
+  fps?: number;
+  capture_restarts?: number;
+  first_frame_ms?: number;
+  capture_issue?: CaptureIssue;
+  /** Set while a live view is paused on the device. */
+  pause_reason?: "locked" | "private_app" | "paused";
+  /** Set with a failure: what actually happened on the device. */
+  failure_reason?: string;
 };
 
 export type MediaToken = {
@@ -54,6 +83,7 @@ export type MediaToken = {
   room: string;
   can_publish: boolean;
   can_subscribe: boolean;
+  viewer_session_id?: string;
 };
 
 /** The typed error envelope the media endpoints return. */
@@ -119,8 +149,9 @@ export function getMediaSession(sessionId: string) {
   return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}`);
 }
 
-export function heartbeatMediaSession(sessionId: string) {
-  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/heartbeat`, { method: "POST" });
+export function heartbeatMediaSession(sessionId: string, viewerSessionId?: string) {
+  const query = viewerSessionId ? `?viewer_session_id=${encodeURIComponent(viewerSessionId)}` : "";
+  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/heartbeat${query}`, { method: "POST" });
 }
 
 /** Mints a subscribe-only token. Short-lived by design, so it is fetched when
@@ -133,8 +164,9 @@ export function mintViewerToken(sessionId: string) {
 
 /** Detaches this viewer. The session only ends when the last one leaves, so
  *  this is safe to call on unmount. */
-export function stopMediaSession(sessionId: string) {
-  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/stop`, {
+export function stopMediaSession(sessionId: string, viewerSessionId?: string) {
+  const query = viewerSessionId ? `?viewer_session_id=${encodeURIComponent(viewerSessionId)}` : "";
+  return request<{ session: MediaSession }>(`/v1/media/sessions/${sessionId}/stop${query}`, {
     method: "POST",
   });
 }
@@ -160,6 +192,8 @@ export type RecordingSummaryItem = {
   employee_name: string;
   status: RecordingAsset["status"];
   failure_code: string;
+  /** Typed device or provider reason, e.g. "recording_quota". */
+  failure_reason?: string;
   byte_size: number;
   started_at: string;
   ended_at?: string;
@@ -172,6 +206,7 @@ export type RecordingSummary = {
   processing: number;
   failed: number;
   stale: number;
+  last_ready_at?: string;
   recent: RecordingSummaryItem[];
 };
 
@@ -191,12 +226,40 @@ export type PlaybackToken = {
   duration_ms: number;
 };
 
+/** Dev-only demo clips: 30-minute chunks across a morning and an afternoon. */
+function demoRecordings(employeeId: string, from: number, to: number): RecordingAsset[] {
+  const clips: RecordingAsset[] = [];
+  const blocks: Array<[number, number]> = [[9, 12], [13, 15.5]];
+  for (const [startHour, endHour] of blocks) {
+    for (let h = startHour; h < endHour; h += 0.5) {
+      const start = from + Math.round(h * 3600);
+      if (start >= to) continue;
+      clips.push({
+        id: `demo-${employeeId}-${start}`, business_id: "demo", media_session_id: `demo-${start}`,
+        employee_id: employeeId, device_id: "demo", status: h === 10.5 ? "failed" : "ready", format: "mp4",
+        duration_ms: 1_800_000, byte_size: 42_000_000,
+        started_at: new Date(start * 1000).toISOString(), ended_at: new Date((start + 1800) * 1000).toISOString(),
+      });
+    }
+  }
+  return clips;
+}
+
 export function listEmployeeRecordings(employeeId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve({ recordings: demoRecordings(employeeId, from, to) });
   return request<{ recordings: RecordingAsset[] }>(`/v1/employees/${employeeId}/recordings`, {
     query: { from, to },
   });
 }
 
 export function mintPlaybackToken(recordingId: string) {
+  if (isDemo()) {
+    // A short public-domain clip; each demo chunk ends quickly, which also
+    // exercises continuous playback into the next recording.
+    return Promise.resolve({
+      recording_id: recordingId, url: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+      expires_at: new Date(Date.now() + 600_000).toISOString(), started_at: "", duration_ms: 0,
+    } as PlaybackToken);
+  }
   return request<PlaybackToken>(`/v1/recordings/${recordingId}/playback-token`, { method: "POST" });
 }

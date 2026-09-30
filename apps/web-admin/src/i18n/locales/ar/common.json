@@ -8,7 +8,8 @@
     "monitoring": "سياسات المراقبة",
     "organization": "الهيكل التنظيمي",
     "tasks": "المهام",
-    "settings": "الإعدادات"
+    "settings": "الإعدادات",
+    "manage": "الإدارة"
   },
   "actions": {
     "signIn": "تسجيل الدخول",

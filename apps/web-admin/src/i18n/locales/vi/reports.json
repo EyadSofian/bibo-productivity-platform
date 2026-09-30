@@ -3,7 +3,19 @@
     "empty": "Không có hoạt động nào được ghi nhận trong khoảng thời gian này.",
     "timeline": "Dòng thời gian hôm nay",
     "breakdown": "Phân tích ứng dụng & cửa sổ",
-    "idle": "Nghỉ"
+    "idle": "Nghỉ",
+    "watchApp": "Xem bản ghi {{app}}"
+  },
+  "explorer": {
+    "title": "Ứng dụng và liên kết",
+    "description": "Chọn ứng dụng hoặc URL đầy đủ để chuyển đến thời điểm tương ứng trong video đã lưu, nếu có.",
+    "search": "Tìm ứng dụng, trang hoặc URL",
+    "apps": "Ứng dụng",
+    "pages": "Trang và URL đầy đủ",
+    "watch": "Xem video",
+    "open": "Mở {{page}}",
+    "appTime": "Thời gian đã ghi nhận",
+    "noMatches": "Không có kết quả"
   },
   "browser": {
     "empty": "Không có lượt truy cập trình duyệt nào trong khoảng thời gian này.",
@@ -32,7 +44,7 @@
     "tooltip": "{{time}} — {{count}} lần gõ phím",
     "privacyNote": "Chỉ đếm số lần. Các phím riêng lẻ không bao giờ được thu thập hay lưu trữ — biểu đồ này hiển thị khối lượng gõ phím, không phải nội dung.",
     "minuteBuckets": "Mỗi cột đại diện cho một phút hoạt động bàn phím.",
-    "activityMeaning": "Chuyển động chuột được tính vào thời gian Hoạt động/Nhàn rỗi nhưng chưa có bộ đếm riêng.",
+    "activityMeaning": "Di chuyển chuột góp phần vào thời gian Hoạt động/Không hoạt động ở trên; chưa có bộ đếm riêng.",
     "title": "Số phím gõ trong ngày",
     "keypresses": "lượt gõ phím"
   },
@@ -48,6 +60,17 @@
     "close": "Đóng"
   },
   "playback": {
+    "noVideoForMoment": "Không có video đã lưu tại {{time}}.",
+    "dayVideos": "Video đã lưu trong khoảng này",
+    "videoCount": "{{count}} sẵn sàng",
+    "unknownDuration": "Chưa rõ thời lượng",
+    "status": {
+      "pending": "Đang chờ",
+      "recording": "Đang ghi",
+      "processing": "Đang xử lý",
+      "ready": "Sẵn sàng",
+      "failed": "Thất bại"
+    },
     "emptyVideo": "Chưa có video ghi lại cho khoảng thời gian này.",
     "loadingVideo": "Đang tải video đã ghi…",
     "processing": "Đoạn video này đang được hoàn tất. Hãy thử lại sau ít phút.",
@@ -68,7 +91,12 @@
     "website": "Trang web",
     "url": "URL đầy đủ",
     "keys": "Lần gõ phím trong phút này",
-    "resolution": "Độ phân giải"
+    "resolution": "Độ phân giải",
+    "segmentsFor": "{{app}} — {{count}} khoảng thời gian. Nhấn để chuyển tới.",
+    "clearFocus": "Hiện tất cả",
+    "noVideoAt": "Không có video lúc {{time}}. Đang hiện bản ghi gần nhất.",
+    "noVideoSegment": "Không có video cho khoảng này",
+    "emptyVideoHint": "Không có video đã lưu cho khoảng này. Kiểm tra lịch ghi và lỗi trong trang Thiết bị."
   },
   "timeline": {
     "lanes": {
@@ -87,5 +115,104 @@
     "inputAt": "{{count}} lần gõ phím",
     "empty": "Không có dữ liệu trong khoảng này.",
     "note": "Nhập liệu chỉ là số lần gõ phím — không bao giờ ghi nội dung. \"Không có dữ liệu\" nghĩa là dữ liệu chưa tới, khác với việc thiết bị đã tắt."
+  },
+  "employee": {
+    "loading": "Đang tải…",
+    "errors": {
+      "load": "Không tải được dữ liệu ngày này. Vui lòng thử lại."
+    },
+    "status": {
+      "active": "Đang hoạt động",
+      "idle": "Nhàn rỗi",
+      "offline": "Ngoại tuyến",
+      "lastSeen": "Thấy lần cuối {{time}}",
+      "using": "Đang dùng {{app}}"
+    },
+    "day": {
+      "label": "Ngày",
+      "prev": "Ngày trước",
+      "next": "Ngày sau",
+      "today": "Hôm nay"
+    },
+    "stage": {
+      "label": "Màn hình",
+      "live": "Trực tiếp",
+      "recordings": "Bản ghi trong ngày",
+      "noDevice": "Nhân viên này chưa có thiết bị liên kết."
+    },
+    "now": {
+      "title": "Hiện tại",
+      "noApp": "Không có ứng dụng ở phía trước",
+      "denied": "Tài khoản của bạn không xem được trạng thái nhân viên này. Hãy đăng nhập bằng tài khoản chủ công ty."
+    },
+    "stats": {
+      "active": "Thời gian hoạt động",
+      "idle": "Thời gian nhàn rỗi",
+      "topApp": "Ứng dụng dùng nhiều nhất",
+      "keys": "Số lần gõ phím",
+      "none": "Chưa có hoạt động"
+    },
+    "tabs": {
+      "label": "Báo cáo ngày",
+      "work": "Ứng dụng và trang web",
+      "workHint": "Nhấn để xem",
+      "video": "Video cả ngày",
+      "videoHint": "Mọi thứ được ghi hôm nay",
+      "input": "Bàn phím và chuột",
+      "inputHint": "Mức độ hoạt động"
+    },
+    "work": {
+      "filter": "Hiển thị",
+      "filter_all": "Tất cả",
+      "filter_app": "Ứng dụng",
+      "filter_site": "Trang web",
+      "search": "Tìm ứng dụng, trang web hoặc liên kết",
+      "hint": "Nhấn vào ứng dụng hoặc trang web để xem video đúng lúc nó được dùng.",
+      "app": "Ứng dụng",
+      "site": "Trang web",
+      "times_other": "dùng {{count}} lần",
+      "noVideoShort": "không có video",
+      "noVideo": "Không có video cho thời điểm này",
+      "watchAt": "Xem từ {{time}}",
+      "stretches": "Các lần dùng {{name}}",
+      "openLink": "Mở liên kết",
+      "empty": "Không có ứng dụng hay trang web nào được ghi trong ngày.",
+      "noMatches": "Không có kết quả phù hợp.",
+      "watch": "Xem"
+    },
+    "video": {
+      "loading": "Đang tải video…",
+      "unavailable": "Không tải được video này.",
+      "empty": "Chưa có bản ghi cho ngày này.",
+      "inProgress": "Bản ghi hôm nay đang được lưu.",
+      "emptyHint": "Video được ghi trong giờ ghi màn hình của chính sách giám sát, khi thiết bị đang bật.",
+      "noVideoAt": "Không có bản ghi lúc {{time}}. Đang hiện bản ghi gần nhất ({{nearest}}).",
+      "speed": "Tốc độ",
+      "recorded": "Đã ghi",
+      "clips": "Đoạn",
+      "ribbon": "Dòng thời gian",
+      "ribbonHint": "Nhấn vào bất kỳ đâu trên dòng thời gian để xem lúc đó. Video tự phát tiếp cả ngày.",
+      "legendVideo": "Video đã ghi",
+      "legendActivity": "Hoạt động",
+      "status_ready": "Sẵn sàng",
+      "status_recording": "Đang ghi",
+      "status_processing": "Đang lưu",
+      "status_pending": "Đang bắt đầu",
+      "status_failed": "Không ghi được"
+    },
+    "input": {
+      "keys": "Số lần gõ hôm nay",
+      "perMinute": "Mỗi phút hoạt động",
+      "peak": "Giờ bận nhất",
+      "byHour": "Gõ phím theo giờ",
+      "presence": "Hoạt động, nhàn rỗi và vắng mặt",
+      "active": "Hoạt động (bàn phím hoặc chuột)",
+      "idle": "Nhàn rỗi",
+      "away": "Ngủ hoặc khóa",
+      "offline": "Ngoại tuyến",
+      "empty": "Không có thao tác bàn phím trong ngày.",
+      "noPresence": "Không có dữ liệu hoạt động trong ngày.",
+      "privacy": "Chỉ đếm số lần gõ phím — nội dung gõ không bao giờ được ghi lại. \"Hoạt động\" nghĩa là mọi thao tác bàn phím hoặc chuột."
+    }
   }
 }

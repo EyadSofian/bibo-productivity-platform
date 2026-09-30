@@ -227,8 +227,7 @@ func TestFailedSessionRecordsItsFailureCode(t *testing.T) {
 	}
 }
 
-// Reconnecting must not accumulate open viewer rows, or "who is watching now"
-// becomes a count of reconnections.
+// Each browser tab has its own open viewer row, even for the same user.
 func TestViewerSessionsTrackWhoIsWatchingNow(t *testing.T) {
 	f := newMediaFixture(t)
 	session := f.openLive(t)
@@ -240,12 +239,12 @@ func TestViewerSessionsTrackWhoIsWatchingNow(t *testing.T) {
 		t.Fatalf("viewers = %d, want 1", n)
 	}
 
-	// Same viewer reconnecting.
+	// Another tab for the same viewer.
 	if _, err := f.store.JoinViewerSession(f.ctx, session.ID, f.bizID, f.userID); err != nil {
 		t.Fatalf("rejoin: %v", err)
 	}
-	if n := mustViewerCount(t, f, session.ID); n != 1 {
-		t.Errorf("viewers after a reconnect = %d, want 1", n)
+	if n := mustViewerCount(t, f, session.ID); n != 2 {
+		t.Errorf("viewers after a second tab = %d, want 2", n)
 	}
 
 	// A second, different viewer.
@@ -253,8 +252,8 @@ func TestViewerSessionsTrackWhoIsWatchingNow(t *testing.T) {
 	if _, err := f.store.JoinViewerSession(f.ctx, session.ID, f.bizID, second.ID); err != nil {
 		t.Fatalf("second join: %v", err)
 	}
-	if n := mustViewerCount(t, f, session.ID); n != 2 {
-		t.Errorf("viewers = %d, want 2", n)
+	if n := mustViewerCount(t, f, session.ID); n != 3 {
+		t.Errorf("viewers = %d, want 3", n)
 	}
 
 	if err := f.store.LeaveViewerSession(f.ctx, session.ID, f.userID, "stopped"); err != nil {

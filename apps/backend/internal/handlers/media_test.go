@@ -311,6 +311,31 @@ func TestViewerTokenIsSubscribeOnly(t *testing.T) {
 	}
 }
 
+func TestTwoTabsForSameUserHaveIndependentViewerLeases(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	path := "/v1/media/sessions/" + sessionID
+	_, first := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	_, second := e.call(t, http.MethodPost, path+"/viewer-token", e.ownerID)
+	firstID, _ := first["viewer_session_id"].(string)
+	secondID, _ := second["viewer_session_id"].(string)
+	if firstID == "" || secondID == "" || firstID == secondID {
+		t.Fatalf("tabs received invalid viewer leases: %q, %q", firstID, secondID)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] == "ended" {
+		t.Fatalf("closing first tab ended second tab's session: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK {
+		t.Fatalf("second tab cannot renew its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/heartbeat?viewer_session_id="+firstID, e.ownerID); rec.Code != http.StatusConflict {
+		t.Fatalf("closed tab still renewed its lease: %d %v", rec.Code, body)
+	}
+	if rec, body := e.call(t, http.MethodPost, path+"/stop?viewer_session_id="+secondID, e.ownerID); rec.Code != http.StatusOK || body["session"].(map[string]any)["state"] != "ended" {
+		t.Fatalf("closing last tab did not end session: %d %v", rec.Code, body)
+	}
+}
+
 // Acceptance: a token's lifetime is bounded, and it is the configured bound.
 func TestMintedTokensExpireWithinTheConfiguredTTL(t *testing.T) {
 	e := newMediaEnv(t)
@@ -820,6 +845,40 @@ func TestRecordingProviderFailureUsesCooldownInsteadOfRetryStorm(t *testing.T) {
 	}
 }
 
+func TestBlockedAgentPollDoesNotOpenScheduledRecordings(t *testing.T) {
+	e := newMediaEnv(t)
+	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
+		BusinessID: e.businessID,
+		Name:       "Recorded workday",
+		Details: []store.MonitoringDetail{{
+			TrackingKey: "recording", TrackingVal: json.RawMessage("true"),
+			DaysOfWeek: []int16{1, 2, 3, 4, 5, 6, 7}, StartMinute: 0, EndMinute: 1440, Timezone: "UTC",
+		}},
+		Assignments: []store.MonitoringAssignment{{ScopeType: "employee", ScopeID: e.employeeID}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := "/v1/media/agent/session?device_id=" + e.deviceID
+	for range 3 {
+		if rec, body := e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusNoContent {
+			t.Fatalf("blocked poll: status %d body %v", rec.Code, body)
+		}
+	}
+	if rooms := e.provider.RoomCount(); rooms != 0 {
+		t.Fatalf("blocked polls opened %d recording rooms", rooms)
+	}
+
+	rec, body := e.call(t, http.MethodGet, path, e.employeeID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("normal recording poll: status %d body %v", rec.Code, body)
+	}
+	wantID := body["session_id"]
+	if rec, body = e.call(t, http.MethodGet, path+"&existing_only=true", e.employeeID); rec.Code != http.StatusOK || body["session_id"] != wantID {
+		t.Fatalf("blocked poll did not see existing session: %d %v", rec.Code, body)
+	}
+}
+
 func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
 	e := newMediaEnv(t)
 	_, err := e.store.CreateMonitoringProfile(e.ctx, e.ownerID, store.MonitoringProfileInput{
@@ -867,6 +926,25 @@ func TestRecordingMaintenanceRotatesWithoutAnAgentPoll(t *testing.T) {
 	rec, body = e.call(t, http.MethodGet, "/v1/media/agent/session?device_id="+e.deviceID, e.employeeID)
 	if rec.Code != http.StatusOK || body["session_id"] == oldID {
 		t.Fatalf("next chunk was not opened: %d %v", rec.Code, body)
+	}
+}
+
+func TestRecordingMaintenanceFailsChunkThatNeverPublishedVideo(t *testing.T) {
+	e := newMediaEnv(t)
+	session, _, err := e.store.OpenMediaSession(e.ctx, store.NewMediaSession{
+		BusinessID: e.businessID, EmployeeID: e.employeeID, DeviceID: e.deviceID,
+		Kind: media.KindRecording, Provider: "fake", ProviderRoomID: uuid.NewString(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(e.ctx, `UPDATE media_sessions SET started_at=now()-interval '6 minutes' WHERE id=$1`, session.ID); err != nil {
+		t.Fatal(err)
+	}
+	e.handler.sweepExpiredRecordings(e.ctx)
+	finished, err := e.store.MediaSessionForAgent(e.ctx, e.employeeID, session.ID)
+	if err != nil || finished.State != media.StateFailed || finished.FailureCode != string(media.FailTimeout) {
+		t.Fatalf("empty chunk state=%s reason=%s err=%v", finished.State, finished.FailureCode, err)
 	}
 }
 
@@ -972,12 +1050,41 @@ func TestRecordingSummaryIsTenantScopedAndShowsUploadStatus(t *testing.T) {
 	if summary["ready"] != float64(1) || summary["failed"] != float64(0) {
 		t.Fatalf("summary counts = %v", summary)
 	}
+	if summary["last_ready_at"] == nil {
+		t.Fatalf("summary omitted the last successful video time: %v", summary)
+	}
 	recent := summary["recent"].([]any)[0].(map[string]any)
 	if recent["byte_size"] != float64(1024) || recent["retention_until"] == nil {
 		t.Fatalf("recent upload metadata = %v", recent)
 	}
 	if _, leaked := recent["manifest_key"]; leaked {
 		t.Fatal("private object key leaked")
+	}
+}
+
+func TestRecordingSummaryShowsFailedAttemptWithoutVideoAsset(t *testing.T) {
+	e := newMediaEnv(t)
+	session, _, err := e.store.OpenMediaSession(e.ctx, store.NewMediaSession{
+		BusinessID: e.businessID, EmployeeID: e.employeeID, DeviceID: e.deviceID,
+		Kind: media.KindRecording, Provider: "fake", ProviderRoomID: uuid.NewString(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.store.AdvanceMediaSession(e.ctx, session.ID, media.StateFailed, media.FailTimeout); err != nil {
+		t.Fatal(err)
+	}
+	rec, body := e.call(t, http.MethodGet, "/v1/businesses/"+e.businessID+"/recordings/summary", e.ownerID)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("summary = %d %v", rec.Code, body)
+	}
+	summary := body["summary"].(map[string]any)
+	if summary["failed"] != float64(1) {
+		t.Fatalf("attempt without MP4 disappeared: %v", summary)
+	}
+	recent := summary["recent"].([]any)[0].(map[string]any)
+	if recent["status"] != "failed" || recent["failure_code"] != "TIMEOUT" || recent["id"] != session.ID {
+		t.Fatalf("attempt diagnosis = %v", recent)
 	}
 }
 
@@ -1118,6 +1225,38 @@ func TestAgentStateIsScopedToItsOwnDevice(t *testing.T) {
 	}
 }
 
+func TestPublisherMetricsAreStoredOnlyForThePublishingDevice(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	metrics := `{"state":"metrics","metrics":{"frames_captured":12,"frames_published":10,"frames_dropped":2,"capture_errors":0,"encoder_errors":0,"reconnects":0,"width":1280,"height":720,"fps":15,"encoder":"hardware"}}`
+
+	for _, userID := range []string{e.ownerID, e.intruderID} {
+		if rec, _ := e.reportState(t, sessionID, userID, metrics); rec.Code != http.StatusNotFound {
+			t.Fatalf("unrelated user %s stored publisher metrics: %d", userID, rec.Code)
+		}
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"fps":999,"encoder":"hardware"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid metrics accepted: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNoContent {
+		t.Fatalf("publisher metrics rejected: %d", rec.Code)
+	}
+	var captured, published int
+	var receivedAt time.Time
+	if err := e.pool.QueryRow(e.ctx, `SELECT (publisher_metrics->>'frames_captured')::int, (publisher_metrics->>'frames_published')::int, publisher_metrics_at FROM media_sessions WHERE id=$1`, sessionID).Scan(&captured, &published, &receivedAt); err != nil {
+		t.Fatal(err)
+	}
+	if captured != 12 || published != 10 || receivedAt.IsZero() {
+		t.Fatalf("stored publisher metrics = %d/%d at %v", captured, published, receivedAt)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"ended"}`); rec.Code != http.StatusOK {
+		t.Fatalf("end: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, metrics); rec.Code != http.StatusNotFound {
+		t.Fatalf("metrics were stored for ended session: %d", rec.Code)
+	}
+}
+
 // An illegal transition means the publisher and the control plane disagree about
 // where the session is. Absorbing that silently is how sessions get stuck in
 // states nobody can explain.
@@ -1248,5 +1387,59 @@ func TestStopWithdrawsAgentDemandBeforeWaitingForProvider(t *testing.T) {
 	rec, _ = e.call(t, http.MethodPost, "/v1/media/sessions/"+id+"/publisher-token", e.employeeID)
 	if rec.Code != http.StatusConflict {
 		t.Fatalf("token granted during stop: %d", rec.Code)
+	}
+}
+
+// The operator must see why capture failed, not only that it did. The reason is
+// a closed slug stored with the last device counters; free text is refused.
+func TestPublisherFailureCarriesATypedReasonToTheViewer(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+
+	for _, body := range []string{
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"C:\\Users\\someone"}`,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"Private Window Title"}`,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","metrics":{"encoder":"software","capture_issue":"free text"}}`,
+	} {
+		if rec, _ := e.reportState(t, sessionID, e.employeeID, body); rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status %d, want 400", body, rec.Code)
+		}
+	}
+
+	rec, decoded := e.reportState(t, sessionID, e.employeeID,
+		`{"state":"failed","failure_code":"CAPTURE_FAILED","failure_reason":"resumed_from_sleep","metrics":{"frames_captured":40,"frames_published":38,"encoder":"software","capture_restarts":2,"first_frame_ms":420,"capture_issue":"resumed_from_sleep"}}`)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("typed failure refused: %d %v", rec.Code, decoded)
+	}
+	session, _ := decoded["session"].(map[string]any)
+	if session["failure_code"] != string(media.FailCaptureFailed) {
+		t.Fatalf("failure_code = %v", session["failure_code"])
+	}
+	var reason string
+	var restarts, firstFrame int
+	if err := e.pool.QueryRow(e.ctx, `SELECT publisher_metrics->>'failure_reason', (publisher_metrics->>'capture_restarts')::int, (publisher_metrics->>'first_frame_ms')::int FROM media_sessions WHERE id=$1`, sessionID).Scan(&reason, &restarts, &firstFrame); err != nil {
+		t.Fatal(err)
+	}
+	if reason != "resumed_from_sleep" || restarts != 2 || firstFrame != 420 {
+		t.Fatalf("stored failure detail = %q restarts=%d first_frame_ms=%d", reason, restarts, firstFrame)
+	}
+}
+
+// A paused live view reports why; unknown pause reasons are refused.
+func TestPausedLiveViewReportsAKnownReason(t *testing.T) {
+	e := newMediaEnv(t)
+	sessionID := e.startLive(t, e.ownerID)
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"encoder":"unknown","pause_reason":"watching netflix"}}`); rec.Code != http.StatusBadRequest {
+		t.Fatalf("unknown pause reason accepted: %d", rec.Code)
+	}
+	if rec, _ := e.reportState(t, sessionID, e.employeeID, `{"state":"metrics","metrics":{"encoder":"unknown","pause_reason":"locked"}}`); rec.Code != http.StatusNoContent {
+		t.Fatalf("pause reason rejected: %d", rec.Code)
+	}
+	var reason string
+	if err := e.pool.QueryRow(e.ctx, `SELECT publisher_metrics->>'pause_reason' FROM media_sessions WHERE id=$1`, sessionID).Scan(&reason); err != nil {
+		t.Fatal(err)
+	}
+	if reason != "locked" {
+		t.Fatalf("pause_reason = %q", reason)
 	}
 }

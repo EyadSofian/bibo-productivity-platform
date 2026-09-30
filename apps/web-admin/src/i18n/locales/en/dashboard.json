@@ -60,8 +60,13 @@
       "title": "Recording status", "subtitle": "See whether each video reached private storage.", "error": "Could not load recording status.",
       "ready": "Ready", "inProgress": "In progress", "failed": "Failed", "stale": "{{count}} video(s) have been processing for too long.",
       "empty": "No recording attempts yet.", "unknownEmployee": "Unknown employee", "retention": "Ready videos are kept privately for 30 days, then deleted automatically.",
+      "guideTitle": "How recording works",
+      "noRecentTitle": "No video ready in the last 24 hours", "quotaTitle": "Recording minutes used up", "quotaBody": "Recording is off because the video service plan (LiveKit Cloud) has no recording minutes left this month. Live view still works. Upgrade the plan in LiveKit Cloud to resume recording.",
+      "guideBody": "Online means the app is connected. Video is saved only during the recording schedule and after the recorder starts successfully.",
+      "openPolicy": "Review recording schedule",
+      "viewDevices": "View devices",
       "status": { "pending": "Starting", "recording": "Recording", "processing": "Finalizing upload", "ready": "Ready", "failed": "Failed" },
-      "failure": {"encoderFailed": "Device encoder could not start", "captureFailed": "Screen capture failed", "providerFailed": "Video service unavailable", "unknownFailed": "Recording could not finish"}
+      "failure": {"encoderFailed": "Device encoder could not start", "captureFailed": "Screen capture failed", "providerFailed": "Video service unavailable", "quotaExceeded": "Recording minutes used up", "unknownFailed": "Recording could not finish"}
     }
   },
   "employees": {
@@ -103,6 +108,7 @@
     "errorCreate": "Could not create {{member}}."
   },
   "detail": {
+    "insights": {"eyebrow": "Quick view", "title": "Explore the details", "description": "Use the reports below to inspect apps, exact browser URLs and time on each page.", "appsAction": "View apps", "sitesAction": "View visited sites", "liveAction": "Live view and device status", "browserHint": "Browser extension needed"},
     "breadcrumbDashboard": "Dashboard",
     "dateMode": "Date mode",
     "day": "Day",
@@ -192,7 +198,8 @@
       "keystrokes": "Keystrokes",
       "browser": "Browser",
       "screenshots": "Screenshots",
-      "playback": "Playback"
+      "playback": "Day videos",
+      "input": "Input"
     },
     "communications": {
       "eyebrow": "Evidence, not assumptions",

@@ -8,7 +8,8 @@
     "live": "Langsung",
     "reconnecting": "Koneksi terputus — menyambung ulang…",
     "ended": "Sesi telah berakhir.",
-    "error": "Tampilan langsung tidak dapat dimulai."
+    "error": "Tampilan langsung tidak dapat dimulai.",
+    "paused": "Tampilan langsung dijeda di perangkat karyawan"
   },
   "action": {
     "start": "Mulai tampilan langsung",
@@ -38,5 +39,38 @@
     "ROOM_FAILED": "Layanan video menghentikan sesi.",
     "TIMEOUT": "Perangkat tidak mulai mengirim tepat waktu.",
     "unknown": "Sesi gagal."
+  },
+  "offline": "Perangkat karyawan sedang offline — tampilan langsung tersedia saat tersambung kembali.",
+  "elapsed": "{{seconds}} dtk",
+  "hint": {
+    "agentSlow": "perangkat mungkin sedang bangun atau memulai perekam"
+  },
+  "pause": {
+    "locked": "Layar terkunci. Tampilan berlanjut otomatis saat dibuka.",
+    "private_app": "Aplikasi privat sedang terbuka (dilindungi). Berlanjut saat ditutup.",
+    "paused": "Karyawan menjeda pelacakan. Berlanjut saat dilanjutkan."
+  },
+  "timeout": {
+    "noAgent": "Perangkat tidak merespons. Pastikan aplikasi berjalan dan perangkat tidak tidur.",
+    "noFirstFrame": "Perangkat terhubung ke layanan video, tetapi gambar layar tidak tiba.",
+    "lostVideo": "Video terputus dan tidak kembali tepat waktu.",
+    "noSession": "Sesi tidak dimulai tepat waktu."
+  },
+  "reason": {
+    "wgc_unsupported": "Tangkapan layar Windows belum siap (biasanya tepat setelah bangun dari tidur).",
+    "no_monitor": "Tidak ada layar yang terhubung.",
+    "start_failed": "Windows menolak memulai tangkapan layar.",
+    "no_first_frame": "Tangkapan dimulai, tetapi tidak ada gambar.",
+    "capture_closed": "Tangkapan ditutup (reset grafis atau pergantian sesi).",
+    "capture_stalled": "Gambar layar berhenti datang.",
+    "resumed_from_sleep": "Perangkat bangun dari tidur dan tidak dapat memulihkan tangkapan layar.",
+    "display_changed": "Layar atau resolusi berubah dan tangkapan tidak pulih.",
+    "publisher_start_failed": "Pembantu streaming tidak dapat dimulai di perangkat.",
+    "publisher_exited": "Pembantu streaming berhenti berulang kali di perangkat.",
+    "locked": "Layar terkunci.",
+    "private_app": "Aplikasi privat sedang terbuka (dilindungi).",
+    "paused": "Karyawan menjeda pelacakan.",
+    "schedule": "Di luar jam pemantauan layar.",
+    "signed_out": "Karyawan belum masuk ke aplikasi."
   }
 }

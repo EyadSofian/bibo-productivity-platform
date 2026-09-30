@@ -3,7 +3,19 @@
     "empty": "No se registró actividad para este intervalo.",
     "timeline": "Cronología de hoy",
     "breakdown": "Desglose de apps y ventanas",
-    "idle": "Inactivo"
+    "idle": "Inactivo",
+    "watchApp": "Ver grabaciones de {{app}}"
+  },
+  "explorer": {
+    "title": "Aplicaciones y enlaces",
+    "description": "Selecciona una aplicación o URL exacta para ir a ese momento del vídeo guardado, si está disponible.",
+    "search": "Buscar aplicaciones, páginas o URL",
+    "apps": "Aplicaciones",
+    "pages": "Páginas y URL exactas",
+    "watch": "Ver vídeo",
+    "open": "Abrir {{page}}",
+    "appTime": "Tiempo de uso registrado",
+    "noMatches": "Sin resultados"
   },
   "browser": {
     "empty": "No hay visitas del navegador para este intervalo.",
@@ -32,7 +44,7 @@
     "tooltip": "{{time}} — {{count}} pulsaciones de teclas",
     "privacyNote": "Solo recuentos. Las teclas individuales nunca se capturan ni se almacenan: este gráfico muestra el volumen de escritura, no el contenido.",
     "minuteBuckets": "Cada columna representa un minuto de actividad del teclado.",
-    "activityMeaning": "El movimiento del ratón contribuye al tiempo activo/inactivo; aún no tiene un contador separado.",
+    "activityMeaning": "El movimiento del ratón contribuye a los tiempos activo e inactivo de arriba; aún no hay un recuento independiente.",
     "title": "Pulsaciones durante el día",
     "keypresses": "pulsaciones"
   },
@@ -48,6 +60,17 @@
     "close": "Cerrar"
   },
   "playback": {
+    "noVideoForMoment": "No hay vídeo guardado a las {{time}}.",
+    "dayVideos": "Vídeos guardados en este período",
+    "videoCount": "{{count}} listos",
+    "unknownDuration": "Duración desconocida",
+    "status": {
+      "pending": "Pendiente",
+      "recording": "Grabando",
+      "processing": "Procesando",
+      "ready": "Listo",
+      "failed": "Error"
+    },
     "emptyVideo": "Todavía no hay vídeo grabado disponible para este periodo.",
     "loadingVideo": "Cargando vídeo grabado…",
     "processing": "Este fragmento de vídeo se está finalizando. Inténtalo de nuevo en breve.",
@@ -68,7 +91,12 @@
     "website": "Sitio web",
     "url": "URL completa",
     "keys": "Pulsaciones en este minuto",
-    "resolution": "Resolución"
+    "resolution": "Resolución",
+    "segmentsFor": "{{app}} — {{count}} periodos. Haz clic para ir.",
+    "clearFocus": "Mostrar todo",
+    "noVideoAt": "No hay video grabado a las {{time}}. Se muestra la grabación más cercana.",
+    "noVideoSegment": "No hay video para este periodo",
+    "emptyVideoHint": "No hay vídeo guardado para este período. Revisa el horario de grabación y los errores en Dispositivos."
   },
   "timeline": {
     "lanes": {
@@ -87,5 +115,105 @@
     "inputAt": "{{count}} pulsaciones",
     "empty": "No se registró nada en este rango.",
     "note": "La entrada es solo un recuento de pulsaciones, nunca lo que se escribió. «Sin datos» significa que no llegó información, que no es lo mismo que el dispositivo apagado."
+  },
+  "employee": {
+    "loading": "Cargando el día…",
+    "errors": {
+      "load": "No se pudo cargar este día. Inténtalo de nuevo."
+    },
+    "status": {
+      "active": "Activo",
+      "idle": "Inactivo",
+      "offline": "Sin conexión",
+      "lastSeen": "Visto {{time}}",
+      "using": "Usando {{app}}"
+    },
+    "day": {
+      "label": "Día",
+      "prev": "Día anterior",
+      "next": "Día siguiente",
+      "today": "Hoy"
+    },
+    "stage": {
+      "label": "Pantalla",
+      "live": "En vivo",
+      "recordings": "Grabaciones del día",
+      "noDevice": "Este empleado aún no tiene un dispositivo vinculado."
+    },
+    "now": {
+      "title": "Ahora",
+      "noApp": "Ninguna aplicación en primer plano",
+      "denied": "Tu cuenta no puede ver el estado de este empleado. Inicia sesión como propietario."
+    },
+    "stats": {
+      "active": "Tiempo activo",
+      "idle": "Tiempo inactivo",
+      "topApp": "Aplicación más usada",
+      "keys": "Pulsaciones",
+      "none": "Sin actividad"
+    },
+    "tabs": {
+      "label": "Informe del día",
+      "work": "Aplicaciones y sitios",
+      "workHint": "Haz clic para verlo",
+      "video": "Video del día",
+      "videoHint": "Todo lo grabado hoy",
+      "input": "Teclado y ratón",
+      "inputHint": "Nivel de actividad"
+    },
+    "work": {
+      "filter": "Mostrar",
+      "filter_all": "Todo",
+      "filter_app": "Aplicaciones",
+      "filter_site": "Sitios",
+      "search": "Buscar aplicación, sitio o enlace",
+      "hint": "Haz clic en una aplicación o sitio para ver el video de cuando se usó.",
+      "app": "Aplicación",
+      "site": "Sitio",
+      "times_one": "usado una vez",
+      "times_other": "usado {{count}} veces",
+      "noVideoShort": "sin video",
+      "noVideo": "No hay video de este momento",
+      "watchAt": "Ver desde {{time}}",
+      "stretches": "Usos de {{name}}",
+      "openLink": "Abrir enlace",
+      "empty": "No hay aplicaciones ni sitios registrados este día.",
+      "noMatches": "Sin resultados.",
+      "watch": "Ver"
+    },
+    "video": {
+      "loading": "Cargando video…",
+      "unavailable": "No se pudo cargar este video.",
+      "empty": "Aún no hay grabaciones de este día.",
+      "inProgress": "La grabación de hoy se está guardando.",
+      "emptyHint": "El video se graba en el horario de grabación de la política de monitoreo, mientras el dispositivo está encendido.",
+      "noVideoAt": "No se grabó nada a las {{time}}. Grabación más cercana: {{nearest}}.",
+      "speed": "Velocidad",
+      "recorded": "Grabado",
+      "clips": "Clips",
+      "ribbon": "Línea de tiempo",
+      "ribbonHint": "Haz clic en cualquier punto para ver ese momento. El video continúa solo durante el día.",
+      "legendVideo": "Video grabado",
+      "legendActivity": "Actividad",
+      "status_ready": "Listo",
+      "status_recording": "Grabando",
+      "status_processing": "Guardando",
+      "status_pending": "Iniciando",
+      "status_failed": "No grabado"
+    },
+    "input": {
+      "keys": "Pulsaciones de hoy",
+      "perMinute": "Por minuto activo",
+      "peak": "Hora más activa",
+      "byHour": "Pulsaciones por hora",
+      "presence": "Activo, inactivo y ausente",
+      "active": "Activo (teclado o ratón)",
+      "idle": "Inactivo",
+      "away": "Suspendido o bloqueado",
+      "offline": "Sin conexión",
+      "empty": "No hay pulsaciones este día.",
+      "noPresence": "No hay datos de actividad este día.",
+      "privacy": "Solo se cuenta el número de pulsaciones — nunca se graba lo que se escribe. «Activo» significa cualquier uso del teclado o ratón."
+    }
   }
 }

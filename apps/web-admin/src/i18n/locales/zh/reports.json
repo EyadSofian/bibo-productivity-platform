@@ -3,7 +3,19 @@
     "empty": "此时间范围内未记录任何活动。",
     "timeline": "今日时间线",
     "breakdown": "应用和窗口明细",
-    "idle": "空闲"
+    "idle": "空闲",
+    "watchApp": "观看 {{app}} 的录像"
+  },
+  "explorer": {
+    "title": "应用与链接",
+    "description": "选择应用或完整网址可跳转到保存视频中的对应时间（如有）。",
+    "search": "搜索应用、页面或网址",
+    "apps": "应用",
+    "pages": "完整页面和网址",
+    "watch": "观看视频",
+    "open": "打开{{page}}",
+    "appTime": "记录的使用时间",
+    "noMatches": "没有匹配结果"
   },
   "browser": {
     "empty": "此时间范围内没有浏览记录。",
@@ -32,7 +44,7 @@
     "tooltip": "{{time}} — {{count}} 次按键",
     "privacyNote": "仅记录次数。绝不会捕获或存储具体按键内容——此图表展示的是打字量，而非内容。",
     "minuteBuckets": "每一列代表一分钟的键盘活动。",
-    "activityMeaning": "鼠标移动会计入活动/空闲时间，但目前不会单独计数。",
+    "activityMeaning": "鼠标移动计入上方的活跃和空闲时间；目前没有单独的鼠标计数。",
     "title": "全天按键次数",
     "keypresses": "次按键"
   },
@@ -48,6 +60,17 @@
     "close": "关闭"
   },
   "playback": {
+    "noVideoForMoment": "{{time}}没有保存的视频。",
+    "dayVideos": "此期间保存的视频",
+    "videoCount": "{{count}} 个已就绪",
+    "unknownDuration": "时长未知",
+    "status": {
+      "pending": "待处理",
+      "recording": "录制中",
+      "processing": "处理中",
+      "ready": "已就绪",
+      "failed": "失败"
+    },
     "emptyVideo": "此时间段尚无录制视频。",
     "loadingVideo": "正在加载录制视频…",
     "processing": "此视频片段正在完成处理，请稍后重试。",
@@ -68,7 +91,12 @@
     "website": "网站",
     "url": "完整网址",
     "keys": "本分钟按键次数",
-    "resolution": "分辨率"
+    "resolution": "分辨率",
+    "segmentsFor": "{{app}} — {{count}} 个时段，点击跳转。",
+    "clearFocus": "显示全部",
+    "noVideoAt": "{{time}} 没有录像，显示最近的录像。",
+    "noVideoSegment": "此时段没有录像",
+    "emptyVideoHint": "此期间没有保存的视频。请在设备页面检查录制计划和失败记录。"
   },
   "timeline": {
     "lanes": {
@@ -87,5 +115,104 @@
     "inputAt": "{{count}} 次按键",
     "empty": "此时间范围内没有数据。",
     "note": "输入仅统计按键次数，绝不记录键入内容。“无上报”表示没有收到数据，与设备关机不是一回事。"
+  },
+  "employee": {
+    "loading": "正在加载…",
+    "errors": {
+      "load": "无法加载当天数据，请稍后重试。"
+    },
+    "status": {
+      "active": "在线活跃",
+      "idle": "空闲",
+      "offline": "离线",
+      "lastSeen": "最后在线 {{time}}",
+      "using": "正在使用 {{app}}"
+    },
+    "day": {
+      "label": "日期",
+      "prev": "前一天",
+      "next": "后一天",
+      "today": "今天"
+    },
+    "stage": {
+      "label": "屏幕",
+      "live": "实时",
+      "recordings": "当天录像",
+      "noDevice": "该员工尚未关联设备。"
+    },
+    "now": {
+      "title": "当前",
+      "noApp": "没有前台应用",
+      "denied": "你的账户无权查看该员工状态，请使用公司所有者账户登录。"
+    },
+    "stats": {
+      "active": "活跃时间",
+      "idle": "空闲时间",
+      "topApp": "最常用应用",
+      "keys": "按键次数",
+      "none": "暂无活动"
+    },
+    "tabs": {
+      "label": "当日报告",
+      "work": "应用和网站",
+      "workHint": "点击即可观看",
+      "video": "全天视频",
+      "videoHint": "今天录制的全部内容",
+      "input": "键盘和鼠标",
+      "inputHint": "活跃程度"
+    },
+    "work": {
+      "filter": "显示",
+      "filter_all": "全部",
+      "filter_app": "应用",
+      "filter_site": "网站",
+      "search": "搜索应用、网站或链接",
+      "hint": "点击任意应用或网站，播放其使用时刻的视频。",
+      "app": "应用",
+      "site": "网站",
+      "times_other": "使用 {{count}} 次",
+      "noVideoShort": "无视频",
+      "noVideo": "该时间没有录像",
+      "watchAt": "从 {{time}} 开始观看",
+      "stretches": "{{name}} 的使用时段",
+      "openLink": "打开链接",
+      "empty": "当天没有记录的应用或网站。",
+      "noMatches": "没有匹配结果。",
+      "watch": "观看"
+    },
+    "video": {
+      "loading": "正在加载视频…",
+      "unavailable": "无法加载此视频。",
+      "empty": "当天暂无录像。",
+      "inProgress": "今天的录像正在保存中。",
+      "emptyHint": "录像在监控策略设定的录制时段内、员工设备开机时进行。",
+      "noVideoAt": "{{time}} 没有录像，显示最近的录像（{{nearest}}）。",
+      "speed": "播放速度",
+      "recorded": "已录制",
+      "clips": "片段",
+      "ribbon": "当天时间轴",
+      "ribbonHint": "点击时间轴任意位置观看该时刻，视频会自动连续播放。",
+      "legendVideo": "录像",
+      "legendActivity": "员工活动",
+      "status_ready": "就绪",
+      "status_recording": "录制中",
+      "status_processing": "保存中",
+      "status_pending": "启动中",
+      "status_failed": "未录制"
+    },
+    "input": {
+      "keys": "今日按键",
+      "perMinute": "每活跃分钟",
+      "peak": "最活跃时段",
+      "byHour": "每小时按键",
+      "presence": "活跃、空闲与离开",
+      "active": "活跃（键盘或鼠标）",
+      "idle": "空闲",
+      "away": "睡眠或锁定",
+      "offline": "离线",
+      "empty": "当天没有键盘输入记录。",
+      "noPresence": "当天没有活动数据。",
+      "privacy": "只统计按键次数——绝不记录输入内容。“活跃”指任何键盘或鼠标操作。"
+    }
   }
 }

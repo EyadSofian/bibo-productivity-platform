@@ -96,8 +96,7 @@ func (p *Provider) callService(ctx context.Context, service, method string, gran
 		return media.ErrRoomNotFound
 	}
 	if res.StatusCode != http.StatusOK {
-		_, _ = io.Copy(io.Discard, io.LimitReader(res.Body, 1<<20))
-		return fmt.Errorf("livekit: %s returned HTTP %d", method, res.StatusCode)
+		return twirpError(method, res.StatusCode, io.LimitReader(res.Body, 4<<10))
 	}
 	if output != nil {
 		if err := json.NewDecoder(io.LimitReader(res.Body, 1<<20)).Decode(output); err != nil {
@@ -174,3 +173,27 @@ func (p *Provider) StopRecording(ctx context.Context, recordingID string) error 
 }
 
 var _ media.MediaProvider = (*Provider)(nil)
+
+// twirpError keeps LiveKit's error code (a fixed vocabulary such as
+// "resource_exhausted") so a failure is diagnosable from the logs. The free
+// text message is dropped: provider payloads never reach errors or logs.
+func twirpError(method string, status int, body io.Reader) error {
+	var twirp struct {
+		Code string `json:"code"`
+	}
+	_ = json.NewDecoder(body).Decode(&twirp)
+	if twirp.Code == "resource_exhausted" {
+		return fmt.Errorf("livekit: %s: %w", method, media.ErrProviderQuota)
+	}
+	code := twirp.Code
+	for _, r := range code {
+		if (r < 'a' || r > 'z') && r != '_' {
+			code = ""
+			break
+		}
+	}
+	if code != "" && len(code) <= 40 {
+		return fmt.Errorf("livekit: %s returned HTTP %d (%s)", method, status, code)
+	}
+	return fmt.Errorf("livekit: %s returned HTTP %d", method, status)
+}

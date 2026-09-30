@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ActivityResponse } from "../../api/types";
 import { Empty } from "../ui";
+import { appSegments } from "./appSegments";
 
 // Multi-hue app palette (offline design order). Each app keeps a stable color
 // by its rank in the breakdown — display-only, the data is never reordered
@@ -31,7 +32,14 @@ const fmtHM = (s: number) => {
   return h > 0 ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
 };
 
-export function ActivityPanel({ data }: { data: ActivityResponse }) {
+export function ActivityPanel({
+  data,
+  onPlay,
+}: {
+  data: ActivityResponse;
+  /** Opens the recorded video at `ts`, focused on `app`'s stretches. */
+  onPlay?: (ts: number, app: string) => void;
+}) {
   const { t } = useTranslation("reports");
   // Timeline hover tooltip (app/idle · duration). Lives outside the bar so it
   // isn't clipped by the bar's overflow:hidden.
@@ -46,19 +54,11 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
 
   // ── Time-of-day timeline, built from the real activity samples ──
   const HOUR = 3600;
-  const samples = [...data.samples].filter((s) => s.duration_s > 0).sort((a, b) => a.ts - b.ts);
-  // Merge back-to-back samples of the same app into one block (visual clarity;
+  // Back-to-back samples of the same app merge into one block (visual clarity;
   // the underlying data is unchanged).
-  type Block = { app: string; ts: number; dur: number };
-  const blocks: Block[] = [];
-  for (const s of samples) {
-    const prev = blocks[blocks.length - 1];
-    if (prev && prev.app === s.app_name && s.ts - (prev.ts + prev.dur) < 60) {
-      prev.dur = s.ts + s.duration_s - prev.ts;
-    } else {
-      blocks.push({ app: s.app_name, ts: s.ts, dur: s.duration_s });
-    }
-  }
+  const blocks = appSegments(data.samples);
+  const firstBlockOf = new Map<string, number>();
+  for (const b of blocks) if (!firstBlockOf.has(b.app)) firstBlockOf.set(b.app, b.ts);
 
   const hasTimeline = blocks.length > 0;
   const last = hasTimeline ? Math.max(...blocks.map((b) => b.ts + b.dur)) : 0;
@@ -69,7 +69,7 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
 
   // Active blocks, idle gaps between them, and the two ends (outside the
   // recorded range → solid, no stripes).
-  type Seg = { kind: "app" | "idle" | "end"; app?: string; left: number; width: number; dur: number };
+  type Seg = { kind: "app" | "idle" | "end"; app?: string; ts?: number; left: number; width: number; dur: number };
   const segs: Seg[] = [];
   let cursor = start;
   blocks.forEach((b, i) => {
@@ -82,7 +82,7 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
       });
     }
     const bEnd = b.ts + b.dur;
-    segs.push({ kind: "app", app: b.app, left: pct(b.ts), width: pct(bEnd) - pct(b.ts), dur: b.dur });
+    segs.push({ kind: "app", app: b.app, ts: b.ts, left: pct(b.ts), width: pct(bEnd) - pct(b.ts), dur: b.dur });
     cursor = Math.max(cursor, bEnd);
   });
   if (cursor < end) {
@@ -131,9 +131,10 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
                     return (
                       <div
                         key={i}
-                        className="ad-tlseg"
+                        className={`ad-tlseg${onPlay ? " ad-tlseg--playable" : ""}`}
                         onMouseEnter={() => setTip({ label: `${s.app} · ${fmtHM(s.dur)}`, left: center })}
                         onMouseLeave={() => setTip(null)}
+                        onClick={onPlay ? () => onPlay(s.ts as number, s.app as string) : undefined}
                         style={{
                           left: `${s.left}%`,
                           width: `${s.width}%`,
@@ -225,23 +226,45 @@ export function ActivityPanel({ data }: { data: ActivityResponse }) {
           </div>
         </div>
         <div className="ad-appbars">
-          {breakdown.map((b, i) => (
-            <div className="ad-appbar" key={b.app_name}>
-              <div className="ad-appbar__name">
-                <span className="dot" style={{ background: colorAt(i) }} />
-                <span className="txt" title={b.app_name}>
-                  {b.app_name}
-                </span>
+          {breakdown.map((b, i) => {
+            const firstTs = firstBlockOf.get(b.app_name);
+            const contents = (
+              <>
+                <div className="ad-appbar__name">
+                  <span className="dot" style={{ background: colorAt(i) }} />
+                  <span className="txt" title={b.app_name}>
+                    {b.app_name}
+                  </span>
+                </div>
+                <div className="ad-appbar__track">
+                  <div
+                    className="ad-appbar__fill"
+                    style={{ width: `${(b.duration_s / max) * 100}%`, background: barFill(colorAt(i)) }}
+                  />
+                </div>
+                <div className="ad-appbar__val">{fmtHM(b.duration_s)}</div>
+              </>
+            );
+            // Each app opens its own recorded footage: the admin asks "what
+            // was done in Claude?" and lands on exactly those minutes.
+            return onPlay && firstTs !== undefined ? (
+              <button
+                type="button"
+                className="ad-appbar ad-appbar--playable"
+                key={b.app_name}
+                onClick={() => onPlay(firstTs, b.app_name)}
+                aria-label={t("activity.watchApp", { app: b.app_name })}
+                title={t("activity.watchApp", { app: b.app_name })}
+              >
+                {contents}
+                <span className="ad-appbar__play" aria-hidden>▶</span>
+              </button>
+            ) : (
+              <div className="ad-appbar" key={b.app_name}>
+                {contents}
               </div>
-              <div className="ad-appbar__track">
-                <div
-                  className="ad-appbar__fill"
-                  style={{ width: `${(b.duration_s / max) * 100}%`, background: barFill(colorAt(i)) }}
-                />
-              </div>
-              <div className="ad-appbar__val">{fmtHM(b.duration_s)}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

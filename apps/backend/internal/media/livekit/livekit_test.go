@@ -165,3 +165,26 @@ func TestRecordingStartsPrivateScreenEgressAndStopsIt(t *testing.T) {
 		t.Fatalf("stopped %q, want %q", stopped, job.ID)
 	}
 }
+
+// An exhausted plan must be recognisable: retrying every few minutes cannot
+// help, and the admin needs to be told the recording minutes ran out.
+func TestExhaustedEgressMinutesAreReportedAsQuota(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"code":"resource_exhausted","msg":"egress minutes exceeded"}`))
+	}))
+	defer srv.Close()
+	p, err := New(Config{
+		URL: strings.Replace(srv.URL, "http://", "ws://", 1), APIKey: "key", APISecret: "secret",
+		S3Endpoint: "https://storage.example.test", S3Bucket: "b", S3AccessKey: "k", S3SecretKey: "s",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = p.StartRecording(context.Background(), media.RecordingRequest{
+		Room: "r", ParticipantIdentity: "d", AssetID: "a", ObjectKey: "k/screen.mp4",
+	})
+	if !errors.Is(err, media.ErrProviderQuota) {
+		t.Fatalf("expected quota error, got %v", err)
+	}
+}

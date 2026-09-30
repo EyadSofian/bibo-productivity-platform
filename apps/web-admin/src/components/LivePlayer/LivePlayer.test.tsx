@@ -63,6 +63,7 @@ beforeEach(async () => {
   mediaMocks.startLiveSession.mockResolvedValue({ session });
   mediaMocks.mintViewerToken.mockResolvedValue({
     token: "viewer-token-value",
+    viewer_session_id: "viewer-lease-1",
     expires_at: "2026-09-01T12:02:00Z",
     room: "room-uuid",
     can_publish: false,
@@ -216,6 +217,8 @@ describe("LivePlayer", () => {
         await vi.advanceTimersByTimeAsync(0);
         await vi.advanceTimersByTimeAsync(16_000);
       });
+      expect(screen.queryByText("TIMEOUT")).toBeNull();
+      await act(async () => { await vi.advanceTimersByTimeAsync(30_000); });
 
       expect(screen.getByText("The device did not start sending in time.")).toBeTruthy();
       expect(screen.getByText("TIMEOUT")).toBeTruthy();
@@ -236,7 +239,7 @@ describe("LivePlayer", () => {
     const stopButton = await screen.findByRole("button", { name: "Stop" });
     stopButton.click();
 
-    await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1"));
+    await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1"));
     expect(stream._track.stop).toHaveBeenCalled();
     expect(transport.stopped).toBe(true);
   });
@@ -262,16 +265,16 @@ it("ends the backend session when its player is unmounted", async () => {
  const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
  await waitFor(() => expect(transport.connectCalls).toBe(1));
  view.unmount();
- await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1"));
+ await waitFor(() => expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1"));
 });
-it("ends a start response that arrives after the player has left", async () => {
+it("does not stop another tab's room when an unleased start response arrives late", async () => {
  let resolve!: (value: { session: typeof session }) => void;
  mediaMocks.startLiveSession.mockReturnValueOnce(new Promise(r => { resolve = r; }));
  const transport = new ControlledTransport();
  const view = render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
  view.unmount();
  await act(async () => { resolve({ session }); });
- expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+ expect(mediaMocks.stopMediaSession).not.toHaveBeenCalled();
  expect(transport.connectCalls).toBe(0);
 });
 
@@ -282,7 +285,7 @@ it("surfaces a publisher failure that happens after starting", async () => {
     render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
     await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
     expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
-    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1");
   } finally { vi.useRealTimers(); }
 });
 
@@ -296,7 +299,7 @@ it("stops the local stream when its viewer lease expires", async () => {
     render(<LivePlayer deviceId="device-1" transport={transport} autoStart />);
     await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
     expect(transport.stopped).toBe(true);
-    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1");
+    expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("session-1", "viewer-lease-1");
     expect(mediaMocks.heartbeatMediaSession).toHaveBeenCalledTimes(1);
   } finally { vi.useRealTimers(); }
 });
@@ -309,6 +312,55 @@ it("can switch devices while the old start request is pending", async () => {
   view.rerender(<LivePlayer deviceId="device-2" transport={transport} autoStart />);
   await waitFor(() => expect(mediaMocks.startLiveSession).toHaveBeenCalledWith("device-2"));
   await act(async () => { resolve({ session: { ...session, id: "old-session" } }); });
-  expect(mediaMocks.stopMediaSession).toHaveBeenCalledWith("old-session");
+  expect(mediaMocks.stopMediaSession).not.toHaveBeenCalledWith("old-session", "viewer-lease-1");
   expect(transport.connectCalls).toBe(1);
+});
+
+it("names what actually failed on the device, not only the failure code", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: {
+      ...session, state: "failed", failure_code: "CAPTURE_FAILED",
+      publisher_metrics: { failure_reason: "resumed_from_sleep" },
+    } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(screen.getByText("The device could not capture its screen.")).toBeTruthy();
+    expect(screen.getByText("The device woke from sleep and could not restore screen capture.")).toBeTruthy();
+    // Capture failures after sleep usually clear on a fresh attempt.
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("shows a locked screen as a pause that does not time out", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: {
+      ...session, state: "negotiating", publisher_metrics: { pause_reason: "locked" },
+    } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1600); });
+    expect(screen.getByText("The screen is locked. Live view resumes by itself when it is unlocked.")).toBeTruthy();
+    // Well past the connection deadline, a paused session is still waiting.
+    await act(async () => { await vi.advanceTimersByTimeAsync(90_000); });
+    expect(screen.queryByText("TIMEOUT")).toBeNull();
+    expect(screen.getByRole("button", { name: "Stop" })).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("explains which stage a timeout stalled in", async () => {
+  vi.useFakeTimers();
+  try {
+    mediaMocks.heartbeatMediaSession.mockResolvedValue({ session: { ...session, state: "negotiating" } });
+    render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} autoStart />);
+    await act(async () => { await vi.advanceTimersByTimeAsync(46_000); });
+    expect(screen.getByText("TIMEOUT")).toBeTruthy();
+    expect(screen.getByText("The device connected to the video service, but no screen image arrived.")).toBeTruthy();
+  } finally { vi.useRealTimers(); }
+});
+
+it("does not offer to start when the device is offline", async () => {
+  render(<LivePlayer deviceId="device-1" transport={new ControlledTransport()} online={false} />);
+  expect(screen.getByText(/device is offline/)).toBeTruthy();
+  expect((screen.getByRole("button", { name: "Start live view" }) as HTMLButtonElement).disabled).toBe(true);
 });

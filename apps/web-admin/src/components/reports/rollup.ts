@@ -133,3 +133,10 @@ export function rollupByPage(visits: BrowserVisit[], domain: string): PageRollup
     .map((row) => ({ ...row, browsers: row.browsers.sort() }))
     .sort((a, b) => a.firstTs - b.firstTs || b.totalS - a.totalS);
 }
+
+/** Exact pages across all sites, keeping every distinct URL discoverable. */
+export function rollupAllPages(visits: BrowserVisit[]): Array<PageRollup & { domain: string }> {
+  const domains = [...new Set(visits.map(domainOf).filter((domain): domain is string => domain !== null))];
+  return domains.flatMap((domain) => rollupByPage(visits, domain).map((page) => ({ ...page, domain })))
+    .sort((a, b) => b.totalS - a.totalS || a.firstTs - b.firstTs || a.url.localeCompare(b.url));
+}

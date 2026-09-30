@@ -13,7 +13,7 @@
 //! - Frames are converted and handed straight to WebRTC. Nothing is buffered to
 //!   disk and no still image is ever produced.
 
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -68,6 +68,9 @@ pub struct LiveKitPublisher {
     width: u32,
     height: u32,
     metrics: Arc<Metrics>,
+    /// Set when the SFU link is gone for good (not a transparent resume). The
+    /// capture supervisor then exits so the agent reconnects with a new token.
+    disconnected: Arc<AtomicBool>,
 }
 
 impl LiveKitPublisher {
@@ -143,7 +146,13 @@ impl LiveKitPublisher {
             width,
             height,
             metrics,
+            disconnected: Arc::new(AtomicBool::new(false)),
         })
+    }
+
+    /// Shared flag that turns true once the room has disconnected permanently.
+    pub fn disconnect_signal(&self) -> Arc<AtomicBool> {
+        Arc::clone(&self.disconnected)
     }
 
     /// Converts one BGRA frame to I420 and hands it to WebRTC.
@@ -216,6 +225,7 @@ impl LiveKitPublisher {
             return false;
         };
         let room = Arc::clone(&self.room);
+        let disconnected = Arc::clone(&self.disconnected);
 
         self.runtime.spawn(async move {
             // Per-monitor DPI awareness must be set before the layout is read,
@@ -296,6 +306,7 @@ impl LiveKitPublisher {
                         // cannot leave a key stuck down on this machine.
                         gate.disarm();
                         injector.release_all();
+                        disconnected.store(true, Ordering::Release);
                         return;
                     }
                     _ => {}

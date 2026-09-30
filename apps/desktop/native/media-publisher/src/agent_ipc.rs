@@ -265,6 +265,72 @@ pub fn connect_pipe(name: &str) -> std::io::Result<std::fs::File> {
     OpenOptions::new().read(true).write(true).open(name)
 }
 
+/// Reads a synchronous pipe handle without ever parking inside `ReadFile`.
+///
+/// The pipe is opened for synchronous I/O, and Windows serializes synchronous
+/// I/O per file object: a thread blocked in `ReadFile` holds the object's lock,
+/// so a `WriteFile` on a duplicate of the same handle waits until a command
+/// arrives. The agent sends nothing after `Start`, so a blocking command reader
+/// silently froze every later event -- metrics, `first_frame`, fatal errors --
+/// and a working capture could never reach "live". Peeking first means a read
+/// is only issued when bytes are already waiting, and it completes at once.
+#[cfg(windows)]
+pub struct PipeCommandSource {
+    file: std::fs::File,
+    idle: std::time::Duration,
+}
+
+#[cfg(windows)]
+impl PipeCommandSource {
+    pub fn new(file: std::fs::File) -> Self {
+        Self {
+            file,
+            idle: std::time::Duration::from_millis(15),
+        }
+    }
+}
+
+#[cfg(windows)]
+impl Read for PipeCommandSource {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        use std::os::windows::io::AsRawHandle;
+        use windows::Win32::Foundation::{ERROR_BROKEN_PIPE, ERROR_PIPE_NOT_CONNECTED, HANDLE};
+        use windows::Win32::System::Pipes::PeekNamedPipe;
+
+        if buf.is_empty() {
+            return Ok(0);
+        }
+        loop {
+            let mut available = 0u32;
+            let peeked = unsafe {
+                PeekNamedPipe(
+                    HANDLE(self.file.as_raw_handle()),
+                    None,
+                    0,
+                    None,
+                    Some(&mut available),
+                    None,
+                )
+            };
+            match peeked {
+                Ok(()) if available > 0 => {
+                    let n = (available as usize).min(buf.len());
+                    return self.file.read(&mut buf[..n]);
+                }
+                Ok(()) => std::thread::sleep(self.idle),
+                // The peer closed its end: report end-of-stream, like ReadFile would.
+                Err(e)
+                    if e.code() == ERROR_BROKEN_PIPE.to_hresult()
+                        || e.code() == ERROR_PIPE_NOT_CONNECTED.to_hresult() =>
+                {
+                    return Ok(0)
+                }
+                Err(e) => return Err(std::io::Error::other(e)),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -452,5 +518,82 @@ mod credential_debug_tests {
         assert!(!debug.contains("private-host"));
         assert!(!debug.contains("private-room"));
         assert!(debug.contains("redacted"));
+    }
+
+    /// Regression: with a blocking reader, an event written while the sidecar
+    /// waited for its next command never reached the agent, so no session ever
+    /// became live. Events must flow while the command reader is idle.
+    #[cfg(windows)]
+    #[test]
+    fn events_reach_the_agent_while_the_command_reader_is_idle() {
+        use std::os::windows::io::FromRawHandle;
+        use std::sync::mpsc;
+        use std::time::Duration;
+        use windows::core::HSTRING;
+        use windows::Win32::Storage::FileSystem::PIPE_ACCESS_DUPLEX;
+        use windows::Win32::System::Pipes::{
+            ConnectNamedPipe, CreateNamedPipeW, PIPE_READMODE_BYTE, PIPE_TYPE_BYTE, PIPE_WAIT,
+        };
+
+        let name = format!(r"\\.\pipe\bibotracking-media-test-{}", std::process::id());
+        let server = unsafe {
+            CreateNamedPipeW(
+                &HSTRING::from(name.as_str()),
+                PIPE_ACCESS_DUPLEX,
+                PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_WAIT,
+                1,
+                4096,
+                4096,
+                0,
+                None,
+            )
+        };
+        assert!(!server.is_invalid(), "create test pipe");
+        let client = connect_pipe(&name).expect("connect test pipe");
+        let _ = unsafe { ConnectNamedPipe(server, None) };
+        let mut server = unsafe { std::fs::File::from_raw_handle(server.0) };
+
+        let (cmd_tx, cmd_rx) = mpsc::channel();
+        let reader = client.try_clone().unwrap();
+        std::thread::spawn(move || {
+            let mut commands = CommandReader::new(PipeCommandSource::new(reader));
+            loop {
+                let next = commands.next();
+                let closed = next.is_err();
+                if cmd_tx.send(next).is_err() || closed {
+                    return;
+                }
+            }
+        });
+        // Let the reader settle into its idle wait before writing.
+        std::thread::sleep(Duration::from_millis(200));
+
+        let (ev_tx, ev_rx) = mpsc::channel();
+        let mut writer = client;
+        std::thread::spawn(move || {
+            let written = write_event(&mut writer, &Event::Pong { seq: 7 });
+            let _ = ev_tx.send(written.is_ok());
+        });
+        assert_eq!(
+            ev_rx.recv_timeout(Duration::from_secs(5)),
+            Ok(true),
+            "event write blocked behind the idle command reader"
+        );
+
+        let mut events = EventReader::new(server.try_clone().unwrap());
+        assert_eq!(events.next().unwrap(), Event::Pong { seq: 7 });
+
+        write_command(&mut server, &Command::Ping { seq: 9 }).unwrap();
+        let got = cmd_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("command delivered");
+        assert_eq!(got.unwrap(), Command::Ping { seq: 9 });
+
+        drop(events);
+        drop(server);
+        let closed = cmd_rx
+            .recv_timeout(Duration::from_secs(5))
+            .expect("close delivered");
+        assert!(matches!(closed, Err(IpcError::Closed)), "got {closed:?}");
     }
 }

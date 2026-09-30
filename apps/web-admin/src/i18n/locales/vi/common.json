@@ -8,7 +8,8 @@
     "monitoring": "Giám sát",
     "organization": "Tổ chức",
     "tasks": "Công việc",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "manage": "Quản lý"
   },
   "actions": {
     "signIn": "Đăng nhập",
