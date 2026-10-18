@@ -52,12 +52,12 @@ const windowsBundle = one(
   "Windows NSIS updater bundle",
 );
 
-async function platformEntry(bundle) {
+async function platformEntry(bundle, publishedName = path.basename(bundle)) {
   const signature = await readFile(`${bundle}.sig`, "utf8");
   if (!signature.trim()) throw new Error(`Empty signature for ${bundle}`);
   return {
     signature: signature.trim(),
-    url: `${baseUrl}/${encodeURIComponent(path.basename(bundle))}`,
+    url: `${baseUrl}/${encodeURIComponent(publishedName)}`,
   };
 }
 
@@ -66,7 +66,12 @@ const manifest = {
   notes: `BiBoTracking ${config.version}`,
   pub_date: new Date().toISOString(),
   platforms: {
-    [`darwin-${macArch(path.basename(macInstaller))}`]: await platformEntry(macBundle),
+    // Tauri emits a stable macOS archive name. Give each published copy a
+    // versioned URL so older cached manifests keep their matching signed bytes.
+    [`darwin-${macArch(path.basename(macInstaller))}`]: await platformEntry(
+      macBundle,
+      `BiBoTracking_${config.version}_${macArch(path.basename(macInstaller))}.app.tar.gz`,
+    ),
     "windows-x86_64": await platformEntry(windowsBundle),
   },
 };

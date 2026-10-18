@@ -1,0 +1,65 @@
+name: Verify Windows automatic update
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Upgrade a running 1.5.30 app through the signed Railway updater
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $baseUrl = 'https://web-production-25e92.up.railway.app/download'
+          $expectedVersion = (Get-Content apps/desktop/package.json | ConvertFrom-Json).version
+          $manifest = Invoke-RestMethod "$baseUrl/latest.json"
+          if ($manifest.version -ne $expectedVersion) {
+            throw "Railway advertises $($manifest.version), expected $expectedVersion"
+          }
+          if (-not $manifest.platforms.'windows-x86_64'.url -or -not $manifest.platforms.'windows-x86_64'.signature) {
+            throw 'Windows update URL or signature is missing'
+          }
+
+          $oldInstaller = Join-Path $env:RUNNER_TEMP 'BiBoTracking_1.5.30_x64-setup.exe'
+          Invoke-WebRequest -Uri "$baseUrl/BiBoTracking_1.5.30_x64-setup.exe" -OutFile $oldInstaller
+          $expectedHash = 'A27F687354D0EBEA908934D3B90E09F79ED5ACEEFE42EACC484BD09DBF82D6AB'
+          if ((Get-FileHash $oldInstaller -Algorithm SHA256).Hash -ne $expectedHash) {
+            throw 'Pinned 1.5.30 installer checksum mismatch'
+          }
+
+          $install = Start-Process -FilePath $oldInstaller -ArgumentList '/S' -PassThru -Wait
+          if ($install.ExitCode -ne 0) { throw "1.5.30 setup failed: $($install.ExitCode)" }
+          $agent = Join-Path $env:ProgramFiles 'BiBoTracking\ctracking.exe'
+          if (-not (Test-Path $agent)) { throw '1.5.30 app was not installed' }
+          $oldVersion = (Get-Item $agent).VersionInfo.ProductVersion
+          if (-not $oldVersion.StartsWith('1.5.30')) { throw "Expected 1.5.30, found $oldVersion" }
+
+          Start-Process -FilePath $agent | Out-Null
+          $deadline = (Get-Date).AddMinutes(10)
+          do {
+            Start-Sleep -Seconds 10
+            if (Test-Path $agent) {
+              $installedVersion = (Get-Item $agent).VersionInfo.ProductVersion
+              if ($installedVersion.StartsWith($expectedVersion)) {
+                Write-Host "PASS: automatic update installed $installedVersion from 1.5.30"
+                $running = Get-Process -Name ctracking -ErrorAction SilentlyContinue |
+                  Where-Object { $_.SessionId -ne 0 } | Select-Object -First 1
+                if (-not $running) {
+                  Start-Sleep -Seconds 10
+                  $running = Get-Process -Name ctracking -ErrorAction SilentlyContinue |
+                    Where-Object { $_.SessionId -ne 0 } | Select-Object -First 1
+                }
+                if (-not $running) { throw 'Updated app did not relaunch in the user session' }
+                Write-Host "PASS: updated app relaunched (PID $($running.Id))"
+                exit 0
+              }
+            }
+          } while ((Get-Date) -lt $deadline)
+          throw "Automatic updater did not install $expectedVersion within 10 minutes"
