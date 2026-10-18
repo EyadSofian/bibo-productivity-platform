@@ -1,6 +1,6 @@
 # ADR 0002 — Video-first WebRTC media plane; no still screenshots
 
-- **Status:** Accepted
+- **Status:** Accepted; periodic-image clause temporarily excepted by [ADR 0004](0004-temporary-still-capture.md)
 - **Date:** 2026-09-01
 - **Slice:** V01 (media audit) exit gate — the decision the V02–V14 backlog executes
 - **Supersedes:** the live-view half of [ADR 0001](0001-ephemeral-live-frames.md).

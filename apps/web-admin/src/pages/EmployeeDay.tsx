@@ -14,6 +14,7 @@ import type { ActivityResponse, BrowserVisit, KeystrokeBucket, OsStateReport } f
 import { usePageHeader } from "../app/AppShell";
 import { useBusinesses } from "../app/useBusinesses";
 import { SessionPlayer, type SeekRequest } from "../components/SessionPlayer/SessionPlayer";
+import { ScreenshotsPanel } from "../components/ScreenshotsPanel";
 import { deriveCommunicationSessions } from "../lib/communicationEvidence";
 import { dayRange, elapsedEnd, isoDate, isSameDay, localDayWindow, parseIsoDate } from "../lib/day";
 import { firstRecordedMoment, safeHref, uniqueVisits, workingWindow } from "../lib/dayModel";
@@ -49,7 +50,7 @@ import {
 
 const DeviceLiveVideo = lazy(() => import("../components/LivePlayer/DeviceLiveVideo"));
 
-type Tab = "apps" | "sites" | "input" | "log" | "video";
+type Tab = "apps" | "sites" | "input" | "log" | "screenshots" | "video";
 
 type DayData = {
   activity: ActivityResponse;
@@ -279,6 +280,7 @@ export default function EmployeeDay() {
             { value: "sites", label: t("employee.tabSites"), icon: "globe" },
             { value: "input", label: t("employee.tabInput"), icon: "keyboard" },
             { value: "log", label: t("employee.tabLog"), icon: "activity" },
+            { value: "screenshots", label: t("employee.tabScreenshots"), icon: "monitor" },
             { value: "video", label: t("employee.tabVideo"), icon: "live" },
           ]}
         />
@@ -292,6 +294,8 @@ export default function EmployeeDay() {
           <InputPanel buckets={d.buckets} dayStart={range.start} mouseReported={mouseReported} />
         ) : tab === "log" ? (
           <LogPanel data={d} />
+        ) : tab === "screenshots" ? (
+          <ScreenshotsPanel key={`${id}:${range.start}`} employeeId={id} from={range.start} to={range.end} today={isToday} />
         ) : (
           <SessionPlayer recordings={d.recordings} seek={seek} samples={d.activity.samples} />
         )}

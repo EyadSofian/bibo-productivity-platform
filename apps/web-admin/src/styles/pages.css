@@ -164,6 +164,16 @@ html[lang="ar"] .overview-hero-title {
   justify-content: flex-end;
 }
 
+.shots-panel { display: grid; gap: 18px; }
+.shots-heading, .shots-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.shots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.shot-card { display: grid; gap: 8px; min-width: 0; padding: 8px; text-align: start; border: 1px solid var(--line); border-radius: 12px; background: var(--glass-soft); color: var(--ink); cursor: pointer; transition: transform .18s, border-color .18s; }
+.shot-card:hover { transform: translateY(-2px); border-color: var(--brand); }
+.shot-image, .shot-placeholder { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: contain; border-radius: 8px; background: var(--fill-1); }
+.shot-placeholder { display: grid; place-items: center; color: var(--ink-2); font-size: var(--fs-sm); }
+.shot-image-full { max-height: 72vh; aspect-ratio: auto; }
+.shot-caption { padding: 0 4px 2px; font-size: var(--fs-sm); font-weight: 650; }
+
 .day-glance {
   display: grid;
   gap: 22px;

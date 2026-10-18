@@ -90,6 +90,7 @@
     "tabSites": "Websites",
     "tabInput": "Keyboard & mouse",
     "tabLog": "Activity log",
+    "tabScreenshots": "Screenshots",
     "tabVideo": "Video",
     "appsHint": "Every app used today and for how long. Open an app to see its windows.",
     "untitled": "(untitled window)",
@@ -136,6 +137,17 @@
     "nearest": "That exact moment wasn't recorded — showing the nearest recording.",
     "speed": "Playback speed",
     "clips": "Recordings"
+  },
+  "screenshots": {
+    "hint": "Periodic screen images while scheduled video recording is paused. Images appear after the device syncs.",
+    "refresh": "Refresh",
+    "none": "No screenshots for this day",
+    "noneHint": "Images appear here after a managed device captures and uploads them.",
+    "at": "Screenshot at {{time}}",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {{count}}",
+    "unavailable": "Image unavailable"
   },
   "employees": {
     "title": "Employees",
@@ -272,7 +284,7 @@
     "agentSub": "Install on each employee's computer. It records:",
     "downloadWindows": "Download for Windows",
     "downloadMac": "Download for macOS",
-    "never": "Never recorded: what is typed, passwords, message contents or still screenshots.",
+    "never": "Never recorded: what is typed, passwords or message contents. Periodic screenshots may capture visible screen content.",
     "tracks": {
       "apps": "Every app opened, and for how long",
       "sites": "Every website and link visited, with time on each",

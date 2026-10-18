@@ -138,6 +138,29 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
 
     let client = BackendClient::new(base_url, ctx.auth.clone());
     let mut failed = false;
+    // The window normally refreshes policy on focus, but managed agents spend
+    // most of their time in the tray. Refresh the screenshot gate on each sync
+    // pass so an operator can enable or disable temporary capture remotely.
+    match client.fetch_policy().await {
+        Ok(policy) => {
+            let enabled = policy.still_capture_enabled.unwrap_or(false);
+            ctx.control.still_capture_enabled.store(enabled, Ordering::Relaxed);
+            let mut settings = ctx.settings.current.lock().unwrap();
+            settings.still_capture_enabled = enabled;
+            if policy.managed && !policy.allow_employee_override {
+                if let Some(interval) = policy.screenshot_interval_s {
+                    settings.screenshot_interval_s = interval.max(60);
+                    ctx.control.screenshot_interval_s.store(interval.max(60), Ordering::Relaxed);
+                }
+                if let Some(days) = policy.screenshot_retention_days {
+                    settings.screenshot_retention_days = days;
+                    ctx.control.screenshot_retention_days.store(days, Ordering::Relaxed);
+                }
+            }
+            let _ = crate::settings::save(&ctx.settings.path, &settings);
+        }
+        Err(e) => crate::log_warn!("sync", "capture policy refresh failed: {e}"),
+    }
     // Register/heartbeat before resolving F41. This makes company/employee
     // profiles effective on the first real data upload, not five minutes later.
     match client
