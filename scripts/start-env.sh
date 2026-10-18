@@ -18,6 +18,8 @@
 #   scripts/start-env.sh dev            # full dev stack
 #   scripts/start-env.sh staging backend
 #   scripts/start-env.sh production desktop
+#   JWT_SECRET="$(openssl rand -hex 32)" scripts/start-env.sh staging backend
+#   For repeat runs, store the generated value outside the repository and reuse it.
 set -euo pipefail
 
 ENV="${1:-}"
@@ -39,7 +41,7 @@ case "$ENV" in
     DB=ctracking_staging
     PORT=8081
     TAURI_CONFIG="tauri.staging.conf.json"
-    JWT_SECRET="staging-only-change-me"
+    JWT_SECRET="${JWT_SECRET:-}"
     STORAGE_DIR="./storage-staging"
     ;;
   production|prod)
@@ -48,7 +50,7 @@ case "$ENV" in
     DB=ctracking_prod
     PORT=8082
     TAURI_CONFIG=""           # production uses the base tauri.conf.json
-    JWT_SECRET="prod-change-me-to-a-long-random-secret"
+    JWT_SECRET="${JWT_SECRET:-}"
     STORAGE_DIR="./storage-prod"
     ;;
   *)
@@ -61,6 +63,11 @@ case "$COMPONENT" in
   backend|desktop|all) ;;
   *) echo "component must be backend|desktop|all (got '$COMPONENT')" >&2; exit 2 ;;
 esac
+
+if [[ "$COMPONENT" != desktop && "$FEATURE" != local && -z "$JWT_SECRET" ]]; then
+  echo "JWT_SECRET must be set to a stable random value for $FEATURE (for example: openssl rand -hex 32)" >&2
+  exit 2
+fi
 
 BACKEND_URL="http://localhost:$PORT"
 DATABASE_URL="postgres://ctracking:ctracking@localhost:5432/$DB?sslmode=disable"
@@ -81,6 +88,7 @@ start_backend() {
   # process environment), so we never clobber the developer's local .env file.
   PORT="$PORT" \
   DATABASE_URL="$DATABASE_URL" \
+  APP_ENV="$FEATURE" \
   JWT_SECRET="$JWT_SECRET" \
   STORAGE_DIR="$STORAGE_DIR" \
     go run ./cmd/server
@@ -109,7 +117,7 @@ case "$COMPONENT" in
     "$ROOT/scripts/dev-db.sh" >/dev/null
     # Backend in the background; tear it down when the desktop (foreground) exits.
     ( cd "$ROOT/apps/backend"; \
-      PORT="$PORT" DATABASE_URL="$DATABASE_URL" JWT_SECRET="$JWT_SECRET" \
+      PORT="$PORT" DATABASE_URL="$DATABASE_URL" APP_ENV="$FEATURE" JWT_SECRET="$JWT_SECRET" \
       STORAGE_DIR="$STORAGE_DIR" go run ./cmd/server ) &
     BACKEND_PID=$!
     trap 'echo; echo "→ stopping backend ($ENV)"; kill "$BACKEND_PID" 2>/dev/null || true' EXIT

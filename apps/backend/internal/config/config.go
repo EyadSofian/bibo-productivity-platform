@@ -122,8 +122,12 @@ func Load() (*Config, error) {
 	// an owner token. Outside local development the secret must be long enough
 	// to resist offline brute force against any single issued token, and must
 	// not be one of the placeholders committed to this repo.
-	if weak := weakJWTSecret(cfg.Environment, cfg.JWTSecret); len(weak) > 0 {
-		return nil, fmt.Errorf("insecure JWT_SECRET for APP_ENV=%s: %s", cfg.Environment, strings.Join(weak, "; "))
+	// Only an explicit APP_ENV=local gets the development exemption. The
+	// observability label above can default to local, but an unset deploy
+	// variable must not silently make a public placeholder acceptable.
+	rawEnvironment := os.Getenv("APP_ENV")
+	if weak := weakJWTSecret(rawEnvironment, cfg.JWTSecret); len(weak) > 0 {
+		return nil, fmt.Errorf("insecure JWT_SECRET for APP_ENV=%q: %s", rawEnvironment, strings.Join(weak, "; "))
 	}
 
 	// A token TTL of zero or a negative one would mean tokens that never expire

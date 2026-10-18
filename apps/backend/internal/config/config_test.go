@@ -62,6 +62,7 @@ func TestMediaTokenTTLIsClamped(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Setenv("DATABASE_URL", "postgres://localhost/x")
 			t.Setenv("JWT_SECRET", "test-secret")
+			t.Setenv("APP_ENV", "local")
 			if tc.val != "" {
 				t.Setenv("MEDIA_TOKEN_TTL_SECONDS", tc.val)
 			}
@@ -81,6 +82,7 @@ func TestMediaTokenTTLIsClamped(t *testing.T) {
 func TestMediaProviderDefaultsToUnset(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://localhost/x")
 	t.Setenv("JWT_SECRET", "test-secret")
+	t.Setenv("APP_ENV", "local")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatalf("load: %v", err)
@@ -128,6 +130,7 @@ func TestLoadRejectsWeakJWTSecretOutsideLocal(t *testing.T) {
 		// An unrecognised APP_ENV is treated as deployed, not as local: a typo
 		// in the deploy variable must not reopen the hole.
 		{name: "an unknown env is held to the same bar", env: "prod", secret: "dev-only-change-me", reject: true},
+		{name: "an unset env does not grant the local exemption", env: "", secret: "dev-only-change-me", reject: true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

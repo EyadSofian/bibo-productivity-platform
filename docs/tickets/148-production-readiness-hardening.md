@@ -7,13 +7,13 @@
 
 The 2026-10-18 full-check pass was green everywhere — Go with `-race` against a real
 Postgres, 243 web-admin tests, 63 extension tests, 49 + 100 Rust tests, 35/35 live
-end-to-end checks — and still shipped four production-only gaps. All four were invisible
-because the `security` job in `.github/workflows/ci.yml` is `continue-on-error: true`, so
-CI stayed green while the dependency audit failed inside it.
+end-to-end checks — and still shipped four production-only gaps. The dependency
+findings were visible in the `security` job, but its `continue-on-error: true` kept
+CI green. The JWT-secret and HTTP-timeout gaps were not dependency findings; they
+needed application checks and tests.
 
-That is the root cause worth naming: the audit job has been advisory since it was added,
-which means it has never once blocked a merge, which means its findings accumulated
-unread. Everything below was already being reported by a job that nobody had to look at.
+The audit job has been advisory since it was added, so its findings accumulated
+without blocking a merge. Application checks and tests now guard the other two gaps.
 
 ## 1. JWT secret was only checked for emptiness
 
@@ -32,9 +32,16 @@ newline do not get around them; the stored secret stays untrimmed, because chang
 signing key here would silently invalidate every token already issued. The error names the
 problem without reprinting the secret, since it lands in boot logs and Sentry.
 
-`APP_ENV=local` stays exempt — a forgery against a developer's own machine grants nothing,
-and the committed `.env.example` has to keep working. An **unrecognised** `APP_ENV` is
+`APP_ENV=local` stays exempt for the committed `.env.example` development setup.
+An **unrecognised** `APP_ENV` is
 treated as deployed, not as local, so a typo in the deploy variable cannot reopen the hole.
+The exemption also requires `APP_ENV=local` to be explicit. An unset variable no longer
+inherits the local exemption through the observability label's `local` default.
+
+`scripts/start-env.sh` now passes `APP_ENV` to the backend in both launch modes.
+Staging and production backend runs require a caller-supplied stable `JWT_SECRET`; the
+script no longer supplies their committed placeholders. For example, set a secret
+generated with `openssl rand -hex 32` in the shell before starting either environment.
 
 Note the production placeholder is 38 bytes, so the length floor alone would have accepted
 it. That length is exactly what let it survive. The placeholder list is what catches it.

@@ -207,10 +207,9 @@ jobs:
         run: cargo clippy --all-targets
 
   # ---------------------------------------------------------------- security --
-  # BLOCKING (ticket 148). This job was advisory from the day it was added, which
-  # is exactly why a weak-secret check, a timeout-less HTTP server, 11 Go
-  # vulnerabilities and 10 Rust ones all sat behind a green CI badge until someone
-  # went looking. An audit nobody has to act on is not coverage.
+  # BLOCKING (ticket 148). This job was advisory from the day it was added, so
+  # the Go, Rust and JS dependency findings sat behind a green CI badge. The
+  # weak-secret and HTTP-timeout gaps are guarded by backend tests instead.
   #
   # A waiver belongs in apps/desktop/src-tauri/.cargo/audit.toml, with a reason
   # and a way out — not here. Note this job can go red without anyone pushing,
