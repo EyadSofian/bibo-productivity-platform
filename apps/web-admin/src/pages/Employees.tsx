@@ -5,9 +5,11 @@ import {
   assignEmployeeOrganization,
   createBusiness,
   createEmployee,
+  getBusinessJoinCode,
   listBusinessEmployees,
   listOrganization,
   reportEmployees,
+  rotateBusinessJoinCode,
 } from "../api/endpoints";
 import { ApiError, type Employee } from "../api/types";
 import { usePageHeader } from "../app/AppShell";
@@ -31,6 +33,7 @@ export default function Employees() {
   const employees = useAsync(
     () => (selectedId ? listBusinessEmployees(selectedId) : Promise.resolve({ employees: [] })),
     [selectedId],
+    30_000,
   );
   const roster = useAsync(
     () => (selectedId ? reportEmployees(selectedId, localDayWindow()) : Promise.resolve({ employees: [] })),
@@ -41,6 +44,13 @@ export default function Employees() {
     () => (selectedId ? listOrganization(selectedId) : Promise.resolve({ departments: [], job_roles: [] })),
     [selectedId],
   );
+  const invite = useAsync(
+    () => (selectedId ? getBusinessJoinCode(selectedId) : Promise.resolve({ join_code: "" })),
+    [selectedId],
+  );
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [rotating, setRotating] = useState(false);
+  const [rotateError, setRotateError] = useState<string | null>(null);
 
   const live = useMemo(() => new Map((roster.data?.employees ?? []).map((e) => [e.id, e])), [roster.data]);
   const list = useMemo(() => {
@@ -87,6 +97,42 @@ export default function Employees() {
           </button>
         </div>
       ) : null}
+
+      <Card>
+        <div className="toolbar">
+          <div className="grow">
+            <h2>{t("employees.selfJoinTitle")}</h2>
+            <p className="muted">{t("employees.selfJoinBody")}</p>
+          </div>
+          {invite.data?.join_code ? (
+            <div className="toolbar">
+              <button type="button" className="btn btn-primary" onClick={() => {
+                void navigator.clipboard.writeText(invite.data!.join_code).then(() => setCodeCopied(true));
+              }}>
+                <Icon name={codeCopied ? "check" : "layers"} />
+                {codeCopied ? t("employees.codeCopied") : t("employees.copyJoinCode")}
+              </button>
+              <button type="button" className="btn btn-ghost" disabled={rotating} onClick={async () => {
+                if (!selectedId || !window.confirm(t("employees.rotateConfirm"))) return;
+                setRotating(true);
+                setRotateError(null);
+                try {
+                  await rotateBusinessJoinCode(selectedId);
+                  await invite.reload();
+                  setCodeCopied(false);
+                } catch (err) {
+                  setRotateError(err instanceof ApiError ? err.message : t("errors.network", { ns: "common" }));
+                } finally {
+                  setRotating(false);
+                }
+              }}>{t("employees.rotateCode")}</button>
+            </div>
+          ) : null}
+        </div>
+        <ErrorNote error={invite.error} onRetry={invite.reload} />
+        {rotateError ? <div className="alert alert-danger" role="alert">{rotateError}</div> : null}
+        {invite.data?.join_code ? <code className="ltr" style={{ display: "block", marginTop: 12, overflowWrap: "anywhere" }}>{invite.data.join_code}</code> : null}
+      </Card>
 
       <Card>
         <div className="toolbar" style={{ marginBlockEnd: 18 }}>

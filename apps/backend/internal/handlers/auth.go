@@ -82,6 +82,52 @@ func (h *AuthHandler) Register(c *gin.Context) {
 	h.issue(c, http.StatusCreated, u)
 }
 
+type employeeRegisterReq struct {
+	BusinessID  string `json:"business_id"`
+	JoinCode    string `json:"join_code"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	DisplayName string `json:"display_name"`
+}
+
+// RegisterEmployee lets an invited employee create their own credentials and
+// join immediately. The owner shares the private join code from the dashboard.
+func (h *AuthHandler) RegisterEmployee(c *gin.Context) {
+	var req employeeRegisterReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		badRequest(c, "invalid body")
+		return
+	}
+	req.BusinessID = strings.TrimSpace(req.BusinessID)
+	req.JoinCode = strings.TrimSpace(req.JoinCode)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	req.DisplayName = strings.TrimSpace(req.DisplayName)
+	if req.BusinessID == "" || req.JoinCode == "" || req.Email == "" || !strings.Contains(req.Email, "@") || req.DisplayName == "" {
+		badRequest(c, "business_id, join_code, email and display_name are required")
+		return
+	}
+	if len(req.Password) < 8 {
+		badRequest(c, "password must be at least 8 characters")
+		return
+	}
+	hash, err := auth.HashPassword(req.Password)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	_, err = h.store.RegisterEmployee(c.Request.Context(), req.BusinessID, req.JoinCode, req.Email, hash, req.DisplayName)
+	switch {
+	case errors.Is(err, store.ErrNotFound):
+		c.JSON(http.StatusForbidden, gin.H{"error": "invalid company or join code"})
+	case errors.Is(err, store.ErrConflict):
+		c.JSON(http.StatusConflict, gin.H{"error": "that email is already taken"})
+	case err != nil:
+		serverError(c, err)
+	default:
+		c.JSON(http.StatusCreated, gin.H{"status": "joined"})
+	}
+}
+
 type loginReq struct {
 	Identifier string `json:"identifier"` // email or username
 	Email      string `json:"email"`      // legacy field; treated as an identifier

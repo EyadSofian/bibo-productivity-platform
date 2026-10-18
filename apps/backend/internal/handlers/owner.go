@@ -144,6 +144,32 @@ func (h *OwnerHandler) ListEmployees(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"employees": list})
 }
 
+// JoinCode returns the private enrollment code to this business's owner.
+func (h *OwnerHandler) JoinCode(c *gin.Context) {
+	if !h.requireOwner(c) {
+		return
+	}
+	code, err := h.store.JoinCode(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"join_code": code})
+}
+
+// RotateJoinCode invalidates an enrollment code that was shared too widely.
+func (h *OwnerHandler) RotateJoinCode(c *gin.Context) {
+	if !h.requireOwner(c) {
+		return
+	}
+	code, err := h.store.RotateJoinCode(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"join_code": code})
+}
+
 // UpdateSettings updates a business's capture policy. Only the keys present in the
 // body are changed; screenshot_retention_days accepts null ("keep forever").
 func (h *OwnerHandler) UpdateSettings(c *gin.Context) {

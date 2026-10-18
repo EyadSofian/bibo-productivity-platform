@@ -7,6 +7,8 @@ vi.mock("../api/endpoints", () => ({
   listBusinessEmployees: vi.fn(),
   reportEmployees: vi.fn(),
   listOrganization: vi.fn(),
+  getBusinessJoinCode: vi.fn(),
+  rotateBusinessJoinCode: vi.fn(),
   createEmployee: vi.fn(),
   createBusiness: vi.fn(),
   assignEmployeeOrganization: vi.fn(),
@@ -25,6 +27,7 @@ beforeEach(() => {
     ],
   });
   vi.mocked(api.reportEmployees).mockResolvedValue({ employees: [] });
+  vi.mocked(api.getBusinessJoinCode).mockResolvedValue({ join_code: "example-join-code" });
   vi.mocked(api.listOrganization).mockResolvedValue({
     departments: [{ id: "d1", business_id: BUSINESS.id, name: "Sales", description: "", created_at: "", updated_at: "" }],
     job_roles: [],
@@ -32,6 +35,11 @@ beforeEach(() => {
 });
 
 describe("Employees", () => {
+  it("shows the private join code to the owner", async () => {
+    await renderPage(<Employees />);
+    expect(await screen.findByText("example-join-code")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Copy join code" })).toBeTruthy();
+  });
   it("filters by name and by department", async () => {
     await renderPage(<Employees />);
     expect(await screen.findByText("Omar Adel")).toBeTruthy();

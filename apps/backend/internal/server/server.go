@@ -124,6 +124,7 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 	a := v1.Group("/auth")
 	authLimiter := middleware.LoginRateLimit()
 	a.POST("/register", authLimiter, authH.Register)
+	a.POST("/register-employee", authLimiter, authH.RegisterEmployee)
 	a.POST("/login", authLimiter, authH.Login)
 	a.POST("/refresh", authH.Refresh)
 
@@ -136,6 +137,8 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 	authed.POST("/businesses", ownerH.CreateBusiness)
 	authed.GET("/businesses/mine", ownerH.ListMine)
 	authed.GET("/businesses/:id/employees", ownerH.ListEmployees)
+	authed.GET("/businesses/:id/join-code", ownerH.JoinCode)
+	authed.POST("/businesses/:id/join-code/rotate", ownerH.RotateJoinCode)
 	authed.PATCH("/businesses/:id/settings", ownerH.UpdateSettings)
 	authed.POST("/businesses/:id/screenshots/cleanup", retentionH.Cleanup)
 	authed.POST("/employees", ownerH.CreateEmployee)

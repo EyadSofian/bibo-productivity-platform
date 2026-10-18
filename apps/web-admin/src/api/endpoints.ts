@@ -63,6 +63,20 @@ export function listPublicBusinesses() {
   });
 }
 
+export function registerEmployee(input: { business_id: string; join_code: string; email: string; password: string; display_name: string }) {
+  return request<{ status: "joined" }>("/v1/auth/register-employee", {
+    method: "POST", auth: false, body: input,
+  });
+}
+
+export function getBusinessJoinCode(businessId: string) {
+  return request<{ join_code: string }>(`/v1/businesses/${businessId}/join-code`);
+}
+
+export function rotateBusinessJoinCode(businessId: string) {
+  return request<{ join_code: string }>(`/v1/businesses/${businessId}/join-code/rotate`, { method: "POST" });
+}
+
 // ---------- auth ----------
 export async function login(identifier: string, password: string, business_id?: string) {
   const res = await request<AuthResponse>("/v1/auth/login", {
