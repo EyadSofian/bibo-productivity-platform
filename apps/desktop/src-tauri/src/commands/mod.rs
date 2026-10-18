@@ -238,7 +238,7 @@ pub async fn apply_org_policy(
     {
         let mut s = settings.current.lock().unwrap();
         s.managed_locked = status.locked();
-        s.still_capture_enabled = policy.still_capture_enabled.unwrap_or(false);
+        s.still_capture_enabled = policy.managed && policy.still_capture_enabled.unwrap_or(false);
         crate::settings::apply(&s, &control);
         let _ = crate::settings::save(&settings.path, &s);
     }

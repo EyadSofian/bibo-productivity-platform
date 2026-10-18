@@ -143,7 +143,7 @@ pub async fn run_once(ctx: &SyncContext) -> PassOutcome {
     // pass so an operator can enable or disable temporary capture remotely.
     match client.fetch_policy().await {
         Ok(policy) => {
-            let enabled = policy.still_capture_enabled.unwrap_or(false);
+            let enabled = policy.managed && policy.still_capture_enabled.unwrap_or(false);
             ctx.control.still_capture_enabled.store(enabled, Ordering::Relaxed);
             let mut settings = ctx.settings.current.lock().unwrap();
             settings.still_capture_enabled = enabled;
