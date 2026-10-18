@@ -207,11 +207,18 @@ jobs:
         run: cargo clippy --all-targets
 
   # ---------------------------------------------------------------- security --
-  # Advisory only until F32 triages the findings and makes them blocking.
+  # BLOCKING (ticket 148). This job was advisory from the day it was added, which
+  # is exactly why a weak-secret check, a timeout-less HTTP server, 11 Go
+  # vulnerabilities and 10 Rust ones all sat behind a green CI badge until someone
+  # went looking. An audit nobody has to act on is not coverage.
+  #
+  # A waiver belongs in apps/desktop/src-tauri/.cargo/audit.toml, with a reason
+  # and a way out — not here. Note this job can go red without anyone pushing,
+  # because a newly published advisory against an unchanged dependency fails
+  # govulncheck and pnpm audit. That is the gate working, not a flake.
   security:
-    name: Dependency audit (advisory)
+    name: Dependency audit
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

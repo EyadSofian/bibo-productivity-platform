@@ -76,14 +76,9 @@ func main() {
 	defer stopSweeper()
 	ret.StartSweeper(sweepCtx, time.Hour)
 
-	// NOTE: WriteTimeout must stay unset. /v1/remote-assist/:id/frames/stream is a
-	// long-lived SSE response, and a server-wide WriteTimeout would cut it off
-	// mid-session. Bound slow clients with ReadHeaderTimeout or a per-route
-	// timeout instead, never with WriteTimeout.
-	srv := &http.Server{
-		Addr:    ":" + cfg.Port,
-		Handler: server.New(sweepCtx, cfg, st, files, ret),
-	}
+	// Timeouts, and the reason WriteTimeout stays unset, live in
+	// server.NewHTTPServer so one place owns them and the tests can assert them.
+	srv := server.NewHTTPServer(":"+cfg.Port, server.New(sweepCtx, cfg, st, files, ret))
 
 	go func() {
 		log.Printf("listening on :%s", cfg.Port)

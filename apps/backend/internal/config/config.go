@@ -117,6 +117,15 @@ func Load() (*Config, error) {
 		return nil, fmt.Errorf("missing required env: %s", strings.Join(missing, ", "))
 	}
 
+	// A present-but-weak JWT secret is worse than a missing one: the service
+	// boots, every token verifies, and nothing looks wrong until someone forges
+	// an owner token. Outside local development the secret must be long enough
+	// to resist offline brute force against any single issued token, and must
+	// not be one of the placeholders committed to this repo.
+	if weak := weakJWTSecret(cfg.Environment, cfg.JWTSecret); len(weak) > 0 {
+		return nil, fmt.Errorf("insecure JWT_SECRET for APP_ENV=%s: %s", cfg.Environment, strings.Join(weak, "; "))
+	}
+
 	// A token TTL of zero or a negative one would mean tokens that never expire
 	// or are born expired. Clamp rather than fail: a bad value here must not
 	// stop the service booting, but must not widen the grant either.
@@ -124,6 +133,50 @@ func Load() (*Config, error) {
 		cfg.MediaTokenTTLSeconds = 120
 	}
 	return cfg, nil
+}
+
+// jwtSecretMinBytes is the floor for a deployed signing key. HS256 keys shorter
+// than the 32-byte hash output add no security over a 32-byte one and a short
+// human-chosen string is brute-forceable offline from one captured token.
+const jwtSecretMinBytes = 32
+
+// templateJWTSecrets are the placeholder values committed to this repository
+// (apps/backend/.env.example, .env.staging.example, .env.prod.example,
+// docker-compose.yml and scripts/start-env.sh). They are public by definition,
+// so they are rejected outside local.
+//
+// The length floor below already catches the dev and staging ones; they are
+// listed so the error names the real cause instead of just a byte count. The
+// production one is 38 bytes and clears that floor on its own, which is exactly
+// what made it easy to leave in place — only this list catches it.
+var templateJWTSecrets = map[string]bool{
+	"dev-only-change-me":                     true,
+	"staging-only-change-me":                 true,
+	"prod-change-me-to-a-long-random-secret": true,
+}
+
+// weakJWTSecret returns the reasons secret is unfit to sign tokens in env, or
+// nil if it is acceptable. APP_ENV=local is exempt: local development keeps the
+// convenience of the committed .env.example, and a local forgery grants nothing.
+// Reasons never quote the secret, so this error is safe in boot logs.
+//
+// Both checks run against the whitespace-trimmed secret: padding contributes no
+// entropy, and a value copy-pasted with a trailing newline is still the public
+// template. The secret itself is left untrimmed — changing the signing key here
+// would silently invalidate every token already issued.
+func weakJWTSecret(env, secret string) []string {
+	if env == "local" {
+		return nil
+	}
+	trimmed := strings.TrimSpace(secret)
+	var weak []string
+	if len(trimmed) < jwtSecretMinBytes {
+		weak = append(weak, fmt.Sprintf("%d bytes, need at least %d", len(trimmed), jwtSecretMinBytes))
+	}
+	if templateJWTSecrets[trimmed] {
+		weak = append(weak, "matches a placeholder committed to this repo")
+	}
+	return weak
 }
 
 func getenv(key, fallback string) string {

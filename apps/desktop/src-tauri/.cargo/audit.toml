@@ -1,0 +1,39 @@
+# cargo-audit configuration for the desktop agent.
+#
+# The `security` job in .github/workflows/ci.yml is blocking, so this file is the
+# only place an advisory may be waived — and every entry needs a reason and a way
+# out, or the gate quietly stops meaning anything.
+#
+# See docs/tickets/148-production-readiness-hardening.md for the full analysis.
+
+[advisories]
+# zip 4.6.1 — three advisories, all fixed in zip >= 9.0.0, none reachable from
+# here: `tauri-plugin-updater` 2.10.1 requires `zip = "^4"`, and 2.10.1 is the
+# newest 2.x release, so no published version has migrated to zip 9 yet.
+#
+#   RUSTSEC-2026-0369 (9.1 critical) — extract() applies Unix permissions
+#                                      through symlinks without confining them
+#   RUSTSEC-2026-0367 (7.3 high)     — SUID/SGID bits preserved on extraction
+#   RUSTSEC-2026-0368                — extract() creates symlinks pointing
+#                                      outside the destination directory
+#
+# Exposure is narrow on three counts, each checked in the plugin's source:
+#   1. The dependency is declared under
+#      `[target.'cfg(target_os = "windows")'.dependencies.zip]` and `extract_zip`
+#      is `#[cfg(target_os = "windows")]`, so the macOS build never links it.
+#   2. -0367 and -0369 describe Unix permission semantics, which do not apply to
+#      the Windows target that is the only one reaching that code.
+#   3. `Update::download` calls `verify_signature(&buffer, &self.signature,
+#      &self.config.pubkey)` BEFORE `install()` reaches `ZipArchive::extract`, so
+#      the archive is minisign-verified against the pubkey embedded in the app.
+#      Reaching the bug needs an archive that passes that check — i.e. a
+#      compromised signing key, which already allows arbitrary code through the
+#      updater regardless of zip.
+#
+# REMOVE ALL THREE once a `tauri-plugin-updater` release depends on zip >= 9:
+#   cd apps/desktop/src-tauri && cargo update -p tauri-plugin-updater && cargo audit
+ignore = [
+    "RUSTSEC-2026-0367",
+    "RUSTSEC-2026-0368",
+    "RUSTSEC-2026-0369",
+]

@@ -25,7 +25,7 @@ RUN cp -R marketing/site marketing/site-railway \
 
 # Build the API as a static Linux binary. Database migrations are embedded in it
 # and run automatically when the service starts.
-FROM golang:1.26-alpine AS backend-build
+FROM golang:1.27.2-alpine AS backend-build
 WORKDIR /src
 COPY apps/backend/go.mod apps/backend/go.sum ./
 RUN go mod download
