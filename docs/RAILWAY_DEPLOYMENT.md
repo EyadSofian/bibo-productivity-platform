@@ -59,10 +59,15 @@ referenced by `latest.json` to the web volume:
 railway volume files --volume web-volume upload <macOS.dmg> /download/EmployeeTracker-macOS.dmg --overwrite
 railway volume files --volume web-volume upload <Windows-setup.exe> /download/BiBoTracking-Windows-x64-Setup.exe --overwrite
 railway volume files --volume web-volume upload <Windows.msi> /download/BiBoTracking-Windows-x64.msi --overwrite
-railway volume files --volume web-volume upload <macOS.app.tar.gz> /download/<macOS.app.tar.gz> --overwrite
+railway volume files --volume web-volume upload <macOS.app.tar.gz> /download/BiBoTracking_<version>_<arch>.app.tar.gz --overwrite
 railway volume files --volume web-volume upload <Windows-setup.exe> /download/<Windows-setup.exe> --overwrite
 railway volume files --volume web-volume upload latest.json /download/latest.json --overwrite
 ```
+
+The macOS updater archive is emitted by Tauri with a stable local filename.
+Publish each release under the versioned name generated in `latest.json`; keep
+the stable old archive available for clients that cached an earlier manifest.
+Upload and verify the signed bundles before replacing `latest.json`.
 
 The backend serves and counts these downloads at `/download/:file`. Keep the
 private updater key backed up securely: losing it prevents publishing updates
