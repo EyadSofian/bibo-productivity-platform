@@ -29,7 +29,7 @@ jobs:
 
           $oldInstaller = Join-Path $env:RUNNER_TEMP 'BiBoTracking_1.5.30_x64-setup.exe'
           Invoke-WebRequest -Uri "$baseUrl/BiBoTracking_1.5.30_x64-setup.exe" -OutFile $oldInstaller
-          $expectedHash = 'A27F687354D0EBEA908934D3B90E09F79ED5ACEEFE42EACC484BD09DBF82D6AB'
+          $expectedHash = 'A27F687354D0EBEA908934D3B90E09F79ED5ACEFEE42EACC484BD09DBF82D6AB'
           if ((Get-FileHash $oldInstaller -Algorithm SHA256).Hash -ne $expectedHash) {
             throw 'Pinned 1.5.30 installer checksum mismatch'
           }
