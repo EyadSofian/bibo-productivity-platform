@@ -199,6 +199,10 @@ export interface ReportEmployee {
   screenshots_yesterday: number;
   /** 0–100 share of active time with keyboard input; null when no activity today. */
   focus_pct_today: number | null;
+  /** Keystrokes counted in the roster day (counts only). Absent on older backends. */
+  keystrokes_today?: number;
+  /** Mouse clicks counted in the roster day. Absent on older backends. */
+  clicks_today?: number;
 }
 
 export interface ActivitySample {
@@ -260,9 +264,33 @@ export interface RemoteAssistSession {
   last_frame_at: string | null;
 }
 
+/** One minute of input counts: keys, mouse clicks, scroll events and pointer
+ *  travel in screen pixels. The mouse fields are absent on older backends and
+ *  on buckets recorded before the agent counted them. */
 export interface KeystrokeBucket {
   ts_bucket: number;
   count: number;
+  clicks?: number;
+  scrolls?: number;
+  mouse_px?: number;
+}
+
+/** Time spent in one app or site across the business. */
+export interface TeamUsage {
+  name: string;
+  duration_s: number;
+  employees: number;
+}
+
+/** Business-wide report for the overview (GET /v1/reports/team). */
+export interface TeamReport {
+  from: number;
+  to: number;
+  apps: TeamUsage[];
+  domains: TeamUsage[];
+  input: { keystrokes: number; clicks: number; scrolls: number; mouse_px: number };
+  /** Active foreground seconds per hour offset from `from`. Hours with none are omitted. */
+  hours: Array<{ hour: number; duration_s: number }>;
 }
 
 export interface BrowserVisit {

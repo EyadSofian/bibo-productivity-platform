@@ -561,9 +561,9 @@ pub fn start_browser_fallback(db: Arc<Db>, control: Arc<TrackerControl>) {
     });
 }
 
-// ---------- keyboard counter (task 17) ----------
+// ---------- input counter (task 17) ----------
 
-/// Keypress counts are flushed at this cadence.
+/// Input counts (keys, clicks, scrolls, pointer travel) are flushed at this cadence.
 const KEY_FLUSH: Duration = Duration::from_secs(15);
 /// Counts are bucketed by this window (start-of-bucket epoch is the key).
 const KEY_BUCKET_S: i64 = 60;
@@ -574,24 +574,25 @@ pub const DEFAULT_SCREENSHOT_INTERVAL_S: u64 = 300;
 /// Default days to keep screenshots before cleanup.
 pub const DEFAULT_RETENTION_DAYS: u64 = 30;
 
-/// Spawn the keyboard counter: a minimal CoreGraphics tap that only *counts* key
-/// presses (the key is never decoded or stored — see `platform::run_keyboard_tap`),
-/// plus a flusher that writes per-minute counts. Pause-aware.
+/// Spawn the input counter: a minimal OS hook that only *counts* key presses,
+/// mouse clicks, scroll notches and pointer travel (the key is never decoded and
+/// no pointer position is kept — see `platform::run_keyboard_tap`), plus a
+/// flusher that writes per-minute counts. Pause-aware.
 pub fn start_keyboard(db: Arc<Db>, control: Arc<TrackerControl>) {
-    // Flusher: move the tap's running count into the current bucket.
+    // Flusher: move the hook's running counts into the current bucket.
     {
         thread::spawn(move || loop {
             thread::sleep(KEY_FLUSH);
-            let n = crate::platform::KEY_PRESS_COUNT.swap(0, Ordering::Relaxed);
-            // Drop counts accumulated while paused or with keystroke counting opted
+            let counts = crate::platform::InputCounts::take();
+            // Drop counts accumulated while paused or with input counting opted
             // out / not yet consented (don't persist them).
-            if n > 0
+            if !counts.is_empty()
                 && control.category_allowed("keystrokes")
                 && control.count_keystrokes.load(Ordering::Relaxed)
             {
                 let now = now_ts();
                 let bucket = now - now.rem_euclid(KEY_BUCKET_S);
-                if let Err(e) = db.add_keystrokes(bucket, n as i64) {
+                if let Err(e) = db.add_input(bucket, &counts) {
                     crate::log_warn!("keyboard", "failed to write keystroke_bucket: {e}");
                 }
             }

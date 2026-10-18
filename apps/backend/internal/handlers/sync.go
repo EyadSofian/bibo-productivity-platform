@@ -40,7 +40,11 @@ type keystrokeIn struct {
 	ClientUUID string `json:"client_uuid"`
 	TsBucket   int64  `json:"ts_bucket"`
 	Count      int    `json:"count"`
-	UpdatedAt  int64  `json:"updated_at"`
+	// Absent from agents that predate mouse counting; zero is then correct.
+	Clicks    int   `json:"clicks"`
+	Scrolls   int   `json:"scrolls"`
+	MousePx   int64 `json:"mouse_px"`
+	UpdatedAt int64 `json:"updated_at"`
 }
 
 type browserIn struct {
@@ -126,8 +130,13 @@ func (h *SyncHandler) Batch(c *gin.Context) {
 			badRequest(c, fmt.Sprintf("keystrokes[%d]: %v", i, err))
 			return
 		}
+		if k.Count < 0 || k.Clicks < 0 || k.Scrolls < 0 || k.MousePx < 0 {
+			badRequest(c, fmt.Sprintf("keystrokes[%d]: counts must not be negative", i))
+			return
+		}
 		keys = append(keys, store.KeystrokeRow{
-			ClientUUID: k.ClientUUID, TsBucket: k.TsBucket, Count: k.Count, ClientUpdatedAt: k.UpdatedAt,
+			ClientUUID: k.ClientUUID, TsBucket: k.TsBucket, Count: k.Count,
+			Clicks: k.Clicks, Scrolls: k.Scrolls, MousePx: k.MousePx, ClientUpdatedAt: k.UpdatedAt,
 		})
 		accKeys = append(accKeys, k.ClientUUID)
 	}

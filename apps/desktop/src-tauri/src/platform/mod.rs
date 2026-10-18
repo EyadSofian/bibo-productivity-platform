@@ -99,6 +99,73 @@ pub struct BrowserAddress {
 /// per-minute buckets. The key itself is never decoded or stored.
 pub static KEY_PRESS_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Mouse button presses (left, right, middle, extra) since the last flush.
+/// Counted, never located: no coordinate or target window is kept.
+pub static MOUSE_CLICK_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Scroll-wheel notches (vertical or horizontal) since the last flush.
+pub static SCROLL_COUNT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Pointer travel in screen pixels since the last flush. Only the length of
+/// each movement is summed; where the pointer went is discarded at once.
+pub static MOUSE_MOVE_PX: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Length of one pointer movement, rounded to whole pixels. Shared by both OS
+/// backends so a hop on macOS and on Windows count the same.
+pub fn move_distance(dx: i64, dy: i64) -> u64 {
+    let (dx, dy) = (dx as f64, dy as f64);
+    (dx * dx + dy * dy).sqrt().round() as u64
+}
+
+/// One minute's worth of input counts, swapped out of the counters together.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct InputCounts {
+    pub keys: u64,
+    pub clicks: u64,
+    pub scrolls: u64,
+    pub mouse_px: u64,
+}
+
+impl InputCounts {
+    /// Take everything counted since the last call and reset the counters.
+    pub fn take() -> Self {
+        use std::sync::atomic::Ordering::Relaxed;
+        Self {
+            keys: KEY_PRESS_COUNT.swap(0, Relaxed),
+            clicks: MOUSE_CLICK_COUNT.swap(0, Relaxed),
+            scrolls: SCROLL_COUNT.swap(0, Relaxed),
+            mouse_px: MOUSE_MOVE_PX.swap(0, Relaxed),
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.keys == 0 && self.clicks == 0 && self.scrolls == 0 && self.mouse_px == 0
+    }
+}
+
+#[cfg(test)]
+mod input_tests {
+    use super::*;
+
+    #[test]
+    fn move_distance_is_euclidean_and_rounded() {
+        assert_eq!(move_distance(3, 4), 5);
+        assert_eq!(move_distance(-3, -4), 5);
+        assert_eq!(move_distance(0, 0), 0);
+        assert_eq!(move_distance(1, 1), 1); // 1.414 rounds down
+    }
+
+    #[test]
+    fn empty_counts_report_empty() {
+        assert!(InputCounts::default().is_empty());
+        assert!(!InputCounts {
+            clicks: 1,
+            ..Default::default()
+        }
+        .is_empty());
+    }
+}
+
 // ---------- cross-platform implementations ----------
 
 /// The active foreground window, or `None` if there isn't one / it can't be read.

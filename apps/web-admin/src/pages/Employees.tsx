@@ -1,501 +1,478 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { Trans, useTranslation } from "react-i18next";
+import { useMemo, useState, type FormEvent } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
+  assignEmployeeOrganization,
   createBusiness,
   createEmployee,
   listBusinessEmployees,
+  listOrganization,
+  reportEmployees,
 } from "../api/endpoints";
 import { ApiError, type Employee } from "../api/types";
-import { Empty, Modal, Notice, Spinner } from "../components/ui";
-import { useBusinesses } from "../useBusinesses";
-import { memberTerms, type MemberTerms } from "../terms";
-import { useAuth } from "../auth/AuthContext";
+import { usePageHeader } from "../app/AppShell";
+import { useBusinesses } from "../app/useBusinesses";
+import { localDayWindow } from "../lib/day";
+import { fmtDuration, fmtRelative } from "../lib/format";
+import { useAsync } from "../lib/useAsync";
+import { Icon } from "../ui/Icon";
+import { Avatar, Card, Dialog, Empty, ErrorNote, LoadingRows, PresenceBadge } from "../ui/kit";
 
-// ── display-only helpers (mirror the Dashboard roster look) ──────────
-const svg = (children: ReactNode) => (
-  <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-);
-const IconPlus = svg(<><path d="M5 12h14" /><path d="M12 5v14" /></>);
-const IconUserPlus = svg(<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" x2="19" y1="8" y2="14" /><line x1="22" x2="16" y1="11" y2="11" /></>);
-const IconArrowRight = svg(<><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></>);
-const IconBuilding = svg(<><path d="M10 12h4" /><path d="M10 8h4" /><path d="M14 21v-3a2 2 0 0 0-4 0v3" /><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" /><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /></>);
-const IconClose = svg(<><path d="M18 6 6 18M6 6l12 12" /></>);
-const IconDices = svg(<><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /><path d="M6 18h.01" /><path d="M10 14h.01" /><path d="M15 6h.01" /><path d="M18 9h.01" /></>);
+export default function Employees() {
+  const { t } = useTranslation("app");
+  const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const { selectedId, selected, loading: bizLoading, reload: reloadBusinesses } = useBusinesses();
+  const [query, setQuery] = useState("");
+  const [dept, setDept] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Employee | null>(null);
 
-/** Local strong temp-password generator (mirrors the wizard's). */
-function genTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789";
-  let out = "";
-  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
+  const employees = useAsync(
+    () => (selectedId ? listBusinessEmployees(selectedId) : Promise.resolve({ employees: [] })),
+    [selectedId],
+  );
+  const roster = useAsync(
+    () => (selectedId ? reportEmployees(selectedId, localDayWindow()) : Promise.resolve({ employees: [] })),
+    [selectedId],
+    30_000,
+  );
+  const org = useAsync(
+    () => (selectedId ? listOrganization(selectedId) : Promise.resolve({ departments: [], job_roles: [] })),
+    [selectedId],
+  );
 
-const AVATAR_PALETTE = [
-  { bg: "var(--info-soft)", fg: "var(--info)" },
-  { bg: "var(--positive-soft)", fg: "var(--positive)" },
-  { bg: "color-mix(in srgb, var(--data-rose) 18%, transparent)", fg: "var(--data-rose)" },
-  { bg: "color-mix(in srgb, var(--data-amber) 22%, transparent)", fg: "var(--data-amber)" },
-];
-const initials = (name: string) =>
-  name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("") || "?";
+  const live = useMemo(() => new Map((roster.data?.employees ?? []).map((e) => [e.id, e])), [roster.data]);
+  const list = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return (employees.data?.employees ?? [])
+      .filter((e) => !dept || e.department_id === dept)
+      .filter(
+        (e) =>
+          !q ||
+          e.display_name.toLowerCase().includes(q) ||
+          (e.email || "").toLowerCase().includes(q) ||
+          (e.username || "").toLowerCase().includes(q),
+      )
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+  }, [employees.data, query, dept]);
 
-/** PLACEHOLDER presence dot for the roster avatars. The employees list has no
- *  `last_seen`, so status is derived deterministically from the id (stable, no
- *  flicker) purely for the visual — replace once the backend exposes presence. */
-const STATUSES = ["active", "idle", "offline"] as const;
-function placeholderStatus(seed: string): (typeof STATUSES)[number] {
-  let h = 0;
-  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
-  return STATUSES[h % STATUSES.length];
-}
+  usePageHeader(
+    t("employees.title"),
+    selected ? t("employees.subtitle", { count: employees.data?.employees.length ?? 0, company: selected.name }) : undefined,
+  );
 
-export function Employees() {
-  const { t } = useTranslation("dashboard");
-  const { user } = useAuth();
-  const {
-    businesses,
-    selected,
-    selectedId,
-    setSelectedId,
-    loading: bizLoading,
-    reload: reloadBiz,
-  } = useBusinesses();
-
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [listError, setListError] = useState<string | null>(null);
-
-  const [showBiz, setShowBiz] = useState(false);
-  const [showEmp, setShowEmp] = useState(false);
-  const [autoCreatedNote, setAutoCreatedNote] = useState<string | null>(null);
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-
-  const terms = memberTerms(selected?.kind);
-
-  function loadEmployees(id: string) {
-    setLoading(true);
-    setListError(null);
-    listBusinessEmployees(id)
-      .then((r) => setEmployees(r.employees))
-      .catch(() => setListError(t("employees.errorLoadMembers", { members: terms.lowerMany })))
-      .finally(() => setLoading(false));
+  if (!bizLoading && !selectedId) {
+    return <CreateCompany onCreated={reloadBusinesses} />;
   }
 
-  useEffect(() => {
-    setDepartmentFilter("");
-    setRoleFilter("");
-    if (selectedId) loadEmployees(selectedId);
-    else setEmployees([]);
-  }, [selectedId]);
-
-  // Open the "new business" modal when arrived here via the topbar picker (?new=1).
-  const [searchParams, setSearchParams] = useSearchParams();
-  useEffect(() => {
-    if (searchParams.get("new") === null) return;
-    setShowBiz(true);
-    searchParams.delete("new");
-    setSearchParams(searchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
-
-  const hasBusiness = businesses.length > 0;
-  const departmentNames = useMemo(() => Array.from(new Set(employees.map((employee) => employee.department_name).filter(Boolean))).sort(), [employees]);
-  const roleNames = useMemo(() => Array.from(new Set(employees.map((employee) => employee.job_role_name).filter(Boolean))).sort(), [employees]);
-  const visibleEmployees = employees.filter((employee) =>
-    (!departmentFilter || employee.department_name === departmentFilter) &&
-    (!roleFilter || employee.job_role_name === roleFilter));
+  const welcome = params.get("welcome") === "1";
 
   return (
-    <div className="ad-wrap" style={{ paddingBottom: 32 }}>
-      <div className="ad-pagehead">
-        <div className="ad-pagehead__main">
-          <h1 className="ad-h1">{terms.many}</h1>
-          {selected && (
-            <p className="ad-sub">
-              {selected.name} · {employees.length} {terms.many}
-            </p>
-          )}
-        </div>
-        <div className="ad-pagehead__actions">
-          <button className="bibo-btn bibo-btn--secondary" onClick={() => setShowBiz(true)}>
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconPlus}</span>
-            <span>{t("employees.newOrg", { org: terms.org })}</span>
-          </button>
-          <button className="bibo-btn bibo-btn--primary" onClick={() => setShowEmp(true)}>
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconUserPlus}</span>
-            <span>{terms.addCta}</span>
+    <div className="page">
+      {welcome ? (
+        <div className="alert alert-brand">
+          <Icon name="sparkle" />
+          <span style={{ flex: 1 }}>{t("employees.welcome")}</span>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm btn-icon"
+            aria-label={t("actions.close", { ns: "common" })}
+            onClick={() => {
+              params.delete("welcome");
+              setParams(params, { replace: true });
+            }}
+          >
+            <Icon name="x" />
           </button>
         </div>
-      </div>
+      ) : null}
 
-      {!hasBusiness && !bizLoading && (
-        <div style={{ marginBottom: 16 }}>
-          <Notice kind="info">
-            <Trans
-              i18nKey="employees.noBusinessNotice"
-              t={t}
-              values={{ member: terms.lowerOne }}
-              components={{ 1: <em /> }}
+      <Card>
+        <div className="toolbar" style={{ marginBlockEnd: 18 }}>
+          <label className="input-with-icon grow">
+            <Icon name="search" />
+            <input
+              className="input"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={t("employees.search")}
+              aria-label={t("employees.search")}
             />
-          </Notice>
+          </label>
+          {(org.data?.departments.length ?? 0) > 0 ? (
+            <select className="select" style={{ width: "auto" }} value={dept} onChange={(e) => setDept(e.target.value)} aria-label={t("employees.department")}>
+              <option value="">{t("employees.allDepartments")}</option>
+              {org.data!.departments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          ) : null}
+          <button type="button" className="btn btn-primary" onClick={() => setAdding(true)}>
+            <Icon name="plus" />
+            {t("employees.add")}
+          </button>
         </div>
-      )}
 
-      {autoCreatedNote && (
-        <div style={{ marginBottom: 16 }}>
-          <Notice kind="success">{autoCreatedNote}</Notice>
-        </div>
-      )}
+        <ErrorNote error={employees.error} onRetry={employees.reload} />
 
-      {bizLoading && <Spinner label={t("employees.loading")} />}
-
-      {listError && <Notice kind="danger">{listError}</Notice>}
-      {loading && <Spinner label={t("employees.loadingMembers", { members: terms.lowerMany })} />}
-
-      {!loading && selectedId && employees.length === 0 && !listError && (
-        <Empty>{t("employees.noMembersYet", { members: terms.lowerMany })}</Empty>
-      )}
-
-      {employees.length > 0 && (
-        <div className="org-rosterfilters" aria-label={t("organization.filters")}>
-          <select aria-label={t("organization.department")} value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}>
-            <option value="">{t("organization.allDepartments")}</option>
-            {departmentNames.map((name) => <option key={name}>{name}</option>)}
-          </select>
-          <select aria-label={t("organization.role")} value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)}>
-            <option value="">{t("organization.allRoles")}</option>
-            {roleNames.map((name) => <option key={name}>{name}</option>)}
-          </select>
-        </div>
-      )}
-
-      {employees.length > 0 && visibleEmployees.length === 0 && (
-        <Empty>{t("organization.noFilterMatches")}</Empty>
-      )}
-
-      {visibleEmployees.length > 0 && (
-        <div className="bibo-card bibo-card--default ad-tablecard">
-          <table className="ad-table ad-table--roster">
-            <thead>
-              <tr>
-                <th>{t("employees.table.name")}</th>
-                <th>{t("employees.table.login")}</th>
-                <th>{t("organization.department")}</th>
-                <th>{t("organization.role")}</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleEmployees.map((e, i) => {
-                const pal = AVATAR_PALETTE[i % AVATAR_PALETTE.length];
-                const isSelf = e.id === user?.id;
-                const status = placeholderStatus(e.id); // PLACEHOLDER pending backend presence
-                return (
-                  <tr key={e.id}>
-                    <td>
-                      <div className="ad-name">
-                        <span className="bibo-avatar" style={{ ["--_s" as string]: "34px" }}>
-                          <span className="bibo-avatar__img" aria-label={e.display_name} style={{ background: pal.bg, color: pal.fg }}>
-                            {initials(e.display_name)}
+        {employees.loading && !employees.data ? (
+          <LoadingRows rows={6} />
+        ) : list.length === 0 ? (
+          <Empty icon="users" title={query || dept ? t("employees.noMatch") : t("employees.none")}>
+            {query || dept ? null : t("employees.noneHint")}
+          </Empty>
+        ) : (
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>{t("table.employee")}</th>
+                  <th className="hide-sm">{t("employees.department")}</th>
+                  <th>{t("table.status")}</th>
+                  <th className="end">{t("table.worked")}</th>
+                  <th className="end hide-sm">{t("table.lastSeen")}</th>
+                  <th className="end">
+                    <span className="sr-only">{t("table.actions")}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {list.map((e) => {
+                  const r = live.get(e.id);
+                  return (
+                    <tr key={e.id} className="is-link" onClick={() => navigate(`/employees/${e.id}`)}>
+                      <td>
+                        <Link to={`/employees/${e.id}`} className="person" onClick={(ev) => ev.stopPropagation()}>
+                          <Avatar name={e.display_name} status={r?.presence_state} />
+                          <span className="person-text">
+                            <span className="person-name">{e.display_name}</span>
+                            <span className="person-sub ltr">{e.email || e.username}</span>
                           </span>
-                          <span className={`bibo-avatar__dot bibo-avatar__dot--${status}`} />
-                        </span>
-                        <span className="ad-name__txt">
-                          {e.display_name}
-                          {isSelf && <span className="ad-self">{t("dashboard.selfBadge")}</span>}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="ad-login">{e.email || e.username}</td>
-                    <td>{e.department_name || "—"}</td>
-                    <td>{e.job_role_name || "—"}</td>
-                    <td className="r">
-                      <Link className="ad-viewlink" to={`/employees/${e.id}?business=${selectedId}`}>
-                        {t("employees.viewReports")}
-                        {IconArrowRight}
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                        </Link>
+                      </td>
+                      <td className="hide-sm">
+                        {e.department_name || e.job_role_name ? (
+                          <span className="person-text">
+                            <span>{e.department_name || "—"}</span>
+                            <span className="person-sub">{e.job_role_name}</span>
+                          </span>
+                        ) : (
+                          <span className="subtle">{t("employees.unassigned")}</span>
+                        )}
+                      </td>
+                      <td>
+                        <PresenceBadge state={r?.presence_state} />
+                      </td>
+                      <td className="end num strong">{fmtDuration(r?.active_today_s ?? 0)}</td>
+                      <td className="end muted hide-sm">{fmtRelative(r?.presence_seen_at ?? r?.last_seen ?? null)}</td>
+                      <td className="end">
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-sm btn-icon"
+                          aria-label={t("employees.edit", { name: e.display_name })}
+                          title={t("employees.editTeam")}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            setEditing(e);
+                          }}
+                        >
+                          <Icon name="edit" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
-      {showBiz && (
-        <NewBusinessModal
-          terms={terms}
-          onClose={() => setShowBiz(false)}
-          onCreated={async (id) => {
-            setShowBiz(false);
-            await reloadBiz();
-            setSelectedId(id);
-          }}
-        />
-      )}
-
-      {showEmp && (
-        <NewEmployeeModal
-          businessId={selectedId}
-          terms={terms}
-          onClose={() => setShowEmp(false)}
-          onCreated={async (newBusinessId, wasAutoCreated) => {
-            setShowEmp(false);
-            if (wasAutoCreated) {
-              await reloadBiz();
-              setSelectedId(newBusinessId);
-              setAutoCreatedNote(
-                t("employees.autoCreatedNote", { member: terms.lowerOne }),
-              );
-            } else if (selectedId) {
-              loadEmployees(selectedId);
-            }
-          }}
-        />
-      )}
+      <AddEmployee
+        open={adding}
+        businessId={selectedId}
+        onClose={() => setAdding(false)}
+        onCreated={() => {
+          employees.reload();
+          roster.reload();
+        }}
+      />
+      <EditTeam
+        employee={editing}
+        businessId={selectedId}
+        departments={org.data?.departments ?? []}
+        roles={org.data?.job_roles ?? []}
+        onClose={() => setEditing(null)}
+        onSaved={() => {
+          setEditing(null);
+          employees.reload();
+        }}
+      />
     </div>
   );
 }
 
-function NewBusinessModal({
-  terms,
-  onClose,
-  onCreated,
-}: {
-  terms: MemberTerms;
-  onClose: () => void;
-  onCreated: (id: string) => void;
-}) {
-  const { t } = useTranslation("dashboard");
-  const orgCap = terms.org.charAt(0).toUpperCase() + terms.org.slice(1);
+function CreateCompany({ onCreated }: { onCreated: () => Promise<void> }) {
+  const { t } = useTranslation("app");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function submit(e: React.FormEvent) {
+  usePageHeader(t("employees.title"));
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     setBusy(true);
     setError(null);
     try {
-      const biz = await createBusiness(name.trim());
-      onCreated(biz.id);
+      await createBusiness(name.trim());
+      await onCreated();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t("newBusinessModal.errorCreate"));
+      setError(err instanceof ApiError ? err.message : t("errors.generic", { ns: "common" }));
     } finally {
       setBusy(false);
     }
-  }
-
+  };
   return (
-    <Modal wide onClose={onClose}>
-      <div className="bibo-dlg bibo-dlg--org" role="dialog" aria-modal="true">
-        <div className="bibo-dlg__head">
-          <div className="bibo-dlg__icon">
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconBuilding}</span>
-          </div>
-          <div className="bibo-dlg__title">{t("employees.newOrg", { org: terms.org })}</div>
-          <button
-            type="button"
-            className="bibo-dlg__close"
-            aria-label={t("newBusinessModal.cancel")}
-            onClick={onClose}
-          >
-            {IconClose}
+    <div className="page">
+      <Card>
+        <Empty icon="building" title={t("employees.createCompanyTitle")}>
+          {t("employees.createCompanyBody")}
+        </Empty>
+        <form onSubmit={submit} className="form-grid" style={{ maxWidth: 420, marginInline: "auto" }}>
+          {error ? <div className="alert alert-danger">{error}</div> : null}
+          <label className="field">
+            <span className="field-label">{t("employees.companyName")}</span>
+            <input className="input" required dir="auto" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
+            {t("employees.createCompany")}
           </button>
-        </div>
-        <form onSubmit={submit}>
-          <div className="bibo-dlg__body">
-            {error && (
-              <div style={{ marginBottom: 12 }}>
-                <Notice kind="danger">{error}</Notice>
-              </div>
-            )}
-            <label className="bibo-field">
-              <span className="bibo-field__lbl">{t("newBusinessModal.orgNameLabel", { org: orgCap })}</span>
-              <span className="bibo-input">
-                <input
-                  placeholder={t("newBusinessModal.namePlaceholder")}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </span>
-            </label>
-          </div>
-          <div className="bibo-dlg__foot">
-            <button type="button" className="bibo-btn bibo-btn--ghost" onClick={onClose}>
-              {t("newBusinessModal.cancel")}
-            </button>
-            <button className="bibo-btn bibo-btn--primary" disabled={busy || !name.trim()}>
-              {busy ? t("newBusinessModal.creating") : t("newBusinessModal.create")}
-            </button>
-          </div>
         </form>
-      </div>
-    </Modal>
+      </Card>
+    </div>
   );
 }
 
-function NewEmployeeModal({
+function AddEmployee({
+  open,
   businessId,
-  terms,
   onClose,
   onCreated,
 }: {
+  open: boolean;
   businessId: string | null;
-  terms: MemberTerms;
   onClose: () => void;
-  onCreated: (businessId: string, wasAutoCreated: boolean) => void;
+  onCreated: () => void;
 }) {
-  const { t } = useTranslation("dashboard");
+  const { t } = useTranslation("app");
+  const [name, setName] = useState("");
   const [login, setLogin] = useState("");
-  const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<{ login?: string; password?: string }>({});
+  const [created, setCreated] = useState<{ login: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  const reset = () => {
+    setName("");
+    setLogin("");
+    setPassword("");
+    setError(null);
+    setCreated(null);
+    setCopied(false);
+  };
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError(t("employees.passwordShort"));
+      return;
+    }
     setBusy(true);
     setError(null);
-    setFieldErrors({});
-    const value = login.trim();
-    const isEmail = value.includes("@");
+    const id = login.trim();
     try {
-      const res = await createEmployee({
-        email: isEmail ? value : undefined,
-        username: isEmail ? undefined : value.toLowerCase(),
-        display_name: displayName.trim(),
+      await createEmployee({
+        display_name: name.trim(),
+        email: id.includes("@") ? id : undefined,
+        username: id.includes("@") ? undefined : id.toLowerCase(),
         password,
-        // Omit business_id when none is selected: backend auto-creates one.
         business_id: businessId ?? undefined,
       });
-      onCreated(res.business.id, businessId === null);
+      setCreated({ login: id.includes("@") ? id : id.toLowerCase(), password });
+      onCreated();
     } catch (err) {
-      if (err instanceof ApiError) {
-        // Map well-known validation cases inline; otherwise show a banner.
-        if (err.status === 409) {
-          setFieldErrors({ login: t("newEmployeeModal.errorTaken") });
-        } else if (/password/i.test(err.message)) {
-          setFieldErrors({ password: err.message });
-        } else if (/username/i.test(err.message)) {
-          setFieldErrors({ login: err.message });
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError(t("newEmployeeModal.errorCreate", { member: terms.lowerOne }));
-      }
+      setError(
+        err instanceof ApiError
+          ? err.status === 409
+            ? t("employees.loginTaken")
+            : err.message
+          : t("errors.network", { ns: "common" }),
+      );
     } finally {
       setBusy(false);
     }
-  }
+  };
 
   return (
-    <Modal wide onClose={onClose}>
-      <div className="bibo-dlg" role="dialog" aria-modal="true" style={{ ["--_w" as string]: "460px" }}>
-        <div className="bibo-dlg__head">
-          <div className="bibo-dlg__icon">
-            <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconUserPlus}</span>
-          </div>
-          <div className="bibo-dlg__title">{terms.addCta}</div>
-          <button
-            type="button"
-            className="bibo-dlg__close"
-            aria-label={t("newEmployeeModal.cancel")}
-            onClick={onClose}
-          >
-            {IconClose}
-          </button>
-        </div>
-        <form onSubmit={submit}>
-          <div className="bibo-dlg__body">
-            {!businessId && (
-              <div style={{ marginBottom: 12 }}>
-                <Notice kind="info">
-                  {t("newEmployeeModal.noBusinessSelected", { member: terms.lowerOne })}
-                </Notice>
-              </div>
-            )}
-            {error && (
-              <div style={{ marginBottom: 12 }}>
-                <Notice kind="danger">{error}</Notice>
-              </div>
-            )}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <label className="bibo-field">
-                <span className="bibo-field__lbl">{t("newEmployeeModal.displayName")}</span>
-                <span className="bibo-input">
-                  <input
-                    placeholder="Mia"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    required
-                    autoFocus
-                  />
-                </span>
-              </label>
-              <label className="bibo-field">
-                <span className="bibo-field__lbl">{t("newEmployeeModal.usernameOrEmail")}</span>
-                <span className="bibo-input">
-                  <input
-                    type="text"
-                    placeholder="mia_home"
-                    value={login}
-                    onChange={(e) => setLogin(e.target.value)}
-                    autoComplete="off"
-                    required
-                  />
-                </span>
-                {fieldErrors.login && <div className="error-text">{fieldErrors.login}</div>}
-              </label>
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                <div style={{ flex: "1 1 0%" }}>
-                  <label className="bibo-field">
-                    <span className="bibo-field__lbl">{t("newEmployeeModal.temporaryPassword")}</span>
-                    <span className="bibo-input bibo-input--dots">
-                      <input
-                        type="text"
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                      />
-                    </span>
-                    {fieldErrors.password && <div className="error-text">{fieldErrors.password}</div>}
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  className="bibo-btn bibo-btn--secondary"
-                  title={t("newEmployeeModal.generate")}
-                  onClick={() => setPassword(genTempPassword())}
-                >
-                  <span style={{ display: "inline-flex", lineHeight: 0 }}>{IconDices}</span>
-                  <span>{t("newEmployeeModal.generate")}</span>
-                </button>
-              </div>
+    <Dialog open={open} onClose={close} title={created ? t("employees.createdTitle") : t("employees.addTitle")}>
+      {created ? (
+        <div className="form-grid">
+          <p className="muted">{t("employees.createdBody")}</p>
+          <div className="credentials">
+            <div>
+              <span className="field-hint">{t("employees.login")}</span>
+              <code className="ltr">{created.login}</code>
+            </div>
+            <div>
+              <span className="field-hint">{t("employees.password")}</span>
+              <code className="ltr">{created.password}</code>
             </div>
           </div>
-          <div className="bibo-dlg__foot">
-            <button type="button" className="bibo-btn bibo-btn--ghost" onClick={onClose}>
-              {t("newEmployeeModal.cancel")}
-            </button>
+          <div className="dialog-actions">
             <button
-              className="bibo-btn bibo-btn--primary"
-              disabled={busy || !displayName.trim() || !login.trim() || !password}
+              type="button"
+              className="btn"
+              onClick={() => {
+                void navigator.clipboard?.writeText(`${created.login}\n${created.password}`).then(() => setCopied(true));
+              }}
             >
-              {busy ? t("newEmployeeModal.adding") : terms.addCta}
+              <Icon name={copied ? "check" : "layers"} />
+              {copied ? t("employees.copied") : t("employees.copy")}
+            </button>
+            <button type="button" className="btn btn-primary" onClick={close}>
+              {t("actions.done", { ns: "common" })}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <form className="form-grid" onSubmit={submit}>
+          {error ? (
+            <div className="alert alert-danger" role="alert">
+              <Icon name="alert" />
+              <span>{error}</span>
+            </div>
+          ) : null}
+          <label className="field">
+            <span className="field-label">{t("employees.name")}</span>
+            <input className="input" required dir="auto" value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+          <label className="field">
+            <span className="field-label">{t("employees.login")}</span>
+            <input className="input" required dir="auto" autoComplete="off" value={login} onChange={(e) => setLogin(e.target.value)} placeholder={t("employees.loginPlaceholder")} />
+          </label>
+          <label className="field">
+            <span className="field-label">{t("employees.password")}</span>
+            <input className="input" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <span className="field-hint">{t("employees.passwordHint")}</span>
+          </label>
+          <div className="dialog-actions">
+            <button type="button" className="btn btn-ghost" onClick={close}>
+              {t("actions.cancel", { ns: "common" })}
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              {busy ? t("actions.saving", { ns: "common" }) : t("employees.add")}
             </button>
           </div>
         </form>
-      </div>
-    </Modal>
+      )}
+    </Dialog>
+  );
+}
+
+function EditTeam({
+  employee,
+  businessId,
+  departments,
+  roles,
+  onClose,
+  onSaved,
+}: {
+  employee: Employee | null;
+  businessId: string | null;
+  departments: Array<{ id: string; name: string }>;
+  roles: Array<{ id: string; name: string }>;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const { t } = useTranslation("app");
+  const [dept, setDept] = useState<string>("");
+  const [role, setRole] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<unknown>(null);
+  const [seenId, setSeenId] = useState<string | null>(null);
+  if (employee && employee.id !== seenId) {
+    setSeenId(employee.id);
+    setDept(employee.department_id ?? "");
+    setRole(employee.job_role_id ?? "");
+  }
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!employee || !businessId) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await assignEmployeeOrganization(businessId, employee.id, dept || null, role || null);
+      setSeenId(null);
+      onSaved();
+    } catch (err) {
+      setError(err);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={employee !== null} onClose={() => { setSeenId(null); onClose(); }} title={t("employees.editTeamOf", { name: employee?.display_name ?? "" })}>
+      <form className="form-grid" onSubmit={save}>
+        <ErrorNote error={error} />
+        {departments.length === 0 && roles.length === 0 ? (
+          <div className="alert">
+            <Icon name="info" />
+            <span>
+              {t("employees.noOrg")} <Link to="/settings?tab=organization">{t("employees.noOrgLink")}</Link>
+            </span>
+          </div>
+        ) : null}
+        <label className="field">
+          <span className="field-label">{t("employees.department")}</span>
+          <select className="select" value={dept} onChange={(e) => setDept(e.target.value)}>
+            <option value="">{t("employees.unassigned")}</option>
+            {departments.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="field">
+          <span className="field-label">{t("employees.role")}</span>
+          <select className="select" value={role} onChange={(e) => setRole(e.target.value)}>
+            <option value="">{t("employees.unassigned")}</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="dialog-actions">
+          <button type="button" className="btn btn-ghost" onClick={() => { setSeenId(null); onClose(); }}>
+            {t("actions.cancel", { ns: "common" })}
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
+            {busy ? t("actions.saving", { ns: "common" }) : t("actions.save", { ns: "common" })}
+          </button>
+        </div>
+      </form>
+    </Dialog>
   );
 }

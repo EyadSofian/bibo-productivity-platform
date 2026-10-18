@@ -43,15 +43,83 @@ func (h *ReportsHandler) Roster(c *gin.Context) {
 		return
 	}
 
-	// "Today" is the current UTC day; the window is [midnight, +24h).
-	now := time.Now().UTC()
-	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
-	roster, err := h.store.Roster(c.Request.Context(), businessID, dayStart, dayStart+86400)
+	dayStart, dayEnd, ok := dayWindow(c)
+	if !ok {
+		return
+	}
+	roster, err := h.store.Roster(c.Request.Context(), businessID, dayStart, dayEnd)
 	if err != nil {
 		serverError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"employees": roster})
+}
+
+// maxRosterWindow bounds a caller-supplied roster day. A local calendar day is
+// 23–25 hours across a DST change; anything longer is not a "day".
+const maxRosterWindow = 25 * 3600
+
+// maxTeamWindow bounds the team report so one request cannot scan years of rows.
+const maxTeamWindow = 31 * 86400
+
+// dayWindow reads the optional ?from&to day for the roster. The viewer's own
+// midnight is the meaningful "today" for a manager in Cairo or Riyadh, so the
+// browser sends it; without one the window falls back to the current UTC day,
+// which is what older admin builds expect.
+func dayWindow(c *gin.Context) (from, to int64, ok bool) {
+	if c.Query("from") == "" && c.Query("to") == "" {
+		now := time.Now().UTC()
+		start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC).Unix()
+		return start, start + 86400, true
+	}
+	return boundedWindow(c, maxRosterWindow)
+}
+
+// boundedWindow parses a required ?from&to pair and rejects an empty, inverted
+// or oversized window with a 400 that names the problem.
+func boundedWindow(c *gin.Context, max int64) (from, to int64, ok bool) {
+	from = parseInt64(c.Query("from"), -1)
+	to = parseInt64(c.Query("to"), -1)
+	if from < 0 || to <= from {
+		badRequest(c, "from and to must be unix seconds with from < to")
+		return 0, 0, false
+	}
+	if to-from > max {
+		badRequest(c, "window too large")
+		return 0, 0, false
+	}
+	return from, to, true
+}
+
+// Team returns the business-wide report for the overview: top apps and sites,
+// input totals and active time per hour.
+// Query: business_id, from, to (required).
+func (h *ReportsHandler) Team(c *gin.Context) {
+	ownerID, _ := auth.UserID(c)
+	businessID := c.Query("business_id")
+	if businessID == "" {
+		badRequest(c, "business_id is required")
+		return
+	}
+	owns, err := h.store.IsBusinessOwner(c.Request.Context(), ownerID, businessID)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	if !owns {
+		c.JSON(http.StatusForbidden, gin.H{"error": "not your business"})
+		return
+	}
+	from, to, ok := boundedWindow(c, maxTeamWindow)
+	if !ok {
+		return
+	}
+	report, err := h.store.TeamReportFor(c.Request.Context(), businessID, from, to)
+	if err != nil {
+		serverError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, report)
 }
 
 // Activity returns the timeline + app breakdown for an employee.

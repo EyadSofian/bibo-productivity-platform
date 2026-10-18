@@ -52,6 +52,9 @@ type RosterEntry struct {
 	// activity today. Keystrokes come in 60s buckets, so this is
 	// 60s × buckets-with-input ÷ active seconds, capped at 100.
 	FocusPctToday *int64 `json:"focus_pct_today"`
+	// Input totals for the window: keystrokes and mouse clicks (counts only).
+	KeystrokesToday int64 `json:"keystrokes_today"`
+	ClicksToday     int64 `json:"clicks_today"`
 }
 
 // Roster returns a business's employees with last-seen, active seconds and
@@ -80,7 +83,13 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 		           AND sc.ts >= $4 AND sc.ts < $2) AS shots_yesterday,
 		       (SELECT count(*) FROM keystroke_buckets k
 		         WHERE k.user_id = u.id AND k.business_id = $1
-		           AND k.ts_bucket >= $2 AND k.ts_bucket < $3 AND k.count > 0) AS key_minutes
+		           AND k.ts_bucket >= $2 AND k.ts_bucket < $3 AND k.count > 0) AS key_minutes,
+		       COALESCE((SELECT sum(k.count) FROM keystroke_buckets k
+		                  WHERE k.user_id = u.id AND k.business_id = $1
+		                    AND k.ts_bucket >= $2 AND k.ts_bucket < $3), 0) AS keys_today,
+		       COALESCE((SELECT sum(k.clicks) FROM keystroke_buckets k
+		                  WHERE k.user_id = u.id AND k.business_id = $1
+		                    AND k.ts_bucket >= $2 AND k.ts_bucket < $3), 0) AS clicks_today
 		  FROM memberships m
 		  JOIN users u ON u.id = m.user_id
 		  LEFT JOIN LATERAL (
@@ -109,7 +118,8 @@ func (s *Store) Roster(ctx context.Context, businessID string, dayStart, dayEnd 
 		if err := rows.Scan(&e.ID, &e.Email, &e.Username, &e.DisplayName, &e.Role, &e.LastSeen,
 			&e.DeviceID, &e.PresenceState, &e.CurrentApp, &e.CurrentWindow,
 			&e.PresenceSince, &e.PresenceSeenAt, &e.SessionStartedAt,
-			&e.ActiveTodayS, &e.ActiveYesterdayS, &e.ScreenshotsToday, &e.ScreenshotsYday, &keyMinutes); err != nil {
+			&e.ActiveTodayS, &e.ActiveYesterdayS, &e.ScreenshotsToday, &e.ScreenshotsYday, &keyMinutes,
+			&e.KeystrokesToday, &e.ClicksToday); err != nil {
 			return nil, err
 		}
 		if e.ActiveTodayS > 0 {
@@ -187,16 +197,21 @@ func (s *Store) ActivityReport(ctx context.Context, employeeID, ownerID string, 
 	return samples, breakdown, brk.Err()
 }
 
-// KeystrokeBucket is one count bucket in a report.
+// KeystrokeBucket is one minute of input counts in a report: keystrokes plus
+// mouse clicks, scroll events and pointer travel. Counts only — never keys or
+// pointer positions.
 type KeystrokeBucket struct {
 	TsBucket int64 `json:"ts_bucket"`
 	Count    int   `json:"count"`
+	Clicks   int   `json:"clicks"`
+	Scrolls  int   `json:"scrolls"`
+	MousePx  int64 `json:"mouse_px"`
 }
 
-// KeystrokesReport returns count buckets in range (counts only — never keys).
+// KeystrokesReport returns input count buckets in range (counts only — never keys).
 func (s *Store) KeystrokesReport(ctx context.Context, employeeID, ownerID string, from, to int64) ([]KeystrokeBucket, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT ts_bucket, count FROM keystroke_buckets
+		`SELECT ts_bucket, count, clicks, scrolls, mouse_px FROM keystroke_buckets
 		  WHERE user_id = $1 AND `+ownedFilter+` AND ts_bucket >= $3 AND ts_bucket < $4
 		  ORDER BY ts_bucket`, employeeID, ownerID, from, to)
 	if err != nil {
@@ -207,7 +222,7 @@ func (s *Store) KeystrokesReport(ctx context.Context, employeeID, ownerID string
 	out := []KeystrokeBucket{}
 	for rows.Next() {
 		var b KeystrokeBucket
-		if err := rows.Scan(&b.TsBucket, &b.Count); err != nil {
+		if err := rows.Scan(&b.TsBucket, &b.Count, &b.Clicks, &b.Scrolls, &b.MousePx); err != nil {
 			return nil, err
 		}
 		out = append(out, b)

@@ -1,47 +1,73 @@
 {
-  "appName": "Engosoft Workforce",
-  "language": "اللغة",
   "nav": {
-    "dashboard": "لوحة التحكم",
+    "overview": "الرئيسية",
     "employees": "الموظفون",
-    "devices": "الأجهزة",
-    "monitoring": "سياسات المراقبة",
-    "organization": "الهيكل التنظيمي",
+    "live": "البث المباشر",
     "tasks": "المهام",
-    "settings": "الإعدادات",
-    "manage": "الإدارة"
+    "devices": "الأجهزة",
+    "settings": "الإعدادات"
+  },
+  "shell": {
+    "navigation": "التنقل",
+    "main": "القائمة الرئيسية",
+    "administration": "الإدارة",
+    "company": "الشركة",
+    "manager": "مدير",
+    "signOut": "تسجيل الخروج",
+    "openMenu": "فتح القائمة",
+    "switchLanguage": "التبديل إلى {{language}}",
+    "darkMode": "الوضع الداكن",
+    "lightMode": "الوضع الفاتح"
+  },
+  "presence": {
+    "active": "يعمل الآن",
+    "idle": "خامل",
+    "online": "متصل",
+    "offline": "غير متصل"
+  },
+  "state": {
+    "active": "عمل",
+    "idle": "خمول",
+    "suspended": "بعيد عن الجهاز",
+    "offline": "لا توجد بيانات"
   },
   "actions": {
-    "signIn": "تسجيل الدخول",
-    "signOut": "تسجيل الخروج",
-    "save": "حفظ",
+    "retry": "إعادة المحاولة",
+    "close": "إغلاق",
     "cancel": "إلغاء",
-    "remove": "إزالة",
-    "continue": "متابعة",
-    "finish": "إنهاء",
-    "back": "رجوع",
-    "skip": "تخطٍّ الآن"
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "done": "تم",
+    "showAll": "عرض الكل ({{count}})",
+    "showLess": "عرض أقل"
   },
-  "theme": {
-    "light": "فاتح",
-    "dark": "داكن",
-    "auto": "النظام"
+  "errors": {
+    "forbidden": "ليست لديك صلاحية الوصول إلى هذه البيانات.",
+    "network": "تعذّر الاتصال بالخادم. تحقّق من الاتصال وحاول مرة أخرى.",
+    "generic": "حدث خطأ أثناء تحميل البيانات."
+  },
+  "day": {
+    "label": "اليوم",
+    "today": "اليوم",
+    "previous": "اليوم السابق",
+    "next": "اليوم التالي",
+    "pick": "اختر يومًا"
   },
   "time": {
-    "never": "أبدًا",
     "justNow": "الآن",
-    "minutesAgo": "منذ {{count}} د",
-    "hoursAgo": "منذ {{count}} س",
-    "daysAgo": "منذ {{count}} ي"
+    "never": "لم يظهر بعد"
   },
-  "terms": {
-    "team": {
-      "one": "موظف",
-      "many": "الموظفون",
-      "lowerOne": "موظف",
-      "lowerMany": "موظفين",
-      "addCta": "إضافة موظف",
-      "org": "فريق"
-    }
+  "units": {
+    "h": "س",
+    "m": "د",
+    "s": "ث",
+    "meters": "متر"
+  },
+  "charts": {
+    "ribbonCaption": "حالة الجهاز على مدار اليوم",
+    "state": "الحالة",
+    "from": "من",
+    "to": "إلى",
+    "duration": "المدة"
   }
 }

@@ -47,6 +47,11 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 	// would remove. This keeps the rollback exercise valid as new dependent
 	// migrations are added.
 	for _, stmt := range []string{
+		// 00026 does not touch the media tables, but goose refuses to re-apply
+		// 20–25 underneath a newer recorded version, so it rolls back too.
+		`ALTER TABLE keystroke_buckets DROP COLUMN mouse_px`,
+		`ALTER TABLE keystroke_buckets DROP COLUMN scrolls`,
+		`ALTER TABLE keystroke_buckets DROP COLUMN clicks`,
 		`ALTER TABLE media_sessions DROP COLUMN publisher_metrics_at`,
 		`ALTER TABLE media_sessions DROP COLUMN publisher_metrics`,
 		`DROP TABLE recording_gaps`,
@@ -60,7 +65,7 @@ func TestMigration20RollsBackAndReapplies(t *testing.T) {
 		`DROP TABLE task_events`,
 		`DROP TABLE task_work_sessions`,
 		`DROP TABLE tasks`,
-		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22,23,24,25)`,
+		`DELETE FROM goose_db_version WHERE version_id IN (20,21,22,23,24,25,26)`,
 	} {
 		if _, err := pool.Exec(ctx, stmt); err != nil {
 			t.Fatalf("rollback %q: %v", stmt, err)

@@ -1,47 +1,74 @@
 {
-  "appName": "Engosoft Workforce",
-  "language": "Language",
   "nav": {
-    "dashboard": "Dashboard",
+    "overview": "Overview",
     "employees": "Employees",
-    "devices": "Devices",
-    "monitoring": "Monitoring",
-    "organization": "Organization",
+    "live": "Live",
     "tasks": "Tasks",
-    "settings": "Settings",
-    "manage": "Manage"
+    "devices": "Devices",
+    "settings": "Settings"
+  },
+  "shell": {
+    "navigation": "Navigation",
+    "main": "Main",
+    "administration": "Administration",
+    "company": "Company",
+    "manager": "Manager",
+    "signOut": "Sign out",
+    "openMenu": "Open menu",
+    "switchLanguage": "Switch to {{language}}",
+    "darkMode": "Dark mode",
+    "lightMode": "Light mode"
+  },
+  "presence": {
+    "active": "Working",
+    "idle": "Idle",
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "state": {
+    "active": "Working",
+    "idle": "Idle",
+    "suspended": "Away",
+    "offline": "No data"
   },
   "actions": {
-    "signIn": "Sign in",
-    "signOut": "Sign out",
-    "save": "Save",
+    "retry": "Try again",
+    "close": "Close",
     "cancel": "Cancel",
-    "remove": "remove",
-    "continue": "Continue",
-    "finish": "Finish",
-    "back": "Back",
-    "skip": "Skip for now"
+    "save": "Save",
+    "saving": "Saving…",
+    "done": "Done",
+    "showAll_one": "Show all {{count}}",
+    "showAll_other": "Show all {{count}}",
+    "showLess": "Show less"
   },
-  "theme": {
-    "light": "Light",
-    "dark": "Dark",
-    "auto": "System"
+  "errors": {
+    "forbidden": "You don't have access to this.",
+    "network": "Can't reach the server. Check the connection and try again.",
+    "generic": "Something went wrong loading this."
+  },
+  "day": {
+    "label": "Day",
+    "today": "Today",
+    "previous": "Previous day",
+    "next": "Next day",
+    "pick": "Pick a day"
   },
   "time": {
-    "never": "Never",
-    "justNow": "Just now",
-    "minutesAgo": "{{count}}m ago",
-    "hoursAgo": "{{count}}h ago",
-    "daysAgo": "{{count}}d ago"
+    "justNow": "just now",
+    "never": "never"
   },
-  "terms": {
-    "team": {
-      "one": "Employee",
-      "many": "Employees",
-      "lowerOne": "employee",
-      "lowerMany": "employees",
-      "addCta": "Add employee",
-      "org": "team"
-    }
+  "units": {
+    "h": "h",
+    "m": "m",
+    "s": "s",
+    "meters": "m"
+  },
+  "charts": {
+    "ribbonCaption": "Device state through the day",
+    "state": "State",
+    "from": "From",
+    "to": "To",
+    "duration": "Duration"
   }
 }

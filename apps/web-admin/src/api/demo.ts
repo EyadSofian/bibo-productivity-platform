@@ -28,6 +28,7 @@ import type {
   ReportEmployee,
   ScreenshotMeta,
   ScreenshotsResponse,
+  TeamReport,
 } from "./types";
 
 export function isDemo(): boolean {
@@ -228,6 +229,8 @@ export function demoRoster(): ReportEmployee[] {
       screenshots_today: 8 + Math.round(r() * 20),
       screenshots_yesterday: 8 + Math.round(r() * 20),
       focus_pct_today: 55 + Math.round(r() * 33),
+      keystrokes_today: Math.round(active / 60) * (18 + Math.round(r() * 30)),
+      clicks_today: Math.round(active / 60) * (4 + Math.round(r() * 8)),
     };
   });
 }
@@ -277,9 +280,52 @@ export function demoKeystrokes(employeeId: string): { buckets: KeystrokeBucket[]
   const buckets: KeystrokeBucket[] = [];
   // 30-minute buckets, 08:00 → 17:30
   for (let m = 8 * 60; m <= 17 * 60 + 30; m += 30) {
-    buckets.push({ ts_bucket: dayStart() + m * 60, count: 200 + Math.round(r() * 1200) });
+    const count = 200 + Math.round(r() * 1200);
+    buckets.push({
+      ts_bucket: dayStart() + m * 60,
+      count,
+      clicks: Math.round(count * (0.12 + r() * 0.2)),
+      scrolls: Math.round(count * (0.05 + r() * 0.12)),
+      mouse_px: Math.round(count * (40 + r() * 90)),
+    });
   }
   return { buckets };
+}
+
+/** Team report built from the demo roster so the overview and profiles agree. */
+export function demoTeam(from: number, to: number): TeamReport {
+  const r = seeded("team");
+  const roster = demoRoster();
+  const people = roster.length;
+  const apps = ["Visual Studio Code", "Google Chrome", "Figma", "Slack", "Microsoft Excel", "Zoom", "Notion", "Terminal"];
+  const sites = ["github.com", "figma.com", "mail.google.com", "linear.app", "stackoverflow.com", "docs.google.com", "youtube.com"];
+  const total = roster.reduce((s, e) => s + e.active_today_s, 0);
+  const usage = (names: string[], budget: number) =>
+    names.map((name, i) => ({
+      name,
+      duration_s: Math.round(budget * Math.pow(0.62, i) * (0.8 + r() * 0.4)),
+      employees: Math.max(1, people - i),
+    }));
+  const hours: TeamReport["hours"] = [];
+  const span = Math.floor((to - from) / 3600);
+  for (let h = 0; h < Math.min(span, 24); h++) {
+    if (h < 8 || h > 18) continue;
+    const lunch = h === 13 ? 0.45 : 1;
+    hours.push({ hour: h, duration_s: Math.round(people * 2600 * lunch * (0.7 + r() * 0.3)) });
+  }
+  return {
+    from,
+    to,
+    apps: usage(apps, total * 0.42),
+    domains: usage(sites, total * 0.18),
+    input: {
+      keystrokes: roster.reduce((s, e) => s + (e.keystrokes_today ?? 0), 0),
+      clicks: roster.reduce((s, e) => s + (e.clicks_today ?? 0), 0),
+      scrolls: Math.round(total * 0.6),
+      mouse_px: Math.round(total * 95),
+    },
+    hours,
+  };
 }
 
 const SITES: [string, string][] = [

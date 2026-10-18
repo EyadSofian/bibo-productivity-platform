@@ -5,9 +5,11 @@
 //! so the permission API reports `Granted` and the request/open-settings calls are
 //! no-ops; first-run consent + Settings opt-outs are handled in the UI (M3).
 //!
-//! Implemented here: idle detection via `GetLastInputInfo` (M1) and keyboard
+//! Implemented here: idle detection via `GetLastInputInfo` (M1), keyboard
 //! counting via a `WH_KEYBOARD_LL` hook (M2, see `run_keyboard_tap`) — count-only,
-//! `lparam` is never read. Active window and screenshots are cross-platform
+//! the keyboard `lparam` is never read — and mouse counting via a `WH_MOUSE_LL`
+//! hook on the same thread: clicks, wheel notches and pointer travel, with no
+//! position or target window retained. Active window and screenshots are cross-platform
 //! (`active-win-pos-rs` / `xcap`) and live elsewhere.
 //!
 //! Not yet implemented: session events (lock/unlock, sleep/resume, user switching)
@@ -30,9 +32,9 @@ pub fn capability_rows(s: &Settings) -> Vec<CapabilityRow> {
     vec![
         CapabilityRow {
             key: "keystrokes".to_string(),
-            label: "Activity & keystroke counts".to_string(),
-            description: "Tracks the active app/window and counts keystrokes (counts only — \
-                          never which keys are pressed)."
+            label: "Activity, keystroke and mouse counts".to_string(),
+            description: "Tracks the active app/window and counts keystrokes, mouse clicks and \
+                          scrolling (counts only — never which keys are pressed)."
                 .to_string(),
             state: state(s.count_keystrokes),
             required: false,
@@ -340,8 +342,61 @@ unsafe extern "system" fn keyboard_hook_proc(
     CallNextHookEx(HHOOK::default(), code, wparam, lparam)
 }
 
-/// Install a `WH_KEYBOARD_LL` low-level keyboard hook and pump messages so it
-/// fires (low-level hooks are delivered to the installing thread's message queue).
+/// Last pointer position seen by the mouse hook, packed as `(x << 32) | y`, so a
+/// movement can be measured against it. `u64::MAX` means "none yet". Only the
+/// distance between two points is kept; the points themselves are overwritten.
+static LAST_POINTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(u64::MAX);
+
+fn pack_point(x: i32, y: i32) -> u64 {
+    ((x as u32 as u64) << 32) | (y as u32 as u64)
+}
+
+fn unpack_point(v: u64) -> (i32, i32) {
+    ((v >> 32) as u32 as i32, v as u32 as i32)
+}
+
+/// Low-level mouse hook callback. Counts button presses and wheel notches, and
+/// adds the length of each pointer hop to the travel total. Runs on the same
+/// thread as the keyboard hook.
+unsafe extern "system" fn mouse_hook_proc(
+    code: i32,
+    wparam: windows::Win32::Foundation::WPARAM,
+    lparam: windows::Win32::Foundation::LPARAM,
+) -> windows::Win32::Foundation::LRESULT {
+    use std::sync::atomic::Ordering;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        CallNextHookEx, HC_ACTION, HHOOK, MSLLHOOKSTRUCT, WM_LBUTTONDOWN, WM_MBUTTONDOWN,
+        WM_MOUSEHWHEEL, WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_XBUTTONDOWN,
+    };
+
+    if code == HC_ACTION as i32 {
+        match wparam.0 as u32 {
+            WM_LBUTTONDOWN | WM_RBUTTONDOWN | WM_MBUTTONDOWN | WM_XBUTTONDOWN => {
+                super::MOUSE_CLICK_COUNT.fetch_add(1, Ordering::Relaxed);
+            }
+            WM_MOUSEWHEEL | WM_MOUSEHWHEEL => {
+                super::SCROLL_COUNT.fetch_add(1, Ordering::Relaxed);
+            }
+            WM_MOUSEMOVE if lparam.0 != 0 => {
+                let info = &*(lparam.0 as *const MSLLHOOKSTRUCT);
+                let here = pack_point(info.pt.x, info.pt.y);
+                let before = LAST_POINTER.swap(here, Ordering::Relaxed);
+                if before != u64::MAX {
+                    let (bx, by) = unpack_point(before);
+                    let dx = info.pt.x as i64 - bx as i64;
+                    let dy = info.pt.y as i64 - by as i64;
+                    super::MOUSE_MOVE_PX.fetch_add(super::move_distance(dx, dy), Ordering::Relaxed);
+                }
+            }
+            _ => {}
+        }
+    }
+    CallNextHookEx(HHOOK::default(), code, wparam, lparam)
+}
+
+/// Install a `WH_KEYBOARD_LL` low-level keyboard hook (and a `WH_MOUSE_LL` mouse
+/// hook alongside it) and pump messages so they fire (low-level hooks are
+/// delivered to the installing thread's message queue).
 /// Blocks while active; the caller (`trackers::start_keyboard`) runs this on a
 /// dedicated thread in a retry loop. Returns `false` immediately if the hook can't
 /// be installed, so the caller idles and retries instead of busy-looping.
@@ -353,7 +408,7 @@ pub fn run_keyboard_tap() -> bool {
     use windows::Win32::Foundation::HINSTANCE;
     use windows::Win32::UI::WindowsAndMessaging::{
         DispatchMessageW, GetMessageW, SetWindowsHookExW, TranslateMessage, UnhookWindowsHookEx,
-        MSG, WH_KEYBOARD_LL,
+        MSG, WH_KEYBOARD_LL, WH_MOUSE_LL,
     };
 
     unsafe {
@@ -367,6 +422,10 @@ pub fn run_keyboard_tap() -> bool {
             Ok(h) => h,
             Err(_) => return false,
         };
+        // Mouse counting rides on the same message loop. Failing to install it
+        // must not cost the keyboard counts, so it is optional.
+        let mouse_hook =
+            SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), HINSTANCE::default(), 0).ok();
 
         // Message loop: GetMessageW blocks and lets the system deliver hook
         // callbacks on this thread. We never post WM_QUIT, so this runs until the
@@ -383,8 +442,25 @@ pub fn run_keyboard_tap() -> bool {
         }
 
         let _ = UnhookWindowsHookEx(hook);
+        if let Some(mouse_hook) = mouse_hook {
+            let _ = UnhookWindowsHookEx(mouse_hook);
+        }
+        LAST_POINTER.store(u64::MAX, std::sync::atomic::Ordering::Relaxed);
     }
     true
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pointer_packing_round_trips_negative_coordinates() {
+        // Monitors left of or above the primary display have negative coordinates.
+        for (x, y) in [(0, 0), (1920, 1080), (-1280, -720), (i32::MIN, i32::MAX)] {
+            assert_eq!(unpack_point(pack_point(x, y)), (x, y));
+        }
+    }
 }
 
 /// Seconds since the last user input (keyboard or mouse), via `GetLastInputInfo`.

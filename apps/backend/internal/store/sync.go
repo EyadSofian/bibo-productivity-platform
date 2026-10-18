@@ -28,9 +28,13 @@ type ActivityRow struct {
 
 // KeystrokeRow is one keypress-count bucket (counts only — never keys).
 type KeystrokeRow struct {
-	ClientUUID      string
-	TsBucket        int64
-	Count           int
+	ClientUUID string
+	TsBucket   int64
+	Count      int
+	// Mouse counts in the same minute. Zero from agents that predate them.
+	Clicks          int
+	Scrolls         int
+	MousePx         int64
 	ClientUpdatedAt int64
 }
 
@@ -138,10 +142,11 @@ ON CONFLICT (client_uuid) DO UPDATE SET
 
 	keystrokeUpsert = `
 INSERT INTO keystroke_buckets
-  (client_uuid, user_id, business_id, device_id, ts_bucket, count, client_updated_at)
-VALUES ($1,$2,$3,$4,$5,$6,$7)
+  (client_uuid, user_id, business_id, device_id, ts_bucket, count, clicks, scrolls, mouse_px, client_updated_at)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 ON CONFLICT (client_uuid) DO UPDATE SET
   ts_bucket = EXCLUDED.ts_bucket, count = EXCLUDED.count,
+  clicks = EXCLUDED.clicks, scrolls = EXCLUDED.scrolls, mouse_px = EXCLUDED.mouse_px,
   client_updated_at = EXCLUDED.client_updated_at, received_at = now()`
 
 	browserUpsert = `
@@ -227,7 +232,7 @@ func (s *Store) SyncBatch(ctx context.Context, userID, businessID, deviceID stri
 	}
 	for _, k := range ks {
 		batch.Queue(keystrokeUpsert, k.ClientUUID, userID, businessID, deviceID,
-			k.TsBucket, k.Count, k.ClientUpdatedAt)
+			k.TsBucket, k.Count, k.Clicks, k.Scrolls, k.MousePx, k.ClientUpdatedAt)
 	}
 	for _, b := range br {
 		// Derived here, not taken from the payload, so the stored domain always

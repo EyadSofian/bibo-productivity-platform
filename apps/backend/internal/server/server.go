@@ -225,6 +225,7 @@ func New(ctx context.Context, cfg *config.Config, st *store.Store, files *filest
 
 	// Owner read path (reporting).
 	authed.GET("/reports/employees", reportsH.Roster)
+	authed.GET("/reports/team", reportsH.Team)
 	authed.GET("/reports/employees/:id/activity", reportsH.Activity)
 	authed.GET("/reports/employees/:id/keystrokes", reportsH.Keystrokes)
 	authed.GET("/reports/employees/:id/browser", reportsH.Browser)

@@ -45,8 +45,9 @@ for (const app of APPS) {
     problems.push(`${app.name}: no locales directory at ${app.root}`);
     continue;
   }
+  // Dot-directories are tooling (editor and agent bookkeeping), never a locale.
   const locales = readdirSync(app.root, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
+    .filter((d) => d.isDirectory() && !d.name.startsWith("."))
     .map((d) => d.name)
     .sort();
 

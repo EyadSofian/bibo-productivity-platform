@@ -4,6 +4,7 @@ import { heartbeatMediaSession, mediaErrorOf, mintViewerToken, startLiveSession,
 import type { MediaFailureCode, MediaSession, MediaSessionState } from "../../api/media";
 import type { MediaTransport, TransportState } from "../../media/transport";
 import { releaseStream } from "../../media/transport";
+import { Icon } from "../../ui/Icon";
 
 /**
  * The live screen player.
@@ -438,7 +439,11 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
         {phase !== "live" && (
           <div className="live-player__overlay" role="status" aria-live="polite">
             {waiting && <span className="live-player__spinner" aria-hidden />}
-            {phase === "paused" && <span className="live-player__pause" aria-hidden>❚❚</span>}
+            {phase === "paused" && (
+              <span className="live-player__pause" aria-hidden>
+                <Icon name="pause" />
+              </span>
+            )}
             <p className="live-player__status">
               {offlineIdle && !error ? t("offline") : t(`phase.${phase}`)}
             </p>
@@ -464,16 +469,23 @@ export function LivePlayer({ deviceId, transport, serverUrl, onSession, autoStar
           </div>
         )}
 
-        {phase === "live" && <span className="live-player__badge">{t("phase.live")}</span>}
+        {phase === "live" && (
+          <span className="live-player__badge">
+            <span className="dot dot-live" aria-hidden />
+            {t("phase.live")}
+          </span>
+        )}
       </div>
 
       <div className="live-player__actions">
         {phase === "live" || waiting || phase === "paused" ? (
-          <button type="button" className="bibo-btn bibo-btn--ghost" onClick={() => void stop()}>
+          <button type="button" className="btn" onClick={() => void stop()}>
+            <Icon name="stop" />
             {t("action.stop")}
           </button>
         ) : (
-          <button type="button" className="bibo-btn bibo-btn--primary" disabled={!online} onClick={() => void start()}>
+          <button type="button" className="btn btn-primary" disabled={!online} onClick={() => void start()}>
+            <Icon name={phase === "error" && error?.retryable ? "refresh" : "play"} />
             {phase === "error" && error?.retryable ? t("action.retry") : t("action.start")}
           </button>
         )}

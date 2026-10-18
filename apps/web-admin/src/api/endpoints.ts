@@ -14,6 +14,7 @@ import {
   demoRoster,
   demoScreenshots,
   demoStates,
+  demoTeam,
   demoMonitoringProfiles,
   demoOrganization,
   demoSaveOrganizationItem,
@@ -52,6 +53,7 @@ import type {
   CreateTaskInput,
   TaskTimeline,
   TaskAnalysis,
+  TeamReport,
 } from "./types";
 
 // ---------- public ----------
@@ -237,11 +239,22 @@ export function getTaskAnalysis(taskId: string) {
 }
 
 // ---------- reports ----------
-export function reportEmployees(businessId: string) {
+/**
+ * The roster with today's totals. Pass the viewer's local day so "today" means
+ * the manager's day, not the UTC one; older backends ignore the window and use
+ * the UTC day.
+ */
+export function reportEmployees(businessId: string, day?: { from: number; to: number }) {
   if (isDemo()) return Promise.resolve({ employees: demoRoster() });
   return request<{ employees: ReportEmployee[] }>("/v1/reports/employees", {
-    query: { business_id: businessId },
+    query: day ? { business_id: businessId, from: day.from, to: day.to } : { business_id: businessId },
   });
+}
+
+/** Business-wide apps, sites, input and hourly activity for a window. */
+export function reportTeam(businessId: string, from: number, to: number) {
+  if (isDemo()) return Promise.resolve(demoTeam(from, to));
+  return request<TeamReport>("/v1/reports/team", { query: { business_id: businessId, from, to } });
 }
 
 export function reportActivity(employeeId: string, from: number, to: number) {

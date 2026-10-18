@@ -16,7 +16,7 @@ use serde::Serialize;
 use uuid::Uuid;
 
 /// Latest schema version. Bump when adding a migration below.
-const SCHEMA_VERSION: i64 = 3;
+const SCHEMA_VERSION: i64 = 4;
 
 /// A fresh client-generated UUID (v4), the backend's natural sync key.
 fn new_uuid() -> String {
@@ -110,6 +110,12 @@ pub struct PendingKeystroke {
     pub client_uuid: String,
     pub ts_bucket: i64,
     pub count: i64,
+    /// Mouse button presses in the bucket. Older backends ignore the field.
+    pub clicks: i64,
+    /// User-driven scroll events in the bucket.
+    pub scrolls: i64,
+    /// Pointer travel in screen pixels in the bucket.
+    pub mouse_px: i64,
     pub updated_at: i64,
 }
 
@@ -176,6 +182,11 @@ impl Db {
         if version < 3 {
             conn.execute_batch(MIGRATION_3)?;
             version = 3;
+        }
+
+        if version < 4 {
+            conn.execute_batch(MIGRATION_4)?;
+            version = 4;
         }
 
         conn.pragma_update(None, "user_version", version)?;
@@ -263,15 +274,40 @@ impl Db {
     /// A re-count is a mutation, so it resets `synced = 0` and bumps `updated_at` —
     /// an already-synced bucket re-syncs with its new total (see docs/11).
     pub fn add_keystrokes(&self, ts_bucket: i64, count: i64) -> Result<()> {
+        self.add_input(
+            ts_bucket,
+            &crate::platform::InputCounts {
+                keys: count.max(0) as u64,
+                ..Default::default()
+            },
+        )
+    }
+
+    /// Add one flush of input counts — keys, clicks, scrolls, pointer travel — to
+    /// the bucket starting at `ts_bucket`. Same accumulate-and-reopen rule as
+    /// `add_keystrokes`; only counts are stored, never keys or positions.
+    pub fn add_input(&self, ts_bucket: i64, c: &crate::platform::InputCounts) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute(
-            "INSERT INTO keystroke_bucket (ts_bucket, count, client_uuid, synced, updated_at)
-             VALUES (?1, ?2, ?3, 0, ?4)
+            "INSERT INTO keystroke_bucket
+               (ts_bucket, count, clicks, scrolls, mouse_px, client_uuid, synced, updated_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7)
              ON CONFLICT(ts_bucket) DO UPDATE SET
                  count = count + excluded.count,
+                 clicks = clicks + excluded.clicks,
+                 scrolls = scrolls + excluded.scrolls,
+                 mouse_px = mouse_px + excluded.mouse_px,
                  synced = 0,
                  updated_at = excluded.updated_at",
-            params![ts_bucket, count, new_uuid(), now_secs()],
+            params![
+                ts_bucket,
+                c.keys as i64,
+                c.clicks as i64,
+                c.scrolls as i64,
+                c.mouse_px as i64,
+                new_uuid(),
+                now_secs()
+            ],
         )?;
         Ok(())
     }
@@ -498,7 +534,7 @@ impl Db {
     pub fn pending_keystrokes(&self, limit: i64) -> Result<Vec<PendingKeystroke>> {
         let conn = self.conn.lock().unwrap();
         let mut stmt = conn.prepare(
-            "SELECT client_uuid, ts_bucket, count, updated_at
+            "SELECT client_uuid, ts_bucket, count, clicks, scrolls, mouse_px, updated_at
              FROM keystroke_bucket WHERE synced = 0 ORDER BY id LIMIT ?1",
         )?;
         let rows = stmt
@@ -507,7 +543,10 @@ impl Db {
                     client_uuid: r.get(0)?,
                     ts_bucket: r.get(1)?,
                     count: r.get(2)?,
-                    updated_at: r.get(3)?,
+                    clicks: r.get(3)?,
+                    scrolls: r.get(4)?,
+                    mouse_px: r.get(5)?,
+                    updated_at: r.get(6)?,
                 })
             })?
             .collect::<Result<Vec<_>>>()?;
@@ -710,6 +749,14 @@ CREATE TABLE os_state (
 CREATE INDEX idx_os_state_ts ON os_state(ts);
 CREATE UNIQUE INDEX idx_os_state_client_uuid ON os_state(client_uuid);
 CREATE INDEX idx_os_state_pending ON os_state(id) WHERE synced = 0;
+"#;
+
+/// Migration v4: mouse counts next to the keystroke count in each minute bucket.
+/// Defaults of 0 keep every existing row valid — they predate mouse counting.
+const MIGRATION_4: &str = r#"
+ALTER TABLE keystroke_bucket ADD COLUMN clicks   INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE keystroke_bucket ADD COLUMN scrolls  INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE keystroke_bucket ADD COLUMN mouse_px INTEGER NOT NULL DEFAULT 0;
 "#;
 
 #[cfg(test)]
@@ -994,6 +1041,44 @@ mod tests {
         let pend = db.pending_keystrokes(100).unwrap();
         assert_eq!(pend.len(), 1);
         assert_eq!(pend[0].count, 15);
+    }
+
+    // Mouse counts share the keystroke bucket: each flush adds to every column,
+    // a keyboard-only flush leaves the mouse totals alone, and the whole bucket
+    // goes back to pending so the backend receives the new totals.
+    #[test]
+    fn input_counts_accumulate_per_bucket() {
+        use crate::platform::InputCounts;
+        let db = db();
+        db.add_input(
+            60,
+            &InputCounts {
+                keys: 4,
+                clicks: 3,
+                scrolls: 2,
+                mouse_px: 900,
+            },
+        )
+        .unwrap();
+        db.add_keystrokes(60, 6).unwrap();
+        db.add_input(
+            60,
+            &InputCounts {
+                keys: 0,
+                clicks: 1,
+                scrolls: 0,
+                mouse_px: 100,
+            },
+        )
+        .unwrap();
+
+        let pend = db.pending_keystrokes(100).unwrap();
+        assert_eq!(pend.len(), 1, "one minute stays one bucket");
+        let row = &pend[0];
+        assert_eq!(
+            (row.count, row.clicks, row.scrolls, row.mouse_px),
+            (10, 4, 2, 1000)
+        );
     }
 
     #[test]

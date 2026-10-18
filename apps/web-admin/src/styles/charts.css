@@ -1,0 +1,178 @@
+/* Chart anatomy: thin marks, 2px surface gaps, recessive grid, ink-coloured
+   text (never series-coloured), a tooltip on every mark. */
+
+.chart-tip {
+  position: absolute;
+  inset-block-end: calc(100% + 8px);
+  translate: -50% 0;
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  min-width: 140px;
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow-sm);
+  font-size: var(--fs-xs);
+  color: var(--ink-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+[dir="rtl"] .chart-tip {
+  translate: 50% 0;
+}
+
+.chart-tip strong {
+  font-size: var(--fs-sm);
+  color: var(--ink);
+}
+
+/* ---------- day ribbon ---------- */
+
+.ribbon {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ribbon-track {
+  position: relative;
+  height: 34px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(-45deg, var(--fill-2) 0 2px, transparent 0 7px), var(--fill-1);
+}
+
+.ribbon-compact .ribbon-track {
+  height: 10px;
+  border-radius: var(--r-pill);
+}
+
+.ribbon-seg {
+  position: absolute;
+  inset-block: 0;
+  min-width: 2px;
+  /* 2px surface gap between neighbouring states. */
+  box-shadow: 0 0 0 1px var(--glass-strong);
+  transition: filter var(--t-fast) var(--ease);
+}
+
+.ribbon-seg.fill-offline {
+  background: transparent;
+  box-shadow: none;
+}
+
+.ribbon-seg:hover {
+  filter: brightness(1.08) saturate(1.1);
+}
+
+.ribbon-seg:first-child {
+  border-start-start-radius: inherit;
+  border-end-start-radius: inherit;
+}
+
+.ribbon-now {
+  position: absolute;
+  inset-block: -4px;
+  width: 2px;
+  margin-inline-start: -1px;
+  border-radius: 2px;
+  background: var(--ink);
+  opacity: 0.55;
+}
+
+.ribbon-axis {
+  position: relative;
+  height: 16px;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.ribbon-axis span {
+  position: absolute;
+  translate: -50% 0;
+  white-space: nowrap;
+}
+
+[dir="rtl"] .ribbon-axis span {
+  translate: 50% 0;
+}
+
+/* ---------- hour bars ---------- */
+
+.bars {
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.bars-plot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: var(--bars-h, 160px);
+  padding-block-start: 18px;
+  border-block-end: 1px solid var(--line-strong);
+}
+
+.bars-grid {
+  position: absolute;
+  inset: 18px 0 0;
+  background: linear-gradient(var(--chart-grid) 1px, transparent 1px) 0 0 / 100% 50%;
+  pointer-events: none;
+}
+
+.bars-max {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+
+.bars-col {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.bars-bar {
+  width: 100%;
+  max-width: 28px;
+  margin-inline: auto;
+  border-radius: 4px 4px 0 0;
+  background: var(--bar-color);
+  transition: height var(--t-med) var(--ease-out), filter var(--t-fast) var(--ease);
+}
+
+.bars-col:hover .bars-bar {
+  filter: brightness(1.1) saturate(1.1);
+}
+
+.bars-bar.is-zero {
+  height: 0;
+}
+
+.bars-axis {
+  display: flex;
+  gap: 3px;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+
+.bars-axis span {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: visible;
+  min-width: 0;
+}

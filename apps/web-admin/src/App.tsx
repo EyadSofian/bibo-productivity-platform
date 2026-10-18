@@ -1,27 +1,31 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { AppShell } from "./components/AppShell";
+import { AppShell } from "./app/AppShell";
+import { BusinessProvider } from "./app/useBusinesses";
+import { ThemeProvider } from "./app/theme";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./auth/AuthContext";
-import { BusinessProvider } from "./useBusinesses";
-import { ThemeProvider } from "./theme/ThemeProvider";
 import { SignIn } from "./auth/SignIn";
-import { SignupWizard } from "./auth/SignupWizard";
+import { SignUp } from "./auth/SignUp";
 
-// Admin reports are sizeable and most sessions only visit a subset. Keep the
-// authenticated shell immediate, then load each route on demand.
-const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
-const EmployeeDetail = lazy(() => import("./pages/EmployeeDetail").then((m) => ({ default: m.EmployeeDetail })));
-const Devices = lazy(() => import("./pages/Devices").then((m) => ({ default: m.Devices })));
-const MonitoringProfiles = lazy(() => import("./pages/MonitoringProfiles").then((m) => ({ default: m.MonitoringProfiles })));
-const Organization = lazy(() => import("./pages/Organization").then((m) => ({ default: m.Organization })));
-const Employees = lazy(() => import("./pages/Employees").then((m) => ({ default: m.Employees })));
-const Tasks = lazy(() => import("./pages/Tasks").then((m) => ({ default: m.Tasks })));
-const Settings = lazy(() => import("./pages/Settings").then((m) => ({ default: m.Settings })));
+// The shell loads at once; each page is its own chunk.
+const Overview = lazy(() => import("./pages/Overview"));
+const Employees = lazy(() => import("./pages/Employees"));
+const EmployeeDay = lazy(() => import("./pages/EmployeeDay"));
+const LiveMonitor = lazy(() => import("./pages/LiveMonitor"));
+const Tasks = lazy(() => import("./pages/Tasks"));
+const Devices = lazy(() => import("./pages/Devices"));
+const Settings = lazy(() => import("./pages/Settings"));
 
 function PageFallback() {
-  return <div className="ad-page-loader" role="status" aria-label="Loading"><span /></div>;
+  return (
+    <div className="page" role="status" aria-busy="true" style={{ placeItems: "center", minHeight: "40vh" }}>
+      <span className="spinner" />
+    </div>
+  );
 }
+
+const page = (node: ReactNode) => <Suspense fallback={<PageFallback />}>{node}</Suspense>;
 
 export default function App() {
   return (
@@ -30,7 +34,7 @@ export default function App() {
         <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/+$/, "")}>
           <Routes>
             <Route path="/login" element={<SignIn />} />
-            <Route path="/signup" element={<SignupWizard />} />
+            <Route path="/signup" element={<SignUp />} />
             <Route element={<ProtectedRoute />}>
               <Route
                 element={
@@ -39,14 +43,15 @@ export default function App() {
                   </BusinessProvider>
                 }
               >
-                <Route index element={<Suspense fallback={<PageFallback />}><Dashboard /></Suspense>} />
-                <Route path="employees" element={<Suspense fallback={<PageFallback />}><Employees /></Suspense>} />
-                <Route path="tasks" element={<Suspense fallback={<PageFallback />}><Tasks /></Suspense>} />
-                <Route path="employees/:id" element={<Suspense fallback={<PageFallback />}><EmployeeDetail /></Suspense>} />
-                <Route path="devices" element={<Suspense fallback={<PageFallback />}><Devices /></Suspense>} />
-                <Route path="monitoring" element={<Suspense fallback={<PageFallback />}><MonitoringProfiles /></Suspense>} />
-                <Route path="organization" element={<Suspense fallback={<PageFallback />}><Organization /></Suspense>} />
-                <Route path="settings" element={<Suspense fallback={<PageFallback />}><Settings /></Suspense>} />
+                <Route index element={page(<Overview />)} />
+                <Route path="employees" element={page(<Employees />)} />
+                <Route path="employees/:id" element={page(<EmployeeDay />)} />
+                <Route path="live" element={page(<LiveMonitor />)} />
+                <Route path="tasks" element={page(<Tasks />)} />
+                <Route path="devices" element={page(<Devices />)} />
+                <Route path="settings" element={page(<Settings />)} />
+                <Route path="monitoring" element={<Navigate to="/settings?tab=schedules" replace />} />
+                <Route path="organization" element={<Navigate to="/settings?tab=organization" replace />} />
               </Route>
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />

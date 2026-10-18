@@ -5,7 +5,7 @@
 //! here so they don't leak into the trackers. Selected by `#[cfg(target_os = "macos")]`
 //! in `platform/mod.rs`, which re-exports everything below.
 
-use super::{CapabilityRow, Permission, PermissionState, KEY_PRESS_COUNT};
+use super::{CapabilityRow, Permission, PermissionState};
 use crate::settings::Settings;
 
 /// The 3 macOS TCC rows for the data-driven setup screen. Ignores `Settings` —
@@ -30,7 +30,7 @@ pub fn capability_rows(_s: &Settings) -> Vec<CapabilityRow> {
         row(
             "input_monitoring",
             "Input Monitoring",
-            "Lets the app count keystrokes (counts only — never which keys).",
+            "Lets the app count keystrokes, mouse clicks and scrolling (counts only — never which keys).",
             Permission::InputMonitoring,
         ),
         row(
@@ -146,15 +146,19 @@ pub fn request_accessibility() -> bool {
     }
 }
 
-// ---------- keyboard counting tap (task 17) ----------
+// ---------- input counting tap (task 17) ----------
 //
-// A minimal, listen-only CoreGraphics event tap that ONLY counts key-down events.
-// It never decodes which key was pressed (that decoding — via Text Input Source
-// APIs that assert the main thread — is what crashed the `rdev` approach when run
-// off the main thread). Counting-only is also exactly our privacy guarantee.
+// A minimal, listen-only CoreGraphics event tap that ONLY counts input: key-down
+// events, mouse button presses, user-driven scroll events, and how far the
+// pointer travelled. It never decodes which key was pressed (that decoding — via
+// Text Input Source APIs that assert the main thread — is what crashed the `rdev`
+// approach when run off the main thread), and it keeps no pointer position or
+// target window. Counting-only is also exactly our privacy guarantee.
 
 mod keytap {
-    use super::KEY_PRESS_COUNT;
+    use super::super::{
+        move_distance, KEY_PRESS_COUNT, MOUSE_CLICK_COUNT, MOUSE_MOVE_PX, SCROLL_COUNT,
+    };
     use std::os::raw::c_void;
     use std::ptr;
     use std::sync::atomic::{AtomicPtr, Ordering};
@@ -179,6 +183,7 @@ mod keytap {
             user: *mut c_void,
         ) -> CFMachPortRef;
         fn CGEventTapEnable(tap: CFMachPortRef, enable: bool);
+        fn CGEventGetIntegerValueField(event: CGEventRef, field: u32) -> i64;
     }
 
     #[link(name = "CoreFoundation", kind = "framework")]
@@ -195,6 +200,19 @@ mod keytap {
     }
 
     const KEY_DOWN: u32 = 10; // kCGEventKeyDown
+    const LEFT_MOUSE_DOWN: u32 = 1; // kCGEventLeftMouseDown
+    const RIGHT_MOUSE_DOWN: u32 = 3; // kCGEventRightMouseDown
+    const OTHER_MOUSE_DOWN: u32 = 25; // kCGEventOtherMouseDown
+    const MOUSE_MOVED: u32 = 5; // kCGEventMouseMoved
+    const LEFT_MOUSE_DRAGGED: u32 = 6; // kCGEventLeftMouseDragged
+    const RIGHT_MOUSE_DRAGGED: u32 = 7; // kCGEventRightMouseDragged
+    const OTHER_MOUSE_DRAGGED: u32 = 27; // kCGEventOtherMouseDragged
+    const SCROLL_WHEEL: u32 = 22; // kCGEventScrollWheel
+    const FIELD_MOUSE_DELTA_X: u32 = 4; // kCGMouseEventDeltaX
+    const FIELD_MOUSE_DELTA_Y: u32 = 5; // kCGMouseEventDeltaY
+    /// kCGScrollWheelEventMomentumPhase: non-zero while a trackpad coasts after
+    /// the fingers lift. That motion is the OS, not the person, so it is skipped.
+    const FIELD_SCROLL_MOMENTUM_PHASE: u32 = 123;
     const TAP_DISABLED_TIMEOUT: u32 = 0xFFFF_FFFE;
     const TAP_DISABLED_USER_INPUT: u32 = 0xFFFF_FFFF;
 
@@ -204,10 +222,34 @@ mod keytap {
         event: CGEventRef,
         _user: *mut c_void,
     ) -> CGEventRef {
-        if etype == KEY_DOWN {
+        match etype {
             // COUNT ONLY — the key itself is never read or stored.
-            KEY_PRESS_COUNT.fetch_add(1, Ordering::Relaxed);
-        } else if etype == TAP_DISABLED_TIMEOUT || etype == TAP_DISABLED_USER_INPUT {
+            KEY_DOWN => {
+                KEY_PRESS_COUNT.fetch_add(1, Ordering::Relaxed);
+            }
+            LEFT_MOUSE_DOWN | RIGHT_MOUSE_DOWN | OTHER_MOUSE_DOWN => {
+                MOUSE_CLICK_COUNT.fetch_add(1, Ordering::Relaxed);
+            }
+            MOUSE_MOVED | LEFT_MOUSE_DRAGGED | RIGHT_MOUSE_DRAGGED | OTHER_MOUSE_DRAGGED => {
+                // Relative deltas only: the absolute position is never read.
+                let (dx, dy) = unsafe {
+                    (
+                        CGEventGetIntegerValueField(event, FIELD_MOUSE_DELTA_X),
+                        CGEventGetIntegerValueField(event, FIELD_MOUSE_DELTA_Y),
+                    )
+                };
+                MOUSE_MOVE_PX.fetch_add(move_distance(dx, dy), Ordering::Relaxed);
+            }
+            SCROLL_WHEEL => {
+                let momentum =
+                    unsafe { CGEventGetIntegerValueField(event, FIELD_SCROLL_MOMENTUM_PHASE) };
+                if momentum == 0 {
+                    SCROLL_COUNT.fetch_add(1, Ordering::Relaxed);
+                }
+            }
+            _ => {}
+        }
+        if etype == TAP_DISABLED_TIMEOUT || etype == TAP_DISABLED_USER_INPUT {
             // macOS can disable a slow tap; re-enable it.
             let p = TAP_PORT.load(Ordering::Relaxed);
             if !p.is_null() {
@@ -217,14 +259,26 @@ mod keytap {
         event
     }
 
-    /// Create a listen-only key-down tap and run its run loop (blocks while
+    /// Create a listen-only input tap and run its run loop (blocks while
     /// active). Returns `false` immediately if the tap can't be created — i.e.
     /// Input Monitoring isn't granted yet.
     pub fn run() -> bool {
         const HID_TAP: u32 = 0; // kCGHIDEventTap
         const HEAD_INSERT: u32 = 0; // kCGHeadInsertEventTap
         const LISTEN_ONLY: u32 = 1; // kCGEventTapOptionListenOnly
-        let mask: u64 = 1u64 << KEY_DOWN;
+        let mask: u64 = [
+            KEY_DOWN,
+            LEFT_MOUSE_DOWN,
+            RIGHT_MOUSE_DOWN,
+            OTHER_MOUSE_DOWN,
+            MOUSE_MOVED,
+            LEFT_MOUSE_DRAGGED,
+            RIGHT_MOUSE_DRAGGED,
+            OTHER_MOUSE_DRAGGED,
+            SCROLL_WHEEL,
+        ]
+        .iter()
+        .fold(0u64, |m, t| m | (1u64 << t));
 
         unsafe {
             let tap = CGEventTapCreate(
@@ -248,8 +302,9 @@ mod keytap {
     }
 }
 
-/// Run the keyboard-counting tap (blocks while active). Returns false if the tap
-/// couldn't be created (permission missing) so the caller can retry.
+/// Run the input-counting tap — keys, clicks, scrolls, pointer travel (blocks
+/// while active). Returns false if the tap couldn't be created (permission
+/// missing) so the caller can retry.
 pub fn run_keyboard_tap() -> bool {
     keytap::run()
 }

@@ -1,38 +1,47 @@
 import type { ReactNode } from "react";
-import { LanguageSwitcher } from "../components/LanguageSwitcher";
-import { EngosoftBrand } from "../components/EngosoftBrand";
+import { useTranslation } from "react-i18next";
+import { BrandLockup, EngosoftMark } from "../ui/Brand";
+import { Icon } from "../ui/Icon";
+import { LanguageToggle } from "../app/AppShell";
 
-/**
- * AuthLayout — the shared "welcome surface": centered card on a soft accent
- * gradient with the brand lockup above it. The one place gradients are allowed
- * (see docs/07-ui-design.md); dashboards stay flat. The correct lockup for the
- * active theme is chosen in CSS via the [data-theme] attribute on <html>.
- */
-export function AuthLayout({
-  children,
-  wide,
-  bare,
-  hideLockup,
-  footer,
-}: {
-  children: ReactNode;
-  wide?: boolean;
-  /** Skip the centered card wrapper — used by the two-column rail layout. */
-  bare?: boolean;
-  /** Hide the brand lockup above the card (sign-in supplies its own inline mark). */
-  hideLockup?: boolean;
-  footer?: ReactNode;
-}) {
+/** Brand panel beside a frosted form card. The panel says what the product
+ *  shows a manager; the card does one job. */
+export function AuthLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation("auth");
   return (
-    <div className="auth-wrap welcome">
-      <div className="auth-lang">
-        <LanguageSwitcher />
-      </div>
-      {!hideLockup && (
-        <EngosoftBrand className="auth-logo auth-logo--engosoft" />
-      )}
-      {bare ? children : <div className={wide ? "auth-card wide" : "auth-card"}>{children}</div>}
-      {footer && <div className="auth-foot">{footer}</div>}
+    <div className="auth">
+      <section className="auth-art" aria-hidden>
+        <EngosoftMark className="hero-mark" dot="currentColor" />
+        <BrandLockup product="Workforce" inverse />
+        <div>
+          <h2>{t("art.title")}</h2>
+          <p>{t("art.body")}</p>
+          <ul className="auth-points">
+            <li>
+              <Icon name="app" />
+              {t("art.point1")}
+            </li>
+            <li>
+              <Icon name="link" />
+              {t("art.point2")}
+            </li>
+            <li>
+              <Icon name="keyboard" />
+              {t("art.point3")}
+            </li>
+          </ul>
+        </div>
+        <p style={{ fontSize: 13, opacity: 0.75 }}>Empowering Educational Success</p>
+      </section>
+      <section className="auth-panel">
+        <div className="glass auth-card">
+          <div className="auth-top">
+            <BrandLockup product="Workforce" />
+            <LanguageToggle className="btn btn-icon btn-sm" />
+          </div>
+          {children}
+        </div>
+      </section>
     </div>
   );
 }

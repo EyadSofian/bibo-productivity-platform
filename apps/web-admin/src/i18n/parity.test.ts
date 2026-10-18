@@ -33,7 +33,7 @@ function catalog(locale: string, ns: string): Record<string, unknown> | undefine
   return catalogs[`./locales/${locale}/${ns}.json`];
 }
 
-const NAMESPACES = ["common", "auth", "signup", "dashboard", "settings", "ui", "reports"];
+const NAMESPACES = ["common", "auth", "app", "live"];
 const NON_SOURCE = LOCALES.map((l) => l.code).filter((c) => c !== "en");
 
 describe("translation catalogs", () => {

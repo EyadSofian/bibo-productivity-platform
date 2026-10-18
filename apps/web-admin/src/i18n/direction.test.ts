@@ -85,13 +85,13 @@ describe("the Arabic catalog", () => {
     await i18n.changeLanguage("ar");
     expect(i18n.resolvedLanguage).toBe("ar");
     // A key from each namespace, to catch a namespace that was never wired in.
-    expect(i18n.t("nav.dashboard")).toBe("لوحة التحكم");
-    expect(i18n.t("settings:title")).toBe("الإعدادات");
-    expect(i18n.t("reports:browser.title")).toBe("المواقع التي تمت زيارتها");
-    expect(i18n.t("dashboard:dashboard.title")).toBe("لوحة التحكم");
-    expect(i18n.t("auth:signIn.title")).toBe("تسجيل الدخول");
-    expect(i18n.t("signup:account.title")).toBe("أنشئ حسابك");
-    expect(i18n.t("ui:businessLabel")).toBe("المؤسسة");
+    expect(i18n.t("nav.overview")).toBe("الرئيسية");
+    expect(i18n.t("app:settings.title")).toBe("الإعدادات");
+    expect(i18n.t("app:employee.tabSites")).toBe("المواقع");
+    expect(i18n.t("auth:signIn.submit")).toBe("تسجيل الدخول");
+    expect(i18n.t("live:action.start")).toBeTruthy();
+    // Shared words resolve from common when a page namespace asks for them.
+    expect(i18n.t("app:state.active")).toBe("عمل");
     await i18n.changeLanguage("en");
   });
 
